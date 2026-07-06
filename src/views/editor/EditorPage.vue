@@ -21,7 +21,7 @@ import {
   Save, SquareBottomDashedScissors, CheckCircle,
   Download, Copy, FileText, CircleCheck,
   Smartphone, SquarePen, CircleQuestionMark,
-  ImagePlus, Link
+  ImagePlus, Link, AlignLeft, AlignRight
 } from 'lucide-vue-next'
 import { putImage, getDataURL, cleanupImages } from '@/utils/imageDB'
 
@@ -1051,6 +1051,10 @@ function handleSaveImage() {
   previewRef.value?.saveAsImage()
 }
 
+function handleTextDirection(dir: 'ltr' | 'rtl') {
+  editorRef.value?.applyTextDirection(dir)
+}
+
 // ── 草稿业务方法 ──
 function handleOpenSaveDraft() {
   saveDraftVisible.value = true
@@ -1321,6 +1325,22 @@ onBeforeUnmount(() => {
         <!-- 桌面端：显示所有按钮 -->
         <button
           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
+          title="将选中内容设为从左到右"
+          @click="handleTextDirection('ltr')"
+        >
+          <AlignLeft :size="14" />
+          LTR
+        </button>
+        <button
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
+          title="将选中内容设为从右到左"
+          @click="handleTextDirection('rtl')"
+        >
+          <AlignRight :size="14" />
+          RTL
+        </button>
+        <button
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
           @click="handleCopyHTML"
         >
           <Braces :size="14" />
@@ -1348,6 +1368,7 @@ onBeforeUnmount(() => {
           @copy-html="handleCopyHTML"
           @save-image="handleSaveImage"
           @copy-rich-text="handleCopyRichText"
+          @set-direction="handleTextDirection"
           @export-xhs="xhsVisible = true"
           @go-components="$router.push('/components')"
         />

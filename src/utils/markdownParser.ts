@@ -149,6 +149,24 @@ export interface ParagraphStyle {
   margin: number
 }
 
+type ContentDirection = 'ltr' | 'rtl'
+
+function normalizeDirection(value?: string): ContentDirection | null {
+  const dir = value?.trim().toLowerCase()
+  return dir === 'ltr' || dir === 'rtl' ? dir : null
+}
+
+function getDirection(attrs: Record<string, string>, allowValue = false): ContentDirection | null {
+  return normalizeDirection(attrs.dir || attrs.direction || (allowValue ? attrs.value : undefined))
+}
+
+function wrapDirection(html: string, attrs: Record<string, string>, allowValue = false): string {
+  const dir = getDirection(attrs, allowValue)
+  if (!dir) return html
+  const textAlign = dir === 'rtl' ? 'right' : 'left'
+  return `<section dir="${dir}" style="direction:${dir};text-align:${textAlign};unicode-bidi:plaintext">${html}</section>`
+}
+
 /**
  * 一步完成：收集公式 → 预渲染 → 解析。
  * 推荐所有 caller 使用这个入口。
@@ -212,6 +230,27 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       continue
     }
 
+    // <direction dir="rtl|ltr"> ... </direction>
+    if (/^<direction\b/.test(line)) {
+      const openMatch = line.match(/^<direction\b([^>]*)>(.*)$/)
+      const attrs = openMatch && openMatch[1] ? parseAttrs(openMatch[1]) : {}
+      if (openMatch && openMatch[2] && /<\/direction>\s*$/.test(openMatch[2])) {
+        const body = openMatch[2].replace(/<\/direction>\s*$/, '').trim()
+        html += wrapDirection(parseMarkdown(body, t, formulaMap, paragraphStyle), attrs, true)
+        i++
+        continue
+      }
+      let body = openMatch && openMatch[2] ? openMatch[2] + '\n' : ''
+      i++
+      while (i < lines.length && !/^<\/direction>/.test(lines[i])) {
+        body += lines[i] + '\n'
+        i++
+      }
+      i++ // skip </direction>
+      html += wrapDirection(parseMarkdown(body.trim(), t, formulaMap, paragraphStyle), attrs, true)
+      continue
+    }
+
     // <steps>
     if (/^<steps\b/.test(line)) {
       const openMatch = line.match(/^<steps\b([^>]*)>/)
@@ -224,7 +263,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       }
       i++ // skip </steps>
       const stepsRenderer = attrs.type === 'DA02' ? Steps_DA02 : Steps_DA01
-      html += stepsRenderer.render(attrs, body.trim(), t)
+      html += wrapDirection(stepsRenderer.render(attrs, body.trim(), t), attrs)
       continue
     }
     // <statement> ... </statement>
@@ -234,7 +273,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       // 单行模式
       if (openMatch && openMatch[2] && /<\/statement>\s*$/.test(openMatch[2])) {
         const text = openMatch[2].replace(/<\/statement>\s*$/, '').trim()
-        html += Statement_DA01.render(attrs, text, t)
+        html += wrapDirection(Statement_DA01.render(attrs, text, t), attrs)
         i++
         continue
       }
@@ -246,7 +285,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++
-      html += Statement_DA01.render(attrs, text.trim(), t)
+      html += wrapDirection(Statement_DA01.render(attrs, text.trim(), t), attrs)
       continue
     }
     // <badges> ... </badges> (支持单行和多行)
@@ -256,7 +295,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       // 单行模式：<badges ...>content</badges>
       if (openMatch && openMatch[2] && /<\/badges>\s*$/.test(openMatch[2])) {
         const body = openMatch[2].replace(/<\/badges>\s*$/, '').trim()
-        html += Badges_DA01.render(attrs, body, t)
+        html += wrapDirection(Badges_DA01.render(attrs, body, t), attrs)
         i++
         continue
       }
@@ -268,7 +307,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++ // skip </badges>
-      html += Badges_DA01.render(attrs, body.trim(), t)
+      html += wrapDirection(Badges_DA01.render(attrs, body.trim(), t), attrs)
       continue
     }
     // <lead> ... </lead>
@@ -278,7 +317,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       // 单行模式
       if (openMatch && openMatch[2] && /<\/lead>\s*$/.test(openMatch[2])) {
         const text = openMatch[2].replace(/<\/lead>\s*$/, '').trim()
-        html += Lead_DA01.render(attrs, text, t)
+        html += wrapDirection(Lead_DA01.render(attrs, text, t), attrs)
         i++
         continue
       }
@@ -290,7 +329,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++
-      html += Lead_DA01.render(attrs, text.trim(), t)
+      html += wrapDirection(Lead_DA01.render(attrs, text.trim(), t), attrs)
       continue
     }
     // <breaking>
@@ -304,15 +343,16 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++ // skip </breaking>
-      html += Breaking_DA01.render(attrs, body.trim(), t)
+      html += wrapDirection(Breaking_DA01.render(attrs, body.trim(), t), attrs)
       continue
     }
     // <cta>
     if (/^<cta\b/.test(line)) {
+      const attrs = parseAttrs(line)
       if (/\/>\s*$/.test(line)) {
         // 自闭合行内形式：<cta .../>
         const r = parseCtaInline(lines, i, t)
-        html += r.html
+        html += wrapDirection(r.html, attrs)
         i = r.next
       } else {
         // 前窥后续是否存在 </cta> 关闭标签，有则走标签形式，否则按行内处理
@@ -325,11 +365,11 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         }
         if (hasClosingCta) {
           const r = parseCtaTag(lines, i, t)
-          html += r.html
+          html += wrapDirection(r.html, attrs)
           i = r.next
         } else {
           const r = parseCtaInline(lines, i, t)
-          html += r.html
+          html += wrapDirection(r.html, attrs)
           i = r.next
         }
       }
@@ -337,8 +377,9 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     }
     // <compare>
     if (/^<compare\b/.test(line)) {
+      const attrs = parseAttrs(line)
       const r = parseCompare(lines, i, t)
-      html += r.html
+      html += wrapDirection(r.html, attrs)
       i = r.next
       continue
     }
@@ -347,7 +388,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       const attrsStr = line.match(/^<reading-path\b([^>]*)>?/)?.[1] || ''
       const attrs = parseAttrs(attrsStr)
       const rendered = ReadingPath_DA01.render(attrs, pTitleLevel1List, t)
-      html += rendered
+      html += wrapDirection(rendered, attrs)
       // 跳过闭合标签（如果有）
       if (
         /^<reading-path>/.test(line) &&
@@ -368,9 +409,9 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const body = titleMatch[2].trim()
         const type = (attrs.type || 'DA01').toUpperCase()
         if (type === 'DA02') {
-          html += Title_DA02.render(attrs, body, t, md)
+          html += wrapDirection(Title_DA02.render(attrs, body, t, md), attrs)
         } else {
-          html += Title_DA01.render(attrs, body, t, md)
+          html += wrapDirection(Title_DA01.render(attrs, body, t, md), attrs)
         }
       }
       i++
@@ -384,7 +425,8 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const attrs = parseAttrs(ptMatch[1])
         const body = ptMatch[2].trim()
         // 给根节点打个标记（不影响样式），分页时用它避免小节标题落在页底跟正文分家
-        html += PTitle.render(attrs, body, t).replace('<section', '<section data-block="ptitle"')
+        const rendered = PTitle.render(attrs, body, t).replace('<section', '<section data-block="ptitle"')
+        html += wrapDirection(rendered, attrs)
       }
       i++
       continue
@@ -429,7 +471,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++ // skip </case-flow>
-      html += CaseFlow_DA01.render(attrs, body.trim(), t)
+      html += wrapDirection(CaseFlow_DA01.render(attrs, body.trim(), t), attrs)
       continue
     }
     // 案例流（行内语法，无标签包裹时）
@@ -453,7 +495,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++ // skip </timeline>
-      html += Timeline_DA01.render(attrs, body.trim(), t)
+      html += wrapDirection(Timeline_DA01.render(attrs, body.trim(), t), attrs)
       continue
     }
     // <slider> 标签
@@ -463,7 +505,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       // 单行模式：<slider ...>content</slider>
       if (openMatch && openMatch[2] && /<\/slider>\s*$/.test(openMatch[2])) {
         const body = openMatch[2].replace(/<\/slider>\s*$/, '').trim()
-        html += Slider_DA01.render(attrs, body, t)
+        html += wrapDirection(Slider_DA01.render(attrs, body, t), attrs)
         i++
         continue
       }
@@ -475,7 +517,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         i++
       }
       i++ // skip </slider>
-      html += Slider_DA01.render(attrs, body.trim(), t)
+      html += wrapDirection(Slider_DA01.render(attrs, body.trim(), t), attrs)
       continue
     }
     // <engage>
@@ -483,9 +525,9 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       const attrs = parseAttrs(line)
       // type="DA02" 使用彩色图标版，否则默认 DA01
       if (attrs.type && attrs.type.toUpperCase() === 'DA02') {
-        html += Engage_DA02.render(attrs, '', t)
+        html += wrapDirection(Engage_DA02.render(attrs, '', t), attrs)
       } else {
-        html += Engage_DA01.render(attrs, '', t)
+        html += wrapDirection(Engage_DA01.render(attrs, '', t), attrs)
       }
       i++
       continue
@@ -564,7 +606,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const closeIdx = openMatch[2].indexOf('</mermaid>')
         if (closeIdx >= 0) {
           const body = openMatch[2].slice(0, closeIdx)
-          html += Mermaid_DA01.render(attrs, body)
+          html += wrapDirection(Mermaid_DA01.render(attrs, body), attrs)
           i++
           continue
         }
@@ -583,7 +625,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         bodyLines.push(lines[i])
         i++
       }
-      html += Mermaid_DA01.render(attrs, bodyLines.join('\n'))
+      html += wrapDirection(Mermaid_DA01.render(attrs, bodyLines.join('\n')), attrs)
       continue
     }
 
@@ -606,7 +648,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const body = indent + hl || '&nbsp;'
         codeInner += `<section leaf="" style="white-space:nowrap">${body}</section>`
       }
-      html += `<section data-lang="${esc(lang)}" style="white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);padding:14px 16px;border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${codeInner}</section>`
+      html += `<section data-lang="${esc(lang)}" dir="ltr" style="direction:ltr;text-align:left;unicode-bidi:embed;white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);padding:14px 16px;border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${codeInner}</section>`
       continue
     }
 
@@ -699,7 +741,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     // <chart>
     if (/^<chart\b/.test(line.trim())) {
       const attrs = parseAttrs(line.trim())
-      html += Chart_DA01.render(attrs, '', t)
+      html += wrapDirection(Chart_DA01.render(attrs, '', t), attrs)
       i++
       continue
     }
@@ -707,7 +749,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     // <img>
     if (/^<img\s/.test(line.trim())) {
       const attrs = parseAttrs(line)
-      html += Img_DA01.render(attrs, '', t)
+      html += wrapDirection(Img_DA01.render(attrs, '', t), attrs)
       i++
       continue
     }

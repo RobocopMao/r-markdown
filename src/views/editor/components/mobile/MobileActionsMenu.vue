@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
-import { Braces, Copy, Download, EllipsisVertical, FileText, Image, LayoutGrid, Sparkles } from 'lucide-vue-next'
+import { AlignLeft, AlignRight, Braces, Copy, Download, EllipsisVertical, FileText, Image, LayoutGrid, Sparkles } from 'lucide-vue-next'
 
 const props = defineProps<{
   mode?: 'editor' | 'preview'
@@ -15,6 +15,7 @@ const emit = defineEmits<{
   'copy-rich-text': []
   'export-xhs': []
   'go-components': []
+  'set-direction': [dir: 'ltr' | 'rtl']
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -65,6 +66,20 @@ onBeforeUnmount(() => {
         >
           <LayoutGrid :size="14" />
           扩展组件
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('set-direction', 'ltr'))"
+        >
+          <AlignLeft :size="14" />
+          选区 LTR
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('set-direction', 'rtl'))"
+        >
+          <AlignRight :size="14" />
+          选区 RTL
         </button>
         <a
           href="https://chat.deepseek.com/share/f6bhvloktj8wdl5fie"

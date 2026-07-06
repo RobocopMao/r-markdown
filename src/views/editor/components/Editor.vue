@@ -177,6 +177,57 @@ function applyInlineFormat(syntax: string, wrapType: 'delim' | 'tag' = 'delim') 
   })
 }
 
+function setOpeningTagDirection(openTag: string, dir: 'ltr' | 'rtl'): string {
+  if (/\sdir="[^"]*"/.test(openTag)) {
+    return openTag.replace(/\sdir="[^"]*"/, ` dir="${dir}"`)
+  }
+  if (/\/>$/.test(openTag)) {
+    return openTag.replace(/\s*\/>$/, ` dir="${dir}" />`)
+  }
+  return openTag.replace(/\s*>$/, ` dir="${dir}">`)
+}
+
+function applyTextDirection(dir: 'ltr' | 'rtl') {
+  if (!view) return
+  const sel = view.state.selection.main
+  if (sel.empty) {
+    const open = `<direction dir="${dir}">\n`
+    const close = '\n</direction>'
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert: open + close },
+      selection: { anchor: sel.from + open.length },
+    })
+    return
+  }
+
+  const selectedText = view.state.sliceDoc(sel.from, sel.to)
+  const leading = selectedText.match(/^\s*/)?.[0] || ''
+  const trailing = selectedText.match(/\s*$/)?.[0] || ''
+  const core = selectedText.slice(leading.length, selectedText.length - trailing.length)
+  const openMatch = core.match(/^<(\w[\w-]*)([^>]*)>/s)
+
+  if (openMatch && (openMatch[1] === 'direction' || openMatch[1] in tagMap)) {
+    const updated = core.replace(openMatch[0], setOpeningTagDirection(openMatch[0], dir))
+    const insert = leading + updated + trailing
+    view.dispatch({
+      changes: { from: sel.from, to: sel.to, insert },
+      selection: { anchor: sel.from, head: sel.from + insert.length },
+    })
+    return
+  }
+
+  const open = `<direction dir="${dir}">\n`
+  const close = '\n</direction>'
+  const insert = open + selectedText + close
+  view.dispatch({
+    changes: { from: sel.from, to: sel.to, insert },
+    selection: {
+      anchor: sel.from + open.length,
+      head: sel.from + open.length + selectedText.length,
+    },
+  })
+}
+
 // ── 标签选中检测 ──
 const tagRegex = /^<(\w[\w-]*)((?:\s+[^>]*?)?)(\/?)>/s
 let lastTagSelection: {
@@ -573,7 +624,7 @@ function insertAtCursor(text: string) {
   })
 }
 
-defineExpose({ scrollTo, replaceRange, insertAtCursor, isAtLineStart, hasInlineSelection, isInsideTag, applyInlineFormat })
+defineExpose({ scrollTo, replaceRange, insertAtCursor, isAtLineStart, hasInlineSelection, isInsideTag, applyInlineFormat, applyTextDirection })
 </script>
 
 <template>
