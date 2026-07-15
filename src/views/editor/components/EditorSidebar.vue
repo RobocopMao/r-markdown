@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue'
+import { ref, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
 import {
   Component, Paperclip, FilePlus, Download, Bot, Import, Images,
   Sun, Moon, Monitor, Bolt, ChevronDown, ChevronUp, SquareBottomDashedScissors,
-  HelpCircle
+  HelpCircle, Package, Library, BookMarked
 } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -35,6 +35,7 @@ const emit = defineEmits<{
   (e: 'exampleAction', action: 'load' | 'download' | 'aiDemo'): void
   (e: 'openImport'): void
   (e: 'openGallery'): void
+  (e: 'materialAction', action: 'my' | 'library'): void
 }>()
 
 const showExamples = ref(false)
@@ -42,9 +43,18 @@ const examplesRef = ref<HTMLElement | null>(null)
 const exampleBtnRef = ref<HTMLElement | null>(null)
 const popoverPos = ref({ top: '0px', left: '0px' })
 
-async function toggleExamples() {
-  showExamples.value = !showExamples.value
-  if (showExamples.value && exampleBtnRef.value) {
+const showMaterials = ref(false)
+const materialsRef = ref<HTMLElement | null>(null)
+const materialBtnRef = ref<HTMLElement | null>(null)
+const materialPopoverPos = ref({ top: '0px', left: '0px' })
+let materialHideTimer: ReturnType<typeof setTimeout> | null = null
+let exampleHideTimer: ReturnType<typeof setTimeout> | null = null
+
+async function showExamplesPopover() {
+  if (exampleHideTimer) { clearTimeout(exampleHideTimer); exampleHideTimer = null }
+  if (showExamples.value) return
+  showExamples.value = true
+  if (exampleBtnRef.value) {
     await nextTick()
     const rect = exampleBtnRef.value.getBoundingClientRect()
     popoverPos.value = {
@@ -54,19 +64,49 @@ async function toggleExamples() {
   }
 }
 
+function hideExamplesPopover() {
+  exampleHideTimer = setTimeout(() => {
+    showExamples.value = false
+  }, 150)
+}
+
+function cancelExampleHide() {
+  if (exampleHideTimer) { clearTimeout(exampleHideTimer); exampleHideTimer = null }
+}
+
+async function showMaterialsPopover() {
+  if (materialHideTimer) { clearTimeout(materialHideTimer); materialHideTimer = null }
+  if (showMaterials.value) return
+  showMaterials.value = true
+  if (materialBtnRef.value) {
+    await nextTick()
+    const rect = materialBtnRef.value.getBoundingClientRect()
+    materialPopoverPos.value = {
+      top: rect.top + 'px',
+      left: (rect.right + 4) + 'px',
+    }
+  }
+}
+
+function hideMaterialsPopover() {
+  materialHideTimer = setTimeout(() => {
+    showMaterials.value = false
+  }, 150)
+}
+
+function cancelMaterialHide() {
+  if (materialHideTimer) { clearTimeout(materialHideTimer); materialHideTimer = null }
+}
+
+function selectMaterialAction(action: 'my' | 'library') {
+  showMaterials.value = false
+  emit('materialAction', action)
+}
+
 function selectExample(action: 'load' | 'download' | 'aiDemo') {
   showExamples.value = false
   emit('exampleAction', action)
 }
-
-function onDocumentClick(e: MouseEvent) {
-  if (showExamples.value && examplesRef.value && !examplesRef.value.contains(e.target as Node)) {
-    showExamples.value = false
-  }
-}
-
-onMounted(() => document.addEventListener('click', onDocumentClick))
-onBeforeUnmount(() => document.removeEventListener('click', onDocumentClick))
 
 const collapsed = ref(getSetting<boolean>('sidebarCollapsed') ?? false)
 
@@ -142,13 +182,55 @@ function toggleCollapse() {
         <Images :size="24" class="shrink-0" />
         <span class="text-[10px] leading-tight">图库</span>
       </button>
+      <!-- 素材 button with popover -->
+      <div
+        class="relative w-full"
+        @mouseenter="showMaterialsPopover"
+        @mouseleave="hideMaterialsPopover"
+      >
+        <button
+          ref="materialBtnRef"
+          class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+          title="素材"
+        >
+          <Package :size="24" class="shrink-0" />
+          <span class="text-[10px] leading-tight">素材</span>
+        </button>
+        <!-- Materials popover -->
+        <div
+          v-if="showMaterials"
+          ref="materialsRef"
+          class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[120px]"
+          :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: materialPopoverPos.top, left: materialPopoverPos.left }"
+          @mouseenter="cancelMaterialHide"
+          @mouseleave="hideMaterialsPopover"
+        >
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            @click="selectMaterialAction('my')"
+          >
+            <BookMarked :size="14" class="shrink-0" />
+            我的素材
+          </button>
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            @click="selectMaterialAction('library')"
+          >
+            <Library :size="14" class="shrink-0" />
+            素材库
+          </button>
+        </div>
+      </div>
       <!-- 示例 button with popover -->
-      <div class="relative w-full">
+      <div
+        class="relative w-full"
+        @mouseenter="showExamplesPopover"
+        @mouseleave="hideExamplesPopover"
+      >
         <button
           ref="exampleBtnRef"
           class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
           title="示例"
-          @click.stop="toggleExamples"
         >
           <Paperclip :size="24" class="shrink-0" />
           <span class="text-[10px] leading-tight">示例</span>
@@ -159,6 +241,8 @@ function toggleCollapse() {
           ref="examplesRef"
           class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[120px]"
           :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: popoverPos.top, left: popoverPos.left }"
+          @mouseenter="cancelExampleHide"
+          @mouseleave="hideExamplesPopover"
         >
           <button
             class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"

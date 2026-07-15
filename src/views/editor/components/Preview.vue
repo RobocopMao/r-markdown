@@ -283,7 +283,11 @@ async function saveAsImage() {
   }
 }
 
-defineExpose({ copyRichText, copyHTML, saveAsImage })
+function getHTML(): string {
+  return previewRef.value?.innerHTML || ''
+}
+
+defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
 </script>
 
 <template>

@@ -171,6 +171,21 @@ export async function deleteImage(token: string): Promise<void> {
   }
 }
 
+/** 将文本中的 idb: 令牌替换为 base64 data URL */
+export async function resolveIdbImages(text: string): Promise<string> {
+  const idbTokens = text.match(/idb:DBI_\d+_[a-z0-9]{6}/g)
+  if (!idbTokens || idbTokens.length === 0) return text
+  let result = text
+  for (const ref of idbTokens) {
+    const token = ref.slice(4) // 去掉 "idb:"
+    const dataUrl = await getDataURL(token)
+    if (dataUrl) {
+      result = result.split(ref).join(dataUrl)
+    }
+  }
+  return result
+}
+
 /** 清理未被引用的图片 */
 export async function cleanupImages(tokensInUse: Set<string>): Promise<void> {
   try {
