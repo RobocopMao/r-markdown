@@ -1304,10 +1304,8 @@ function handleCancelMaterialOverwrite() {
 }
 
 function handleInsertMaterial(item: MaterialItem) {
-  const cur = markdown.value
-  const newText = (cur ? cur + '\n\n' : '') + item.content
-  markdown.value = newText
-  saveContent(newText)
+  if (!editorRef.value) return
+  editorRef.value.insertAtCursor('\n' + item.content)
   showMaterialPanel.value = false
   showToast('素材已插入')
 }
