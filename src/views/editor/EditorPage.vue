@@ -1612,13 +1612,6 @@ function onMinimapNavigate(ratio: number) {
           <Braces :size="14" />
           复制 HTML
         </button>
-        <button
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
-          @click="handleOpenSaveMaterial"
-        >
-          <Package :size="14" />
-          保存素材
-        </button>
         <Dropdown
           group-id="export"
           label="导出"
@@ -1626,6 +1619,13 @@ function onMinimapNavigate(ratio: number) {
           :items="exportItems"
           @select="(action: string) => onDropdownSelect('export', action)"
         />
+        <button
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
+          @click="handleOpenSaveMaterial"
+        >
+          <Package :size="14" />
+          保存素材
+        </button>
         <button
           v-if="isTauri"
           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"

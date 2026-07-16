@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watch, onBeforeUnmount } from 'vue'
+import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { X } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -14,41 +14,60 @@ const emit = defineEmits<{
   close: []
 }>()
 
-let lockCount = 0
+const show = ref(false)
+const leaving = ref(false)
 
-watch(() => props.visible, (v) => {
+let lockCount = 0
+let leaveTimer: ReturnType<typeof setTimeout> | null = null
+
+function lockScroll() {
+  lockCount++
+  document.body.style.overflow = 'hidden'
+}
+
+function unlockScroll() {
+  lockCount--
+  if (lockCount <= 0) {
+    lockCount = 0
+    document.body.style.overflow = ''
+  }
+}
+
+watch(() => props.visible, async (v) => {
   if (v) {
-    lockCount++
-    document.body.style.overflow = 'hidden'
+    leaving.value = false
+    show.value = true
+    lockScroll()
+    await nextTick()
   } else {
-    lockCount--
-    if (lockCount <= 0) {
-      lockCount = 0
-      document.body.style.overflow = ''
-    }
+    leaving.value = true
+    if (leaveTimer) clearTimeout(leaveTimer)
+    leaveTimer = setTimeout(() => {
+      show.value = false
+      leaving.value = false
+    }, 250)
+    unlockScroll()
   }
 })
 
 onBeforeUnmount(() => {
-  if (props.visible) {
-    lockCount--
-    if (lockCount <= 0) {
-      lockCount = 0
-      document.body.style.overflow = ''
-    }
-  }
+  if (leaveTimer) clearTimeout(leaveTimer)
+  if (show.value) unlockScroll()
 })
 </script>
 
 <template>
   <Teleport to="body">
     <div
-      v-if="visible"
-      class="fixed inset-0 z-[999] flex justify-end bg-black/40 backdrop-blur-sm animate-base-dialog-fade-in"
-      @mousedown.self="emit('close')"
+      v-if="show"
+      class="fixed inset-0 z-[999] flex justify-end overflow-hidden"
+      :class="leaving ? 'animate-drawer-leave' : 'animate-drawer-enter'"
     >
+      <!-- 遮罩（点击关闭） -->
+      <div class="drawer-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" @mousedown="emit('close')" />
+      <!-- 抽屉面板 -->
       <div
-        class="flex h-full flex-col overflow-hidden rounded-l-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:bg-[#1a1a1a] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)] animate-base-drawer-slide-in"
+        class="drawer-panel relative flex h-full flex-col overflow-hidden rounded-l-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:bg-[#1a1a1a] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
         :style="{ width: width || '340px' }"
         @mousedown.stop
         @click.stop
@@ -91,21 +110,40 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@keyframes base-dialog-fade-in {
+/* 入场：遮罩淡入 + 抽屉从右滑入 */
+.animate-drawer-enter .drawer-overlay {
+  animation: drawer-overlay-in 0.2s ease-out both;
+}
+.animate-drawer-enter .drawer-panel {
+  animation: drawer-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 退场：遮罩淡出 + 抽屉向右滑出 */
+.animate-drawer-leave .drawer-overlay {
+  animation: drawer-overlay-out 0.2s ease-out both;
+}
+.animate-drawer-leave .drawer-panel {
+  animation: drawer-slide-out 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes drawer-overlay-in {
   from { opacity: 0; }
   to { opacity: 1; }
 }
-@keyframes base-drawer-slide-in {
+@keyframes drawer-overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes drawer-slide-in {
   from { transform: translateX(100%); }
   to { transform: translateX(0); }
 }
-.animate-base-dialog-fade-in {
-  animation: base-dialog-fade-in 0.2s ease-out;
-}
-.animate-base-drawer-slide-in {
-  animation: base-drawer-slide-in 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
 }
 
+/* ── 滚动条 ── */
 .scrollbar-thin {
   scrollbar-width: thin;
   scrollbar-color: #e0e0e0 transparent;
@@ -120,7 +158,6 @@ onBeforeUnmount(() => {
   background: #e0e0e0;
   border-radius: 3px;
 }
-
 .dark .scrollbar-thin {
   scrollbar-color: #444 transparent;
 }
