@@ -143,56 +143,25 @@ function onClick(e: MouseEvent) {
 <template>
   <div
     ref="minimapRef"
-    class="minimap"
+    class="relative w-20 h-full overflow-hidden shrink-0 ml-2.5 rounded-xl bg-[var(--bg-primary,#fff)] cursor-pointer"
     @click="onClick"
     @wheel.prevent="onWheel"
   >
-    <div v-if="renderedHtml" ref="innerRef" class="minimap-inner" :style="innerStyle">
-      <div class="minimap-scaled" :style="{ width: contentWidth + 'px' }" v-html="renderedHtml"></div>
+    <div v-if="renderedHtml" ref="innerRef" class="relative pointer-events-none" :style="innerStyle">
+      <div
+        class="text-[#333] text-[15px] leading-[1.8] break-words bg-transparent p-[18px]"
+        :style="{ width: contentWidth + 'px' }"
+        v-html="renderedHtml"
+      ></div>
     </div>
-    <div class="minimap-indicator" :style="indicatorStyle"></div>
+    <div
+      class="absolute left-0 right-0 rounded-xl border border-[var(--accent,#6c5ce7)] bg-[var(--accent,#6c5ce7)]/15 pointer-events-none transition-[top,height] duration-100 ease-linear"
+      :style="indicatorStyle"
+    ></div>
   </div>
 </template>
 
 <style scoped>
-.minimap {
-  position: relative;
-  width: 80px;
-  height: 100%;
-  overflow: hidden;
-  flex-shrink: 0;
-  margin-left: 10px;
-  border-radius: 12px;
-  background: var(--bg-primary, #fff);
-  cursor: pointer;
-}
-
-.minimap-inner {
-  position: relative;
-  pointer-events: none;
-}
-
-.minimap-scaled {
-  color: #333;
-  font-size: 15px;
-  line-height: 1.8;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
-  background-color: transparent;
-  padding: 18px;
-}
-
-.minimap-indicator {
-  position: absolute;
-  left: 0;
-  right: 0;
-  background: var(--accent, #6c5ce7);
-  opacity: 0.15;
-  pointer-events: none;
-  transition: top 0.1s linear, height 0.1s linear;
-}
-
-/* 暗色模式 */
 :global([data-theme='dark']) .minimap {
   background: var(--bg-primary, #1a1a1a);
   border-color: rgba(255, 255, 255, 0.1);

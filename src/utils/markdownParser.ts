@@ -471,6 +471,24 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       i++
       continue
     }
+    // 跳过 HTML 注释：支持单行注释和跨行注释
+    if (/^\s*<!--/.test(line)) {
+      if (/^\s*<!--.*-->\s*$/.test(line)) {
+        // 单行注释：<!-- ... -->
+        i++
+        continue
+      }
+      // 多行注释：跳过直到找到 -->
+      let commentDepth = 1
+      i++
+      while (i < lines.length && commentDepth > 0) {
+        if (/^\s*<!--/.test(lines[i])) commentDepth++
+        if (/-->\s*$/.test(lines[i])) commentDepth--
+        if (commentDepth > 0) i++
+      }
+      if (i < lines.length && /-->\s*$/.test(lines[i])) i++
+      continue
+    }
     if (/^---+\s*$/.test(line.trim())) {
       html += withSourceLine(i, `<section style="border:none;height:1px;background:linear-gradient(90deg,transparent,rgb(221,221,221),transparent);margin:24px 0px"></section>`)
       i++
