@@ -124,6 +124,7 @@ async function doPublish() {
       name: item.name,
       author: item.author,
       category: item.category,
+      subCategory: item.subCategory,
       description: item.description,
       content: item.content,
     })
@@ -176,7 +177,7 @@ watch(() => props.visible, (newVal) => {
 </script>
 
 <template>
-  <BaseDrawer :visible="visible" width="430px" title="我的素材" :show-footer="showFooter" @close="emit('close')">
+  <BaseDrawer :visible="visible" width="430px" title="我的素材" :show-footer="showFooter" no-body-padding @close="emit('close')">
     <template #header>
       <span class="text-[11px] opacity-50 shrink-0">{{ myMaterials.length }} 个素材</span>
       <input
@@ -195,10 +196,10 @@ watch(() => props.visible, (newVal) => {
       </button>
     </template>
 
-    <div class="relative flex-1 overflow-hidden">
-      <!-- 分类筛选：绝对定位固定在顶部 -->
+    <div class="flex flex-col flex-1 min-h-0">
+      <!-- 分类筛选：sticky 固定 -->
       <div
-        class="absolute top-0 left-0 right-0 z-10 flex gap-1.5 px-5 pt-0 pb-2 overflow-x-auto"
+        class="sticky top-0 z-10 flex gap-1.5 pt-2 pb-2 px-3 overflow-x-auto"
         style="scrollbar-width: none; background-color: #f5f5f5"
       >
         <button
@@ -215,8 +216,7 @@ watch(() => props.visible, (newVal) => {
         </button>
       </div>
 
-      <!-- 素材网格 -->
-      <div class="h-full overflow-y-auto pb-4" style="padding-top: 38px">
+      <div class="flex-1 pb-4 px-3">
         <div v-if="myMaterials.length === 0" class="flex flex-col items-center justify-center h-full gap-2 opacity-40">
           <Package :size="32" />
           <span class="text-[12px]">还没有素材</span>
@@ -228,6 +228,7 @@ watch(() => props.visible, (newVal) => {
           :key="item.id"
           :name="item.name"
           :category="item.category"
+          :sub-category="item.subCategory"
           :author="item.author"
           :description="item.description"
           :updated-at="item.updatedAt"
@@ -254,7 +255,7 @@ watch(() => props.visible, (newVal) => {
           :disabled="uploading"
           @click="handlePublish"
         >
-          {{ uploading ? '发布中...' : '上传到素材库' }}
+          {{ uploading ? '发布中...' : '发布到公共素材库' }}
         </button>
         <button
           class="cursor-pointer px-4 py-1.5 rounded-md text-[12px] font-medium border-none transition-colors text-white"
@@ -280,9 +281,9 @@ watch(() => props.visible, (newVal) => {
   <ConfirmDialog
     :visible="publishConfirmVisible"
     title="发布素材"
-    message="素材将上传到 GitHub 仓库，你的素材将免费提供给其他人使用。确定上传吗？"
+    message="素材将上传到 GitHub 仓库，你的素材将免费提供给其他人使用，同时请上传规范的素材，否则可能会被下架。确定上传吗？"
     confirm-text="上传"
-    @close="publishConfirmVisible = false"
+    @cancel="publishConfirmVisible = false"
     @confirm="doPublish"
   />
 

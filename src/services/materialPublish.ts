@@ -34,6 +34,7 @@ interface IndexEntry {
   name: string
   author: string
   category: string
+  subCategory?: string
   description: string
   date: string
 }
@@ -42,6 +43,7 @@ interface MaterialData {
   name: string
   author: string
   category: string
+  subCategory?: string
   description?: string
   content: string
 }
@@ -73,6 +75,7 @@ export async function publishMaterial(
       name: data.name,
       author: data.author,
       category: data.category,
+      subCategory: data.subCategory || '',
       description: data.description || '',
       date: today,
       content: data.content,
@@ -113,6 +116,7 @@ export async function publishMaterial(
       name: data.name,
       author: data.author,
       category: data.category,
+      subCategory: data.subCategory || undefined,
       description: data.description || '',
       date: today,
     }
@@ -145,21 +149,20 @@ export async function publishMaterial(
   }
 }
 
-/** 格式化素材 ID（分类/序号） */
-export function generateMaterialId(category: string, index?: number): string {
+/** 格式化素材 ID（分类/日期/序号） */
+export function generateMaterialId(category: string, date?: string, index?: number): string {
   const catMap: Record<string, string> = {
     '标题': 'headings',
-    '卡片': 'cards',
-    '分隔线': 'dividers',
+    '正文': 'body',
     '图文': 'media',
-    '引导关注': 'cta',
-    '引用': 'quotes',
-    '代码块': 'code',
-    '列表': 'lists',
+    '引导': 'cta',
+    '布局': 'layout',
+    '节日': 'festival',
+    '行业': 'verticals',
     '其他': 'others',
   }
   const prefix = catMap[category] || 'others'
-  // 如果未指定 index，使用时间戳
+  const d = date || new Date().toISOString().slice(0, 10).replace(/-/g, '/') // YYYY/MM/DD
   const num = index != null ? String(index).padStart(3, '0') : Date.now().toString(36)
-  return `${prefix}/${num}`
+  return `${prefix}/${d}/${num}`
 }

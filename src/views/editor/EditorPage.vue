@@ -1229,7 +1229,7 @@ function handleOpenSaveMaterial() {
   saveMaterialVisible.value = true
 }
 
-async function handleSaveMaterial(name: string, author: string, category: string, description: string) {
+async function handleSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string) {
   const raw = markdown.value
   if (!raw.trim()) {
     showToast('编辑器内容为空')
@@ -1241,7 +1241,7 @@ async function handleSaveMaterial(name: string, author: string, category: string
   const allMaterials = await MaterialStorage.list()
   const sameContent = allMaterials.find((m) => m.content === content)
   if (sameContent) {
-    pendingMaterial.value = { name, author: author || '匿名', category, description }
+    pendingMaterial.value = { name, author: author || '匿名', category, subCategory, description }
     pendingMaterialContent.value = content
     pendingOverwriteMaterialId.value = sameContent.id
     pendingOverwriteMaterialName.value = sameContent.name
@@ -1249,15 +1249,16 @@ async function handleSaveMaterial(name: string, author: string, category: string
     return
   }
 
-  await doSaveMaterial(name, author || '匿名', category, description, content)
+  await doSaveMaterial(name, author || '匿名', category, subCategory, description, content)
 }
 
-async function doSaveMaterial(name: string, author: string, category: string, description: string, content: string) {
+async function doSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string, content: string) {
   const item: MaterialItem = {
     id: crypto.randomUUID(),
     name,
     author,
     category,
+    subCategory: subCategory || undefined,
     description: description || undefined,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -1278,6 +1279,7 @@ async function handleMaterialOverwrite() {
     name: pendingMaterial.value.name,
     author: pendingMaterial.value.author,
     category: pendingMaterial.value.category,
+    subCategory: pendingMaterial.value.subCategory || undefined,
     description: pendingMaterial.value.description || undefined,
     content: pendingMaterialContent.value,
     updatedAt: new Date().toISOString(),
@@ -1291,7 +1293,7 @@ async function handleMaterialOverwrite() {
 async function handleMaterialSaveAsNew() {
   if (!pendingMaterial.value) return
   confirmMaterialOverwriteVisible.value = false
-  await doSaveMaterial(pendingMaterial.value.name, pendingMaterial.value.author, pendingMaterial.value.category, pendingMaterial.value.description, pendingMaterialContent.value)
+  await doSaveMaterial(pendingMaterial.value.name, pendingMaterial.value.author, pendingMaterial.value.category, pendingMaterial.value.subCategory, pendingMaterial.value.description, pendingMaterialContent.value)
 }
 
 function handleCancelMaterialOverwrite() {
@@ -1318,7 +1320,7 @@ const pendingOverwriteDraftId = ref<number | null>(null)
 
 // 素材重复内容确认弹窗状态
 const confirmMaterialOverwriteVisible = ref(false)
-const pendingMaterial = ref<{ name: string; author: string; category: string; description: string } | null>(null)
+const pendingMaterial = ref<{ name: string; author: string; category: string; subCategory: string; description: string } | null>(null)
 const pendingMaterialContent = ref('')
 const pendingOverwriteMaterialId = ref<string | null>(null)
 const pendingOverwriteMaterialName = ref('')

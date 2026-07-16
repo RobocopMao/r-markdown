@@ -3,6 +3,7 @@ export interface MaterialItem {
   name: string
   author: string
   category: string
+  subCategory?: string
   description?: string
   createdAt: string
   updatedAt: string
@@ -13,8 +14,7 @@ export interface MaterialItem {
 }
 
 export const DEFAULT_CATEGORIES = [
-  '标题', '卡片', '分隔线', '图文', '引导关注',
-  '引用', '代码块', '列表', '其他',
+  '标题', '正文', '图文', '引导', '布局', '节日', '行业', '其他',
 ]
 
 const DB_NAME = 'RMaterialLibrary'

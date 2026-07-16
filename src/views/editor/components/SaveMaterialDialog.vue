@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { DEFAULT_CATEGORIES } from '@/services/materialStorage'
 import { useTheme } from '@/composables/useTheme'
@@ -13,7 +13,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  save: [name: string, author: string, category: string, description: string]
+  save: [name: string, author: string, category: string, subCategory: string, description: string]
 }>()
 
 const LAST_AUTHOR_KEY = 'rm_save_material_author'
@@ -22,34 +22,15 @@ const name = ref('')
 const description = ref('')
 const author = ref(props.defaultAuthor || localStorage.getItem(LAST_AUTHOR_KEY) || '')
 const selectedCategory = ref(DEFAULT_CATEGORIES[0])
-const customCategory = ref('')
-const showCustomInput = ref(false)
-
-const category = computed(() =>
-  showCustomInput.value ? customCategory.value : selectedCategory.value
-)
-
-function handleCategoryChange(val: string) {
-  if (val === '__custom__') {
-    showCustomInput.value = true
-    customCategory.value = ''
-  } else {
-    showCustomInput.value = false
-    selectedCategory.value = val
-  }
-}
+const subCategory = ref('')
 
 function handleSave() {
   if (!name.value.trim()) return
-  const cat = showCustomInput.value
-    ? (customCategory.value.trim() ? `其他 · ${customCategory.value.trim()}` : '其他')
-    : selectedCategory.value
-  if (!cat) return
 
   const authorVal = author.value.trim()
   if (authorVal) localStorage.setItem(LAST_AUTHOR_KEY, authorVal)
 
-  emit('save', name.value.trim(), authorVal, cat, description.value.trim())
+  emit('save', name.value.trim(), authorVal, selectedCategory.value, subCategory.value.trim(), description.value.trim())
 }
 
 function reset() {
@@ -57,8 +38,7 @@ function reset() {
   description.value = ''
   author.value = props.defaultAuthor || localStorage.getItem(LAST_AUTHOR_KEY) || ''
   selectedCategory.value = DEFAULT_CATEGORIES[0]
-  customCategory.value = ''
-  showCustomInput.value = false
+  subCategory.value = ''
 }
 
 watch(
@@ -76,7 +56,7 @@ watch(
     :show-footer="true"
     confirm-text="保存"
     cancel-text="取消"
-    :confirm-disabled="!name.trim() || !category"
+    :confirm-disabled="!name.trim()"
     :accent="colors.accent"
     width="400px"
     @close="emit('close')"
@@ -99,19 +79,21 @@ watch(
       <div>
         <label class="block text-[12px] text-[#666] dark:text-[#999] mb-1.5">分类</label>
         <select
-          :value="showCustomInput ? '__custom__' : selectedCategory"
+          v-model="selectedCategory"
           class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition-colors cursor-pointer focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-          @change="handleCategoryChange(($event.target as HTMLSelectElement).value)"
         >
           <option v-for="cat in DEFAULT_CATEGORIES" :key="cat" :value="cat">{{ cat }}</option>
-          <option value="__custom__">自定义…</option>
         </select>
+      </div>
+
+      <!-- 子分类 -->
+      <div>
+        <label class="block text-[12px] text-[#666] dark:text-[#999] mb-1.5">子分类（非必填）</label>
         <input
-          v-if="showCustomInput"
-          v-model="customCategory"
+          v-model="subCategory"
           type="text"
-          placeholder="输入自定义分类"
-          class="w-full mt-2 rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
+          placeholder="更细的分类，如：引言、结尾"
+          class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-[13px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
         />
       </div>
 

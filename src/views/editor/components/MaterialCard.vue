@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount, nextTick } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Check, Pin } from 'lucide-vue-next'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
@@ -9,6 +9,7 @@ import { useMermaid } from '@/composables/useMermaid'
 const props = defineProps<{
   name: string
   category: string
+  subCategory?: string
   author?: string
   description?: string
   updatedAt?: string
@@ -82,7 +83,16 @@ const CATEGORY_COLORS: Record<string, string> = {
   '代码块': '#14b8a6',
   '列表': '#f97316',
   '其他': '#6b7280',
+  '正文': '#3b82f6',
+  '引导': '#ec4899',
+  '布局': '#8b5cf6',
+  '节日': '#f97316',
+  '行业': '#14b8a6',
 }
+
+const displayCategory = computed(() =>
+  props.subCategory ? `${props.category} · ${props.subCategory}` : props.category
+)
 
 function categoryColor(cat: string): string {
   return CATEGORY_COLORS[cat] || '#6b7280'
@@ -141,7 +151,7 @@ function categoryColor(cat: string): string {
             class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
             :style="{ background: `${categoryColor(category)}15`, color: categoryColor(category) }"
           >
-            {{ category }}
+            {{ displayCategory }}
           </span>
         </div>
         <p v-if="description" class="text-[10px] opacity-50 truncate mt-0.5">{{ description }}</p>

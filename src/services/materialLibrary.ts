@@ -8,6 +8,7 @@ export interface OfficialMaterial {
   name: string
   author: string
   category: string
+  subCategory?: string
   description: string
   date?: string
   content: string

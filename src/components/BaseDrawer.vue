@@ -7,6 +7,7 @@ const props = defineProps<{
   title?: string
   width?: string
   showFooter?: boolean
+  noBodyPadding?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -70,7 +71,10 @@ onBeforeUnmount(() => {
         </div>
 
         <!-- Body -->
-        <div class="flex-1 overflow-y-auto bg-[#f5f5f5] p-5 dark:bg-[#121212] scrollbar-thin">
+        <div
+          class="flex-1 overflow-y-auto bg-[#f5f5f5] dark:bg-[#121212] scrollbar-thin"
+          :class="{ 'p-5': !noBodyPadding }"
+        >
           <slot />
         </div>
 
