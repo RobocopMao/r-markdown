@@ -184,7 +184,7 @@ watch(() => props.visible, (newVal) => {
         v-model="searchQuery"
         type="text"
         placeholder="搜索..."
-        class="flex-1 min-w-0 px-2 py-1 rounded-full text-[11px] border outline-none"
+        class="flex-1 min-w-0 px-2 py-1 rounded-full text-[11px] border outline-none material-search-input"
         :style="{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }"
       />
       <button
@@ -310,6 +310,9 @@ watch(() => props.visible, (newVal) => {
 </template>
 
 <style scoped>
+.material-search-input:focus {
+  border-color: var(--accent) !important;
+}
 .toast-enter-active {
   transition: all 0.25s ease-out;
 }

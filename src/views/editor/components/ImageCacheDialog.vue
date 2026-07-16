@@ -1,10 +1,9 @@
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     :title="titleText"
     width="min(95vw, 1000px)"
     :show-footer="isGallery ? (gallerySelected !== null) : (multiSelect && selectedTokens.size > 0)"
-    :accent="colors.accent"
     @close="emit('close')"
   >
     <template v-if="isGallery" #header>
@@ -131,13 +130,13 @@
         清理选中（{{ selectedTokens.size }}）
       </button>
     </template>
-  </BaseDialog>
+  </BaseDrawer>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ListChecks, CheckCheck, Pin, PinOff } from 'lucide-vue-next'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { useTheme } from '@/composables/useTheme'
 import { getSetting, setSetting } from '@/config/settings'

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
 import { autoUpdateEnabled, autoUpdatePending, autoUpdateRid, checkForUpdates, downloadUpdateWithRid, type UpdateInfo } from '@/composables/useAutoUpdater'
@@ -271,12 +271,11 @@ async function doDownloadUpdate() {
 </script>
 
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     title="编辑器设置"
     width="min(90vw, 680px)"
     :show-footer="false"
-    :accent="colors.accent"
     @close="emit('close')"
   >
     <template #header>
@@ -856,7 +855,7 @@ async function doDownloadUpdate() {
     />
 
     <ImageCacheDialog :visible="showImageCache" @close="showImageCache = false" />
-  </BaseDialog>
+  </BaseDrawer>
 </template>
 
 <style scoped>

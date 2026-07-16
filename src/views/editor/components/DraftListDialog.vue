@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { FileInput, Trash2 } from 'lucide-vue-next'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import type { Draft } from '@/services/DraftStorage'
 
@@ -57,7 +57,7 @@ function formatTime(ts: number): string {
 </script>
 
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     title="草稿箱"
     width="min(95vw, 1000px)"
@@ -69,7 +69,7 @@ function formatTime(ts: number): string {
         v-model="searchQuery"
         type="text"
         placeholder="搜索草稿..."
-        class="w-[200px] h-7 px-2.5 rounded-[4px] border draft-search-input bg-[var(--bg-primary)] text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+        class="w-[200px] h-7 px-2.5 rounded-full border draft-search-input bg-[var(--bg-primary)] text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
       />
     </template>
     <div class="flex flex-row flex-wrap gap-3">
@@ -124,7 +124,7 @@ function formatTime(ts: number): string {
       :confirm-text="pendingAction?.type === 'load' ? '加载' : '删除'"
       @confirm="onConfirm"
     />
-  </BaseDialog>
+  </BaseDrawer>
 </template>
 
 <style scoped>
