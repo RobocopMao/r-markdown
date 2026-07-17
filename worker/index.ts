@@ -16,7 +16,7 @@ function corsHeaders(origin: string): Record<string, string> {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, PUT, POST, DELETE, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Accept, x-marvis-secret',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, r-markdown-secret',
     'Access-Control-Max-Age': '86400',
   }
 }
@@ -33,7 +33,7 @@ export default {
         return new Response(null, { headers: corsHeaders(origin) })
       }
 
-      const desktopSecret = request.headers.get('x-marvis-secret') || ''
+      const desktopSecret = request.headers.get('r-markdown-secret') || ''
 
       // 桌面客户端鉴权（Tauri 不发送标准 Origin）
       if (desktopSecret && desktopSecret === DESKTOP_SECRET) {
@@ -72,7 +72,7 @@ async function forwardToGitHub(request: Request, origin: string, token: string):
   headers.set('Accept', 'application/vnd.github.v3+json')
   // 清理内部头，不泄露给 GitHub
   headers.delete('Origin')
-  headers.delete('x-marvis-secret')
+  headers.delete('r-markdown-secret')
 
   const resp = await fetch(githubUrl, {
     method: request.method,

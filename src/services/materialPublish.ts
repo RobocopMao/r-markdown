@@ -5,6 +5,8 @@
 
 const DEFAULT_BRANCH = 'main'
 const API_BASE = import.meta.env.VITE_API_PROXY || ''
+const isTauri = import.meta.env.VITE_TAURI === 'true'
+const R_MARKDOWN_SECRET = import.meta.env.VITE_R_MARKDOWN_SECRET || ''
 
 export interface PublishResult {
   ok: boolean
@@ -16,6 +18,9 @@ async function githubFetch(path: string, options: RequestInit = {}): Promise<Res
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github.v3+json',
     ...(options.headers as Record<string, string> || {}),
+  }
+  if (isTauri && R_MARKDOWN_SECRET) {
+    headers['r-markdown-secret'] = R_MARKDOWN_SECRET
   }
   return fetch(url, { ...options, headers })
 }

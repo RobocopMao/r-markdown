@@ -23,6 +23,8 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
       VITE_TAURI: 'true'
+      VITE_R_MARKDOWN_SECRET: ${{ secrets.R_MARKDOWN_SECRET }}
+      VITE_API_PROXY: https://r-markdown-worker.410503915.workers.dev
 
     steps:
       - uses: actions/checkout@v4
