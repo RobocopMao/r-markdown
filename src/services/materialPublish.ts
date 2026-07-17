@@ -1,31 +1,19 @@
 /**
  * 素材发布到 GitHub 素材库
- * 使用 GitHub Contents API 直接上传，无需 git 操作
+ * 通过 Cloudflare Worker 代理，Token 仅在服务端注入，不暴露给客户端。
  */
 
-import { MATERIAL_REPO_TOKEN } from '@/views-private/materialToken'
-
-const DEFAULT_REPO = 'RobocopMao/r-markdown-materials'
 const DEFAULT_BRANCH = 'main'
-const API_BASE = import.meta.env.VITE_API_PROXY || 'https://api.github.com'
-const IS_PROXY = !!import.meta.env.VITE_API_PROXY
+const API_BASE = import.meta.env.VITE_API_PROXY || 'https://r-markdown.pages.dev'
 
 export interface PublishResult {
   ok: boolean
   message: string
 }
 
-function getToken(): string {
-  return IS_PROXY ? '' : MATERIAL_REPO_TOKEN
-}
-
 async function githubFetch(path: string, options: RequestInit = {}): Promise<Response> {
-  const token = getToken()
-  const url = IS_PROXY
-    ? `${API_BASE}/${path}`
-    : `${API_BASE}/repos/${DEFAULT_REPO}/contents/${path}`
+  const url = `${API_BASE}/github/${path}`
   const headers: Record<string, string> = {
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
     Accept: 'application/vnd.github.v3+json',
     ...(options.headers as Record<string, string> || {}),
   }
@@ -56,9 +44,6 @@ export async function publishMaterial(
   materialId: string,
   data: MaterialData
 ): Promise<PublishResult> {
-  const token = getToken()
-  if (!token && !IS_PROXY) return { ok: false, message: '未配置 GitHub Token，请在设置中填写' }
-
   try {
     // 1. 获取当前 index.json（需要 sha 用于更新）
     const indexRes = await githubFetch('index.json')
