@@ -3,9 +3,7 @@
  * 仅允许来自官方域名、桌面客户端和本地开发的请求。
  */
 
-// secrets injected by wrangler secret put
-declare const GITHUB_TOKEN: string
-declare const DESKTOP_SECRET: string
+// secrets injected via wrangler secret put, accessed from env
 
 const REPO = 'RobocopMao/r-markdown-materials'
 
@@ -24,44 +22,53 @@ function corsHeaders(origin: string): Record<string, string> {
 }
 
 export default {
-  async fetch(request: Request): Promise<Response> {
+  async fetch(request: Request, env: any): Promise<Response> {
     const origin = request.headers.get('Origin') || ''
+    const GITHUB_TOKEN = env.GITHUB_TOKEN as string
+    const DESKTOP_SECRET = env.DESKTOP_SECRET as string
 
-    // CORS 预检
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: corsHeaders(origin) })
+    try {
+      // CORS 预检
+      if (request.method === 'OPTIONS') {
+        return new Response(null, { headers: corsHeaders(origin) })
+      }
+
+      const desktopSecret = request.headers.get('x-marvis-secret') || ''
+
+      // 桌面客户端鉴权（Tauri 不发送标准 Origin）
+      if (desktopSecret && desktopSecret === DESKTOP_SECRET) {
+        return forwardToGitHub(request, origin, GITHUB_TOKEN)
+      }
+
+      // Web 端 Origin 白名单（含 pages.dev 分支预览）
+      if (
+        ALLOWED_ORIGINS.includes(origin) ||
+        origin.endsWith('.r-markdown.pages.dev')
+      ) {
+        return forwardToGitHub(request, origin, GITHUB_TOKEN)
+      }
+
+      return new Response('Forbidden', {
+        status: 403,
+        headers: corsHeaders(origin),
+      })
+    } catch (e) {
+      return new Response(
+        `Worker Error: ${(e as Error).message || String(e)}`,
+        { status: 500, headers: corsHeaders(origin) },
+      )
     }
-
-    const desktopSecret = request.headers.get('x-marvis-secret') || ''
-
-    // 桌面客户端鉴权（Tauri 不发送标准 Origin）
-    if (desktopSecret && desktopSecret === DESKTOP_SECRET) {
-      return forwardToGitHub(request, origin)
-    }
-
-    // Web 端 Origin 白名单（含 pages.dev 分支预览）
-    if (
-      ALLOWED_ORIGINS.includes(origin) ||
-      origin.endsWith('.r-markdown.pages.dev')
-    ) {
-      return forwardToGitHub(request, origin)
-    }
-
-    return new Response('Forbidden', {
-      status: 403,
-      headers: corsHeaders(origin),
-    })
   },
 }
 
-async function forwardToGitHub(request: Request, origin: string): Promise<Response> {
+async function forwardToGitHub(request: Request, origin: string, token: string): Promise<Response> {
   const url = new URL(request.url)
   // /github/{path} → https://api.github.com/repos/{REPO}/contents/{path}
   const path = url.pathname.replace(/^\/github\//, '')
   const githubUrl = `https://api.github.com/repos/${REPO}/contents/${path}`
 
   const headers = new Headers(request.headers)
-  headers.set('Authorization', `Bearer ${GITHUB_TOKEN}`)
+  headers.set('Authorization', `Bearer ${token}`)
   headers.set('Accept', 'application/vnd.github.v3+json')
   // 清理内部头，不泄露给 GitHub
   headers.delete('Origin')
