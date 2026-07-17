@@ -2167,6 +2167,7 @@ function onMinimapNavigate(ratio: number) {
     :visible="xhsVisible"
     :markdown="resolvedMarkdown"
     :colors="colors"
+    :is-mobile="isMobile"
     @close="xhsVisible = false"
     @toast="showToast"
   />

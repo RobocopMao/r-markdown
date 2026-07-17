@@ -177,18 +177,17 @@ watch(() => props.visible, (newVal) => {
 </script>
 
 <template>
-  <BaseDrawer :visible="visible" width="430px" title="我的素材" :show-footer="showFooter" no-body-padding @close="emit('close')">
+  <BaseDrawer :visible="visible" width="800px" title="我的素材" :show-footer="showFooter" no-body-padding @close="emit('close')">
     <template #header>
       <span class="text-[11px] opacity-50 shrink-0">{{ myMaterials.length }} 个素材</span>
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="搜索..."
-        class="flex-1 min-w-0 px-2 py-1 rounded-full text-[11px] border outline-none material-search-input"
-        :style="{ borderColor: 'var(--border-color)', background: 'var(--bg-primary)', color: 'var(--text-primary)' }"
+        placeholder="搜索素材"
+        class="w-[160px] shrink px-2 py-1 rounded-full text-[11px] border outline-none border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:border-[var(--accent)]"
       />
       <button
-        class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors shrink-0"
+        class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors shrink-0 ml-auto"
         :class="selectMode ? 'text-[var(--accent)]' : 'text-[#999] hover:text-[var(--text-primary)]'"
         @click="toggleSelectMode"
       >
@@ -199,8 +198,7 @@ watch(() => props.visible, (newVal) => {
     <div class="flex flex-col flex-1 min-h-0">
       <!-- 分类筛选：sticky 固定 -->
       <div
-        class="sticky top-0 z-10 flex gap-1.5 pt-2 pb-2 px-3 overflow-x-auto"
-        style="scrollbar-width: none; background-color: #f5f5f5"
+        class="sticky top-0 z-10 flex gap-1.5 pt-2 pb-2 px-3 overflow-x-auto bg-[#f5f5f5] [scrollbar-width:none] dark:bg-[#1e1e1e]"
       >
         <button
           v-for="cat in myCategoryOptions"
@@ -208,21 +206,20 @@ watch(() => props.visible, (newVal) => {
           class="cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors border-none"
           :class="myCategoryFilter === cat
             ? 'bg-[var(--accent)] text-white'
-            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'"
-          :style="myCategoryFilter !== cat ? { background: 'color-mix(in srgb, var(--accent) 6%, transparent)' } : {}"
+            : 'bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] dark:bg-[rgba(255,255,255,0.06)]'"
           @click="myCategoryFilter = cat"
         >
           {{ cat }}
         </button>
       </div>
 
-      <div class="flex-1 pb-4 px-3">
+      <div class="flex-1 py-3 px-3">
         <div v-if="myMaterials.length === 0" class="flex flex-col items-center justify-center h-full gap-2 opacity-40">
           <Package :size="32" />
           <span class="text-[12px]">还没有素材</span>
           <span class="text-[11px]">在编辑器中设计内容后，点右上角保存按钮即可</span>
         </div>
-        <div v-else class="grid grid-cols-1 gap-2 pt-px">
+        <div v-else class="columns-2 gap-2 pt-px [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full [&>*]:mb-2">
           <MaterialCard
           v-for="item in filteredMaterials"
           :key="item.id"
@@ -249,17 +246,15 @@ watch(() => props.visible, (newVal) => {
     <template #footer>
       <template v-if="activeMaterialId && !selectMode">
         <button
-          class="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors"
+          class="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors text-[var(--accent)] border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]"
           :class="uploading ? 'opacity-50 cursor-not-allowed' : ''"
-          :style="{ color: 'var(--accent)', borderColor: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 8%, transparent)' }"
           :disabled="uploading"
           @click="handlePublish"
         >
           {{ uploading ? '发布中...' : '发布到公共素材库' }}
         </button>
         <button
-          class="cursor-pointer px-4 py-1.5 rounded-md text-[12px] font-medium border-none transition-colors text-white"
-          :style="{ background: 'var(--accent)' }"
+          class="cursor-pointer px-4 py-1.5 rounded-md text-[12px] font-medium border-none transition-colors text-white bg-[var(--accent)]"
           @click="handleInsertSelected"
         >
           插入素材
@@ -282,7 +277,7 @@ watch(() => props.visible, (newVal) => {
     :visible="publishConfirmVisible"
     title="发布素材"
     message="素材将上传到 GitHub 仓库，你的素材将免费提供给其他人使用，同时请上传规范的素材，否则可能会被下架。确定上传吗？"
-    confirm-text="上传"
+    confirm-text="确定"
     @cancel="publishConfirmVisible = false"
     @confirm="doPublish"
   />
@@ -310,9 +305,7 @@ watch(() => props.visible, (newVal) => {
 </template>
 
 <style scoped>
-.material-search-input:focus {
-  border-color: var(--accent) !important;
-}
+/* Vue Transition 动画（无法用 Tailwind 表达） */
 .toast-enter-active {
   transition: all 0.25s ease-out;
 }

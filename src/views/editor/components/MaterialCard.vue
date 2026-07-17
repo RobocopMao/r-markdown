@@ -137,7 +137,7 @@ function categoryColor(cat: string): string {
     <!-- 内容预览 -->
     <div
       v-if="renderedContent"
-      class="material-preview w-full overflow-hidden rounded-md mb-2 dark:border-[#333]"
+      class="material-preview w-full overflow-hidden mb-2 dark:border-[#333]"
     >
       <div class="material-preview-inner" v-html="renderedContent" />
     </div>

@@ -26,6 +26,10 @@ const SAVE_INTERVAL_PRESETS = [0.5, 1, 2, 3, 5, 8, 10]
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const { colors } = useTheme()
 
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+}
+
 // ── 设置 tab ──
 const settingsTab = ref('basic')
 
@@ -384,7 +388,8 @@ async function doDownloadUpdate() {
           <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
           <select
             :value="paraFontWeight"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors cursor-pointer focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
             @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
           >
             <option value="300">300（更细）</option>
