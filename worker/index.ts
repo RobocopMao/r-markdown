@@ -22,7 +22,8 @@ export default {
     // Web 端 Origin 白名单
     if (
       origin === 'https://robocopmao.github.io' ||
-      origin === 'https://r-markdown.pages.dev'
+      origin === 'https://r-markdown.pages.dev' ||
+      origin.endsWith('.r-markdown.pages.dev')
     ) {
       return forwardToGitHub(request)
     }
