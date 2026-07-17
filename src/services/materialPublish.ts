@@ -4,7 +4,7 @@
  */
 
 const DEFAULT_BRANCH = 'main'
-const API_BASE = import.meta.env.VITE_API_PROXY || 'https://r-markdown.pages.dev'
+const API_BASE = import.meta.env.VITE_API_PROXY || ''
 
 export interface PublishResult {
   ok: boolean
