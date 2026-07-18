@@ -1106,6 +1106,24 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       continue
     }
 
+    // <svg> — 原生 SVG 透传，不做任何解析转义
+    if (/^<svg\b/.test(line.trimStart())) {
+      const svgLines: string[] = [line]
+      let svgDepth = 1
+      i++
+      while (i < lines.length && svgDepth > 0) {
+        const l = lines[i]
+        // 统计开闭标签深度
+        const openCount = (l.match(/<svg\b/g) || []).length
+        const closeCount = (l.match(/<\/svg>/g) || []).length
+        svgDepth += openCount - closeCount
+        svgLines.push(l)
+        i++
+      }
+      html += svgLines.join('\n')
+      continue
+    }
+
     // 普通段落
     const ps = paragraphStyle ?? { fontSize: 16, lineHeight: 1.85, fontWeight: '400', margin: 24, indent: '' }
     html += withSourceLine(i, `<section style="margin:0px 0px ${ps.margin}px"><p style="margin:0px;font-size:${ps.fontSize}px;color:var(--text-primary);line-height:${ps.lineHeight};font-weight:${ps.fontWeight};text-align:justify;overflow-wrap:break-word;word-break:break-all;text-indent:${ps.indent || '0'}">${inlineFormat(line, t, formulaMap)}</p></section>`)
