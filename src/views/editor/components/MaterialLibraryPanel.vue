@@ -37,6 +37,11 @@ function showToast(msg: string) {
 
 async function loadMyMaterials() {
   myMaterials.value = await MaterialStorage.list()
+  // IndexedDB 为空时，尝试从本地磁盘扫描素材文件夹
+  if (myMaterials.value.length === 0) {
+    await MaterialStorage.syncFromFiles()
+    myMaterials.value = await MaterialStorage.list()
+  }
   activeMaterialId.value = null
 }
 
@@ -219,26 +224,30 @@ watch(() => props.visible, (newVal) => {
           <span class="text-[12px]">还没有素材</span>
           <span class="text-[11px]">在编辑器中设计内容后，点右上角保存按钮即可</span>
         </div>
-        <div v-else class="columns-2 gap-2 pt-px [&>*]:break-inside-avoid [&>*]:inline-block [&>*]:w-full [&>*]:mb-2">
-          <MaterialCard
-          v-for="item in filteredMaterials"
-          :key="item.id"
-          :name="item.name"
-          :category="item.category"
-          :sub-category="item.subCategory"
-          :author="item.author"
-          :description="item.description"
-          :updated-at="item.updatedAt"
-          :content="item.content"
-          :show-check="selectMode"
-          :selected="selectedIds.has(item.id)"
-          :active="activeMaterialId === item.id && !selectMode"
-          :pinned="!!item.pinned"
-          compact
-          @click="handleCardClick(item)"
-          @pin="handlePin(item)"
-        />
-      </div>
+        <div v-else class="columns-2 gap-2">
+          <div
+            v-for="item in filteredMaterials"
+            :key="item.id"
+            class="break-inside-avoid inline-block w-full mb-2"
+          >
+            <MaterialCard
+              :name="item.name"
+              :category="item.category"
+              :sub-category="item.subCategory"
+              :author="item.author"
+              :description="item.description"
+              :updated-at="item.updatedAt"
+              :content="item.content"
+              :show-check="selectMode"
+              :selected="selectedIds.has(item.id)"
+              :active="activeMaterialId === item.id && !selectMode"
+              :pinned="!!item.pinned"
+              compact
+              @click="handleCardClick(item)"
+              @pin="handlePin(item)"
+            />
+          </div>
+        </div>
     </div>
     </div>
 
