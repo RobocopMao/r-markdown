@@ -213,7 +213,7 @@ watch(() => props.visible, (newVal) => {
         </button>
       </div>
 
-      <div class="flex-1 py-3 px-3">
+      <div class="flex-1 pt-1 pb-3 px-3">
         <div v-if="myMaterials.length === 0" class="flex flex-col items-center justify-center h-full gap-2 opacity-40">
           <Package :size="32" />
           <span class="text-[12px]">还没有素材</span>
@@ -276,8 +276,8 @@ watch(() => props.visible, (newVal) => {
   <ConfirmDialog
     :visible="publishConfirmVisible"
     title="发布素材"
-    message="素材将上传到 GitHub 仓库，你的素材将免费提供给其他人使用，同时请上传规范的素材，否则可能会被下架。确定上传吗？"
-    confirm-text="确定"
+    message="素材将上传到 GitHub 仓库，你的素材将免费提供给其他人使用，同时请上传规范的素材，否则可能会被下架。确定发布吗？"
+    confirm-text="发布"
     @cancel="publishConfirmVisible = false"
     @confirm="doPublish"
   />
