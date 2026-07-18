@@ -203,7 +203,7 @@ watch(() => props.visible, (newVal) => {
     <div class="flex flex-col flex-1 min-h-0">
       <!-- 分类筛选：sticky 固定 -->
       <div
-        class="sticky top-0 z-10 flex gap-1.5 pt-2 pb-2 px-3 overflow-x-auto bg-[#f5f5f5] [scrollbar-width:none] dark:bg-[#1e1e1e]"
+        class="sticky top-0 z-10 flex gap-1.5 pt-2 pb-2 px-3 overflow-x-auto bg-[#f5f5f5] [scrollbar-width:none] dark:bg-[#121212]"
       >
         <button
           v-for="cat in myCategoryOptions"
