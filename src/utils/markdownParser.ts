@@ -228,18 +228,17 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     const bodyLines: string[] = []
     let rowDepth = 1
     while (j < lines.length && rowDepth > 0) {
-      if (/^<row\b/.test(lines[j])) {
-        rowDepth++
-      }
-      if (/^<\/row>/.test(lines[j])) {
-        rowDepth--
+      const openCount = (lines[j].match(/<\s*row\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/row>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        rowDepth += openCount - closeCount
         if (rowDepth > 0) {
           bodyLines.push(lines[j])
         }
-        j++
-        continue
+      } else {
+        bodyLines.push(lines[j])
       }
-      bodyLines.push(lines[j])
       j++
     }
 
@@ -274,20 +273,18 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     let bodyText = openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n'
     let colDepth = 1
     while (j < lines.length && colDepth > 0) {
-      if (/^<column\b/.test(lines[j])) {
-        colDepth++
-        bodyText += lines[j] + '\n'
-        j++
-      } else if (/^<\/column>/.test(lines[j])) {
-        colDepth--
+      const openCount = (lines[j].match(/<\s*column\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/column>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        colDepth += openCount - closeCount
         if (colDepth > 0) {
           bodyText += lines[j] + '\n'
         }
-        j++
       } else {
         bodyText += lines[j] + '\n'
-        j++
       }
+      j++
     }
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
@@ -316,20 +313,18 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     let bodyText = (openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n')
     let conDepth = 1
     while (j < lines.length && conDepth > 0) {
-      if (/^<container\b/.test(lines[j])) {
-        conDepth++
-        bodyText += lines[j] + '\n'
-        j++
-      } else if (/^<\/container>/.test(lines[j])) {
-        conDepth--
+      const openCount = (lines[j].match(/<container\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/container>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        conDepth += openCount - closeCount
         if (conDepth > 0) {
           bodyText += lines[j] + '\n'
         }
-        j++
       } else {
         bodyText += lines[j] + '\n'
-        j++
       }
+      j++
     }
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth, startIdx + lineOffset)
