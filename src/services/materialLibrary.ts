@@ -15,6 +15,9 @@ export interface OfficialMaterial {
   content: string
 }
 
+/** 索引条目（仅含 id，元数据从独立素材 JSON 获取） */
+export type IndexEntry = string
+
 const DEFAULT_REPO = 'RobocopMao/r-markdown-materials'
 const DEFAULT_BRANCH = 'main'
 const RAW_BASE = 'https://raw.githubusercontent.com'
@@ -90,18 +93,19 @@ async function fetchJsonWithFallback(repo: string, sha: string, path: string, us
 }
 
 export const MaterialLibrary = {
-  /** 获取官方素材索引列表 */
-  async fetchIndex(): Promise<Omit<OfficialMaterial, 'content'>[]> {
+  /** 获取官方素材索引列表（纯 id 数组） */
+  async fetchIndex(): Promise<string[]> {
     const repo = getRepoPath()
     const sha = await getLatestCommitSha()
     return fetchJsonWithFallback(repo, sha, 'index.json', true)
   },
 
-  /** 获取单个素材详情（含 content） */
+  /** 获取单个素材详情（含 content），id 由调用方注入（素材 JSON 不含 id 字段） */
   async fetchMaterial(id: string): Promise<OfficialMaterial> {
     const repo = getRepoPath()
     const sha = await getLatestCommitSha()
-    return fetchJsonWithFallback(repo, sha, `${id}.json`)
+    const data = await fetchJsonWithFallback(repo, sha, `${id}.json`)
+    return { ...data, id }
   },
 
   /** 设置素材仓库（用于后期自定义仓库） */

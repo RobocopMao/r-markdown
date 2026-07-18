@@ -25,16 +25,6 @@ async function githubFetch(path: string, options: RequestInit = {}): Promise<Res
   return fetch(url, { ...options, headers })
 }
 
-interface IndexEntry {
-  id: string
-  name: string
-  author: string
-  category: string
-  subCategory?: string
-  description: string
-  date: string
-}
-
 interface MaterialData {
   name: string
   author: string
@@ -52,7 +42,7 @@ export async function publishMaterial(
   try {
     // 1. 获取当前 index.json（需要 sha 用于更新）
     const indexRes = await githubFetch('index.json')
-    let indexEntries: IndexEntry[] = []
+    let indexEntries: string[] = []
     let indexSha = ''
     if (indexRes.ok) {
       const indexData = await indexRes.json()
@@ -103,22 +93,13 @@ export async function publishMaterial(
     }
 
     // 5. 更新 index.json
-    const existingIdx = indexEntries.findIndex((e) => e.id === materialId)
-    const newEntry: IndexEntry = {
-      id: materialId,
-      name: data.name,
-      author: data.author,
-      category: data.category,
-      subCategory: data.subCategory || undefined,
-      description: data.description || '',
-      date: today,
-    }
+    const existingIdx = indexEntries.indexOf(materialId)
     if (existingIdx >= 0) {
-      indexEntries[existingIdx] = newEntry
+      indexEntries[existingIdx] = materialId
     } else {
-      indexEntries.push(newEntry)
+      indexEntries.push(materialId)
     }
-    indexEntries.sort((a, b) => a.id.localeCompare(b.id))
+    indexEntries.sort()
 
     const indexBody: Record<string, string> = {
       message: `更新索引: ${data.name}`,
