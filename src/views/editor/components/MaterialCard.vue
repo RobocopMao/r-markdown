@@ -101,11 +101,11 @@ function categoryColor(cat: string): string {
 
 <template>
   <div
-    class="material-card group relative overflow-hidden rounded-[10px] p-3 cursor-pointer transition-all duration-200 select-none border border-[var(--border-color,#e0e0e0)] bg-[var(--bg-primary,#fff)] shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
+    class="material-card group relative rounded-[10px] p-3 cursor-pointer transition-[border-color,box-shadow] duration-200 select-none border border-[var(--border-color,#e0e0e0)] bg-[var(--bg-primary,#fff)] shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none"
     :class="[
       selected || active
         ? '!border-[var(--accent)] !shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.15)),0_4px_16px_rgba(0,0,0,0.08)] -translate-y-px dark:!shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.3))]'
-        : 'hover:-translate-y-px hover:border-[var(--accent)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:hover:shadow-none',
+        : 'hover:border-[var(--accent)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:hover:shadow-none',
       compact ? 'text-[11px]' : 'text-[12px]',
     ]"
     @click="emit('click')"

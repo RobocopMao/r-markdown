@@ -224,11 +224,11 @@ watch(() => props.visible, (newVal) => {
           <span class="text-[12px]">还没有素材</span>
           <span class="text-[11px]">在编辑器中设计内容后，点右上角保存按钮即可</span>
         </div>
-        <div v-else class="columns-2 gap-2">
+        <div v-else class="columns-2 gap-x-2 [contain:layout]">
           <div
             v-for="item in filteredMaterials"
             :key="item.id"
-            class="break-inside-avoid inline-block w-full mb-2"
+            class="break-inside-avoid [-webkit-column-break-inside:avoid] inline-block w-full mb-2.5 relative"
           >
             <MaterialCard
               :name="item.name"
