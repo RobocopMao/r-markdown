@@ -42,6 +42,8 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm build
+        env:
+          VITE_API_PROXY: https://r-markdown-worker.410503915.workers.dev
 
       - uses: actions/upload-pages-artifact@v3
         with:
