@@ -25,6 +25,11 @@ const router = createRouter({
       component: () => import('@/views/extension/ExtensionPage.vue'),
     },
     {
+      path: '/materials',
+      name: 'materials',
+      component: () => import('@/views-private/material/MaterialLibraryPage.vue'),
+    },
+    {
       path: '/help',
       name: 'help',
       component: () => import('@/views-private/help/TutorialList.vue'),

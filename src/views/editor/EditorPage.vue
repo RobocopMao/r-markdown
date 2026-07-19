@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
+import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { useTheme } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -11,6 +12,7 @@ import { uploadToGitHub } from '@/services/githubUploader'
 import { uploadToLeta } from '@/services/letaUploader'
 import { DEMO_CONTENT } from '@/data/demoContent'
 import { DraftStorage, type Draft } from '@/services/DraftStorage'
+import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
 import { extractTitle, sanitizeFilename } from '@/utils/extractTitle'
 import Editor from './components/Editor.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
@@ -24,7 +26,7 @@ import {
   Smartphone, SquarePen, CircleQuestionMark,
   ImagePlus, Link, List, ListOrdered, Quote, StickyNote, ListChecks, Images, Crop, Table, Send, Package, Columns2, Rows2, Box, Type, Layers
 } from 'lucide-vue-next'
-import { putImage, getDataURL, cleanupImages } from '@/utils/imageDB'
+import { putImage, resolveIdbImages, cleanupImages } from '@/utils/imageDB'
 
 const formatIcons: Record<string, any> = {
   '==': Highlighter,
@@ -166,6 +168,8 @@ import DraftListDialog from './components/DraftListDialog.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
 import ImageCacheDialog from './components/ImageCacheDialog.vue'
+import SaveMaterialDialog from './components/SaveMaterialDialog.vue'
+import MaterialLibraryPanel from './components/MaterialLibraryPanel.vue'
 import PublishToWechatDialog from '@/views/editor/components/PublishToWechatDialog.vue'
 import Toast from '@/components/Toast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -313,6 +317,7 @@ function onToggleDarkMode() {
 // ── 移动端 Tab 切换 ──
 const mobileTab = ref<'editor' | 'preview'>('editor')
 const isMobile = ref(window.innerWidth < 768)
+const router = useRouter()
 const nearBottom = ref(false)
 
 function onResize() {
@@ -419,20 +424,6 @@ const saved = localStorage.getItem(STORAGE_KEY)
 const markdown = ref(saved !== null ? saved : DEMO_CONTENT)
 const resolvedMarkdown = ref(stripIdbSrc(resolveBase64(markdown.value)))
 
-async function resolveIdbImages(text: string): Promise<string> {
-  const idbTokens = text.match(/idb:DBI_\d+_[a-z0-9]{6}/g)
-  if (!idbTokens || idbTokens.length === 0) return text
-  let result = text
-  for (const ref of idbTokens) {
-    const token = ref.slice(4) // 去掉 "idb:"
-    const dataUrl = await getDataURL(token)
-    if (dataUrl) {
-      result = result.split(ref).join(dataUrl)
-    }
-  }
-  return result
-}
-
 watch(markdown, async (val) => {
   const step1 = resolveBase64(val)
   const hasIdb = /idb:DBI_\d+_[a-z0-9]{6}/.test(step1)
@@ -449,6 +440,8 @@ const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
 const wechatPublishVisible = ref(false)
 const showGallery = ref(false)
+const showMaterialPanel = ref(false)
+const saveMaterialVisible = ref(false)
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 
 // ── 自动更新 ──
@@ -512,6 +505,14 @@ const finalizeVisible = ref(false)
 const finalizeDeleteConfirmVisible = ref(false)
 const drafts = ref<Draft[]>([])
 const currentDraftId = ref<number | null>(DraftStorage.getCurrentDraftId())
+
+// ── 草稿加载/删除确认弹窗（全局，在 BaseDrawer 之外渲染）──
+const draftConfirmVisible = ref(false)
+const draftConfirmTitle = ref('')
+const draftConfirmMessage = ref('')
+const draftConfirmType = ref<'accent' | 'danger'>('accent')
+const draftConfirmText = ref('')
+const draftPendingAction = ref<{ type: 'load' | 'delete'; draftId: number } | null>(null)
 
 const extractedTitle = computed(() => extractTitle(markdown.value) || '')
 const draftCount = computed(() => drafts.value.length)
@@ -1041,6 +1042,15 @@ function onExampleAction(action: string) {
   else if (action === 'aiDemo') openAiDemo()
 }
 
+// ── 素材入口 ──
+function onMaterialAction(action: 'my' | 'library') {
+  if (action === 'my') {
+    showMaterialPanel.value = true
+  } else if (action === 'library') {
+    router.push('/materials')
+  }
+}
+
 // ── 导入 ──
 async function onImportClick() {
   // 判断是否 Tauri 环境
@@ -1124,7 +1134,6 @@ async function openAiDemo() {
 function loadDemo() {
   base64Store.clear()
   localStorage.removeItem(IMG_STORE_KEY)
-  cleanupImages(new Set())
   currentDraftId.value = null
   markdown.value = DEMO_CONTENT
   localStorage.setItem(STORAGE_KEY, DEMO_CONTENT)
@@ -1221,11 +1230,105 @@ function handleOpenSaveDraft() {
   saveDraftVisible.value = true
 }
 
+// ── 素材业务方法 ──
+
+function handleOpenSaveMaterial() {
+  saveMaterialVisible.value = true
+}
+
+async function handleSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string) {
+  const raw = markdown.value
+  if (!raw.trim()) {
+    showToast('编辑器内容为空')
+    return
+  }
+  const content = raw.trim()
+
+  // 检查是否有相同内容的素材
+  const allMaterials = await MaterialStorage.list()
+  const sameContent = allMaterials.find((m) => m.content === content)
+  if (sameContent) {
+    pendingMaterial.value = { name, author: author || '匿名', category, subCategory, description }
+    pendingMaterialContent.value = content
+    pendingOverwriteMaterialId.value = sameContent.id
+    pendingOverwriteMaterialName.value = sameContent.name
+    confirmMaterialOverwriteVisible.value = true
+    return
+  }
+
+  await doSaveMaterial(name, author || '匿名', category, subCategory, description, content)
+}
+
+async function doSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string, content: string) {
+  const item: MaterialItem = {
+    id: crypto.randomUUID(),
+    name,
+    author,
+    category,
+    subCategory: subCategory || undefined,
+    description: description || undefined,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    content,
+  }
+  await MaterialStorage.save(item)
+  saveMaterialVisible.value = false
+  confirmMaterialOverwriteVisible.value = false
+  showToast('素材已保存')
+}
+
+async function handleMaterialOverwrite() {
+  if (!pendingMaterial.value || !pendingOverwriteMaterialId.value) return
+  const existing = await MaterialStorage.get(pendingOverwriteMaterialId.value)
+  if (!existing) return
+  const updated: MaterialItem = {
+    ...existing,
+    name: pendingMaterial.value.name,
+    author: pendingMaterial.value.author,
+    category: pendingMaterial.value.category,
+    subCategory: pendingMaterial.value.subCategory || undefined,
+    description: pendingMaterial.value.description || undefined,
+    content: pendingMaterialContent.value,
+    updatedAt: new Date().toISOString(),
+  }
+  await MaterialStorage.save(updated)
+  saveMaterialVisible.value = false
+  confirmMaterialOverwriteVisible.value = false
+  showToast('素材已覆盖')
+}
+
+async function handleMaterialSaveAsNew() {
+  if (!pendingMaterial.value) return
+  confirmMaterialOverwriteVisible.value = false
+  await doSaveMaterial(pendingMaterial.value.name, pendingMaterial.value.author, pendingMaterial.value.category, pendingMaterial.value.subCategory, pendingMaterial.value.description, pendingMaterialContent.value)
+}
+
+function handleCancelMaterialOverwrite() {
+  confirmMaterialOverwriteVisible.value = false
+  pendingMaterial.value = null
+  pendingMaterialContent.value = ''
+  pendingOverwriteMaterialId.value = null
+}
+
+function handleInsertMaterial(item: MaterialItem) {
+  if (!editorRef.value) return
+  editorRef.value.insertAtCursor('\n' + item.content)
+  showMaterialPanel.value = false
+  showToast('素材已插入')
+}
+
 // 标题变更确认弹窗状态
 const confirmOverwriteVisible = ref(false)
 const confirmOverwriteMode = ref<'title-changed' | 'same-title-draft'>('title-changed')
 const pendingDraftTitle = ref('')
 const pendingOverwriteDraftId = ref<number | null>(null)
+
+// 素材重复内容确认弹窗状态
+const confirmMaterialOverwriteVisible = ref(false)
+const pendingMaterial = ref<{ name: string; author: string; category: string; subCategory: string; description: string } | null>(null)
+const pendingMaterialContent = ref('')
+const pendingOverwriteMaterialId = ref<string | null>(null)
+const pendingOverwriteMaterialName = ref('')
 
 async function handleSaveDraft(_draftId: number, title: string) {
   const isDup = await DraftStorage.isDuplicate(title, markdown.value, currentDraftId.value ?? undefined)
@@ -1309,6 +1412,36 @@ async function handleDeleteDraft(id: number) {
   await refreshDrafts()
   // 删除后重新匹配草稿
   setTimeout(() => matchExistingDraft(), 300)
+}
+
+function onDraftConfirmLoad(payload: { draftId: number; title: string }) {
+  draftPendingAction.value = { type: 'load', draftId: payload.draftId }
+  draftConfirmTitle.value = '加载草稿'
+  draftConfirmMessage.value = `将加载「${payload.title}」，当前编辑内容将被覆盖。`
+  draftConfirmType.value = 'accent'
+  draftConfirmText.value = '加载'
+  draftConfirmVisible.value = true
+}
+
+function onDraftConfirmDelete(payload: { draftId: number; title: string }) {
+  draftPendingAction.value = { type: 'delete', draftId: payload.draftId }
+  draftConfirmTitle.value = '删除草稿'
+  draftConfirmMessage.value = `将永久删除草稿「${payload.title}」，此操作不可撤销。`
+  draftConfirmType.value = 'danger'
+  draftConfirmText.value = '删除'
+  draftConfirmVisible.value = true
+}
+
+function onDraftConfirm() {
+  if (!draftPendingAction.value) return
+  const { type, draftId } = draftPendingAction.value
+  draftPendingAction.value = null
+  draftConfirmVisible.value = false
+  if (type === 'load') {
+    handleLoadDraft(draftId)
+  } else {
+    handleDeleteDraft(draftId)
+  }
 }
 
 function handleOpenFinalize() {
@@ -1522,6 +1655,13 @@ function onMinimapNavigate(ratio: number) {
           @select="(action: string) => onDropdownSelect('export', action)"
         />
         <button
+          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
+          @click="handleOpenSaveMaterial"
+        >
+          <Package :size="14" />
+          保存素材
+        </button>
+        <button
           v-if="isTauri"
           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
           @click="handlePublishToWechat"
@@ -1603,6 +1743,7 @@ function onMinimapNavigate(ratio: number) {
           @toggle-dark-mode="onToggleDarkMode"
           @open-settings="settingsVisible = true"
           @open-gallery="showGallery = true"
+          @material-action="onMaterialAction"
           @open-components="$router.push('/components')"
           @open-drafts="draftListVisible = true"
           @example-action="onExampleAction"
@@ -2063,6 +2204,7 @@ function onMinimapNavigate(ratio: number) {
     :visible="xhsVisible"
     :markdown="resolvedMarkdown"
     :colors="colors"
+    :is-mobile="isMobile"
     @close="xhsVisible = false"
     @toast="showToast"
   />
@@ -2086,6 +2228,18 @@ function onMinimapNavigate(ratio: number) {
     mode="gallery"
     @close="showGallery = false"
     @insert="(token: string) => { showGallery = false; editorRef?.insertAtCursor(`<img src=&quot;idb:${token}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`) }"
+  />
+  <!-- 素材库面板 -->
+  <MaterialLibraryPanel
+    :visible="showMaterialPanel"
+    @close="showMaterialPanel = false"
+    @insert="handleInsertMaterial"
+  />
+  <!-- 保存素材弹窗 -->
+  <SaveMaterialDialog
+    :visible="saveMaterialVisible"
+    @close="saveMaterialVisible = false"
+    @save="handleSaveMaterial"
   />
   <ConfirmDialog
     :visible="confirmLoadVisible"
@@ -2136,8 +2290,8 @@ function onMinimapNavigate(ratio: number) {
     :visible="draftListVisible"
     :drafts="drafts"
     @close="draftListVisible = false"
-    @load="handleLoadDraft"
-    @delete="handleDeleteDraft"
+    @confirm-load="onDraftConfirmLoad"
+    @confirm-delete="onDraftConfirmDelete"
   />
 
   <!-- 保存草稿弹窗 -->
@@ -2176,6 +2330,36 @@ function onMinimapNavigate(ratio: number) {
       另存为新草稿
     </button>
   </ConfirmDialog>
+
+  <!-- 素材重复内容确认弹窗 -->
+  <ConfirmDialog
+    :visible="confirmMaterialOverwriteVisible"
+    title="存在相同内容的素材"
+    :message="'素材「' + pendingMaterial?.name + '」与已有素材「' + pendingOverwriteMaterialName + '」内容相同，请选择操作：'"
+    confirm-text="覆盖"
+    cancel-text="取消"
+    @confirm="handleMaterialOverwrite"
+    @cancel="handleCancelMaterialOverwrite"
+    @update:visible="confirmMaterialOverwriteVisible = $event"
+  >
+    <button
+      class="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border-none bg-[#f3f0ea] text-[#8a8175] transition-colors hover:bg-[#e8e3da]"
+      @click="handleMaterialSaveAsNew"
+    >
+      另存为新素材
+    </button>
+  </ConfirmDialog>
+
+  <!-- 草稿加载/删除全局确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="draftConfirmVisible"
+    :title="draftConfirmTitle"
+    :message="draftConfirmMessage"
+    :confirm-type="draftConfirmType"
+    :confirm-text="draftConfirmText"
+    @confirm="onDraftConfirm"
+    @cancel="draftConfirmVisible = false"
+  />
 </template>
 
 <style scoped>

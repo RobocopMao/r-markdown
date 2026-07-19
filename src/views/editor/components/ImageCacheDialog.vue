@@ -1,10 +1,9 @@
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     :title="titleText"
     width="min(95vw, 1000px)"
     :show-footer="isGallery ? (gallerySelected !== null) : (multiSelect && selectedTokens.size > 0)"
-    :accent="colors.accent"
     @close="emit('close')"
   >
     <template v-if="isGallery" #header>
@@ -93,25 +92,7 @@
         </button>
       </div>
 
-      <!-- 确认弹窗 -->
-      <div
-        v-if="!isGallery && confirmVisible"
-        class="absolute inset-0 z-10 flex items-center justify-center bg-[#f5f5f5]/80 dark:bg-[#121212]/80"
-      >
-        <div class="rounded-[10px] bg-white p-6 shadow-lg dark:bg-[#2a2a2a]">
-          <p class="mb-5 text-sm text-[#333] dark:text-[#e5e5e5]">{{ confirmMessage }}</p>
-          <div class="flex justify-end gap-2.5">
-            <button
-              class="cursor-pointer rounded-md border border-[#d9d9d9] bg-white px-[18px] py-1.5 text-[13px] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#555] dark:bg-[#333] dark:text-[#ccc] dark:hover:border-[var(--accent)]"
-              @click="confirmVisible = false"
-            >取消</button>
-            <button
-              class="cursor-pointer rounded-md border-0 bg-[#dc2626] px-[18px] py-1.5 text-[13px] text-white transition-colors hover:bg-[#b91c1c]"
-              @click="handleConfirm"
-            >确定</button>
-          </div>
-        </div>
-      </div>
+
     </div>
 
     <template v-if="isGallery" #footer>
@@ -131,13 +112,13 @@
         清理选中（{{ selectedTokens.size }}）
       </button>
     </template>
-  </BaseDialog>
+  </BaseDrawer>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { ListChecks, CheckCheck, Pin, PinOff } from 'lucide-vue-next'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { useTheme } from '@/composables/useTheme'
 import { getSetting, setSetting } from '@/config/settings'
@@ -145,7 +126,11 @@ import { getSetting, setSetting } from '@/config/settings'
 const props = withDefaults(defineProps<{ visible: boolean; mode?: 'cleanup' | 'gallery' }>(), {
   mode: 'cleanup',
 })
-const emit = defineEmits<{ close: []; insert: [token: string] }>()
+const emit = defineEmits<{
+  close: []
+  insert: [token: string]
+  'request-cleanup': [payload: { message: string; tokens: string[] }]
+}>()
 
 const { colors } = useTheme()
 
@@ -163,10 +148,6 @@ const sortedImages = computed(() => {
   const unpinned = images.value.filter((img) => !pinnedTokens.value.has(img.token))
   return [...pinned, ...unpinned]
 })
-
-const confirmVisible = ref(false)
-const confirmMessage = ref('')
-const pendingTokens = ref<string[]>([])
 
 const allSelected = computed(() =>
   images.value.length > 0 && selectedTokens.value.size === images.value.length,
@@ -249,32 +230,31 @@ function handleInsert() {
 }
 
 function confirmDelete(token: string) {
-  pendingTokens.value = [token]
-  confirmMessage.value = '确定要清理这张图片缓存吗？'
-  confirmVisible.value = true
+  emit('request-cleanup', { message: '确定要清理这张图片缓存吗？', tokens: [token] })
 }
 
 function confirmBatchDelete() {
-  pendingTokens.value = [...selectedTokens.value]
-  confirmMessage.value = `确定要清理选中的 ${selectedTokens.value.size} 张图片缓存吗？`
-  confirmVisible.value = true
+  emit('request-cleanup', {
+    message: `确定要清理选中的 ${selectedTokens.value.size} 张图片缓存吗？`,
+    tokens: [...selectedTokens.value],
+  })
 }
 
-async function handleConfirm() {
-  for (const token of pendingTokens.value) {
+async function doCleanup(tokens: string[]) {
+  for (const token of tokens) {
     await deleteImage(token)
   }
-  confirmVisible.value = false
   selectedTokens.value.clear()
-  pendingTokens.value = []
   await loadImages()
 }
+
+// 移除 handleConfirm、confirmVisible、confirmMessage、pendingTokens，用 emit + doCleanup 代替
+// doCleanup 通过 defineExpose 暴露给父组件调用
 
 watch(() => props.visible, (val) => {
   if (val) {
     selectedTokens.value.clear()
     multiSelect.value = false
-    confirmVisible.value = false
     gallerySelected.value = null
     loadPinnedTokens()
     loadImages()
@@ -283,4 +263,6 @@ watch(() => props.visible, (val) => {
 
 loadPinnedTokens()
 loadImages()
+
+defineExpose({ doCleanup })
 </script>

@@ -46,11 +46,12 @@ function cancel() {
 </script>
 
 <template>
-  <div
-    v-if="visible"
-    class="fixed inset-0 z-[300] flex items-center justify-center bg-black/60"
-    @click.self="cancel"
-  >
+  <Teleport to="body">
+    <div
+      v-if="visible"
+      class="fixed inset-0 z-[1100] flex items-center justify-center bg-black/60"
+      @click.self="cancel"
+    >
     <div class="prompt-dialog bg-white rounded-xl p-6 w-80 shadow-[0_16px_48px_rgba(0,0,0,0.2)]">
       <h3 class="prompt-dialog-title m-0 mb-2 text-base text-[#1f1a17]">{{ title }}</h3>
       <p v-if="description" class="prompt-dialog-desc m-0 mb-4 text-[13px] text-[#8a8175]">
@@ -80,6 +81,7 @@ function cancel() {
       </div>
     </div>
   </div>
+  </Teleport>
 </template>
 
 <style scoped>

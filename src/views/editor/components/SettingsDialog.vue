@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
 import { autoUpdateEnabled, autoUpdatePending, autoUpdateRid, checkForUpdates, downloadUpdateWithRid, type UpdateInfo } from '@/composables/useAutoUpdater'
@@ -25,6 +25,10 @@ const ZOOM_PRESETS = [50, 75, 80, 90, 100, 110, 125, 150, 175, 200]
 const SAVE_INTERVAL_PRESETS = [0.5, 1, 2, 3, 5, 8, 10]
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const { colors } = useTheme()
+
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+}
 
 // ── 设置 tab ──
 const settingsTab = ref('basic')
@@ -184,6 +188,26 @@ const downloadProgress = ref(0)
 
 const showImageCache = ref(false)
 
+// 图片缓存清理全局确认弹窗
+const imgCleanupVisible = ref(false)
+const imgCleanupMessage = ref('')
+const imgCleanupTokens = ref<string[]>([])
+const imgCacheRef = ref<InstanceType<typeof ImageCacheDialog> | null>(null)
+
+function onImgRequestCleanup(payload: { message: string; tokens: string[] }) {
+  imgCleanupMessage.value = payload.message
+  imgCleanupTokens.value = payload.tokens
+  imgCleanupVisible.value = true
+}
+
+async function onImgCleanupConfirm() {
+  imgCleanupVisible.value = false
+  if (imgCacheRef.value) {
+    await imgCacheRef.value.doCleanup(imgCleanupTokens.value)
+  }
+  imgCleanupTokens.value = []
+}
+
 // ── 公众号配置 ──
 const wechatAppId = ref(getSetting<string>('wechatAppId'))
 const wechatAppSecret = ref(getSetting<string>('wechatAppSecret'))
@@ -271,12 +295,11 @@ async function doDownloadUpdate() {
 </script>
 
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     title="编辑器设置"
     width="min(90vw, 680px)"
     :show-footer="false"
-    :accent="colors.accent"
     @close="emit('close')"
   >
     <template #header>
@@ -385,7 +408,8 @@ async function doDownloadUpdate() {
           <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
           <select
             :value="paraFontWeight"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors cursor-pointer focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
             @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
           >
             <option value="300">300（更细）</option>
@@ -855,8 +879,18 @@ async function doDownloadUpdate() {
       @cancel="updateDialogVisible = false"
     />
 
-    <ImageCacheDialog :visible="showImageCache" @close="showImageCache = false" />
-  </BaseDialog>
+    <ImageCacheDialog ref="imgCacheRef" :visible="showImageCache" @close="showImageCache = false" @request-cleanup="onImgRequestCleanup" />
+  </BaseDrawer>
+
+  <!-- 清理图片缓存全局确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="imgCleanupVisible"
+    title="清理图片缓存"
+    :message="imgCleanupMessage"
+    confirm-text="确定"
+    @confirm="onImgCleanupConfirm"
+    @cancel="imgCleanupVisible = false"
+  />
 </template>
 
 <style scoped>

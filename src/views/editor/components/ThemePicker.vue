@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
-import { Palette } from 'lucide-vue-next'
+import { Palette, Copy, Check } from 'lucide-vue-next'
 
 const props = defineProps<{
   themes: { accent: string; dark: string }[]
@@ -43,6 +43,25 @@ function select(a: string, d: string) {
 function onCustomInput(e: Event) {
   const val = (e.target as HTMLInputElement).value
   emit('customSelect', val)
+}
+
+const copied = ref(false)
+async function copyCurrentColor() {
+  try {
+    await navigator.clipboard.writeText(props.currentAccent)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 5000)
+  } catch {
+    // 降级方案
+    const ta = document.createElement('textarea')
+    ta.value = props.currentAccent
+    document.body.appendChild(ta)
+    ta.select()
+    document.execCommand('copy')
+    document.body.removeChild(ta)
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 5000)
+  }
 }
 </script>
 
@@ -87,6 +106,21 @@ function onCustomInput(e: Event) {
             自定义颜色
             <input type="color" :value="customColor" class="sr-only" @input="onCustomInput" />
           </label>
+        </div>
+      </div>
+      <div class="current-color-row mt-2 pt-2 border-t border-[var(--accent-border)]">
+        <div class="flex items-center gap-1.5 px-0.5">
+          <span class="text-[11px] font-medium" :style="{ color: 'var(--text-secondary)' }">
+            当前主题色值：<span class="font-mono" :style="{ color: 'var(--text-primary)' }">{{ currentAccent }}</span>
+          </span>
+          <Copy
+            v-if="!copied"
+            :size="12"
+            class="cursor-pointer shrink-0 transition-colors duration-150 hover:text-[var(--accent)]"
+            :style="{ color: 'var(--text-secondary)' }"
+            @click.stop="copyCurrentColor"
+          />
+          <Check v-else :size="12" class="shrink-0" :style="{ color: 'var(--accent)' }" />
         </div>
       </div>
     </div>

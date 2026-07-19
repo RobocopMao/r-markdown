@@ -228,18 +228,17 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     const bodyLines: string[] = []
     let rowDepth = 1
     while (j < lines.length && rowDepth > 0) {
-      if (/^<row\b/.test(lines[j])) {
-        rowDepth++
-      }
-      if (/^<\/row>/.test(lines[j])) {
-        rowDepth--
+      const openCount = (lines[j].match(/<\s*row\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/row>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        rowDepth += openCount - closeCount
         if (rowDepth > 0) {
           bodyLines.push(lines[j])
         }
-        j++
-        continue
+      } else {
+        bodyLines.push(lines[j])
       }
-      bodyLines.push(lines[j])
       j++
     }
 
@@ -274,20 +273,18 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     let bodyText = openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n'
     let colDepth = 1
     while (j < lines.length && colDepth > 0) {
-      if (/^<column\b/.test(lines[j])) {
-        colDepth++
-        bodyText += lines[j] + '\n'
-        j++
-      } else if (/^<\/column>/.test(lines[j])) {
-        colDepth--
+      const openCount = (lines[j].match(/<\s*column\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/column>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        colDepth += openCount - closeCount
         if (colDepth > 0) {
           bodyText += lines[j] + '\n'
         }
-        j++
       } else {
         bodyText += lines[j] + '\n'
-        j++
       }
+      j++
     }
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
@@ -316,20 +313,18 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     let bodyText = (openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n')
     let conDepth = 1
     while (j < lines.length && conDepth > 0) {
-      if (/^<container\b/.test(lines[j])) {
-        conDepth++
-        bodyText += lines[j] + '\n'
-        j++
-      } else if (/^<\/container>/.test(lines[j])) {
-        conDepth--
+      const openCount = (lines[j].match(/<container\b/g) || []).length
+      const closeCount = (lines[j].match(/<\/container>/g) || []).length
+
+      if (openCount > 0 || closeCount > 0) {
+        conDepth += openCount - closeCount
         if (conDepth > 0) {
           bodyText += lines[j] + '\n'
         }
-        j++
       } else {
         bodyText += lines[j] + '\n'
-        j++
       }
+      j++
     }
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth, startIdx + lineOffset)
@@ -469,6 +464,24 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
 
     if (line.trim() === '') {
       i++
+      continue
+    }
+    // 跳过 HTML 注释：支持单行注释和跨行注释
+    if (/^\s*<!--/.test(line)) {
+      if (/^\s*<!--.*-->\s*$/.test(line)) {
+        // 单行注释：<!-- ... -->
+        i++
+        continue
+      }
+      // 多行注释：跳过直到找到 -->
+      let commentDepth = 1
+      i++
+      while (i < lines.length && commentDepth > 0) {
+        if (/^\s*<!--/.test(lines[i])) commentDepth++
+        if (/-->\s*$/.test(lines[i])) commentDepth--
+        if (commentDepth > 0) i++
+      }
+      if (i < lines.length && /-->\s*$/.test(lines[i])) i++
       continue
     }
     if (/^---+\s*$/.test(line.trim())) {
@@ -1085,6 +1098,24 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       const attrs = parseAttrs(line)
       html += withSourceLine(i, Img_DA01.render(attrs, '', t))
       i++
+      continue
+    }
+
+    // <svg> — 原生 SVG 透传，不做任何解析转义
+    if (/^<svg\b/.test(line.trimStart())) {
+      const svgLines: string[] = [line]
+      let svgDepth = 1
+      i++
+      while (i < lines.length && svgDepth > 0) {
+        const l = lines[i]
+        // 统计开闭标签深度
+        const openCount = (l.match(/<svg\b/g) || []).length
+        const closeCount = (l.match(/<\/svg>/g) || []).length
+        svgDepth += openCount - closeCount
+        svgLines.push(l)
+        i++
+      }
+      html += svgLines.join('\n')
       continue
     }
 

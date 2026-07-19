@@ -200,8 +200,8 @@ function onCardLeave(e: MouseEvent) {
 
     <!-- Main Content -->
     <main class="px-4 sm:px-8 py-8 sm:py-12">
-      <div class="mx-auto max-w-[1100px]">
-        <div class="mb-8 sm:mb-12">
+      <div class="mx-auto max-w-[1020px]">
+        <div class="mb-4 sm:mb-6">
           <h1
             class="text-[28px] sm:text-[40px] font-extrabold tracking-tight m-0 mb-2"
             style="color: var(--text-primary)"

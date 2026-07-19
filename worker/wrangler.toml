@@ -1,0 +1,7 @@
+name = "r-markdown-worker"
+main = "index.ts"
+compatibility_date = "2025-07-17"
+
+# 以下两个 secret 用 wrangler secret put 设置，不进仓库：
+#   wrangler secret put GITHUB_TOKEN
+#   wrangler secret put DESKTOP_SECRET

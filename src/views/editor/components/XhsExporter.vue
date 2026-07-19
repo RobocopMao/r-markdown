@@ -16,6 +16,7 @@ import {
 } from '@/utils/xhsCards'
 import PromptDialog from '@/components/PromptDialog.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { Bolt } from 'lucide-vue-next'
 
@@ -50,6 +51,7 @@ const props = defineProps<{
   visible: boolean
   markdown: string
   colors: ThemeColors
+  isMobile?: boolean
 }>()
 
 const emit = defineEmits<{ close: []; toast: [msg: string] }>()
@@ -445,11 +447,12 @@ watch(
 </script>
 
 <template>
-  <BaseDialog
+  <component
+    :is="isMobile ? BaseDialog : BaseDrawer"
     :visible="visible"
     title="导出小红书图"
     :show-footer="false"
-    width="min(90vw, 960px)"
+    :width="isMobile ? 'min(90vw, 960px)' : 'min(90vw, 790px)'"
     @close="$emit('close')"
   >
     <template #header>
@@ -488,7 +491,7 @@ watch(
         <Bolt :size="16" />
       </button>
 
-      <span v-if="isDark" class="text-xs text-[#a89a86] dark:text-[#888]">建议切换到亮色模式导出</span>
+      <span v-if="isDark && !isMobile" class="text-xs text-[#a89a86] dark:text-[#888]">建议切换到亮色模式导出</span>
 
       <span class="hidden sm:inline flex-1 text-xs text-[#a89a86] dark:text-[#888] text-right">{{ status }}</span>
 
@@ -539,7 +542,7 @@ watch(
       placeholder="请输入品牌名"
       @save="onBrandSave"
     />
-  </BaseDialog>
+  </component>
 </template>
 
 
