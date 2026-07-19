@@ -292,7 +292,7 @@ watch(() => props.visible, (newVal) => {
           class="cursor-pointer px-3 py-1.5 rounded-md text-[12px] font-medium cursor-pointer border-none transition-colors text-white bg-red-500 hover:bg-red-600 ml-auto"
           @click="handleDeleteSelected"
         >
-          删除({{ selectedIds.size }})
+          删除选中({{ selectedIds.size }})
         </button>
       </template>
     </template>
