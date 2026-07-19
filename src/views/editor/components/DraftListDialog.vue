@@ -2,7 +2,6 @@
 import { ref, computed } from 'vue'
 import { FileInput, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
-import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import type { Draft } from '@/services/DraftStorage'
 
 const props = defineProps<{
@@ -12,44 +11,21 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
-  load: [draftId: number]
-  delete: [draftId: number]
+  'confirm-load': [payload: { draftId: number; title: string }]
+  'confirm-delete': [payload: { draftId: number; title: string }]
 }>()
 
-const pendingAction = ref<{ type: 'load' | 'delete'; draftId: number } | null>(null)
 const searchQuery = ref('')
-const confirmVisible = computed({
-  get: () => pendingAction.value !== null,
-  set: (v: boolean) => { if (!v) pendingAction.value = null },
-})
+
+function getDraftTitle(draftId: number): string {
+  return props.drafts.find((d) => d.id === draftId)?.title ?? '未知草稿'
+}
 
 const filteredDrafts = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return props.drafts
   return props.drafts.filter((d) => d.title.toLowerCase().includes(q))
 })
-
-const confirmTitle = computed(() => (pendingAction.value?.type === 'load' ? '加载草稿' : '删除草稿'))
-const confirmType = computed(() => (pendingAction.value?.type === 'delete' ? 'danger' : 'accent'))
-const confirmMessage = computed(() => {
-  if (!pendingAction.value) return ''
-  const draft = props.drafts.find((d) => d.id === pendingAction.value!.draftId)
-  const name = draft?.title ?? '未知草稿'
-  return pendingAction.value.type === 'load'
-    ? `将加载「${name}」，当前编辑内容将被覆盖。`
-    : `将永久删除草稿「${name}」，此操作不可撤销。`
-})
-
-function onConfirm() {
-  if (!pendingAction.value) return
-  const { type, draftId } = pendingAction.value
-  pendingAction.value = null
-  if (type === 'load') {
-    emit('load', draftId)
-  } else {
-    emit('delete', draftId)
-  }
-}
 
 function formatTime(ts: number): string {
   return new Date(ts).toLocaleString('zh-CN')
@@ -99,7 +75,7 @@ function formatTime(ts: number): string {
               class="inline-flex items-center justify-center w-5 h-5 rounded-[3px] border-none bg-transparent
                      transition-all duration-150 panel-action-btn cursor-pointer"
               title="加载"
-              @click="draft.id !== undefined && (pendingAction = { type: 'load', draftId: draft.id })"
+              @click="draft.id !== undefined && emit('confirm-load', { draftId: draft.id, title: draft.title })"
             >
               <FileInput :size="12" class="w-3 h-3" />
             </button>
@@ -107,7 +83,7 @@ function formatTime(ts: number): string {
               class="inline-flex items-center justify-center w-5 h-5 rounded-[3px] border-none bg-transparent
                      transition-all duration-150 panel-action-btn cursor-pointer"
               title="删除"
-              @click="draft.id !== undefined && (pendingAction = { type: 'delete', draftId: draft.id })"
+              @click="draft.id !== undefined && emit('confirm-delete', { draftId: draft.id, title: draft.title })"
             >
               <Trash2 :size="12" class="w-3 h-3" />
             </button>
@@ -115,15 +91,6 @@ function formatTime(ts: number): string {
         </div>
       </div>
     </div>
-
-    <ConfirmDialog
-      v-model:visible="confirmVisible"
-      :title="confirmTitle"
-      :message="confirmMessage"
-      :confirm-type="confirmType"
-      :confirm-text="pendingAction?.type === 'load' ? '加载' : '删除'"
-      @confirm="onConfirm"
-    />
   </BaseDrawer>
 </template>
 

@@ -506,6 +506,14 @@ const finalizeDeleteConfirmVisible = ref(false)
 const drafts = ref<Draft[]>([])
 const currentDraftId = ref<number | null>(DraftStorage.getCurrentDraftId())
 
+// ── 草稿加载/删除确认弹窗（全局，在 BaseDrawer 之外渲染）──
+const draftConfirmVisible = ref(false)
+const draftConfirmTitle = ref('')
+const draftConfirmMessage = ref('')
+const draftConfirmType = ref<'accent' | 'danger'>('accent')
+const draftConfirmText = ref('')
+const draftPendingAction = ref<{ type: 'load' | 'delete'; draftId: number } | null>(null)
+
 const extractedTitle = computed(() => extractTitle(markdown.value) || '')
 const draftCount = computed(() => drafts.value.length)
 
@@ -1126,7 +1134,6 @@ async function openAiDemo() {
 function loadDemo() {
   base64Store.clear()
   localStorage.removeItem(IMG_STORE_KEY)
-  cleanupImages(new Set())
   currentDraftId.value = null
   markdown.value = DEMO_CONTENT
   localStorage.setItem(STORAGE_KEY, DEMO_CONTENT)
@@ -1405,6 +1412,36 @@ async function handleDeleteDraft(id: number) {
   await refreshDrafts()
   // 删除后重新匹配草稿
   setTimeout(() => matchExistingDraft(), 300)
+}
+
+function onDraftConfirmLoad(payload: { draftId: number; title: string }) {
+  draftPendingAction.value = { type: 'load', draftId: payload.draftId }
+  draftConfirmTitle.value = '加载草稿'
+  draftConfirmMessage.value = `将加载「${payload.title}」，当前编辑内容将被覆盖。`
+  draftConfirmType.value = 'accent'
+  draftConfirmText.value = '加载'
+  draftConfirmVisible.value = true
+}
+
+function onDraftConfirmDelete(payload: { draftId: number; title: string }) {
+  draftPendingAction.value = { type: 'delete', draftId: payload.draftId }
+  draftConfirmTitle.value = '删除草稿'
+  draftConfirmMessage.value = `将永久删除草稿「${payload.title}」，此操作不可撤销。`
+  draftConfirmType.value = 'danger'
+  draftConfirmText.value = '删除'
+  draftConfirmVisible.value = true
+}
+
+function onDraftConfirm() {
+  if (!draftPendingAction.value) return
+  const { type, draftId } = draftPendingAction.value
+  draftPendingAction.value = null
+  draftConfirmVisible.value = false
+  if (type === 'load') {
+    handleLoadDraft(draftId)
+  } else {
+    handleDeleteDraft(draftId)
+  }
 }
 
 function handleOpenFinalize() {
@@ -2253,8 +2290,8 @@ function onMinimapNavigate(ratio: number) {
     :visible="draftListVisible"
     :drafts="drafts"
     @close="draftListVisible = false"
-    @load="handleLoadDraft"
-    @delete="handleDeleteDraft"
+    @confirm-load="onDraftConfirmLoad"
+    @confirm-delete="onDraftConfirmDelete"
   />
 
   <!-- 保存草稿弹窗 -->
@@ -2312,6 +2349,17 @@ function onMinimapNavigate(ratio: number) {
       另存为新素材
     </button>
   </ConfirmDialog>
+
+  <!-- 草稿加载/删除全局确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="draftConfirmVisible"
+    :title="draftConfirmTitle"
+    :message="draftConfirmMessage"
+    :confirm-type="draftConfirmType"
+    :confirm-text="draftConfirmText"
+    @confirm="onDraftConfirm"
+    @cancel="draftConfirmVisible = false"
+  />
 </template>
 
 <style scoped>

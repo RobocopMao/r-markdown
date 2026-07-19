@@ -188,6 +188,26 @@ const downloadProgress = ref(0)
 
 const showImageCache = ref(false)
 
+// 图片缓存清理全局确认弹窗
+const imgCleanupVisible = ref(false)
+const imgCleanupMessage = ref('')
+const imgCleanupTokens = ref<string[]>([])
+const imgCacheRef = ref<InstanceType<typeof ImageCacheDialog> | null>(null)
+
+function onImgRequestCleanup(payload: { message: string; tokens: string[] }) {
+  imgCleanupMessage.value = payload.message
+  imgCleanupTokens.value = payload.tokens
+  imgCleanupVisible.value = true
+}
+
+async function onImgCleanupConfirm() {
+  imgCleanupVisible.value = false
+  if (imgCacheRef.value) {
+    await imgCacheRef.value.doCleanup(imgCleanupTokens.value)
+  }
+  imgCleanupTokens.value = []
+}
+
 // ── 公众号配置 ──
 const wechatAppId = ref(getSetting<string>('wechatAppId'))
 const wechatAppSecret = ref(getSetting<string>('wechatAppSecret'))
@@ -859,8 +879,18 @@ async function doDownloadUpdate() {
       @cancel="updateDialogVisible = false"
     />
 
-    <ImageCacheDialog :visible="showImageCache" @close="showImageCache = false" />
+    <ImageCacheDialog ref="imgCacheRef" :visible="showImageCache" @close="showImageCache = false" @request-cleanup="onImgRequestCleanup" />
   </BaseDrawer>
+
+  <!-- 清理图片缓存全局确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="imgCleanupVisible"
+    title="清理图片缓存"
+    :message="imgCleanupMessage"
+    confirm-text="确定"
+    @confirm="onImgCleanupConfirm"
+    @cancel="imgCleanupVisible = false"
+  />
 </template>
 
 <style scoped>
