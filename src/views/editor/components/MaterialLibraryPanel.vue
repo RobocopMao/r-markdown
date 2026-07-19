@@ -2,7 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { Package, CheckSquare, Upload } from 'lucide-vue-next'
 import { MaterialStorage, DEFAULT_CATEGORIES, type MaterialItem } from '@/services/materialStorage'
-import { publishMaterial, generateMaterialId } from '@/services/materialPublish'
+import { publishMaterial, generateMaterialId, validateImageUrls } from '@/services/materialPublish'
 import MaterialCard from './MaterialCard.vue'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -113,6 +113,17 @@ async function handlePin(item: MaterialItem) {
 
 async function handlePublish() {
   if (!activeMaterialId.value || uploading.value) return
+  const item = myMaterials.value.find(m => m.id === activeMaterialId.value)
+  if (!item) return
+
+  // 发布前验证：素材内容中的图片地址必须是在线地址
+  const validation = validateImageUrls(item.content)
+  if (!validation.valid) {
+    const localList = validation.localUrls.join(', ')
+    showToast(`发布失败：素材中存在本地图片地址（${localList}），请替换为在线地址后再发布。`)
+    return
+  }
+
   publishConfirmVisible.value = true
 }
 
@@ -158,6 +169,11 @@ function handleInsertSelected() {
 }
 
 // ── Footer 显示逻辑 ──
+const activeMaterial = computed(() => {
+  if (!activeMaterialId.value) return null
+  return myMaterials.value.find(m => m.id === activeMaterialId.value) || null
+})
+
 const showFooter = computed(() => {
   return (!!activeMaterialId.value && !selectMode.value) || (selectMode.value && selectedIds.value.size > 0)
 })
@@ -255,6 +271,7 @@ watch(() => props.visible, (newVal) => {
     <template #footer>
       <template v-if="activeMaterialId && !selectMode">
         <button
+          v-if="activeMaterial?.source !== 'official'"
           class="cursor-pointer flex items-center gap-1 px-3 py-1.5 rounded-md text-[12px] font-medium border transition-colors text-[var(--accent)] border-[var(--accent)] bg-[color-mix(in_srgb,var(--accent)_8%,transparent)]"
           :class="uploading ? 'opacity-50 cursor-not-allowed' : ''"
           :disabled="uploading"

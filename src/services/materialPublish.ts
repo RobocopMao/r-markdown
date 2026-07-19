@@ -123,6 +123,43 @@ export async function publishMaterial(
   }
 }
 
+/** 提取 content 中所有图片 URL（Markdown ![]() 和 HTML <img>） */
+export function extractImageUrls(content: string): string[] {
+  const urls: string[] = []
+
+  // 匹配 Markdown 图片: ![alt](url)
+  const mdRegex = /!\[[^\]]*\]\(([^)]+)\)/g
+  let match: RegExpExecArray | null
+  while ((match = mdRegex.exec(content)) !== null) {
+    urls.push(match[1].trim())
+  }
+
+  // 匹配 HTML <img> 标签: <img ... src="url" ...>
+  const htmlRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi
+  while ((match = htmlRegex.exec(content)) !== null) {
+    urls.push(match[1].trim())
+  }
+
+  return urls
+}
+
+/** 检查图片 URL 是否全部为在线地址 */
+export interface ImageUrlValidation {
+  valid: boolean
+  localUrls: string[]
+}
+
+export function validateImageUrls(content: string): ImageUrlValidation {
+  const urls = extractImageUrls(content)
+  const localUrls = urls.filter(
+    (url) => !url.startsWith('http://') && !url.startsWith('https://'),
+  )
+  return {
+    valid: localUrls.length === 0,
+    localUrls,
+  }
+}
+
 /** 格式化素材 ID（分类/日期/序号） */
 export function generateMaterialId(category: string, date?: string, index?: number): string {
   const catMap: Record<string, string> = {
