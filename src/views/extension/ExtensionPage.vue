@@ -35,6 +35,7 @@ const componentCategoryMap: Record<string, string> = {
   Title_DA01: 'title',
   Title_DA02: 'title',
   PTitle_DA01: 'title',
+  PTitle_DA02: 'title',
   Breaking_DA01: 'title',
   ReadingPath_DA01: 'content',
   Lead_DA01: 'content',

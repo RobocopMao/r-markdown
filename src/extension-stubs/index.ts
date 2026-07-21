@@ -34,6 +34,7 @@ import { Img_DA01 } from './Img_DA01'
 import { Lead_DA01 } from './Lead_DA01'
 import { Mermaid_DA01 } from './Mermaid_DA01'
 import { PTitle_DA01 } from './PTitle_DA01'
+import { PTitle_DA02 } from './PTitle_DA02'
 import { ReadingPath_DA01 } from './ReadingPath_DA01'
 import { Slider_DA01 } from './Slider_DA01'
 import { Statement_DA01 } from './Statement_DA01'
@@ -64,6 +65,7 @@ export const components: ComponentDef[] = [
   { id: 'Row_DA01', name: '横向布局', tag: 'row', render: Row_DA01.render },
   { id: 'Text_DA01', name: '文本样式', tag: 'text', render: Text_DA01.render },
   { id: 'PTitle_DA01', name: '段落标题', tag: 'p-title', render: PTitle_DA01.render },
+  { id: 'PTitle_DA02', name: '段落标题', tag: 'p-title', render: PTitle_DA02.render },
   { id: 'Html_DA01', name: 'HTML', tag: 'html', render: Html_DA01.render },
   { id: 'Breaking_DA01', name: '突发卡片', tag: 'breaking', render: Breaking_DA01.render },
   { id: 'Steps_DA01', name: '步骤流', tag: 'steps', render: Steps_DA01.render },

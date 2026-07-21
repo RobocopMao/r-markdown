@@ -4,7 +4,7 @@ import { components } from '@/extension'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { useTheme } from '@/composables/useTheme'
 import { useMermaid } from '@/composables/useMermaid'
-import BaseDialog from '@/components/BaseDialog.vue'
+import BaseDrawer from '@/components/BaseDrawer.vue'
 
 const props = defineProps<{
   visible: boolean
@@ -31,7 +31,7 @@ const categories = [
 
 const componentCategoryMap: Record<string, string> = {
   Title_DA01: 'title', Title_DA02: 'title',
-  PTitle_DA01: 'title',
+  PTitle_DA01: 'title', PTitle_DA02: 'title',
   Breaking_DA01: 'title',
   Lead_DA01: 'content',
   Statement_DA01: 'content',
@@ -129,17 +129,12 @@ function handleClose() {
 </script>
 
 <template>
-  <BaseDialog
+  <BaseDrawer
     :visible="visible"
     title="插入扩展组件"
     :show-footer="true"
-    confirm-text="插入"
-    cancel-text="取消"
-    :confirm-disabled="!selectedId"
-    :accent="colors.accent"
     width="500px"
     @close="handleClose"
-    @confirm="confirmInsert"
   >
     <template #header>
       <div class="flex gap-1 overflow-x-auto">
@@ -171,5 +166,14 @@ function handleClose() {
         该分类暂无组件
       </div>
     </div>
-  </BaseDialog>
+
+    <template #footer>
+      <button
+        class="cursor-pointer rounded-lg border-0 px-4 py-1.5 text-[12px] font-medium text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+        :style="{ backgroundColor: colors.accent }"
+        :disabled="!selectedId"
+        @click="confirmInsert"
+      >插入</button>
+    </template>
+  </BaseDrawer>
 </template>
