@@ -3,7 +3,7 @@ import { ref, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
 import {
-  Component, Paperclip, FilePlus, Download, Bot, Import, Images,
+  Component, Paperclip, FilePlus, Bot, Import, Images,
   Sun, Moon, Monitor, Bolt, ChevronDown, ChevronUp, SquareBottomDashedScissors,
   HelpCircle, Package, Library, BookMarked
 } from 'lucide-vue-next'
@@ -11,12 +11,21 @@ import {
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const router = useRouter()
 const helpHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help' : undefined)
+const aiDemoHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined)
 
 function openHelp() {
   if (isTauri) {
     window.open('https://r-markdown.pages.dev/#/help', '_blank', 'noopener,noreferrer')
   } else {
     router.push('/help')
+  }
+}
+
+function openAiDemo() {
+  if (isTauri) {
+    window.open('https://r-markdown.pages.dev/#/help/r-markdown-formatter', '_blank', 'noopener,noreferrer')
+  } else {
+    router.push('/help/r-markdown-formatter')
   }
 }
 
@@ -32,7 +41,7 @@ const emit = defineEmits<{
   (e: 'openSettings'): void
   (e: 'openComponents'): void
   (e: 'openDrafts'): void
-  (e: 'exampleAction', action: 'load' | 'download' | 'aiDemo'): void
+  (e: 'exampleAction', action: 'load'): void
   (e: 'openImport'): void
   (e: 'openGallery'): void
   (e: 'materialAction', action: 'my' | 'library'): void
@@ -103,7 +112,7 @@ function selectMaterialAction(action: 'my' | 'library') {
   emit('materialAction', action)
 }
 
-function selectExample(action: 'load' | 'download' | 'aiDemo') {
+function selectExample(action: 'load') {
   showExamples.value = false
   emit('exampleAction', action)
 }
@@ -251,20 +260,15 @@ function toggleCollapse() {
             <FilePlus :size="14" class="shrink-0" />
             加载示例
           </button>
-          <button
-            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
-            @click="selectExample('download')"
-          >
-            <Download :size="14" class="shrink-0" />
-            下载示例
-          </button>
-          <button
-            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
-            @click="selectExample('aiDemo')"
+          <a
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5 no-underline"
+            :href="aiDemoHref"
+            :target="isTauri ? '_blank' : undefined"
+            @click.prevent="openAiDemo"
           >
             <Bot :size="14" class="shrink-0" />
             AI排版示例
-          </button>
+          </a>
         </div>
       </div>
       <!-- 帮助 button -->
