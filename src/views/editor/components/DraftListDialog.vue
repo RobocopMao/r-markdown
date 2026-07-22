@@ -27,19 +27,33 @@ const tagPalette = [
   { bg: '#E0F2F1', fg: '#00695C' },
 ]
 
-/** 从正文提取 <badges badge="xx"> 和 <breaking badge="xx"> 的标签值 */
+/** 从正文提取标签，优先级：<title badge> > <badges badge> > <breaking badge> */
 function extractTags(content: string): string[] {
   const tags: string[] = []
   const seen = new Set<string>()
-  const re = /<(?:badges|breaking)\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
+
+  // 优先级 1: <title badge="xx">
   let m: RegExpExecArray | null
-  while ((m = re.exec(content)) !== null) {
+  const titleRe = /<title\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
+  while ((m = titleRe.exec(content)) !== null) {
     const v = m[1].trim()
-    if (v && !seen.has(v)) {
-      tags.push(v)
-      seen.add(v)
-    }
+    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
   }
+
+  // 优先级 2: <badges badge="xx">
+  const badgesRe = /<badges\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
+  while ((m = badgesRe.exec(content)) !== null) {
+    const v = m[1].trim()
+    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
+  }
+
+  // 优先级 3: <breaking badge="xx">
+  const breakingRe = /<breaking\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
+  while ((m = breakingRe.exec(content)) !== null) {
+    const v = m[1].trim()
+    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
+  }
+
   return tags
 }
 
@@ -88,14 +102,16 @@ function formatDate(ts: number): string {
     title="草稿箱"
     width="min(95vw, 1100px)"
     :show-footer="false"
+    noBodyPadding
     @close="emit('close')"
   >
     <template #header>
+      <span class="text-xs text-[var(--text-secondary)] shrink-0">共 {{ props.drafts.length }} 篇</span>
       <input
         v-model="searchQuery"
         type="text"
         placeholder="搜索草稿..."
-        class="w-[200px] h-7 px-2.5 rounded-full border draft-search-input bg-[var(--bg-primary)] text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+        class="w-[200px] h-7 px-2.5 rounded-full border border-[var(--border-color,#d0d0d0)] bg-[var(--bg-primary)] text-[12px] text-[var(--text-primary)] outline-none focus:border-[var(--accent)] placeholder:text-[var(--text-tertiary,#aaa)]"
       />
     </template>
 
@@ -114,53 +130,56 @@ function formatDate(ts: number): string {
     </div>
 
     <!-- 卡片网格 -->
-    <div v-else class="draft-grid">
+    <div v-else class="grid grid-cols-5 gap-3 w-full py-3 px-3.5">
       <div
         v-for="draft in filteredDrafts"
         :key="draft.id"
-        class="draft-card"
+        class="draft-card flex flex-col p-3.5 rounded-xl bg-[var(--bg-primary)] min-h-40 min-w-0 overflow-hidden"
       >
         <!-- 标题 -->
-        <div class="draft-title" :title="draft.title">
+        <div class="text-[15px] font-bold text-[var(--text-primary)] leading-[1.4] h-[42px] line-clamp-2 overflow-hidden mb-2.5" :title="draft.title">
           {{ draft.title }}
         </div>
 
         <!-- 正文 -->
-        <div class="draft-body">
+        <div class="flex-1 text-xs text-[var(--text-secondary)] leading-[1.6] line-clamp-2 overflow-hidden mb-3.5 min-h-0">
           {{ cleanBody(draft.content) || '（无内容）' }}
         </div>
 
         <!-- 标签 -->
-        <div v-if="extractTags(draft.content).length" class="draft-tags">
-          <span
-            v-for="(tag, idx) in extractTags(draft.content)"
-            :key="tag"
-            class="draft-tag"
-            :style="{
-              background: tagPalette[idx % tagPalette.length].bg,
-              color: tagPalette[idx % tagPalette.length].fg,
-            }"
-          >
-            {{ tag }}
-          </span>
+        <div class="flex flex-wrap gap-1.5 mb-2.5">
+          <template v-if="extractTags(draft.content).length">
+            <span
+              v-for="(tag, idx) in extractTags(draft.content)"
+              :key="tag"
+              class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium leading-[1.4]"
+              :style="{
+                background: tagPalette[idx % tagPalette.length].bg,
+                color: tagPalette[idx % tagPalette.length].fg,
+              }"
+            >
+              {{ tag }}
+            </span>
+          </template>
+          <span v-else class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium leading-[1.4] bg-[var(--border-color,#eee)] text-[var(--text-secondary)]">未分类</span>
         </div>
 
         <!-- 分隔线 -->
-        <hr class="draft-divider" />
+        <hr class="border-0 border-t border-[var(--border-color,#eee)] mx-0 mb-2.5" />
 
         <!-- 底部：日期 + 操作 -->
-        <div class="draft-footer">
-          <span class="draft-date">{{ formatDate(draft.updatedAt) }}</span>
-          <div class="draft-actions">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] text-[var(--text-tertiary,#999)]">{{ formatDate(draft.updatedAt) }}</span>
+          <div class="flex items-center gap-1.5">
             <button
-              class="draft-action-btn"
-              title="加载"
+              class="draft-action-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
+              title="重新编辑"
               @click="draft.id !== undefined && emit('confirm-load', { draftId: draft.id, title: draft.title })"
             >
               <Pencil :size="14" />
             </button>
             <button
-              class="draft-action-btn"
+              class="draft-action-btn draft-delete-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
               title="删除"
               @click="draft.id !== undefined && emit('confirm-delete', { draftId: draft.id, title: draft.title })"
             >
@@ -174,21 +193,9 @@ function formatDate(ts: number): string {
 </template>
 
 <style scoped>
-.draft-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
 .draft-card {
-  display: flex;
-  flex-direction: column;
-  padding: 14px;
-  border-radius: 12px;
-  background: var(--bg-primary);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: box-shadow 0.15s ease, background 0.15s ease;
-  min-height: 160px;
 }
 
 .draft-card:hover {
@@ -196,80 +203,7 @@ function formatDate(ts: number): string {
   background: color-mix(in srgb, var(--accent) 4%, var(--bg-primary));
 }
 
-.draft-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  line-height: 1.4;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  margin-bottom: 6px;
-}
-
-.draft-body {
-  flex: 1;
-  font-size: 12px;
-  color: var(--text-secondary);
-  line-height: 1.6;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  margin-bottom: 8px;
-  min-height: 0;
-}
-
-.draft-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.draft-tag {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.4;
-}
-
-.draft-divider {
-  border: none;
-  border-top: 1px solid var(--border-color, #eee);
-  margin: 0 0 10px;
-}
-
-.draft-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.draft-date {
-  font-size: 11px;
-  color: var(--text-tertiary, #999);
-}
-
-.draft-actions {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .draft-action-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
   transition: color 0.15s, background 0.15s;
 }
 
@@ -278,20 +212,15 @@ function formatDate(ts: number): string {
   background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 
-.draft-search-input {
-  border-color: var(--border-color, #d0d0d0);
-}
-.draft-search-input:focus {
-  border-color: var(--accent);
-}
-.draft-search-input::placeholder {
-  color: var(--text-tertiary, #aaa);
+.draft-delete-btn:hover {
+  color: #e53935;
+  background: rgba(229, 57, 53, 0.1);
 }
 
-/* 暗色模式 */
 [data-theme='dark'] .draft-card {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
 }
+
 [data-theme='dark'] .draft-card:hover {
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
 }

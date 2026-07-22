@@ -1416,10 +1416,10 @@ async function handleDeleteDraft(id: number) {
 
 function onDraftConfirmLoad(payload: { draftId: number; title: string }) {
   draftPendingAction.value = { type: 'load', draftId: payload.draftId }
-  draftConfirmTitle.value = '加载草稿'
-  draftConfirmMessage.value = `将加载「${payload.title}」，当前编辑内容将被覆盖。`
+  draftConfirmTitle.value = '重新编辑'
+  draftConfirmMessage.value = `将重新编辑「${payload.title}」，当前编辑内容将被覆盖。`
   draftConfirmType.value = 'accent'
-  draftConfirmText.value = '加载'
+  draftConfirmText.value = '重新编辑'
   draftConfirmVisible.value = true
 }
 
