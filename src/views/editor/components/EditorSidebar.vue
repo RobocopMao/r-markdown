@@ -302,7 +302,7 @@ function toggleCollapse() {
       <button
         class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
         :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-        title="编辑器设置"
+        title="设置"
         @click="emit('openSettings')"
       >
         <Bolt :size="20" />

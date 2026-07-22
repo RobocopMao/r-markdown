@@ -297,7 +297,7 @@ async function doDownloadUpdate() {
 <template>
   <BaseDrawer
     :visible="visible"
-    title="编辑器设置"
+    title="设置"
     width="min(90vw, 680px)"
     :show-footer="false"
     @close="emit('close')"
