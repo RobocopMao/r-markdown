@@ -8,6 +8,7 @@ import { useMermaid } from '@/composables/useMermaid'
 
 const props = defineProps<{
   name: string
+  id?: string
   category: string
   subCategory?: string
   author?: string
@@ -94,6 +95,12 @@ const displayCategory = computed(() =>
   props.subCategory ? `${props.category} · ${props.subCategory}` : props.category
 )
 
+const displayId = computed(() => {
+  if (!props.id) return ''
+  const segs = props.id.split('/')
+  return segs[segs.length - 1]
+})
+
 function categoryColor(cat: string): string {
   return CATEGORY_COLORS[cat] || '#6b7280'
 }
@@ -146,7 +153,13 @@ function categoryColor(cat: string): string {
     <div class="card-info">
       <div class="card-body">
         <div class="flex items-center gap-1.5">
-          <div class="font-medium truncate">{{ name }}</div>
+          <div class="relative group/title">
+            <div class="font-medium truncate">{{ name }}</div>
+            <span
+              v-if="displayId"
+              class="absolute bottom-full left-0 mb-0.5 hidden group-hover/title:block px-1.5 py-0.5 rounded text-[10px] font-mono whitespace-nowrap bg-gray-800 text-gray-100 dark:bg-gray-200 dark:text-gray-800 shadow z-10"
+            >[ID:{{ displayId }}]</span>
+          </div>
           <span
             class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
             :style="{ background: `${categoryColor(category)}15`, color: categoryColor(category) }"
