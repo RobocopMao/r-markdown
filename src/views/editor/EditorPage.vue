@@ -1398,6 +1398,12 @@ async function handleLoadDraft(id: number) {
   if (draft) {
     markdown.value = draft.content
     currentDraftId.value = draft.id!
+    // 重置缩略图指示器到顶部
+    minimapScrollRatio.value = 0
+    minimapViewportRatio.value = 0
+    if (previewScrollEl) {
+      previewScrollEl.scrollTop = 0
+    }
     showToast('已加载草稿')
     draftListVisible.value = false
   }
