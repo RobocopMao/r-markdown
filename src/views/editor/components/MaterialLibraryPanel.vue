@@ -248,6 +248,7 @@ watch(() => props.visible, (newVal) => {
           >
             <MaterialCard
               :name="item.name"
+              :id="item.officialId"
               :category="item.category"
               :sub-category="item.subCategory"
               :author="item.author"

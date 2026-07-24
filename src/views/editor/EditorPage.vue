@@ -1398,6 +1398,12 @@ async function handleLoadDraft(id: number) {
   if (draft) {
     markdown.value = draft.content
     currentDraftId.value = draft.id!
+    // 重置缩略图指示器到顶部
+    minimapScrollRatio.value = 0
+    minimapViewportRatio.value = 0
+    if (previewScrollEl) {
+      previewScrollEl.scrollTop = 0
+    }
     showToast('已加载草稿')
     draftListVisible.value = false
   }
@@ -1416,10 +1422,10 @@ async function handleDeleteDraft(id: number) {
 
 function onDraftConfirmLoad(payload: { draftId: number; title: string }) {
   draftPendingAction.value = { type: 'load', draftId: payload.draftId }
-  draftConfirmTitle.value = '加载草稿'
-  draftConfirmMessage.value = `将加载「${payload.title}」，当前编辑内容将被覆盖。`
+  draftConfirmTitle.value = '重新编辑'
+  draftConfirmMessage.value = `将重新编辑「${payload.title}」，当前编辑内容将被覆盖。`
   draftConfirmType.value = 'accent'
-  draftConfirmText.value = '加载'
+  draftConfirmText.value = '重新编辑'
   draftConfirmVisible.value = true
 }
 

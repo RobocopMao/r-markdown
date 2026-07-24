@@ -15,8 +15,12 @@ export interface OfficialMaterial {
   content: string
 }
 
-/** 索引条目（仅含 id，元数据从独立素材 JSON 获取） */
-export type IndexEntry = string
+/** 索引条目（含 id / name / category，分类筛选和名称搜索均可在加载前生效） */
+export interface IndexEntry {
+  id: string
+  name: string
+  category: string
+}
 
 const DEFAULT_REPO = 'RobocopMao/r-markdown-materials'
 const DEFAULT_BRANCH = 'main'
@@ -93,8 +97,8 @@ async function fetchJsonWithFallback(repo: string, sha: string, path: string, us
 }
 
 export const MaterialLibrary = {
-  /** 获取官方素材索引列表（纯 id 数组） */
-  async fetchIndex(): Promise<string[]> {
+  /** 获取官方素材索引列表（含 id + name） */
+  async fetchIndex(): Promise<IndexEntry[]> {
     const repo = getRepoPath()
     const sha = await getLatestCommitSha()
     return fetchJsonWithFallback(repo, sha, 'index.json', true)

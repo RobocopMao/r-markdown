@@ -3,6 +3,8 @@
  * 通过 Cloudflare Worker 代理，Token 仅在服务端注入，不暴露给客户端。
  */
 
+import type { IndexEntry } from './materialLibrary'
+
 const DEFAULT_BRANCH = 'main'
 const API_BASE = import.meta.env.VITE_API_PROXY || ''
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -42,14 +44,27 @@ export async function publishMaterial(
   try {
     // 1. 获取当前 index.json（需要 sha 用于更新）
     const indexRes = await githubFetch('index.json')
-    let indexEntries: string[] = []
+    let indexEntries: IndexEntry[] = []
     let indexSha = ''
     if (indexRes.ok) {
       const indexData = await indexRes.json()
-      indexEntries = indexData.content
+      const raw: unknown[] = indexData.content
         ? JSON.parse(decodeURIComponent(escape(atob(indexData.content.replace(/\n/g, '')))))
         : []
       indexSha = indexData.sha
+      // 格式迁移：旧格式 string[] → 新格式 IndexEntry[]
+      if (raw.length > 0 && typeof raw[0] === 'string') {
+        indexEntries = (raw as string[]).map((id) => {
+          const segments = id.split('/')
+          return {
+            id,
+            name: id === materialId ? data.name : '',
+            category: segments[0] || 'others',
+          }
+        })
+      } else {
+        indexEntries = raw as IndexEntry[]
+      }
     }
 
     // 2. 准备素材文件内容（不含 id，id 由路径决定）
@@ -93,13 +108,14 @@ export async function publishMaterial(
     }
 
     // 5. 更新 index.json
-    const existingIdx = indexEntries.indexOf(materialId)
-    if (existingIdx >= 0) {
-      indexEntries[existingIdx] = materialId
+    const existing = indexEntries.find((e) => e.id === materialId)
+    if (existing) {
+      existing.name = data.name
+      existing.category = data.category
     } else {
-      indexEntries.push(materialId)
+      indexEntries.push({ id: materialId, name: data.name, category: data.category })
     }
-    indexEntries.sort()
+    indexEntries.sort((a, b) => a.id.localeCompare(b.id))
 
     const indexBody: Record<string, string> = {
       message: `更新索引: ${data.name}`,

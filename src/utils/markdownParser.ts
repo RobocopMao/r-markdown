@@ -13,6 +13,7 @@ import {
 import { Title_DA01 } from '@/extension/Title_DA01'
 import { Title_DA02 } from '@/extension/Title_DA02'
 import { PTitle } from '@/extension/PTitle_DA01'
+import { PTitle_DA02 } from '@/extension/PTitle_DA02'
 import { Breaking_DA01 } from '@/extension/Breaking_DA01'
 import { Steps_DA01 } from '@/extension/Steps_DA01'
 import { Steps_DA02 } from '@/extension/Steps_DA02'
@@ -732,7 +733,8 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const attrs = parseAttrs(ptMatch[1])
         const body = ptMatch[2].trim()
         // 给根节点打个标记（不影响样式），分页时用它避免小节标题落在页底跟正文分家
-        html += withSourceLine(i, PTitle.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'))
+        const pTitleRenderer = attrs.type === 'DA02' ? PTitle_DA02 : PTitle
+        html += withSourceLine(i, pTitleRenderer.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'))
       }
       i++
       continue

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, nextTick } from 'vue'
+import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import type { ThemeColors } from '@/composables/useTheme'
 
@@ -34,6 +34,8 @@ watch(() => props.markdown, async (md) => {
     minimapScrollRatio.value = 0
     return
   }
+  // 内容变化时重置内部滚动位置，避免旧位置与新内容不匹配
+  minimapScrollRatio.value = 0
   renderedHtml.value = await parseMarkdownAsync(md, props.colors)
   await nextTick()
   if (innerRef.value) {
@@ -57,6 +59,23 @@ watch(contentWidth, async () => {
   if (innerRef.value) {
     unscaledContentH.value = innerRef.value.scrollHeight
   }
+})
+
+// ── ResizeObserver：持续追踪异步内容（mermaid / 图片）加载后的高度变化 ──
+let resizeObserver: ResizeObserver | null = null
+
+watch(innerRef, (el) => {
+  resizeObserver?.disconnect()
+  if (el) {
+    resizeObserver = new ResizeObserver(() => {
+      unscaledContentH.value = el.scrollHeight
+    })
+    resizeObserver.observe(el)
+  }
+})
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect()
 })
 
 const visualH = computed(() => unscaledContentH.value * scaleFactor.value)

@@ -15,6 +15,7 @@ interface AttrMeta {
   label: string
   default: string
   required?: boolean
+  hidden?: boolean
   options?: string[]
   hint?: string
   description?: string
@@ -33,54 +34,69 @@ const emit = defineEmits<{
 
 // ── 动态 schema ──
 function buildTagSchema(): Record<string, AttrMeta[]> {
-  const tagAttrs = new Map<string, Map<string, AttrMeta>>()
+  const tagTypeAttrs = new Map<string, Map<string, AttrMeta>>()
   for (const comp of components) {
     if (!comp.attrs || comp.attrs.length === 0) {
-      if (!tagAttrs.has(comp.tag)) tagAttrs.set(comp.tag, new Map())
+      if (!tagTypeAttrs.has(comp.tag)) tagTypeAttrs.set(comp.tag, new Map())
       continue
     }
-    let attrMap = tagAttrs.get(comp.tag)
-    if (!attrMap) {
-      attrMap = new Map()
-      tagAttrs.set(comp.tag, attrMap)
-    }
-    for (const attr of comp.attrs) {
-      if (attrMap.has(attr.key)) {
-        const ex = attrMap.get(attr.key)!
-        if (attr.options && ex.options) {
-          ex.options = [...new Set([...ex.options, ...attr.options])]
+    // 若组件定义了 type 属性且有默认值，用 `${tag}::${type}` 隔离变体
+    const typeAttr = comp.attrs.find((a) => a.key === 'type' && a.default)
+    const keys = typeAttr ? [`${comp.tag}::${typeAttr.default}`, comp.tag] : [comp.tag]
+    for (const baseKey of keys) {
+      let attrMap = tagTypeAttrs.get(baseKey)
+      if (!attrMap) {
+        attrMap = new Map()
+        tagTypeAttrs.set(baseKey, attrMap)
+      }
+      for (const attr of comp.attrs) {
+        if (attrMap.has(attr.key)) {
+          const ex = attrMap.get(attr.key)!
+          if (attr.options && ex.options) {
+            ex.options = [...new Set([...ex.options, ...attr.options])]
+          }
+        } else {
+          attrMap.set(attr.key, {
+            key: attr.key,
+            label: attr.label,
+            default: attr.default || '',
+            required: attr.required,
+            hidden: attr.hidden,
+            options: attr.options ? [...attr.options] : undefined,
+            description: attr.description,
+            inputType: attr.inputType,
+          })
         }
-      } else {
-        attrMap.set(attr.key, {
-          key: attr.key,
-          label: attr.label,
-          default: attr.default || '',
-          required: attr.required,
-          options: attr.options ? [...attr.options] : undefined,
-          description: attr.description,
-          inputType: attr.inputType,
-        })
       }
     }
   }
   const schema: Record<string, AttrMeta[]> = {}
-  for (const [tag, m] of tagAttrs) schema[tag] = [...m.values()]
+  for (const [key, m] of tagTypeAttrs) schema[key] = [...m.values()]
   return schema
 }
 const TAG_SCHEMA = buildTagSchema()
+
+function resolveSchema(tagName: string, tagAttrs: Record<string, string>): AttrMeta[] {
+  const type = tagAttrs.type
+  if (type) {
+    const typedKey = `${tagName}::${type}`
+    if (TAG_SCHEMA[typedKey]) return TAG_SCHEMA[typedKey]
+  }
+  return TAG_SCHEMA[tagName] || []
+}
 
 // ── 状态 ──
 const editedAttrs = ref<Record<string, string>>({})
 const attrKeys = ref<string[]>([])
 
-function buildSchemaMap(tagName: string): Map<string, AttrMeta> {
+function buildSchemaMap(tagName: string, tagAttrs: Record<string, string>): Map<string, AttrMeta> {
   const m = new Map<string, AttrMeta>()
-  for (const a of TAG_SCHEMA[tagName] || []) m.set(a.key, a)
+  for (const a of resolveSchema(tagName, tagAttrs)) m.set(a.key, a)
   return m
 }
 
 function buildFiltered(): Record<string, string> {
-  const schemaMap = buildSchemaMap(props.tagInfo?.tagName || '')
+  const schemaMap = buildSchemaMap(props.tagInfo?.tagName || '', props.tagInfo?.attrs || {})
   const filtered: Record<string, string> = {}
   for (const [k, v] of Object.entries(editedAttrs.value)) {
     const meta = schemaMap.get(k)
@@ -95,7 +111,7 @@ watch(
   () => props.tagInfo,
   (info) => {
     if (!info) return
-    const schema = TAG_SCHEMA[info.tagName]
+    const schema = resolveSchema(info.tagName, info.attrs)
     const merged: Record<string, string> = {}
     if (schema) {
       for (const a of schema) {
@@ -107,7 +123,10 @@ watch(
       if (!(k in merged)) merged[k] = v
     }
     editedAttrs.value = merged
-    attrKeys.value = Object.keys(merged)
+    attrKeys.value = Object.keys(merged).filter((k) => {
+      const meta = schema?.find((a) => a.key === k)
+      return !meta?.hidden
+    })
   },
   { immediate: true },
 )
@@ -128,7 +147,7 @@ watch(
 
 function getMeta(key: string): AttrMeta {
   return (
-    TAG_SCHEMA[props.tagInfo?.tagName || '']?.find((a) => a.key === key) || {
+    resolveSchema(props.tagInfo?.tagName || '', props.tagInfo?.attrs || {}).find((a) => a.key === key) || {
       key,
       label: key,
       default: '',
@@ -181,7 +200,7 @@ const selectChevronStyle = {
       该标签没有可编辑的属性
     </div>
 
-    <div v-else class="px-3 py-2.5 flex flex-col gap-2 overflow-y-auto flex-1">
+    <div v-else class="px-3 py-2.5 flex flex-col gap-2 overflow-y-auto overflow-x-hidden flex-1">
       <div v-for="key in attrKeys" :key="key" class="flex flex-col gap-[3px]">
         <label
           class="text-[11px] font-semibold text-[var(--text-secondary,#6b7280)] flex items-center gap-1"
