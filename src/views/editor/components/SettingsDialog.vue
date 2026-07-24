@@ -121,6 +121,14 @@ function saveCompressQuality(val: number) {
 const minimapEnabled = ref(getSetting<boolean>('minimapEnabled'))
 watch(minimapEnabled, (val) => setSetting('minimapEnabled', val))
 
+// ── 编辑器主题 ──
+const editorTheme = ref(getSetting<string>('editorTheme'))
+
+function saveEditorTheme(theme: string) {
+  editorTheme.value = theme
+  setSetting('editorTheme', theme)
+}
+
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
 function saveParaFontSize(val: number) { paraFontSize.value = val }
 function saveParaLineHeight(val: number) { paraLineHeight.value = val }
@@ -529,6 +537,37 @@ async function doDownloadUpdate() {
         </div>
         <p class="text-[11px] text-[#999] dark:text-[#666]">
           开启后可在预览区右侧看到文档全貌缩略图，点击可快速跳转
+        </p>
+      </section>
+
+      <!-- 编辑器主题 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+          编辑器主题
+        </h3>
+        <select
+          :value="editorTheme"
+          class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+          :style="selectChevronStyle"
+          @change="saveEditorTheme(($event.target as HTMLSelectElement).value)"
+        >
+          <optgroup label="浅色主题">
+            <option value="warm">默认</option>
+            <option value="github-light">GitHub Light</option>
+            <option value="solarized-light">Solarized Light</option>
+            <option value="material-light">Material Light</option>
+          </optgroup>
+          <optgroup label="深色主题">
+            <option value="one-dark">One Dark</option>
+            <option value="github-dark">GitHub Dark</option>
+            <option value="solarized-dark">Solarized Dark</option>
+            <option value="material-dark">Material Dark</option>
+            <option value="dracula">Dracula</option>
+            <option value="monokai">Monokai</option>
+          </optgroup>
+        </select>
+        <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
+          仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
         </p>
       </section>
     </template>

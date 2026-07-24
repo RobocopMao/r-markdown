@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useTheme } from '@/composables/useTheme'
+import { useSetting } from '@/composables/useSetting'
 import { tagMap } from '@/extension'
 import {
   EditorView,
@@ -11,7 +12,7 @@ import {
   ViewUpdate,
   WidgetType,
 } from '@codemirror/view'
-import { EditorState, RangeSetBuilder, StateEffect, StateField } from '@codemirror/state'
+import { EditorState, RangeSetBuilder, StateEffect, StateField, Compartment } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
@@ -26,6 +27,12 @@ import { lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@co
 import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { rectangularSelection } from '@codemirror/view'
+import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
+import { githubLightStyle, githubDarkStyle } from '@uiw/codemirror-theme-github'
+import { solarizedLightStyle, solarizedDarkStyle } from '@uiw/codemirror-theme-solarized'
+import { materialLightStyle, materialDarkStyle } from '@uiw/codemirror-theme-material'
+import { draculaDarkStyle } from '@uiw/codemirror-theme-dracula'
+import { monokaiDarkStyle } from '@uiw/codemirror-theme-monokai'
 
 // ── 预览点击定位高亮 ──
 const highlightLineEffect = StateEffect.define<number>()
@@ -78,6 +85,45 @@ const emit = defineEmits<{
 
 const editorRef = ref<HTMLDivElement>()
 const { colors } = useTheme()
+const editorTheme = useSetting<string>('editorTheme')
+const themeCompartment = new Compartment()
+
+// ── 第三方主题 HighlightStyle ──
+const githubLightHighlight = HighlightStyle.define(githubLightStyle)
+const githubDarkHighlight = HighlightStyle.define(githubDarkStyle)
+const solarizedLightHighlight = HighlightStyle.define(solarizedLightStyle)
+const solarizedDarkHighlight = HighlightStyle.define(solarizedDarkStyle)
+const materialLightHighlight = HighlightStyle.define(materialLightStyle)
+const materialDarkHighlight = HighlightStyle.define(materialDarkStyle)
+const draculaHighlight = HighlightStyle.define(draculaDarkStyle)
+const monokaiHighlight = HighlightStyle.define(monokaiDarkStyle)
+
+function themeExtension(theme: string) {
+  switch (theme) {
+    case 'one-dark':
+      return syntaxHighlighting(oneDarkHighlightStyle)
+    case 'github-light':
+      return syntaxHighlighting(githubLightHighlight)
+    case 'github-dark':
+      return syntaxHighlighting(githubDarkHighlight)
+    case 'solarized-light':
+      return syntaxHighlighting(solarizedLightHighlight)
+    case 'solarized-dark':
+      return syntaxHighlighting(solarizedDarkHighlight)
+    case 'material-light':
+      return syntaxHighlighting(materialLightHighlight)
+    case 'material-dark':
+      return syntaxHighlighting(materialDarkHighlight)
+    case 'dracula':
+      return syntaxHighlighting(draculaHighlight)
+    case 'monokai':
+      return syntaxHighlighting(monokaiHighlight)
+    case 'warm':
+    default:
+      return [warmSyntaxTheme, syntaxHighlighting(warmHighlight)]
+  }
+}
+
 let view: EditorView | null = null
 
 // 程序化滚动标记：scrollToLineAndHighlight 等主动滚动时置 true，避免触发双向同步
@@ -297,8 +343,8 @@ const warmHighlight = HighlightStyle.define([
   { tag: tags.special(tags.string), color: '#98C379' },
 ])
 
-// 自定义暖色调主题 — 匹配 Notion 风格
-const warmTheme = EditorView.theme(
+// 编辑器基础 UI 主题 — 始终生效，不受主题切换影响
+const warmEditorTheme = EditorView.theme(
   {
     '&': {
       backgroundColor: 'var(--bg-editor)',
@@ -342,7 +388,20 @@ const warmTheme = EditorView.theme(
     '.cm-foldGutter': {
       color: 'var(--text-muted)',
     },
-    // 语法高亮色 — 暖色调
+    '.cm-scroller': {
+      overflow: 'auto',
+      scrollbarWidth: 'none',
+    },
+    '.cm-scroller::-webkit-scrollbar': {
+      display: 'none',
+    },
+  },
+  { dark: false },
+)
+
+// 暖色调语法高亮 CSS（.cm-* 类名兜底）
+const warmSyntaxTheme = EditorView.theme(
+  {
     '.cm-formatting': { color: '#b0a4c8' },
     '.cm-keyword': { color: '#c084fc' },
     '.cm-heading': { color: '#e879f9', fontWeight: '700', textDecoration: 'none' },
@@ -371,14 +430,6 @@ const warmTheme = EditorView.theme(
     },
     '.cm-list': {
       color: '#c084fc',
-    },
-    // 滚动条隐藏
-    '.cm-scroller': {
-      overflow: 'auto',
-      scrollbarWidth: 'none',
-    },
-    '.cm-scroller::-webkit-scrollbar': {
-      display: 'none',
     },
   },
   { dark: false },
@@ -476,8 +527,8 @@ onMounted(async () => {
       history(),
       keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
       markdown({ codeLanguages: languages }),
-      syntaxHighlighting(warmHighlight),
-      warmTheme,
+      warmEditorTheme,
+      themeCompartment.of(themeExtension(editorTheme.value)),
       ph('在此输入 Markdown...'),
       updateListener,
       EditorView.lineWrapping,
@@ -489,6 +540,14 @@ onMounted(async () => {
   view = new EditorView({
     state,
     parent: editorRef.value,
+  })
+
+  // 监听主题切换
+  watch(editorTheme, (newTheme) => {
+    if (!view) return
+    view.dispatch({
+      effects: themeCompartment.reconfigure(themeExtension(newTheme)),
+    })
   })
 
   // 滚动同步

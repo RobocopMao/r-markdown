@@ -53,4 +53,6 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   wechatDefaultAuthor: { default: '' },
   /** 预览区 minimap 缩略图开关 */
   minimapEnabled: { default: false },
+  /** 编辑器主题 */
+  editorTheme: { default: 'warm' },
 }
