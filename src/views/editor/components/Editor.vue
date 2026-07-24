@@ -118,7 +118,7 @@ function themeExtension(theme: string) {
       return syntaxHighlighting(draculaHighlight)
     case 'monokai':
       return syntaxHighlighting(monokaiHighlight)
-    case 'warm':
+    case 'default':
     default:
       return [warmSyntaxTheme, syntaxHighlighting(warmHighlight)]
   }

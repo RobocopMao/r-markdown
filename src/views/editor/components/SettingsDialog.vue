@@ -552,7 +552,7 @@ async function doDownloadUpdate() {
           @change="saveEditorTheme(($event.target as HTMLSelectElement).value)"
         >
           <optgroup label="浅色主题">
-            <option value="warm">默认</option>
+            <option value="default">默认</option>
             <option value="github-light">GitHub Light</option>
             <option value="solarized-light">Solarized Light</option>
             <option value="material-light">Material Light</option>
