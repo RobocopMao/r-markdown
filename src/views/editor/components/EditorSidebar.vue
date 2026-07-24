@@ -2,6 +2,7 @@
 import { ref, nextTick, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
+import { useDarkMode, type DarkMode } from '@/composables/useDarkMode'
 import {
   Component, Paperclip, FilePlus, Bot, Import, Images,
   Sun, Moon, Monitor, Bolt, ChevronDown, ChevronUp, SquareBottomDashedScissors,
@@ -31,13 +32,11 @@ function openAiDemo() {
 
 const props = defineProps<{
   activeTab?: string
-  darkMode?: string
   draftCount?: number
 }>()
 
 const emit = defineEmits<{
   (e: 'select', tab: string): void
-  (e: 'toggleDarkMode'): void
   (e: 'openSettings'): void
   (e: 'openComponents'): void
   (e: 'openDrafts'): void
@@ -58,6 +57,49 @@ const materialBtnRef = ref<HTMLElement | null>(null)
 const materialPopoverPos = ref({ top: '0px', left: '0px' })
 let materialHideTimer: ReturnType<typeof setTimeout> | null = null
 let exampleHideTimer: ReturnType<typeof setTimeout> | null = null
+
+// ── Dark mode popover ──
+const { mode: darkModeState, setMode } = useDarkMode()
+const showDarkMode = ref(false)
+const darkModeBtnRef = ref<HTMLElement | null>(null)
+const darkModePopoverRef = ref<HTMLElement | null>(null)
+const darkModePopoverPos = ref({ top: '0px', left: '0px' })
+let darkModeHideTimer: ReturnType<typeof setTimeout> | null = null
+
+async function showDarkModePopover() {
+  if (darkModeHideTimer) { clearTimeout(darkModeHideTimer); darkModeHideTimer = null }
+  if (showDarkMode.value) return
+  showDarkMode.value = true
+  if (darkModeBtnRef.value) {
+    await nextTick()
+    const rect = darkModeBtnRef.value.getBoundingClientRect()
+    darkModePopoverPos.value = {
+      top: rect.top + 'px',
+      left: (rect.right + 4) + 'px',
+    }
+  }
+}
+
+function hideDarkModePopover() {
+  darkModeHideTimer = setTimeout(() => {
+    showDarkMode.value = false
+  }, 150)
+}
+
+function cancelDarkModeHide() {
+  if (darkModeHideTimer) { clearTimeout(darkModeHideTimer); darkModeHideTimer = null }
+}
+
+function selectDarkMode(mode: DarkMode) {
+  setMode(mode)
+  showDarkMode.value = false
+}
+
+const darkModeTitle = computed(() => {
+  if (darkModeState.value === 'dark') return '深色模式'
+  if (darkModeState.value === 'system') return '跟随系统'
+  return '浅色模式'
+})
 
 async function showExamplesPopover() {
   if (exampleHideTimer) { clearTimeout(exampleHideTimer); exampleHideTimer = null }
@@ -153,7 +195,7 @@ function toggleCollapse() {
       <!-- 草稿列表 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-        title="草稿箱"
+
         @click="emit('openDrafts')"
       >
         <SquareBottomDashedScissors :size="24" class="shrink-0" />
@@ -167,7 +209,7 @@ function toggleCollapse() {
       <!-- 导入 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-        title="导入文件"
+
         @click="emit('openImport')"
       >
         <Import :size="24" class="shrink-0" />
@@ -176,7 +218,7 @@ function toggleCollapse() {
       <!-- 扩展组件 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-        title="扩展组件API"
+
         @click="emit('openComponents')"
       >
         <Component :size="24" class="shrink-0" />
@@ -185,7 +227,7 @@ function toggleCollapse() {
       <!-- 图库 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-        title="图库"
+
         @click="emit('openGallery')"
       >
         <Images :size="24" class="shrink-0" />
@@ -200,7 +242,7 @@ function toggleCollapse() {
         <button
           ref="materialBtnRef"
           class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-          title="素材"
+
         >
           <Package :size="24" class="shrink-0" />
           <span class="text-[10px] leading-tight">素材</span>
@@ -239,7 +281,7 @@ function toggleCollapse() {
         <button
           ref="exampleBtnRef"
           class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-          title="示例"
+
         >
           <Paperclip :size="24" class="shrink-0" />
           <span class="text-[10px] leading-tight">示例</span>
@@ -276,7 +318,7 @@ function toggleCollapse() {
         :href="helpHref"
         :target="isTauri ? '_blank' : undefined"
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150 no-underline"
-        title="使用帮助"
+
         @click.prevent="openHelp"
       >
         <HelpCircle :size="24" class="shrink-0" />
@@ -289,20 +331,61 @@ function toggleCollapse() {
       class="flex items-center gap-1 space-y-1"
       :class="collapsed ? 'flex-col px-1 py-1.5' : 'flex-col pb-2 mt-auto'"
     >
-      <button
-        class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
-        :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-        :title="darkMode === 'dark' ? '切换跟随系统' : darkMode === 'system' ? '切换浅色模式' : '切换深色模式'"
-        @click="emit('toggleDarkMode')"
+      <!-- Dark mode button with popover -->
+      <div
+        :class="collapsed ? '' : 'relative'"
+        @mouseenter="showDarkModePopover"
+        @mouseleave="hideDarkModePopover"
       >
-        <Sun v-if="darkMode === 'dark'" :size="20" />
-        <Monitor v-else-if="darkMode === 'system'" :size="20" />
-        <Moon v-else :size="20" />
-      </button>
+        <button
+          ref="darkModeBtnRef"
+          class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
+          :class="collapsed ? 'rounded-full' : 'rounded-lg'"
+
+        >
+          <Sun v-if="darkModeState === 'light'" :size="20" />
+          <Moon v-else-if="darkModeState === 'dark'" :size="20" />
+          <Monitor v-else :size="20" />
+        </button>
+        <!-- Dark mode popover -->
+        <div
+          v-if="showDarkMode"
+          ref="darkModePopoverRef"
+          class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[110px]"
+          :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: darkModePopoverPos.top, left: darkModePopoverPos.left }"
+          @mouseenter="cancelDarkModeHide"
+          @mouseleave="hideDarkModePopover"
+        >
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            :style="darkModeState === 'light' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            @click="selectDarkMode('light')"
+          >
+            <Sun :size="14" class="shrink-0" />
+            浅色模式
+          </button>
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            :style="darkModeState === 'dark' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            @click="selectDarkMode('dark')"
+          >
+            <Moon :size="14" class="shrink-0" />
+            深色模式
+          </button>
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            :style="darkModeState === 'system' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            @click="selectDarkMode('system')"
+          >
+            <Monitor :size="14" class="shrink-0" />
+            跟随系统
+          </button>
+        </div>
+      </div>
       <button
         class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
         :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-        title="设置"
+
         @click="emit('openSettings')"
       >
         <Bolt :size="20" />
@@ -313,7 +396,7 @@ function toggleCollapse() {
         class="flex items-center justify-center w-8 h-8 border-none cursor-pointer transition-colors duration-150"
         :class="collapsed ? 'rounded-full' : 'rounded-lg'"
         :style="{ background: `color-mix(in srgb, var(--accent) 10%, transparent)`, color: 'var(--accent)' }"
-        :title="collapsed ? '展开侧栏' : '收起侧栏'"
+
         @click="toggleCollapse"
       >
         <ChevronDown v-if="!collapsed" :size="20" />
@@ -352,7 +435,7 @@ function toggleCollapse() {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
 }
 [data-theme='dark'] .examples-item {
-  color: #ccc !important;
+  color: var(--text-secondary);
 }
 [data-theme='dark'] .examples-item:hover {
   background: rgba(255, 255, 255, 0.08) !important;

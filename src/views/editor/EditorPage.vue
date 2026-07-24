@@ -299,7 +299,7 @@ async function compressImage(file: File, maxSizeKB: number, maxQuality: number):
 }
 
 const { accent, colors, setTheme, setCustomTheme, customColor, themes } = useTheme()
-const { mode: darkMode, isDark, setMode: setDarkMode } = useDarkMode()
+const { isDark } = useDarkMode()
 useAutoUpdater()
 
 // ── 左侧侧栏 ──
@@ -307,11 +307,6 @@ const sidebarTab = ref('editor')
 
 function onSidebarSelect(tab: string) {
   sidebarTab.value = tab
-}
-
-function onToggleDarkMode() {
-  const cycle: Record<string, string> = { light: 'dark', dark: 'system', system: 'light' }
-  setDarkMode(cycle[darkMode.value] as 'light' | 'dark' | 'system')
 }
 
 // ── 移动端 Tab 切换 ──
@@ -1743,10 +1738,8 @@ function onMinimapNavigate(ratio: number) {
       <div class="hidden md:flex shrink-0">
         <EditorSidebar
           :active-tab="sidebarTab"
-          :dark-mode="darkMode"
           :draft-count="draftCount"
           @select="onSidebarSelect"
-          @toggle-dark-mode="onToggleDarkMode"
           @open-settings="settingsVisible = true"
           @open-gallery="showGallery = true"
           @material-action="onMaterialAction"
