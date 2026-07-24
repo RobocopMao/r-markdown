@@ -15,10 +15,11 @@ export interface OfficialMaterial {
   content: string
 }
 
-/** 索引条目（含 id 和 name，name 可用于加载前筛选搜索） */
+/** 索引条目（含 id / name / category，分类筛选和名称搜索均可在加载前生效） */
 export interface IndexEntry {
   id: string
   name: string
+  category: string
 }
 
 const DEFAULT_REPO = 'RobocopMao/r-markdown-materials'
