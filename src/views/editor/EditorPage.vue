@@ -15,6 +15,7 @@ import { DraftStorage, type Draft } from '@/services/DraftStorage'
 import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
 import { extractTitle, sanitizeFilename } from '@/utils/extractTitle'
 import Editor from './components/Editor.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
 import {
   Image, ImageUp, Puzzle, Braces, Baseline,
@@ -1633,20 +1634,11 @@ function onMinimapNavigate(ratio: number) {
         </router-link>
         <span class="hidden sm:inline text-[11px] opacity-50 ml-1.5 shrink-0">{{ saveHint }}</span>
         <CircleCheck v-if="saveMode" :size="14" color="var(--accent)" class="hidden sm:inline shrink-0 ml-1" />
-        <span v-if="currentDraftId" class="relative hidden sm:inline-flex items-center group ml-1">
-          <Link :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
-          <span class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-3 py-2 rounded-lg bg-white text-[#333] dark:bg-[#1a1a1a] dark:text-white text-[11px] leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 shadow-lg border border-[#e5e5e5] dark:border-white/10 pointer-events-none whitespace-nowrap">
-            已关联草稿：{{ currentDraftTitle }}
-          </span>
-        </span>
         <span class="sm:hidden text-[11px] opacity-50 ml-2 shrink-0">{{ saveHint }}</span>
         <CircleCheck v-if="saveMode" :size="14" color="var(--accent)" class="sm:hidden shrink-0 ml-1" />
-        <span v-if="currentDraftId" class="relative sm:hidden inline-flex items-center group ml-1">
+        <BaseTooltip v-if="currentDraftId" class="inline-flex ml-1" :text="'已关联草稿：' + currentDraftTitle" placement="bottom">
           <Link :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
-          <span class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 px-3 py-2 rounded-lg bg-white text-[#333] dark:bg-[#1a1a1a] dark:text-white text-[11px] leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 shadow-lg border border-[#e5e5e5] dark:border-white/10 pointer-events-none whitespace-nowrap">
-            已关联草稿：{{ currentDraftTitle }}
-          </span>
-        </span>
+        </BaseTooltip>
       </div>
       <div class="flex items-center gap-1.5">
         <!-- 桌面端：显示所有按钮 -->
@@ -1988,109 +1980,117 @@ function onMinimapNavigate(ratio: number) {
                   </div>
                 </span>
               </span>
+              <BaseTooltip text="临时存储本地图片">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!editorRef?.isAtLineStart"
-                title="临时存储本地图片"
                 @click="editorRef?.isAtLineStart && handleInsertImage()"
               >
                 <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                 <span>临时</span>
               </button>
+              </BaseTooltip>
+              <BaseTooltip text="长期存储本地图片">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!editorRef?.isAtLineStart"
-                title="长期存储本地图片"
                 @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
               >
                 <ImagePlus :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                 <span>长期</span>
               </button>
+              </BaseTooltip>
+              <BaseTooltip text="上传到图床">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="editorRef?.isAtLineStart && !githubUploading ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!editorRef?.isAtLineStart || githubUploading"
-                title="上传到图床"
                 @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
               >
                 <ImageUp :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                 <span>图床</span>
               </button>
+              </BaseTooltip>
+              <BaseTooltip text="插入组件">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!editorRef?.isAtLineStart"
-                title="插入组件"
                 @click="editorRef?.isAtLineStart && (componentDialogVisible = true)"
               >
                 <Puzzle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                 <span>组件</span>
               </button>
+              </BaseTooltip>
+              <BaseTooltip :text="tagInfo ? '解析 <' + tagInfo.tagName + '> 属性' : '解析标签 — 选中扩展组件标签后可用'">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="(tagInfo && !showTagDialog && !isMobile) ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!tagInfo || showTagDialog || isMobile"
-                :title="tagInfo ? '解析 <' + tagInfo.tagName + '> 属性' : '解析标签 — 选中扩展组件标签后可用'"
                 @click="tagInfo && !showTagDialog && !isMobile && (showTagDialog = true)"
               >
                 <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                 <span>解析</span>
               </button>
+              </BaseTooltip>
             </span>
-            <!-- 分隔符 -->
-            <span class="w-px h-4 bg-current opacity-15"></span>
             <!-- 行内样式按钮组 -->
             <span class="flex items-center gap-0.5">
-              <button
+              <BaseTooltip
                 v-for="opt in inlineFormatOptions"
                 :key="opt.syntax"
+                :text="opt.label + '：' + opt.hint"
+              >
+              <button
                 class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn"
                 :class="editorRef?.hasInlineSelection ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
                 :disabled="!editorRef?.hasInlineSelection"
-                :title="opt.label + '：' + opt.hint"
                 @click="editorRef?.hasInlineSelection && editorRef?.applyInlineFormat(opt.syntax, opt.wrapType ?? 'delim')"
               >
                 <component :is="formatIcons[opt.syntax]" :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
               </button>
+              </BaseTooltip>
             </span>
             <!-- 帮助提示 -->
-            <span class="relative inline-flex items-center group">
+            <BaseTooltip placement="bottom">
               <CircleQuestionMark :size="14" />
-              <span class="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 w-45 px-3 py-2 rounded-lg bg-white text-[#333] dark:bg-[#1a1a1a] dark:text-white text-[11px] leading-relaxed opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50 shadow-lg border border-[#e5e5e5] dark:border-white/10 pointer-events-none">
+              <template #content>
                 选中非标签内文字后可加样式<br>基础语法/临时/长期/图床/组件：仅空行可点击<br>解析：选中组件标签后可点击。
-              </span>
-            </span>
+              </template>
+            </BaseTooltip>
           </span>
           <span class="flex flex-col lg:flex-row lg:items-center gap-1">
+          <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
           <button
-            v-if="isTauri && !autoSaveEnabled"
             class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            title="暂存"
             @click="saveContent(markdown, true)"
           >
             <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
             <span>暂存</span>
           </button>
+          </BaseTooltip>
+          <BaseTooltip text="保存草稿">
           <button
             class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
                    transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            title="保存草稿"
             @click="handleOpenSaveDraft"
           >
             <SquareBottomDashedScissors :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
             <span>草稿</span>
           </button>
+          </BaseTooltip>
+          <BaseTooltip text="定稿导出">
           <button
             class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
                    transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            title="定稿导出"
             @click="handleOpenFinalize"
           >
             <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
             <span>定稿</span>
           </button>
+          </BaseTooltip>
           </span>
         </div>
         <!-- 图床上传进度 -->
