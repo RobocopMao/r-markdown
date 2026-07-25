@@ -10,7 +10,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   'load-demo': []
   'download-demo': []
-  'copy-html': []
+  'export-full-html': []
   'save-image': []
   'copy-rich-text': []
   'export-xhs': []
@@ -95,10 +95,10 @@ onBeforeUnmount(() => {
       <template v-else>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('copy-html'))"
+          @click="handleAction(() => emit('export-full-html'))"
         >
           <Braces :size="14" />
-          复制 HTML
+          完整HTML
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"

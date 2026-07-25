@@ -1721,7 +1721,7 @@ function onMinimapNavigate(ratio: number) {
           :mode="mobileTab"
           @load-demo="confirmLoadVisible = true"
           @download-demo="downloadDemo"
-          @copy-html="handleCopyHTML"
+          @export-full-html="handleExportFullHTML"
           @save-image="handleSaveImage"
           @copy-rich-text="handleCopyRichText"
           @export-xhs="xhsVisible = true"
