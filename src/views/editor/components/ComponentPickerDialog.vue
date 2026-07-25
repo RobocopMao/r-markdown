@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch } from 'vue'
 import { components } from '@/extension'
 import { parseMarkdownAsync } from '@/utils/markdownParser'

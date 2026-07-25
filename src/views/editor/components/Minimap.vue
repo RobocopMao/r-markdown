@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import type { ThemeColors } from '@/composables/useTheme'

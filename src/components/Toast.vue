@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 defineProps<{
   visible: boolean
   message: string

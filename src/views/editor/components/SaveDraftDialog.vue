@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { useTheme } from '@/composables/useTheme'

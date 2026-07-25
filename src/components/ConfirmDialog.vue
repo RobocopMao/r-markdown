@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { useSlots } from 'vue'
 
 const props = withDefaults(

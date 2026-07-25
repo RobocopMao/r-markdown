@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
 import { useTheme } from '@/composables/useTheme'
 import { useSetting } from '@/composables/useSetting'
