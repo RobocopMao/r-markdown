@@ -429,7 +429,16 @@ watch(markdown, async (val) => {
   resolvedMarkdown.value = await resolveIdbImages(step1)
 }, { immediate: true, flush: 'sync' })
 const previewRef = ref()
-const editorRef = ref<InstanceType<typeof Editor>>()
+interface EditorExposed {
+  insertAtCursor: (text: string) => void
+  scrollToLineAndHighlight: (lineNo: number) => void
+  isAtLineStart: boolean
+  hasInlineSelection: boolean
+  isInsideTag: boolean
+  applyInlineFormat: (syntax: string, wrapType?: 'delim' | 'tag') => void
+  replaceRange: (from: number, to: number, text: string) => void
+}
+const editorRef = ref<EditorExposed>()
 const xhsVisible = ref(false)
 const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
