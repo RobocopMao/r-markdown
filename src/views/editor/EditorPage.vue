@@ -1032,12 +1032,14 @@ function onInput(value: string) {
 const exportItems = [
   { label: '保存图片', icon: Image, action: 'saveImage' },
   { label: '小红书图', icon: FileText, action: 'xhs' },
+  { label: '完整HTML', icon: Braces, action: 'export-full-html' },
 ]
 
 function onDropdownSelect(groupId: string, action: string) {
   if (groupId === 'export') {
     if (action === 'saveImage') handleSaveImage()
     else if (action === 'xhs') xhsVisible.value = true
+    else if (action === 'export-full-html') handleExportFullHTML()
   }
 }
 
@@ -1224,6 +1226,49 @@ async function handleWechatSaved(mediaId: string, coverMediaId: string) {
 
 function handleCopyHTML() {
   previewRef.value?.copyHTML()
+}
+
+async function handleExportFullHTML() {
+  const html = previewRef.value?.getHTML() || ''
+  const fullDoc = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${extractedTitle.value || 'R-Markdown 导出'}</title>
+  <style>
+    body {
+      max-width: 677px;
+      margin: 0 auto;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+${html}
+</body>
+</html>`
+
+  try {
+    const { save } = await import('@tauri-apps/plugin-dialog')
+    const { writeTextFile } = await import('@tauri-apps/plugin-fs')
+    const filePath = await save({
+      defaultPath: (extractedTitle.value || 'export') + '.html',
+      filters: [{ name: 'HTML', extensions: ['html'] }],
+    })
+    if (!filePath) return
+    await writeTextFile(filePath, fullDoc)
+    showToast('完整HTML已导出')
+  } catch {
+    const blob = new Blob([fullDoc], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = (extractedTitle.value || 'export') + '.html'
+    a.click()
+    URL.revokeObjectURL(url)
+    showToast('完整HTML已下载')
+  }
 }
 
 function handleSaveImage() {
@@ -1642,13 +1687,6 @@ function onMinimapNavigate(ratio: number) {
       </div>
       <div class="flex items-center gap-1.5">
         <!-- 桌面端：显示所有按钮 -->
-        <button
-          class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
-          @click="handleCopyHTML"
-        >
-          <Braces :size="14" />
-          复制 HTML
-        </button>
         <Dropdown
           group-id="export"
           label="导出"
