@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { toPng } from 'html-to-image'
 import type { ThemeColors } from '@/composables/useTheme'
