@@ -1,7 +1,20 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount } from 'vue'
+import { onMounted, onBeforeUnmount, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
-import { Braces, Copy, Download, EllipsisVertical, FileText, Image, LayoutGrid, Sparkles } from 'lucide-vue-next'
+import { Braces, Copy, EllipsisVertical, FileText, Image, LayoutGrid, Bot } from 'lucide-vue-next'
+
+const isTauri = import.meta.env.VITE_TAURI === 'true'
+const router = useRouter()
+const aiDemoHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined)
+
+function openAiDemo() {
+  if (isTauri) {
+    window.open('https://r-markdown.pages.dev/#/help/r-markdown-formatter', '_blank', 'noopener,noreferrer')
+  } else {
+    router.push('/help/r-markdown-formatter')
+  }
+}
 
 const props = defineProps<{
   mode?: 'editor' | 'preview'
@@ -9,8 +22,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'load-demo': []
-  'download-demo': []
-  'export-full-html': []
+  'export-html': []
   'save-image': []
   'copy-rich-text': []
   'export-xhs': []
@@ -57,7 +69,7 @@ onBeforeUnmount(() => {
       class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + AI排版示例 + 下载示例 + 加载示例 -->
+      <!-- 编辑模式：扩展组件 + AI排版示例 + 加载示例 -->
       <template v-if="mode === 'editor'">
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -67,22 +79,14 @@ onBeforeUnmount(() => {
           扩展组件
         </button>
         <a
-          href="https://chat.deepseek.com/share/f6bhvloktj8wdl5fie"
-          target="_blank"
-          rel="noopener noreferrer"
+          :href="aiDemoHref"
+          :target="isTauri ? '_blank' : undefined"
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5 no-underline"
-          @click="handleAction(() => {})"
+          @click.prevent="handleAction(openAiDemo)"
         >
-          <Sparkles :size="14" />
+          <Bot :size="14" />
           AI排版示例
         </a>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('download-demo'))"
-        >
-          <Download :size="14" />
-          下载示例
-        </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('load-demo'))"
@@ -95,10 +99,10 @@ onBeforeUnmount(() => {
       <template v-else>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('export-full-html'))"
+          @click="handleAction(() => emit('export-html'))"
         >
           <Braces :size="14" />
-          完整HTML
+          HTML
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"

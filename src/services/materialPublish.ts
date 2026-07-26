@@ -115,7 +115,17 @@ export async function publishMaterial(
     } else {
       indexEntries.push({ id: materialId, name: data.name, category: data.category })
     }
-    indexEntries.sort((a, b) => a.id.localeCompare(b.id))
+    // 与 generate-index.mjs 保持一致：按 id 中的日期降序，同一天按完整 id 降序兜底
+    const extractDate = (id: string) => {
+      const m = id.match(/(\d{4}\/\d{2}\/\d{2})/)
+      return m ? m[1] : ''
+    }
+    indexEntries.sort((a, b) => {
+      const dateA = extractDate(a.id)
+      const dateB = extractDate(b.id)
+      if (dateA !== dateB) return dateB.localeCompare(dateA)
+      return b.id.localeCompare(a.id)
+    })
 
     const indexBody: Record<string, string> = {
       message: `更新索引: ${data.name}`,
