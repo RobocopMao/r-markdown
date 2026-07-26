@@ -1,29 +1,32 @@
 <script setup vapor lang="ts">
-import { ref, computed, useSlots } from 'vue'
+import { ref, useSlots } from 'vue'
 
 const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom' }>(), { placement: 'top' })
 const slots = useSlots()
 
 const triggerRef = ref<HTMLElement>()
 const visible = ref(false)
-const tooltipStyle = computed(() => {
-  if (!triggerRef.value) return {}
+const tooltipStyle = ref<Record<string, string>>({})
+
+function calcStyle() {
+  if (!triggerRef.value) return
   const rect = triggerRef.value.getBoundingClientRect()
   if (props.placement === 'bottom') {
-    return {
+    tooltipStyle.value = {
       left: `${rect.left + rect.width / 2}px`,
       top: `${rect.bottom + 4}px`,
       transform: 'translateX(-50%)',
     }
+  } else {
+    tooltipStyle.value = {
+      left: `${rect.left + rect.width / 2}px`,
+      top: `${rect.top - 4}px`,
+      transform: 'translate(-50%, -100%)',
+    }
   }
-  return {
-    left: `${rect.left + rect.width / 2}px`,
-    top: `${rect.top - 4}px`,
-    transform: 'translate(-50%, -100%)',
-  }
-})
+}
 
-function show() { visible.value = true }
+function show() { calcStyle(); visible.value = true }
 function hide() { visible.value = false }
 </script>
 
