@@ -252,17 +252,109 @@ function applyInlineFormat(syntax: string, wrapType: 'delim' | 'tag' = 'delim') 
 
 // ── 标签选中检测 ──
 const tagRegex = /^<(\w[\w-]*)((?:\s+[^>]*?)?)(\/?)>/s
-let lastTagSelection: {
+type TagInfo = {
   tagName: string
   attrs: Record<string, string>
   selfClose: boolean
   from: number
   to: number
-} | null = null
+}
+let lastTagSelection: TagInfo | null = null
+
+function parseAttrString(attrStr: string): Record<string, string> {
+  const attrs: Record<string, string> = {}
+  if (attrStr) {
+    const attrRegex = /(\w[\w-]*)="([^"]*)"/g
+    let am
+    while ((am = attrRegex.exec(attrStr)) !== null) {
+      attrs[am[1]] = am[2]
+    }
+  }
+  return attrs
+}
+
+function emitTagInfo(info: TagInfo | null) {
+  if (!info) {
+    if (lastTagSelection) {
+      lastTagSelection = null
+      emit('tag-selected', null)
+    }
+    return
+  }
+  // 只要检测到组件标签，就禁止行首工具栏按钮（基础语法/临时/长期/图床/组件）
+  isAtLineStart.value = false
+  if (
+    !lastTagSelection ||
+    lastTagSelection.tagName !== info.tagName ||
+    lastTagSelection.from !== info.from ||
+    lastTagSelection.to !== info.to
+  ) {
+    lastTagSelection = info
+    emit('tag-selected', info)
+  }
+}
+
+/** 光标在标签后面时（如 /> 或 </tagName> 后），向前查找组件标签 */
+function detectTagAtCursor(pos: number, text: string): TagInfo | null {
+  if (pos === 0 || text[pos - 1] !== '>') return null
+  let depth = 0
+  for (let i = pos - 2; i >= 0; i--) {
+    if (text[i] === '>') {
+      depth++
+    } else if (text[i] === '<') {
+      if (depth > 0) { depth--; continue }
+      const raw = text.slice(i, pos)
+      // </tagName> 闭合标签：向前查找对应的开始标签
+      const closeMatch = raw.match(/^<\/(\w[\w-]*)>$/)
+      if (closeMatch && closeMatch[1] in tagMap) {
+        return findOpeningTag(text, i, closeMatch[1])
+      }
+      // <tagName ... > 或 <tagName ... />
+      const match = raw.match(tagRegex)
+      if (match && match[1] in tagMap) {
+        return {
+          tagName: match[1],
+          attrs: parseAttrString(match[2]),
+          selfClose: match[3] === '/',
+          from: i,
+          to: i + match[0].length,
+        }
+      }
+      return null
+    }
+  }
+  return null
+}
+
+/** 从关闭标签位置向前查找对应的开始标签 */
+function findOpeningTag(text: string, closeTagStart: number, tagName: string): TagInfo | null {
+  const beforeClose = text.slice(0, closeTagStart)
+  const openTagRegex = new RegExp(`<${tagName}((?:\\s+[^>]*?)?)\\s*(/?)>`, 'g')
+  let lastMatch: RegExpExecArray | null = null
+  let m: RegExpExecArray | null
+  while ((m = openTagRegex.exec(beforeClose)) !== null) {
+    lastMatch = m
+  }
+  if (lastMatch) {
+    return {
+      tagName,
+      attrs: parseAttrString(lastMatch[1]),
+      selfClose: lastMatch[2] === '/',
+      from: lastMatch.index,
+      to: lastMatch.index + lastMatch[0].length,
+    }
+  }
+  return null
+}
 
 function checkTagSelection(state: EditorState) {
   const sel = state.selection.main
   if (sel.empty) {
+    const tagAtCursor = detectTagAtCursor(sel.from, state.doc.toString())
+    if (tagAtCursor) {
+      emitTagInfo(tagAtCursor)
+      return
+    }
     if (lastTagSelection) {
       lastTagSelection = null
       emit('tag-selected', null)
@@ -280,7 +372,6 @@ function checkTagSelection(state: EditorState) {
     return
   }
   const [, tagName, attrStr, selfClose] = match
-  // 仅当标签是已知扩展组件时才触发选中逻辑
   if (!(tagName in tagMap)) {
     isAtLineStart.value = false
     if (lastTagSelection) {
@@ -289,31 +380,13 @@ function checkTagSelection(state: EditorState) {
     }
     return
   }
-  const attrs: Record<string, string> = {}
-  if (attrStr) {
-    const attrRegex = /(\w[\w-]*)="([^"]*)"/g
-    let am
-    while ((am = attrRegex.exec(attrStr)) !== null) {
-      attrs[am[1]] = am[2]
-    }
-  }
-  const newTag = {
+  emitTagInfo({
     tagName,
-    attrs,
+    attrs: parseAttrString(attrStr),
     selfClose: selfClose === '/',
     from: sel.from,
     to: sel.from + match[0].length,
-  }
-  if (
-    !lastTagSelection ||
-    lastTagSelection.tagName !== newTag.tagName ||
-    lastTagSelection.from !== newTag.from ||
-    lastTagSelection.to !== newTag.to
-  ) {
-    lastTagSelection = newTag
-    isAtLineStart.value = false
-    emit('tag-selected', newTag)
-  }
+  })
 }
 
 // 自定义语法高亮 — 去掉 defaultHighlightStyle 的 heading 下划线

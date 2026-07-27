@@ -102,7 +102,10 @@ function buildFiltered(): Record<string, string> {
     const meta = schemaMap.get(k)
     const inOriginal = props.tagInfo && k in props.tagInfo.attrs
     const isDefault = v === (meta?.default || '')
-    if (inOriginal || !isDefault || v !== '') filtered[k] = v
+    // 只在以下情况写回该属性：
+    // 1. 属性原本就在标签中（保持原有显式声明）
+    // 2. 值不等于默认值（用户确实修改过）
+    if (inOriginal || !isDefault) filtered[k] = v
   }
   return filtered
 }

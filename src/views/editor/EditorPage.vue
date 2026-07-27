@@ -823,7 +823,7 @@ function loadDemo() {
                 <span>组件</span>
               </button>
               </BaseTooltip>
-              <BaseTooltip :text="tagInfo ? '解析 <' + tagInfo.tagName + '> 属性' : '解析标签 — 选中扩展组件标签后可用'">
+              <BaseTooltip :text="tagInfo ? '解析 <' + tagInfo.tagName + '> 属性' : '解析标签 — 选中组件标签或光标在标签后可用'">
               <button
                 class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                 :class="(tagInfo && !showTagDialog && !isMobile) ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
@@ -856,7 +856,7 @@ function loadDemo() {
             <BaseTooltip placement="bottom">
               <CircleQuestionMark :size="14" />
               <template #content>
-                选中非标签内文字后可加样式<br>基础语法/临时/长期/图床/组件：仅空行可点击<br>解析：选中组件标签后可点击。
+                选中非标签内文字后可加样式<br>基础语法/临时/长期/图床/组件：仅空行可点击<br>解析：选中组件标签或光标在标签后可点击。
               </template>
             </BaseTooltip>
           </span>
