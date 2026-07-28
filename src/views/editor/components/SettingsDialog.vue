@@ -8,6 +8,7 @@ import { autoUpdateEnabled, autoUpdatePending, autoUpdateRid, checkForUpdates, d
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
 import { paraFontSize, paraLineHeight, paraFontWeight, paraMargin, paraIndent } from '@/composables/useParagraphSettings'
 import { testConnection } from '@/services/githubUploader'
+import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { useTheme } from '@/composables/useTheme'
 import ImageCacheDialog from './ImageCacheDialog.vue'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
@@ -225,6 +226,78 @@ function saveWechatAppId(val: string) { wechatAppId.value = val; setSetting('wec
 function saveWechatAppSecret(val: string) { wechatAppSecret.value = val; setSetting('wechatAppSecret', val) }
 function saveWechatDefaultAuthor(val: string) { wechatDefaultAuthor.value = val; setSetting('wechatDefaultAuthor', val) }
 
+// ── 云端文章 GitHub 配置 ──
+const cloudToken = ref(GitHubTreeService.getToken() || '')
+const _repoInit = GitHubTreeService.getRepo()
+const cloudRepo = ref(_repoInit ? `${_repoInit.owner}/${_repoInit.repo}` : '')
+
+const cloudTesting = ref(false)
+const cloudTestResult = ref<'ok' | 'fail' | ''>('')
+const cloudTestError = ref('')
+
+function saveCloudToken(val: string) {
+  cloudToken.value = val
+  cloudTestResult.value = ''
+  if (!val) {
+    GitHubTreeService.clearToken()
+    return
+  }
+  const repo = cloudRepo.value.trim()
+  if (repo) {
+    const slashIdx = repo.indexOf('/')
+    if (slashIdx > 0) {
+      const owner = repo.substring(0, slashIdx)
+      const repoName = repo.substring(slashIdx + 1)
+      GitHubTreeService.setConfig(owner, repoName, val)
+    }
+  }
+}
+
+function saveCloudRepo(val: string) {
+  cloudRepo.value = val
+  cloudTestResult.value = ''
+  if (!val) {
+    GitHubTreeService.clearRepo()
+    return
+  }
+  const token = cloudToken.value.trim()
+  if (token) {
+    const slashIdx = val.indexOf('/')
+    if (slashIdx > 0) {
+      const owner = val.substring(0, slashIdx)
+      const repoName = val.substring(slashIdx + 1)
+      GitHubTreeService.setConfig(owner, repoName, token)
+    }
+  }
+}
+
+async function handleCloudTestConnection() {
+  const repo = cloudRepo.value.trim()
+  const token = cloudToken.value.trim()
+  if (!repo || !token) return
+
+  const slashIdx = repo.indexOf('/')
+  if (slashIdx <= 0) {
+    cloudTestResult.value = 'fail'
+    cloudTestError.value = '仓库格式错误，应为 owner/repo'
+    return
+  }
+  const owner = repo.substring(0, slashIdx)
+  const repoName = repo.substring(slashIdx + 1)
+
+  cloudTesting.value = true
+  cloudTestResult.value = ''
+  cloudTestError.value = ''
+  try {
+    await GitHubTreeService.testConnection(owner, repoName, token)
+    cloudTestResult.value = 'ok'
+  } catch (e: any) {
+    cloudTestResult.value = 'fail'
+    cloudTestError.value = e.message || '连接失败'
+  }
+  cloudTesting.value = false
+}
+
 async function applyZoom(scale: number) {
   currentZoom.value = scale
   setSetting('pageZoom', scale)
@@ -329,6 +402,15 @@ async function doDownloadUpdate() {
           @click="settingsTab = 'github'"
         >
           图片设置
+        </button>
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+          :class="settingsTab === 'cloud'
+            ? 'bg-[var(--accent)] text-white'
+            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          @click="settingsTab = 'cloud'"
+        >
+          文章仓库
         </button>
         <button
           v-if="isTauri"
@@ -827,6 +909,57 @@ async function doDownloadUpdate() {
             class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
             @input="saveWechatDefaultAuthor(($event.target as HTMLInputElement).value)"
           />
+        </div>
+      </section>
+    </template>
+
+    <!-- 文章仓库 -->
+    <template v-if="settingsTab === 'cloud'">
+      <section>
+        <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
+          GitHub 私有仓库（文章仓库存储）。仅需 <code class="text-[var(--accent)]">repo</code> scope 的 Personal Access Token。
+        </p>
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
+          <input
+            :value="cloudRepo"
+            placeholder="用户名/仓库名"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveCloudRepo(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+        <div class="mb-4">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
+          <input
+            :value="cloudToken"
+            type="password"
+            placeholder="ghp_xxxxxxxxxxxx"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveCloudToken(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+        <div class="flex items-center gap-3 flex-wrap">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="cloudTesting"
+            @click="handleCloudTestConnection"
+          >
+            {{ cloudTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span
+            v-if="cloudTestResult === 'ok'"
+            class="text-[12px]"
+            style="color: var(--accent-green, #27ae60);"
+          >
+            连接成功
+          </span>
+          <span
+            v-if="cloudTestResult === 'fail'"
+            class="text-[12px]"
+            style="color: #e74c3c;"
+          >
+            {{ cloudTestError || '连接失败' }}
+          </span>
         </div>
       </section>
     </template>

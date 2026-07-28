@@ -6,7 +6,7 @@ import { useDarkMode, type DarkMode } from '@/composables/useDarkMode'
 import {
   Component, Paperclip, FilePlus, Bot, Import, Images,
   Sun, Moon, Monitor, Bolt, ChevronDown, ChevronUp, SquareBottomDashedScissors,
-  HelpCircle, Package, Library, BookMarked
+  HelpCircle, Package, Library, BookMarked, Folder
 } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -33,6 +33,7 @@ function openAiDemo() {
 const props = defineProps<{
   activeTab?: string
   draftCount?: number
+  treePanelVisible?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -44,6 +45,7 @@ const emit = defineEmits<{
   (e: 'openImport'): void
   (e: 'openGallery'): void
   (e: 'materialAction', action: 'my' | 'library'): void
+  (e: 'toggleTreePanel'): void
 }>()
 
 const showExamples = ref(false)
@@ -192,6 +194,16 @@ function toggleCollapse() {
         paddingBottom: collapsed ? '0px' : undefined,
       }"
     >
+      <!-- 云端文章 button -->
+      <button
+        class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+        :class="{ active: props.treePanelVisible }"
+        :style="props.treePanelVisible ? { color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 10%, transparent)' } : undefined"
+        @click="emit('toggleTreePanel')"
+      >
+        <Folder :size="24" class="shrink-0" />
+        <span class="text-[10px] leading-tight">文章</span>
+      </button>
       <!-- 草稿列表 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"

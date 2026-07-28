@@ -11,6 +11,8 @@ const props = defineProps<{
   confirmText?: string
   cancelText?: string
   confirmDisabled?: boolean
+  loading?: boolean
+  loadingText?: string
   accent?: string
 }>()
 
@@ -60,7 +62,7 @@ onBeforeUnmount(() => {
       >
         <!-- Header -->
         <div class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]">
-          <span class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] shrink-0">{{ title }}</span>
+          <span class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] truncate">{{ title }}</span>
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <slot name="header" />
           </div>
@@ -85,6 +87,7 @@ onBeforeUnmount(() => {
           <slot name="footer">
             <button
               class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-5 py-2 text-[13px] text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#333]"
+              :disabled="loading"
               @click="emit('close')"
             >
               {{ cancelText || '取消' }}
@@ -92,10 +95,10 @@ onBeforeUnmount(() => {
             <button
               class="cursor-pointer rounded-lg border-0 px-5 py-2 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
               :class="accent ? 'bg-[var(--accent)]' : 'bg-[#07C160]'"
-              :disabled="confirmDisabled"
+              :disabled="confirmDisabled || loading"
               @click="emit('confirm')"
             >
-              {{ confirmText || '确认' }}
+              {{ loading ? (loadingText || '操作中...') : (confirmText || '确认') }}
             </button>
           </slot>
         </div>

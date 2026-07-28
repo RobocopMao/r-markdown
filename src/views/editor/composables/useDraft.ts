@@ -12,6 +12,7 @@ export function useDraft(
   const saveDraftVisible = ref(false)
   const finalizeVisible = ref(false)
   const finalizeDeleteConfirmVisible = ref(false)
+  const pushToCloudDeleteConfirmVisible = ref(false)
   const drafts = ref<Draft[]>([])
   const currentDraftId = ref<number | null>(DraftStorage.getCurrentDraftId())
 
@@ -228,11 +229,22 @@ export function useDraft(
     }
   }
 
+  async function handlePushCloudDeleteConfirm() {
+    pushToCloudDeleteConfirmVisible.value = false
+    if (currentDraftId.value !== null) {
+      await DraftStorage.remove(currentDraftId.value)
+      currentDraftId.value = null
+      showToast('本地草稿已删除')
+      await refreshDrafts()
+    }
+  }
+
   return {
     draftListVisible,
     saveDraftVisible,
     finalizeVisible,
     finalizeDeleteConfirmVisible,
+    pushToCloudDeleteConfirmVisible,
     drafts,
     currentDraftId,
     draftConfirmVisible,
@@ -262,5 +274,6 @@ export function useDraft(
     handleOpenFinalize,
     handleFinalize,
     handleDeleteAfterFinalize,
+    handlePushCloudDeleteConfirm,
   }
 }

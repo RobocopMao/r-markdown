@@ -55,4 +55,12 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   minimapEnabled: { default: false },
   /** 编辑器主题 */
   editorTheme: { default: 'default' },
+  /** 云端文章 GitHub 仓库，格式 owner/repo */
+  cloudArticleRepo: { default: '' },
+  /** 云端文章 GitHub Token */
+  cloudArticleToken: { default: '' },
+  /** TreeSidebar 初始展开状态 */
+  treeSidebarExpanded: { default: false },
+  /** TreeSidebar 宽度（px） */
+  treePanelWidth: { default: 220 },
 }

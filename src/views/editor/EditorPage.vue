@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { useTheme } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
-import { getSetting } from '@/config/settings'
+import { getSetting, setSetting } from '@/config/settings'
 import { useSetting } from '@/composables/useSetting'
 import { useScrollSync } from './composables/useScrollSync'
 import { useExport, exportItems } from './composables/useExport'
@@ -12,6 +12,7 @@ import { useAutoSave, STORAGE_KEY, SAVE_TIME_KEY } from './composables/useAutoSa
 import { useImageInsert, saveBase64Store, resolveBase64, clearBase64Store } from './composables/useImageInsert'
 import { useImport } from './composables/useImport'
 import { useDraft } from './composables/useDraft'
+import { useGitHubTree } from './composables/useGitHubTree'
 import { useToolbar, type EditorExposed, formatIcons, markdownInsertOptions, MAX_GRID_COLS, MAX_GRID_ROWS, MAX_COLS, MAX_ROWS } from './composables/useToolbar'
 import { useWechatPublish } from './composables/useWechatPublish'
 import { useMaterial } from './composables/useMaterial'
@@ -27,6 +28,7 @@ import {
   Smartphone, SquarePen, CircleQuestionMark, ImagePlus, Link, Send, Package, Columns2, Rows2, Box, Type, Layers
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
+import { GitHubTreeService } from '@/services/GitHubTreeService'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
@@ -41,6 +43,8 @@ import SaveDraftDialog from './components/SaveDraftDialog.vue'
 import DraftListDialog from './components/DraftListDialog.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
+import TreeSidebar from './components/TreeSidebar.vue'
+import PushToCloudDialog from './components/PushToCloudDialog.vue'
 import ImageCacheDialog from './components/ImageCacheDialog.vue'
 import SaveMaterialDialog from './components/SaveMaterialDialog.vue'
 import MaterialLibraryPanel from './components/MaterialLibraryPanel.vue'
@@ -58,6 +62,139 @@ const sidebarTab = ref('editor')
 
 function onSidebarSelect(tab: string) {
   sidebarTab.value = tab
+}
+
+// ── 云端文章 ──
+const treePanelVisible = ref(getSetting<boolean>('treeSidebarExpanded'))
+const pushCloudVisible = ref(false)
+const pushingCloud = ref(false)
+const cloudConfigured = ref(GitHubTreeService.getConfig() !== null)
+
+function onToggleTreePanel() {
+  treePanelVisible.value = !treePanelVisible.value
+  setSetting('treeSidebarExpanded', treePanelVisible.value)
+}
+
+// ── Tree Panel 拖动调整宽度 ──
+const TREE_PANEL_DEFAULT_WIDTH = 220
+const TREE_PANEL_MAX_WIDTH = 350
+const treePanelWidth = ref(getSetting<number>('treePanelWidth') || TREE_PANEL_DEFAULT_WIDTH)
+
+let treeDragStartX = 0
+let treeDragStartWidth = 0
+
+function onTreeDragStart(e: MouseEvent) {
+  treeDragStartX = e.clientX
+  treeDragStartWidth = treePanelWidth.value
+  document.addEventListener('mousemove', onTreeDragMove)
+  document.addEventListener('mouseup', onTreeDragEnd)
+  document.body.style.cursor = 'col-resize'
+  document.body.style.userSelect = 'none'
+}
+
+function onTreeDragMove(e: MouseEvent) {
+  const delta = e.clientX - treeDragStartX
+  const newWidth = Math.min(Math.max(treeDragStartWidth + delta, TREE_PANEL_DEFAULT_WIDTH), TREE_PANEL_MAX_WIDTH)
+  treePanelWidth.value = newWidth
+}
+
+function onTreeDragEnd() {
+  document.removeEventListener('mousemove', onTreeDragMove)
+  document.removeEventListener('mouseup', onTreeDragEnd)
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+  setSetting('treePanelWidth', treePanelWidth.value)
+}
+
+// ── Tree 拖动条圆形按钮 hover 显示 ──
+const treeResizeHandleRef = ref<HTMLElement | null>(null)
+const treeHandleBtnVisible = ref(false)
+const treeHandleBtnTop = ref(0)
+
+function onTreeHandleEnter() {
+  treeHandleBtnVisible.value = true
+}
+
+function onTreeHandleMove(e: MouseEvent) {
+  const el = treeResizeHandleRef.value
+  if (!el) return
+  const rect = el.getBoundingClientRect()
+  const top = e.clientY - rect.top - 12
+  const clamped = Math.max(0, Math.min(top, rect.height - 24))
+  treeHandleBtnTop.value = clamped
+}
+
+function onTreeHandleLeave() {
+  treeHandleBtnVisible.value = false
+}
+
+async function onPushToCloud(result: { parentId: string | null; title: string; content: string; existingArticleId?: string }) {
+  pushingCloud.value = true
+  // 快照 push 前的草稿 ID，避免 push 过程中被异步清零导致检测失败
+  const draftToCheck = currentDraftId.value
+  try {
+    await useGitHubTree().pushToCloud(result.parentId, result.title, result.content, result.existingArticleId)
+    pushCloudVisible.value = false
+    showToast(result.existingArticleId ? '文章已更新到仓库' : `「${result.title}」已上传到仓库`)
+    // 检查是否绑定了本地草稿
+    if (draftToCheck !== null) {
+      setTimeout(() => {
+        pushToCloudDeleteConfirmVisible.value = true
+      }, 200)
+    }
+  } catch (e: any) {
+    showToast(e?.message || '上传失败，请检查网络和仓库配置')
+  } finally {
+    pushingCloud.value = false
+  }
+}
+
+function onSettingsOpen(tab: string) {
+  settingsInitialTab.value = tab
+  settingsVisible.value = true
+}
+
+// ── 云端文章编辑按钮加载（需确认） ──
+const articleLoadConfirmVisible = ref(false)
+const pendingArticleLoad = ref<{ content: string; title: string } | null>(null)
+
+async function onTreeEditArticle(content: string, node: import('@/services/GitHubTreeService').TreeNode) {
+  // 编辑器有内容且与文章内容不一致时，弹出确认
+  if (markdown.value.trim() && markdown.value.trim() !== content.trim()) {
+    pendingArticleLoad.value = { content, title: node.title }
+    articleLoadConfirmVisible.value = true
+    return
+  }
+  doLoadArticle(content)
+}
+
+function confirmLoadArticle() {
+  if (!pendingArticleLoad.value) return
+  doLoadArticle(pendingArticleLoad.value.content)
+  articleLoadConfirmVisible.value = false
+  pendingArticleLoad.value = null
+}
+
+function cancelLoadArticle() {
+  articleLoadConfirmVisible.value = false
+  pendingArticleLoad.value = null
+}
+
+function onClearEditor() {
+  markdown.value = ''
+  currentDraftId.value = null
+  localStorage.setItem(STORAGE_KEY, '')
+  localStorage.setItem(SAVE_TIME_KEY, '')
+  saveMode.value = ''
+  saveHint.value = ''
+  setTimeout(() => matchExistingDraft(), 300)
+}
+
+function doLoadArticle(content: string) {
+  markdown.value = content
+  currentDraftId.value = null
+  // 加载云端文章后自动匹配本地草稿（通过标题或内容）
+  setTimeout(() => matchExistingDraft(), 300)
 }
 
 // ── 移动端 Tab 切换 ──
@@ -92,7 +229,7 @@ onBeforeUnmount(() => {
 })
 
 // ── 拖动调整宽度 ──
-const previewWidth = ref(430)
+const previewWidth = ref(400)
 const isDragging = ref(false)
 
 // ── Minimap 缩略图 ──
@@ -242,6 +379,7 @@ const {
   saveDraftVisible,
   finalizeVisible,
   finalizeDeleteConfirmVisible,
+  pushToCloudDeleteConfirmVisible,
   drafts,
   currentDraftId,
   draftConfirmVisible,
@@ -267,6 +405,7 @@ const {
   handleOpenFinalize,
   handleFinalize,
   handleDeleteAfterFinalize,
+  handlePushCloudDeleteConfirm,
 } = useDraft(markdown, showToast, extractedTitle, resetMinimap)
 
 const {
@@ -539,6 +678,7 @@ function loadDemo() {
         <EditorSidebar
           :active-tab="sidebarTab"
           :draft-count="draftCount"
+          :tree-panel-visible="treePanelVisible"
           @select="onSidebarSelect"
           @open-settings="settingsVisible = true"
           @open-gallery="showGallery = true"
@@ -547,8 +687,42 @@ function loadDemo() {
           @open-drafts="draftListVisible = true"
           @example-action="onExampleAction"
           @open-import="onImportClick"
+          @toggle-tree-panel="onToggleTreePanel"
         />
       </div>
+      <!-- Tree Panel -->
+      <Transition name="tree-panel">
+        <div v-if="treePanelVisible" class="flex shrink-0">
+          <div :style="{ width: treePanelWidth + 'px' }" class="flex shrink-0">
+            <TreeSidebar
+              @open-settings="onSettingsOpen"
+              @edit-article="onTreeEditArticle"
+              @toast="showToast"
+              @clear-editor="onClearEditor"
+            />
+          </div>
+          <!-- Tree Resize Handle -->
+          <div
+            class="resize-handle hidden md:block"
+            @mousedown="onTreeDragStart"
+            @mouseenter="onTreeHandleEnter"
+            @mousemove="onTreeHandleMove"
+            @mouseleave="onTreeHandleLeave"
+            ref="treeResizeHandleRef"
+          >
+            <div
+              class="resize-handle-btn"
+              :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
+              :style="{ top: treeHandleBtnTop + 'px' }"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 8 21 12 17 16" />
+                <polyline points="7 8 3 12 7 16" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </Transition>
       <!-- Editor Panel -->
       <div
         class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
@@ -880,7 +1054,7 @@ function loadDemo() {
             <span>草稿</span>
           </button>
           </BaseTooltip>
-          <BaseTooltip text="定稿导出">
+          <BaseTooltip text="本地导出">
           <button
             class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
                    transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
@@ -888,6 +1062,16 @@ function loadDemo() {
           >
             <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
             <span>定稿</span>
+          </button>
+          </BaseTooltip>
+          <BaseTooltip v-if="cloudConfigured" text="推送到远程仓库">
+          <button
+            class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
+                   transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+            @click="pushCloudVisible = true"
+          >
+            <Send :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+            <span>传仓库</span>
           </button>
           </BaseTooltip>
           </span>
@@ -957,7 +1141,7 @@ function loadDemo() {
         </div>
       </div>
 
-      <!-- Resize Handle (仅桌面端) -->
+      <!-- Resize Handle -->
       <div
         class="resize-handle hidden md:block"
         @mousedown="onDragStart"
@@ -1020,7 +1204,14 @@ function loadDemo() {
     @close="componentDialogVisible = false"
     @insert="(code: string) => editorRef?.insertAtCursor(code)"
   />
-  <SettingsDialog :visible="settingsVisible" :initialTab="settingsInitialTab" @close="settingsVisible = false" />
+  <SettingsDialog :visible="settingsVisible" :initialTab="settingsInitialTab" @close="settingsVisible = false; cloudConfigured = GitHubTreeService.getConfig() !== null" />
+  <PushToCloudDialog
+    :visible="pushCloudVisible"
+    :markdown="markdown"
+    :loading="pushingCloud"
+    @close="pushCloudVisible = false"
+    @push="onPushToCloud"
+  />
   <PublishToWechatDialog
     :visible="wechatPublishVisible"
     :title="extractedTitle"
@@ -1090,6 +1281,16 @@ function loadDemo() {
     confirm-type="danger"
     @confirm="handleDeleteAfterFinalize"
     @update:visible="finalizeDeleteConfirmVisible = $event"
+  />
+  <!-- 传仓库后删除草稿确认弹窗 -->
+  <ConfirmDialog
+    :visible="pushToCloudDeleteConfirmVisible"
+    title="上传成功"
+    message="文章已上传到仓库，是否删除本地草稿？"
+    confirm-text="删除"
+    confirm-type="danger"
+    @confirm="handlePushCloudDeleteConfirm"
+    @update:visible="pushToCloudDeleteConfirmVisible = $event"
   />
 
   <!-- 草稿列表弹窗 -->
@@ -1166,6 +1367,14 @@ function loadDemo() {
     :confirm-text="draftConfirmText"
     @confirm="onDraftConfirm"
     @cancel="draftConfirmVisible = false"
+  />
+  <ConfirmDialog
+    :visible="articleLoadConfirmVisible"
+    title="加载仓库文章"
+    :message="`当前编辑器内容与仓库中的「${pendingArticleLoad?.title}」不一致，确定加载仓库版本？编辑器中的修改将被覆盖。`"
+    confirm-text="加载仓库文章"
+    @confirm="confirmLoadArticle"
+    @cancel="cancelLoadArticle"
   />
 </template>
 
@@ -1258,5 +1467,17 @@ function loadDemo() {
   .mobile-near-bottom :deep(.preview-scroll) {
     padding-bottom: 80px;
   }
+}
+
+/* Tree Panel 展开/收起动画 */
+.tree-panel-enter-active,
+.tree-panel-leave-active {
+  transition: width 0.25s ease;
+  overflow: hidden;
+}
+
+.tree-panel-enter-from,
+.tree-panel-leave-to {
+  width: 0 !important;
 }
 </style>
