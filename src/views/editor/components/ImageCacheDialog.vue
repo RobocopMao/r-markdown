@@ -2,6 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { ListChecks, CheckCheck, Pin, PinOff } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { useTheme } from '@/composables/useTheme'
 import { getSetting, setSetting } from '@/config/settings'
@@ -160,36 +161,39 @@ defineExpose({ doCleanup })
     >
         <template v-if="isGallery" #header>
             <div class="text-xs text-[#999] dark:text-[#666]">{{ images.length }} 张</div>
-            <button
-                v-if="gallerySelected"
-                class="ml-auto flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                :class="isPinned ? 'text-[var(--accent)]' : 'text-[#999]'"
-                :title="isPinned ? '取消置顶' : '置顶'"
-                @click="togglePin"
-            >
-                <PinOff v-if="isPinned" :size="16" />
-                <Pin v-else :size="16" />
-            </button>
+            <span v-if="gallerySelected" class="ml-auto shrink-0">
+                <BaseTooltip :text="isPinned ? '取消置顶' : '置顶'" placement="bottom">
+                    <button
+                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+                        :class="isPinned ? 'text-[var(--accent)]' : 'text-[#999]'"
+                        @click="togglePin"
+                    >
+                        <PinOff v-if="isPinned" :size="16" />
+                        <Pin v-else :size="16" />
+                    </button>
+                </BaseTooltip>
+            </span>
         </template>
         <template v-else #header>
             <div class="ml-auto flex items-center gap-1">
-                <button
-                    v-if="multiSelect"
-                    class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                    :class="allSelected ? 'text-[var(--accent)]' : 'text-[#999]'"
-                    @click="toggleSelectAll"
-                    title="全选"
-                >
-                    <CheckCheck :size="16" />
-                </button>
-                <button
-                    class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                    :class="multiSelect ? 'text-[var(--accent)]' : 'text-[#999]'"
-                    @click="toggleMultiSelect"
-                    :title="multiSelect ? '退出多选' : '多选'"
-                >
-                    <ListChecks :size="16" />
-                </button>
+                <BaseTooltip v-if="multiSelect" :text="allSelected ? '取消全选' : '全选'" placement="bottom">
+                    <button
+                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+                        :class="allSelected ? 'text-[var(--accent)]' : 'text-[#999]'"
+                        @click="toggleSelectAll"
+                    >
+                        <CheckCheck :size="16" />
+                    </button>
+                </BaseTooltip>
+                <BaseTooltip :text="multiSelect ? '退出多选' : '多选'" placement="bottom">
+                    <button
+                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+                        :class="multiSelect ? 'text-[var(--accent)]' : 'text-[#999]'"
+                        @click="toggleMultiSelect"
+                    >
+                        <ListChecks :size="16" />
+                    </button>
+                </BaseTooltip>
             </div>
         </template>
 

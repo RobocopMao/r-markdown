@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Check, Pin } from 'lucide-vue-next'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { useTheme } from '@/composables/useTheme'
@@ -128,18 +129,19 @@ function categoryColor(cat: string): string {
       <Check v-if="selected" :size="12" class="text-white" />
     </div>
 
-    <!-- 置顶按钮 -->
-    <button
-      v-if="!showCheck"
-      class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded cursor-pointer transition-colors border-none z-10"
-      :class="pinned
-        ? 'bg-[color-mix(in_srgb,_var(--accent)_12%,_transparent)] text-[var(--accent)]'
-        : 'bg-white/80 dark:bg-[#2a2a2a]/80 text-[#999] dark:text-[#666] opacity-0 group-hover:opacity-100 hover:opacity-100'"
-      :title="pinned ? '取消置顶' : '置顶'"
-      @click.stop="emit('pin')"
-    >
-      <Pin :size="12" :fill="pinned ? 'currentColor' : 'none'" />
-    </button>
+    <div v-if="!showCheck" class="absolute top-2 right-2 z-10">
+      <BaseTooltip :text="pinned ? '取消置顶' : '置顶'" placement="top">
+        <button
+          class="w-5 h-5 flex items-center justify-center rounded cursor-pointer transition-colors border-none"
+          :class="pinned
+            ? 'bg-[color-mix(in_srgb,_var(--accent)_12%,_transparent)] text-[var(--accent)]'
+            : 'bg-white/80 dark:bg-[#2a2a2a]/80 text-[#999] dark:text-[#666] opacity-0 group-hover:opacity-100 hover:opacity-100'"
+          @click.stop="emit('pin')"
+        >
+          <Pin :size="12" :fill="pinned ? 'currentColor' : 'none'" />
+        </button>
+      </BaseTooltip>
+    </div>
 
     <!-- 内容预览 -->
     <div

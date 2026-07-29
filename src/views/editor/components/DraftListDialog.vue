@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import type { Draft } from '@/services/DraftStorage'
 
 const props = defineProps<{
@@ -171,20 +172,22 @@ function formatDate(ts: number): string {
         <div class="flex items-center justify-between">
           <span class="text-[11px] text-[var(--text-tertiary,#999)]">{{ formatDate(draft.updatedAt) }}</span>
           <div class="flex items-center gap-1.5">
-            <button
-              class="draft-action-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
-              title="重新编辑"
-              @click="draft.id !== undefined && emit('confirm-load', { draftId: draft.id, title: draft.title })"
-            >
-              <Pencil :size="14" />
-            </button>
-            <button
-              class="draft-action-btn draft-delete-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
-              title="删除"
-              @click="draft.id !== undefined && emit('confirm-delete', { draftId: draft.id, title: draft.title })"
-            >
-              <Trash2 :size="14" />
-            </button>
+            <BaseTooltip text="重新编辑">
+              <button
+                class="draft-action-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
+                @click="draft.id !== undefined && emit('confirm-load', { draftId: draft.id, title: draft.title })"
+              >
+                <Pencil :size="14" />
+              </button>
+            </BaseTooltip>
+            <BaseTooltip text="删除">
+              <button
+                class="draft-action-btn draft-delete-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
+                @click="draft.id !== undefined && emit('confirm-delete', { draftId: draft.id, title: draft.title })"
+              >
+                <Trash2 :size="14" />
+              </button>
+            </BaseTooltip>
           </div>
         </div>
       </div>

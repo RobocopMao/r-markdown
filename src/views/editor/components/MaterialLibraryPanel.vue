@@ -5,6 +5,7 @@ import { MaterialStorage, DEFAULT_CATEGORIES, type MaterialItem } from '@/servic
 import { publishMaterial, generateMaterialId, validateImageUrls } from '@/services/materialPublish'
 import MaterialCard from './MaterialCard.vue'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const props = defineProps<{
@@ -207,13 +208,17 @@ watch(() => props.visible, (newVal) => {
         placeholder="搜索素材"
         class="w-[160px] shrink px-2 py-1 rounded-full text-[11px] border outline-none border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:border-[var(--accent)]"
       />
-      <button
-        class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors shrink-0 ml-auto"
-        :class="selectMode ? 'text-[var(--accent)]' : 'text-[#999] hover:text-[var(--text-primary)]'"
-        @click="toggleSelectMode"
-      >
-        <CheckSquare :size="16" />
-      </button>
+      <span class="ml-auto shrink-0">
+      <BaseTooltip :text="selectMode ? '取消选择' : '多选'" placement="bottom">
+        <button
+          class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors"
+          :class="selectMode ? 'text-[var(--accent)]' : 'text-[#999] hover:text-[var(--text-primary)]'"
+          @click="toggleSelectMode"
+        >
+          <CheckSquare :size="16" />
+        </button>
+      </BaseTooltip>
+      </span>
     </template>
 
     <div class="flex flex-col flex-1 min-h-0">

@@ -1408,9 +1408,9 @@ function loadDemo() {
   />
   <ConfirmDialog
     :visible="articleLoadConfirmVisible"
-    title="加载仓库文章"
-    :message="`当前编辑器内容与仓库中的「${pendingArticleLoad?.node.title}」不一致，确定加载仓库版本？编辑器中的修改将被覆盖。`"
-    confirm-text="加载仓库文章"
+    title="重新编辑"
+    :message="`当前编辑器内容与仓库中的「${pendingArticleLoad?.node.title}」不一致，确定重新编辑？编辑器中的修改将被覆盖。`"
+    confirm-text="重新编辑"
     @confirm="confirmLoadArticle"
     @cancel="cancelLoadArticle"
   />

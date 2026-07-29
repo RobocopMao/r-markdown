@@ -686,12 +686,13 @@ function onSettingChanged(e: Event) {
                     <span class="text-xs truncate" style="color: var(--text-primary);">{{ child.title }}</span>
                   </div>
                   <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
+                    <BaseTooltip text="重新编辑">
                     <button
                       v-if="child.type === 'article'"
                       class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                      title="加载到编辑器"
                       @click.stop="onEditArticleClick(child)"
                     ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
+                    </BaseTooltip>
                   </span>
                 </div>
                 <!-- 二级展开的文章（folder 下还有子节点） -->
@@ -719,12 +720,13 @@ function onSettingChanged(e: Event) {
                         <span class="text-xs truncate" style="color: var(--text-primary);">{{ sub.title }}</span>
                       </div>
                       <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
+                        <BaseTooltip text="重新编辑">
                         <button
                           v-if="sub.type === 'article'"
                           class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                          title="加载到编辑器"
                           @click.stop="onEditArticleClick(sub)"
                         ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
+                        </BaseTooltip>
                       </span>
                     </div>
                   </template>
@@ -756,11 +758,12 @@ function onSettingChanged(e: Event) {
                 <span class="text-xs truncate" style="color: var(--text-primary);">{{ root.title }}</span>
               </div>
               <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
+                <BaseTooltip text="重新编辑">
                 <button
                   class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                  title="加载到编辑器"
                   @click.stop="onEditArticleClick(root)"
                 ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
+                </BaseTooltip>
               </span>
             </div>
           </template>
