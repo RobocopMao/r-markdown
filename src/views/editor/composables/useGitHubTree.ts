@@ -33,6 +33,23 @@ function restoreCloudArticlePersistence(): { id: string | null; title: string } 
   }
 }
 
+/** 展开目标节点的所有祖先 folder，使关联文章在树中可见 */
+function expandAncestors(nodeId: string) {
+  if (treeData.value.length === 0) return
+  const ancestors: string[] = []
+  let current = treeData.value.find((n) => n.id === nodeId)
+  while (current?.parentId) {
+    const parent = treeData.value.find((n) => n.id === current!.parentId)
+    if (parent && parent.type === 'folder') {
+      ancestors.push(parent.id)
+    }
+    current = parent ?? undefined
+  }
+  if (ancestors.length > 0) {
+    expandedIds.value = new Set([...expandedIds.value, ...ancestors])
+  }
+}
+
 export function useGitHubTree() {
   // ── 计算属性 ──
 
@@ -243,9 +260,31 @@ export function useGitHubTree() {
   }
 
   async function moveNode(id: string, newParentId: string | null): Promise<void> {
-    await GitHubTreeService.moveNode(id, newParentId)
+    // 乐观更新：立即移动节点
+    const node = treeData.value.find(n => n.id === id)
+    if (node) {
+      const oldParentId = node.parentId
+      node.parentId = newParentId
+      if (oldParentId !== newParentId) {
+        // 对受影响的分组重新排序
+        const affected = new Set([oldParentId, newParentId].map(p => String(p)))
+        affected.forEach(pid => {
+          treeData.value
+            .filter(n => String(n.parentId) === pid)
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .forEach((n, i) => { n.sortOrder = i * 10 })
+        })
+      }
+    }
     if (newParentId) expandedIds.value.add(newParentId)
-    await loadTree()
+
+    try {
+      await GitHubTreeService.moveNode(id, newParentId)
+      // 乐观更新已生效，无需 loadTree 刷新
+    } catch {
+      await loadTree()
+      throw new Error('移动失败，已还原')
+    }
   }
 
   async function reorderNode(id: string, direction: 'up' | 'down'): Promise<void> {
@@ -260,6 +299,35 @@ export function useGitHubTree() {
     try {
       await GitHubTreeService.reorderNode(id, direction)
       await loadTree()
+    } finally {
+      reordering.value = false
+    }
+  }
+
+  async function reorderToPosition(id: string, newIndex: number): Promise<void> {
+    if (reordering.value) return
+
+    // 乐观更新：立即重排本地节点
+    const node = treeData.value.find(n => n.id === id)
+    if (node) {
+      const siblings = treeData.value
+        .filter(n => n.parentId === node.parentId)
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+      const oldIndex = siblings.findIndex(n => n.id === id)
+      if (oldIndex !== -1 && oldIndex !== newIndex) {
+        siblings.splice(oldIndex, 1)
+        siblings.splice(newIndex, 0, node)
+        siblings.forEach((n, i) => { n.sortOrder = i * 10 })
+      }
+    }
+
+    reordering.value = true
+    try {
+      await GitHubTreeService.reorderToPosition(id, newIndex)
+      // 乐观更新已生效，无需 loadTree 刷新
+    } catch {
+      await loadTree() // 失败时回滚
+      throw new Error('排序失败，已还原')
     } finally {
       reordering.value = false
     }
@@ -330,10 +398,12 @@ export function useGitHubTree() {
     deleteNode,
     moveNode,
     reorderNode,
+    reorderToPosition,
     pushToCloud,
 
     // 持久化
     restoreCloudArticlePersistence,
     clearCloudArticlePersistence,
+    expandAncestors,
   }
 }

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { Folder, FileText, Plus, ChevronRight, ChevronDown, FolderPlus, FilePlus, SquarePen, ArrowUp, ArrowDown, Search, X } from 'lucide-vue-next'
+import { Folder, FileText, Plus, ChevronRight, ChevronDown, FolderPlus, FilePlus, SquarePen, Search, X } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
@@ -38,7 +38,7 @@ const {
   renameNode,
   deleteNode,
   moveNode,
-  reorderNode,
+  reorderToPosition,
   getSiblings,
 } = useGitHubTree()
 
@@ -370,19 +370,120 @@ async function onEditArticleClick(node: TreeNode) {
   }
 }
 
-// ── 节点排序 ──
-async function handleReorder(node: TreeNode, direction: 'up' | 'down') {
-  await reorderNode(node.id, direction)
+// ── 拖拽排序 ──
+const dragNodeId = ref<string | null>(null)
+const dragOverNodeId = ref<string | null>(null)
+const dragOverPosition = ref<'before' | 'after' | 'inside'>('after')
+
+function onDragStart(e: DragEvent, node: TreeNode) {
+  dragNodeId.value = node.id
+  document.body.style.cursor = 'move'
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', node.id)
+    const el = e.target as HTMLElement
+    e.dataTransfer.setDragImage(el, 0, 0)
+  }
 }
 
-function isFirstSibling(id: string): boolean {
-  const siblings = getSiblings(id)
-  return siblings.length > 0 && siblings[0].id === id
+function onDragOver(e: DragEvent, node: TreeNode) {
+  e.preventDefault()
+  if (!dragNodeId.value || dragNodeId.value === node.id) return
+
+  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  if (!draggedNode) return
+
+  // 防止拖入自己的后代
+  if (isDescendantOf(node.id, dragNodeId.value)) return
+
+  dragOverNodeId.value = node.id
+  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  const yRatio = (e.clientY - rect.top) / rect.height
+
+  if (node.type === 'folder' && yRatio > 0.33 && yRatio < 0.67) {
+    dragOverPosition.value = 'inside'
+  } else {
+    dragOverPosition.value = yRatio < 0.5 ? 'before' : 'after'
+  }
+
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = 'move'
+  }
 }
 
-function isLastSibling(id: string): boolean {
-  const siblings = getSiblings(id)
-  return siblings.length > 0 && siblings[siblings.length - 1].id === id
+function onDragLeave() {
+  dragOverNodeId.value = null
+}
+
+async function onDrop(e: DragEvent, targetNode: TreeNode) {
+  e.preventDefault()
+  if (!dragNodeId.value || dragNodeId.value === targetNode.id) return
+
+  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  if (!draggedNode) return
+
+  // 跨文件夹移动
+  if (dragOverPosition.value === 'inside' && targetNode.type === 'folder') {
+    await moveNode(dragNodeId.value, targetNode.id)
+    dragNodeId.value = null
+    dragOverNodeId.value = null
+    return
+  }
+
+  // 同级排序：仅允许同级拖拽
+  if (draggedNode.parentId !== targetNode.parentId) return
+
+  const targetSiblings = getSiblings(targetNode.id)
+
+  let newIndex = targetSiblings.findIndex(n => n.id === targetNode.id)
+  if (newIndex === -1) return
+
+  if (dragOverPosition.value === 'after') {
+    newIndex++
+  }
+
+  // 调整索引：从旧位置移除后，目标索引可能偏移
+  const oldIndex = targetSiblings.findIndex(n => n.id === dragNodeId.value)
+  if (oldIndex < newIndex) {
+    newIndex--
+  }
+
+  await reorderToPosition(dragNodeId.value, newIndex)
+  dragNodeId.value = null
+  dragOverNodeId.value = null
+}
+
+function onDragEnd() {
+  document.body.style.cursor = ''
+  dragNodeId.value = null
+  dragOverNodeId.value = null
+}
+
+/** 防止节点拖入自己的后代文件夹（形成循环） */
+function isDescendantOf(ancestorId: string, nodeId: string): boolean {
+  let currentId: string | null = nodeId
+  while (currentId) {
+    if (currentId === ancestorId) return true
+    const node = treeData.value.find(n => n.id === currentId)
+    currentId = node?.parentId ?? null
+  }
+  return false
+}
+
+/** 计算拖拽指示线样式 */
+function dropIndicatorStyle(nodeId: string) {
+  if (dragOverNodeId.value !== nodeId || !dragNodeId.value) return null
+  if (dragOverPosition.value === 'inside') return null
+  return dragOverPosition.value === 'before'
+    ? { top: '0', borderTop: '2px solid var(--accent)' }
+    : { bottom: '0', borderBottom: '2px solid var(--accent)' }
+}
+
+/** 文件夹是否处于吸入态（拖入内部） */
+function isDropInside(node: TreeNode): boolean {
+  return dragOverNodeId.value === node.id
+    && dragOverPosition.value === 'inside'
+    && !!dragNodeId.value
 }
 
 // ── 全部展开/收起 ──
@@ -528,30 +629,24 @@ function onSettingChanged(e: Event) {
             <div
               v-if="!searchQuery || isNodeVisible(root.id)"
               class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': currentCloudArticleId === root.id }"
+              :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
+              draggable="true"
+              @dragstart="onDragStart($event, root)"
+              @dragover="onDragOver($event, root)"
+              @dragleave="onDragLeave"
+              @drop="onDrop($event, root)"
+              @dragend="onDragEnd"
               @click="toggleExpand(root.id)"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
+              <!-- 拖拽指示线 -->
+              <div v-if="dropIndicatorStyle(root.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(root.id)" />
               <span class="flex items-center justify-center w-4 h-4 shrink-0">
                 <ChevronRight v-if="!isExpanded(root.id)" :size="12" style="color: var(--text-secondary);" />
                 <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
               </span>
               <Folder :size="14" class="shrink-0 ml-0.5" style="color: var(--accent);" />
               <span class="text-xs truncate ml-1" style="color: var(--text-primary);">{{ root.title }}</span>
-              <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
-                <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                  :disabled="reordering || isFirstSibling(root.id)"
-                  title="上移"
-                  @click.stop="handleReorder(root, 'up')"
-                ><ArrowUp :size="12" style="color: var(--text-secondary);" /></button>
-                <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                  :disabled="reordering || isLastSibling(root.id)"
-                  title="下移"
-                  @click.stop="handleReorder(root, 'down')"
-                ><ArrowDown :size="12" style="color: var(--text-secondary);" /></button>
-              </span>
             </div>
             <!-- 子节点 -->
             <template v-if="isExpanded(root.id)">
@@ -559,11 +654,19 @@ function onSettingChanged(e: Event) {
                 <div
                   v-if="!searchQuery || isNodeVisible(child.id)"
                   class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-                  :class="{ 'tree-node--active': currentCloudArticleId === child.id }"
+                  :class="{ 'tree-node--active': currentCloudArticleId === child.id, 'opacity-40': reordering && dragNodeId === child.id }"
                   :style="{ paddingLeft: '26px' }"
+                  draggable="true"
+                  @dragstart="onDragStart($event, child)"
+                  @dragover="onDragOver($event, child)"
+                  @dragleave="onDragLeave"
+                  @drop="onDrop($event, child)"
+                  @dragend="onDragEnd"
                   @click="child.type === 'folder' ? toggleExpand(child.id) : undefined"
                   @contextmenu.prevent="openContextMenu($event, child)"
                 >
+                  <!-- 拖拽指示线 -->
+                  <div v-if="dropIndicatorStyle(child.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(child.id)" />
                   <span class="flex items-center justify-center w-4 h-4 shrink-0">
                     <ChevronRight
                       v-if="child.type === 'folder' && !isExpanded(child.id)"
@@ -585,22 +688,10 @@ function onSettingChanged(e: Event) {
                   <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
                     <button
                       v-if="child.type === 'article'"
-                      class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
+                      class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
                       title="加载到编辑器"
                       @click.stop="onEditArticleClick(child)"
                     ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                    <button
-                      class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                      :disabled="reordering || isFirstSibling(child.id)"
-                      title="上移"
-                      @click.stop="handleReorder(child, 'up')"
-                    ><ArrowUp :size="12" style="color: var(--text-secondary);" /></button>
-                    <button
-                      class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                      :disabled="reordering || isLastSibling(child.id)"
-                      title="下移"
-                      @click.stop="handleReorder(child, 'down')"
-                    ><ArrowDown :size="12" style="color: var(--text-secondary);" /></button>
                   </span>
                 </div>
                 <!-- 二级展开的文章（folder 下还有子节点） -->
@@ -609,11 +700,19 @@ function onSettingChanged(e: Event) {
                     <div
                       v-if="!searchQuery || isNodeVisible(sub.id)"
                       class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-                      :class="{ 'tree-node--active': currentCloudArticleId === sub.id }"
+                      :class="{ 'tree-node--active': currentCloudArticleId === sub.id, 'opacity-40': reordering && dragNodeId === sub.id }"
                       :style="{ paddingLeft: '42px' }"
+                      draggable="true"
+                      @dragstart="onDragStart($event, sub)"
+                      @dragover="onDragOver($event, sub)"
+                      @dragleave="onDragLeave"
+                      @drop="onDrop($event, sub)"
+                      @dragend="onDragEnd"
                       @click="sub.type === 'folder' ? toggleExpand(sub.id) : undefined"
                       @contextmenu.prevent="openContextMenu($event, sub)"
                     >
+                      <!-- 拖拽指示线 -->
+                      <div v-if="dropIndicatorStyle(sub.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(sub.id)" />
                       <FileText v-if="sub.type === 'article'" :size="14" class="shrink-0" style="color: var(--text-secondary);" />
                       <Folder v-else :size="14" class="shrink-0" style="color: var(--accent);" />
                       <div class="flex flex-col min-w-0 flex-1 ml-1">
@@ -622,22 +721,10 @@ function onSettingChanged(e: Event) {
                       <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
                         <button
                           v-if="sub.type === 'article'"
-                          class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
+                          class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
                           title="加载到编辑器"
                           @click.stop="onEditArticleClick(sub)"
                         ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                        <button
-                          class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                          :disabled="reordering || isFirstSibling(sub.id)"
-                          title="上移"
-                          @click.stop="handleReorder(sub, 'up')"
-                        ><ArrowUp :size="12" style="color: var(--text-secondary);" /></button>
-                        <button
-                          class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                          :disabled="reordering || isLastSibling(sub.id)"
-                          title="下移"
-                          @click.stop="handleReorder(sub, 'down')"
-                        ><ArrowDown :size="12" style="color: var(--text-secondary);" /></button>
                       </span>
                     </div>
                   </template>
@@ -651,10 +738,18 @@ function onSettingChanged(e: Event) {
             <div
               v-if="!searchQuery || isNodeVisible(root.id)"
               class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': currentCloudArticleId === root.id }"
+              :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
+              draggable="true"
+              @dragstart="onDragStart($event, root)"
+              @dragover="onDragOver($event, root)"
+              @dragleave="onDragLeave"
+              @drop="onDrop($event, root)"
+              @dragend="onDragEnd"
               @click="undefined"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
+              <!-- 拖拽指示线 -->
+              <div v-if="dropIndicatorStyle(root.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(root.id)" />
               <span class="w-4 shrink-0" />
               <FileText :size="14" class="shrink-0" style="color: var(--text-secondary);" />
               <div class="flex flex-col min-w-0 flex-1 ml-1">
@@ -662,22 +757,10 @@ function onSettingChanged(e: Event) {
               </div>
               <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
                 <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
+                  class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
                   title="加载到编辑器"
                   @click.stop="onEditArticleClick(root)"
                 ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                  :disabled="reordering || isFirstSibling(root.id)"
-                  title="上移"
-                  @click.stop="handleReorder(root, 'up')"
-                ><ArrowUp :size="12" style="color: var(--text-secondary);" /></button>
-                <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)]"
-                  :disabled="reordering || isLastSibling(root.id)"
-                  title="下移"
-                  @click.stop="handleReorder(root, 'down')"
-                ><ArrowDown :size="12" style="color: var(--text-secondary);" /></button>
               </span>
             </div>
           </template>
@@ -887,6 +970,13 @@ function onSettingChanged(e: Event) {
 
 .tree-node--active {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.tree-node--drop-inside {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  outline: 2px dashed var(--accent);
+  outline-offset: -2px;
+  border-radius: 6px;
 }
 
 .ctx-item {

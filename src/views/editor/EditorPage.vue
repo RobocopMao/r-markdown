@@ -76,7 +76,7 @@ function onToggleTreePanel() {
 }
 
 // ── Tree Panel 拖动调整宽度 ──
-const TREE_PANEL_DEFAULT_WIDTH = 220
+const TREE_PANEL_DEFAULT_WIDTH = 250
 const TREE_PANEL_MAX_WIDTH = 350
 const treePanelWidth = ref(getSetting<number>('treePanelWidth') || TREE_PANEL_DEFAULT_WIDTH)
 
@@ -224,6 +224,13 @@ onMounted(() => {
   if (storedCloudId) {
     currentCloudArticleId.value = storedCloudId
     persistedCloudTitle.value = storedCloudTitle
+    // 树加载完成后自动展开关联文章所在路径
+    const stopWatch = watch(treeData, (data) => {
+      if (data.length > 0) {
+        expandAncestors(storedCloudId)
+        stopWatch()
+      }
+    }, { immediate: true })
   }
   // 异步匹配草稿：根据当前标题查找已有同名草稿
   setTimeout(() => matchExistingDraft(), 300)
@@ -421,7 +428,7 @@ const {
 } = useDraft(markdown, showToast, extractedTitle, resetMinimap)
 
 // ── 云端文章关联 ──
-const { currentCloudArticleId, selectedNode: cloudSelectedNode, restoreCloudArticlePersistence, clearCloudArticlePersistence, setCloudArticle } = useGitHubTree()
+const { currentCloudArticleId, treeData, selectedNode: cloudSelectedNode, restoreCloudArticlePersistence, clearCloudArticlePersistence, setCloudArticle, expandAncestors } = useGitHubTree()
 
 // 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
 const persistedCloudTitle = ref('')

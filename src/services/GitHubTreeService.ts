@@ -493,4 +493,35 @@ export const GitHubTreeService = {
 
     await this.saveTree(tree.nodes)
   },
+
+  /**
+   * 拖拽排序：将节点移动到同级中的指定位置
+   * @param id 目标节点 id
+   * @param newIndex 同级中的目标索引（0-based，插入后位于该位置）
+   */
+  async reorderToPosition(id: string, newIndex: number): Promise<void> {
+    const tree = await this.fetchTree()
+    const node = tree.nodes.find((n) => n.id === id)
+    if (!node) return
+
+    const siblings = tree.nodes
+      .filter((n) => n.parentId === node.parentId)
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+
+    const oldIndex = siblings.findIndex((n) => n.id === id)
+    if (oldIndex === -1) return
+    if (oldIndex === newIndex) return
+    if (newIndex < 0 || newIndex >= siblings.length) return
+
+    // 从旧位置移除，插入新位置
+    siblings.splice(oldIndex, 1)
+    siblings.splice(newIndex, 0, node)
+
+    // 重新分配 sortOrder（步长 10，留出插入空间）
+    siblings.forEach((n, i) => {
+      n.sortOrder = i * 10
+    })
+
+    await this.saveTree(tree.nodes)
+  },
 }
