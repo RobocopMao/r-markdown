@@ -20,7 +20,7 @@ import BaseDrawer from '@/components/BaseDrawer.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { Bolt } from 'lucide-vue-next'
 
-const isTauri = import.meta.env.VITE_TAURI === 'true';
+const isTauri = import.meta.env.VITE_TAURI === 'true'
 const { isDark } = useDarkMode()
 
 // 图片加载失败时的占位（透明 1px），避免一张坏图把整次渲染拖崩
@@ -491,9 +491,13 @@ watch(
         <Bolt :size="16" />
       </button>
 
-      <span v-if="isDark && !isMobile" class="text-xs text-[#a89a86] dark:text-[#888]">建议切换到亮色模式导出</span>
+      <span v-if="isDark && !isMobile" class="text-xs text-[#a89a86] dark:text-[#888]"
+        >建议切换到亮色模式导出</span
+      >
 
-      <span class="hidden sm:inline flex-1 text-xs text-[#a89a86] dark:text-[#888] text-right">{{ status }}</span>
+      <span class="hidden sm:inline flex-1 text-xs text-[#a89a86] dark:text-[#888] text-right">{{
+        status
+      }}</span>
 
       <button
         class="border border-[var(--accent)] bg-[var(--accent)] text-white rounded-lg px-2.5 py-1.5 text-[12px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed sm:px-3 sm:text-[13px] whitespace-nowrap"
@@ -544,5 +548,3 @@ watch(
     />
   </component>
 </template>
-
-

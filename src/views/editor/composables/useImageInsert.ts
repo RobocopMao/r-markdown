@@ -284,7 +284,9 @@ export function useImageInsert(
       uploadToGitHub(
         uploadFile,
         { repo, token, branch: getSetting<string>('githubBranch') || 'main' },
-        (percent) => { githubUploadProgress.value = percent },
+        (percent) => {
+          githubUploadProgress.value = percent
+        },
       )
         .then((result) => {
           const tag = `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`
@@ -327,11 +329,9 @@ export function useImageInsert(
       }
       githubUploading.value = true
       githubUploadProgress.value = 0
-      uploadToLeta(
-        uploadFile,
-        { token, storageId },
-        (percent) => { githubUploadProgress.value = percent },
-      )
+      uploadToLeta(uploadFile, { token, storageId }, (percent) => {
+        githubUploadProgress.value = percent
+      })
         .then((result) => {
           const tag = `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`
           if (insertAt !== null) {
@@ -445,11 +445,9 @@ export function useImageInsert(
       githubUploading.value = true
       githubUploadProgress.value = 0
       try {
-        const result = await uploadToLeta(
-          finalFile,
-          { token: letaToken, storageId },
-          (percent) => { githubUploadProgress.value = percent },
-        )
+        const result = await uploadToLeta(finalFile, { token: letaToken, storageId }, (percent) => {
+          githubUploadProgress.value = percent
+        })
         editorRef.value?.insertAtCursor(
           `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
         )
@@ -476,13 +474,9 @@ export function useImageInsert(
     githubUploading.value = true
     githubUploadProgress.value = 0
     try {
-      const result = await uploadToGitHub(
-        finalFile,
-        { repo, token, branch },
-        (percent) => {
-          githubUploadProgress.value = percent
-        },
-      )
+      const result = await uploadToGitHub(finalFile, { repo, token, branch }, (percent) => {
+        githubUploadProgress.value = percent
+      })
       editorRef.value?.insertAtCursor(
         `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
       )

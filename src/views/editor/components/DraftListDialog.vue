@@ -38,21 +38,30 @@ function extractTags(content: string): string[] {
   const titleRe = /<title\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
   while ((m = titleRe.exec(content)) !== null) {
     const v = m[1].trim()
-    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
+    if (v && !seen.has(v)) {
+      tags.push(v)
+      seen.add(v)
+    }
   }
 
   // 优先级 2: <badges badge="xx">
   const badgesRe = /<badges\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
   while ((m = badgesRe.exec(content)) !== null) {
     const v = m[1].trim()
-    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
+    if (v && !seen.has(v)) {
+      tags.push(v)
+      seen.add(v)
+    }
   }
 
   // 优先级 3: <breaking badge="xx">
   const breakingRe = /<breaking\b[^>]*\bbadge\s*=\s*"([^"]*)"/gi
   while ((m = breakingRe.exec(content)) !== null) {
     const v = m[1].trim()
-    if (v && !seen.has(v)) { tags.push(v); seen.add(v) }
+    if (v && !seen.has(v)) {
+      tags.push(v)
+      seen.add(v)
+    }
   }
 
   return tags
@@ -84,9 +93,10 @@ function cleanBody(text: string): string {
 const filteredDrafts = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
   if (!q) return props.drafts
-  return props.drafts.filter((d) =>
-    d.title.toLowerCase().includes(q) ||
-    extractTags(d.content).some((t) => t.toLowerCase().includes(q)),
+  return props.drafts.filter(
+    (d) =>
+      d.title.toLowerCase().includes(q) ||
+      extractTags(d.content).some((t) => t.toLowerCase().includes(q)),
   )
 })
 
@@ -107,7 +117,9 @@ function formatDate(ts: number): string {
     @close="emit('close')"
   >
     <template #header>
-      <span class="text-xs text-[var(--text-secondary)] shrink-0">共 {{ props.drafts.length }} 篇</span>
+      <span class="text-xs text-[var(--text-secondary)] shrink-0"
+        >共 {{ props.drafts.length }} 篇</span
+      >
       <input
         v-model="searchQuery"
         type="text"
@@ -138,12 +150,17 @@ function formatDate(ts: number): string {
         class="draft-card flex flex-col p-3.5 rounded-xl bg-[var(--bg-primary)] min-h-40 min-w-0 overflow-hidden"
       >
         <!-- 标题 -->
-        <div class="text-[15px] font-bold text-[var(--text-primary)] leading-[1.4] h-[42px] line-clamp-2 overflow-hidden mb-2.5" :title="draft.title">
+        <div
+          class="text-[15px] font-bold text-[var(--text-primary)] leading-[1.4] h-[42px] line-clamp-2 overflow-hidden mb-2.5"
+          :title="draft.title"
+        >
           {{ draft.title }}
         </div>
 
         <!-- 正文 -->
-        <div class="flex-1 text-xs text-[var(--text-secondary)] leading-[1.6] line-clamp-2 overflow-hidden mb-3.5 min-h-0">
+        <div
+          class="flex-1 text-xs text-[var(--text-secondary)] leading-[1.6] line-clamp-2 overflow-hidden mb-3.5 min-h-0"
+        >
           {{ cleanBody(draft.content) || '（无内容）' }}
         </div>
 
@@ -162,7 +179,11 @@ function formatDate(ts: number): string {
               {{ tag }}
             </span>
           </template>
-          <span v-else class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium leading-[1.4] bg-[var(--border-color,#eee)] text-[var(--text-secondary)]">未分类</span>
+          <span
+            v-else
+            class="inline-block px-2 py-0.5 rounded-md text-[11px] font-medium leading-[1.4] bg-[var(--border-color,#eee)] text-[var(--text-secondary)]"
+            >未分类</span
+          >
         </div>
 
         <!-- 分隔线 -->
@@ -170,12 +191,17 @@ function formatDate(ts: number): string {
 
         <!-- 底部：日期 + 操作 -->
         <div class="flex items-center justify-between">
-          <span class="text-[11px] text-[var(--text-tertiary,#999)]">{{ formatDate(draft.updatedAt) }}</span>
+          <span class="text-[11px] text-[var(--text-tertiary,#999)]">{{
+            formatDate(draft.updatedAt)
+          }}</span>
           <div class="flex items-center gap-1.5">
             <BaseTooltip text="重新编辑">
               <button
                 class="draft-action-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
-                @click="draft.id !== undefined && emit('confirm-load', { draftId: draft.id, title: draft.title })"
+                @click="
+                  draft.id !== undefined &&
+                  emit('confirm-load', { draftId: draft.id, title: draft.title })
+                "
               >
                 <Pencil :size="14" />
               </button>
@@ -183,7 +209,10 @@ function formatDate(ts: number): string {
             <BaseTooltip text="删除">
               <button
                 class="draft-action-btn draft-delete-btn inline-flex items-center justify-center w-[26px] h-[26px] rounded-md border-0 bg-transparent text-[var(--text-secondary)] cursor-pointer"
-                @click="draft.id !== undefined && emit('confirm-delete', { draftId: draft.id, title: draft.title })"
+                @click="
+                  draft.id !== undefined &&
+                  emit('confirm-delete', { draftId: draft.id, title: draft.title })
+                "
               >
                 <Trash2 :size="14" />
               </button>
@@ -197,17 +226,25 @@ function formatDate(ts: number): string {
 
 <style scoped>
 .draft-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06), 0 1px 3px rgba(0, 0, 0, 0.04);
-  transition: box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 1px 3px rgba(0, 0, 0, 0.04);
+  transition:
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .draft-card:hover {
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1), 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.06);
   background: color-mix(in srgb, var(--accent) 4%, var(--bg-primary));
 }
 
 .draft-action-btn {
-  transition: color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    background 0.15s;
 }
 
 .draft-action-btn:hover {
@@ -221,10 +258,14 @@ function formatDate(ts: number): string {
 }
 
 [data-theme='dark'] .draft-card {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.25),
+    0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 [data-theme='dark'] .draft-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.35),
+    0 2px 6px rgba(0, 0, 0, 0.2);
 }
 </style>

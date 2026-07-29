@@ -6,11 +6,17 @@ import { Braces, Copy, EllipsisVertical, FileText, Image, LayoutGrid, Bot } from
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const router = useRouter()
-const aiDemoHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined)
+const aiDemoHref = computed(() =>
+  isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined,
+)
 
 function openAiDemo() {
   if (isTauri) {
-    window.open('https://r-markdown.pages.dev/#/help/r-markdown-formatter', '_blank', 'noopener,noreferrer')
+    window.open(
+      'https://r-markdown.pages.dev/#/help/r-markdown-formatter',
+      '_blank',
+      'noopener,noreferrer',
+    )
   } else {
     router.push('/help/r-markdown-formatter')
   }

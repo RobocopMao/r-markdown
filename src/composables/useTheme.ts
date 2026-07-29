@@ -49,7 +49,11 @@ function lightenHex(hex: string, factor: number): string {
 const saved = (() => {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
-  try { return JSON.parse(raw) } catch { return null }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 })()
 
 let init = THEMES[3]
@@ -77,7 +81,6 @@ const colors = computed<ThemeColors>(() => ({
 }))
 
 export function useTheme() {
-
   function setTheme(a: string, d: string) {
     accent.value = a
     accentDark.value = d

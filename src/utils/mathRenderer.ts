@@ -5,10 +5,11 @@
 let mathJaxReady: Promise<void> | null = null
 
 function loadMathJax(): Promise<void> {
-  if (mathJaxReady) return mathJaxReady
+  if (mathJaxReady)
+    return mathJaxReady
 
-  // 在加载 MathJax 前注入配置：fontCache='none' 让路径直接内联，
-  // 避免 <use xlink:href> 引用（微信编辑器不支持）
+    // 在加载 MathJax 前注入配置：fontCache='none' 让路径直接内联，
+    // 避免 <use xlink:href> 引用（微信编辑器不支持）
   ;(window as any).MathJax = {
     svg: {
       fontCache: 'none',
@@ -62,24 +63,22 @@ export async function renderMath(formula: string, displayMode: boolean = false):
     const assistive = node.querySelector('mjx-assistive-mml')
     if (assistive) adaptor.remove(assistive)
 
-    return adaptor
-      .outerHTML(node)
-      // 微信不兼容 xlink 命名空间，统一改为现代 SVG
-      .replace(/xlink:href/g, 'href')
-      // 强行设 display:inline（MathJax 可能通过样式表注入 display:block）
-      .replace(
-        /(<svg\b[^>]*style=")([^"]*)(")/i,
-        (_m: string, before: string, styles: string, after: string) => {
-          const cleaned = styles.replace(/display:\s*block\s*;?/gi, '')
-          return `${before}display:inline;max-width:none!important;${cleaned}${after}`
-        },
-      )
-      .replace(
-        /<svg\b(?![^>]*style=")/i,
-        '<svg style="display:inline;max-width:none!important"',
-      )
+    return (
+      adaptor
+        .outerHTML(node)
+        // 微信不兼容 xlink 命名空间，统一改为现代 SVG
+        .replace(/xlink:href/g, 'href')
+        // 强行设 display:inline（MathJax 可能通过样式表注入 display:block）
+        .replace(
+          /(<svg\b[^>]*style=")([^"]*)(")/i,
+          (_m: string, before: string, styles: string, after: string) => {
+            const cleaned = styles.replace(/display:\s*block\s*;?/gi, '')
+            return `${before}display:inline;max-width:none!important;${cleaned}${after}`
+          },
+        )
+        .replace(/<svg\b(?![^>]*style=")/i, '<svg style="display:inline;max-width:none!important"')
+    )
   } catch {
     return ''
   }
 }
-

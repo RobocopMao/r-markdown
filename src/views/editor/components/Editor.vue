@@ -12,7 +12,13 @@ import {
   ViewUpdate,
   WidgetType,
 } from '@codemirror/view'
-import { EditorState, RangeSetBuilder, StateEffect, StateField, Compartment } from '@codemirror/state'
+import {
+  EditorState,
+  RangeSetBuilder,
+  StateEffect,
+  StateField,
+  Compartment,
+} from '@codemirror/state'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
@@ -237,9 +243,8 @@ function applyInlineFormat(syntax: string, wrapType: 'delim' | 'tag' = 'delim') 
   const sel = view.state.selection.main
   if (sel.empty) return
   const selectedText = view.state.sliceDoc(sel.from, sel.to)
-  const wrapped = wrapType === 'tag'
-    ? `<${syntax}>${selectedText}</${syntax}>`
-    : syntax + selectedText + syntax
+  const wrapped =
+    wrapType === 'tag' ? `<${syntax}>${selectedText}</${syntax}>` : syntax + selectedText + syntax
   const anchorShift = wrapType === 'tag' ? syntax.length + 2 : syntax.length
   view.dispatch({
     changes: { from: sel.from, to: sel.to, insert: wrapped },
@@ -302,7 +307,10 @@ function detectTagAtCursor(pos: number, text: string): TagInfo | null {
     if (text[i] === '>') {
       depth++
     } else if (text[i] === '<') {
-      if (depth > 0) { depth--; continue }
+      if (depth > 0) {
+        depth--
+        continue
+      }
       const raw = text.slice(i, pos)
       // </tagName> 闭合标签：向前查找对应的开始标签
       const closeMatch = raw.match(/^<\/(\w[\w-]*)>$/)
@@ -682,7 +690,8 @@ onMounted(async () => {
     if (imgFiles.length > 1) {
       emit('dropMultipleImages')
     } else {
-      const pos = view!.posAtCoords({ x: e.clientX, y: e.clientY }) ?? view!.state.selection.main.head
+      const pos =
+        view!.posAtCoords({ x: e.clientX, y: e.clientY }) ?? view!.state.selection.main.head
       emit('dropImage', imgFiles[0], pos)
     }
   })
@@ -760,7 +769,16 @@ function scrollToLineAndHighlight(lineNo: number) {
   }, 3000)
 }
 
-defineExpose({ scrollTo, replaceRange, insertAtCursor, isAtLineStart, hasInlineSelection, isInsideTag, applyInlineFormat, scrollToLineAndHighlight })
+defineExpose({
+  scrollTo,
+  replaceRange,
+  insertAtCursor,
+  isAtLineStart,
+  hasInlineSelection,
+  isInsideTag,
+  applyInlineFormat,
+  scrollToLineAndHighlight,
+})
 </script>
 
 <template>

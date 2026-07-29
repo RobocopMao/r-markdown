@@ -25,9 +25,7 @@ export function useAutoSave(
   const saveMode = ref<'自动' | '手动' | ''>(
     savedTime ? (autoSaveEnabled.value ? '自动' : '手动') : '',
   )
-  const saveHint = ref(
-    savedTime ? saveMode.value + '保存于 ' + formatTime(savedTime) : '',
-  )
+  const saveHint = ref(savedTime ? saveMode.value + '保存于 ' + formatTime(savedTime) : '')
 
   let saveTimer: ReturnType<typeof setTimeout> | null = null
 

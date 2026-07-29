@@ -23,18 +23,21 @@ const emit = defineEmits<{
 
 let lockCount = 0
 
-watch(() => props.visible, (v) => {
-  if (v) {
-    lockCount++
-    document.body.style.overflow = 'hidden'
-  } else {
-    lockCount--
-    if (lockCount <= 0) {
-      lockCount = 0
-      document.body.style.overflow = ''
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) {
+      lockCount++
+      document.body.style.overflow = 'hidden'
+    } else {
+      lockCount--
+      if (lockCount <= 0) {
+        lockCount = 0
+        document.body.style.overflow = ''
+      }
     }
-  }
-})
+  },
+)
 
 onBeforeUnmount(() => {
   if (props.visible) {
@@ -61,8 +64,12 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <!-- Header -->
-        <div class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]">
-          <span class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] truncate">{{ title }}</span>
+        <div
+          class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]"
+        >
+          <span class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] truncate">{{
+            title
+          }}</span>
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <slot name="header" />
           </div>
@@ -98,7 +105,7 @@ onBeforeUnmount(() => {
               :disabled="confirmDisabled || loading"
               @click="emit('confirm')"
             >
-              {{ loading ? (loadingText || '操作中...') : (confirmText || '确认') }}
+              {{ loading ? loadingText || '操作中...' : confirmText || '确认' }}
             </button>
           </slot>
         </div>
@@ -109,12 +116,22 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @keyframes base-dialog-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes base-dialog-slide-up {
-  from { transform: translateY(12px) scale(0.97); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
+  from {
+    transform: translateY(12px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
 }
 .animate-base-dialog-fade-in {
   animation: base-dialog-fade-in 0.2s ease-out;

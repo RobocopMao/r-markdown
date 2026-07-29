@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { Folder, FileText, Plus, ChevronRight, ChevronDown, FolderPlus, FilePlus, SquarePen, Search, X } from 'lucide-vue-next'
+import { ref, computed, watch, onMounted, onBeforeUnmount, provide } from 'vue'
+import {
+  Folder,
+  Plus,
+  ChevronRight,
+  ChevronDown,
+  FolderPlus,
+  FilePlus,
+  Search,
+  X,
+} from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import TreeNodeComponent from './TreeNode.vue'
 
 const emit = defineEmits<{
   (e: 'openSettings', tab: string): void
@@ -282,9 +292,7 @@ const deleting = ref(false)
 const deleteConfirmLabel = computed(() => {
   const node = deleteConfirmTarget.value
   if (!node) return ''
-  return node.type === 'folder'
-    ? `文件夹「${node.title}」及其所有内容`
-    : `文章「${node.title}」`
+  return node.type === 'folder' ? `文件夹「${node.title}」及其所有内容` : `文章「${node.title}」`
 })
 
 function handleDelete(node: TreeNode) {
@@ -334,7 +342,7 @@ async function confirmMove() {
   if (!target) return
   const targetTitle = target.title
   const destName = moveParentId.value
-    ? treeData.value.find(f => f.id === moveParentId.value)?.title || '目标文件夹'
+    ? treeData.value.find((f) => f.id === moveParentId.value)?.title || '目标文件夹'
     : '根目录'
   moving.value = true
   try {
@@ -391,7 +399,7 @@ function findTreeNodeAtPoint(x: number, y: number): { node: TreeNode; el: HTMLEl
     if (!treeEl) continue
     const id = treeEl.dataset.nodeId
     if (!id) continue
-    const node = treeData.value.find(n => n.id === id)
+    const node = treeData.value.find((n) => n.id === id)
     if (node) return { node, el: treeEl }
   }
   return null
@@ -411,7 +419,7 @@ function onPointerMove(e: PointerEvent) {
     return
   }
 
-  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  const draggedNode = treeData.value.find((n) => n.id === dragNodeId.value)
   if (!draggedNode) return
   if (isDescendantOf(hit.node.id, dragNodeId.value)) return
 
@@ -440,7 +448,7 @@ async function onPointerUp(e: PointerEvent) {
     return
   }
 
-  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  const draggedNode = treeData.value.find((n) => n.id === dragNodeId.value)
   if (!draggedNode) {
     resetDrag()
     return
@@ -450,10 +458,10 @@ async function onPointerUp(e: PointerEvent) {
     await moveNode(dragNodeId.value, targetNode.id)
   } else if (draggedNode.parentId === targetNode.parentId) {
     const targetSiblings = getSiblings(targetNode.id)
-    let newIndex = targetSiblings.findIndex(n => n.id === targetNode.id)
+    let newIndex = targetSiblings.findIndex((n) => n.id === targetNode.id)
     if (newIndex !== -1) {
       if (dragOverPosition.value === 'after') newIndex++
-      const oldIndex = targetSiblings.findIndex(n => n.id === dragNodeId.value)
+      const oldIndex = targetSiblings.findIndex((n) => n.id === dragNodeId.value)
       if (oldIndex < newIndex) newIndex--
       await reorderToPosition(dragNodeId.value, newIndex)
     }
@@ -473,7 +481,7 @@ function isDescendantOf(ancestorId: string, nodeId: string): boolean {
   let currentId: string | null = nodeId
   while (currentId) {
     if (currentId === ancestorId) return true
-    const node = treeData.value.find(n => n.id === currentId)
+    const node = treeData.value.find((n) => n.id === currentId)
     currentId = node?.parentId ?? null
   }
   return false
@@ -490,31 +498,47 @@ function dropIndicatorStyle(nodeId: string) {
 
 /** 文件夹是否处于吸入态（拖入内部） */
 function isDropInside(node: TreeNode): boolean {
-  return dragOverNodeId.value === node.id
-    && dragOverPosition.value === 'inside'
-    && !!dragNodeId.value
-    && isDragging.value
+  return (
+    dragOverNodeId.value === node.id &&
+    dragOverPosition.value === 'inside' &&
+    !!dragNodeId.value &&
+    isDragging.value
+  )
 }
+
+// ── 注入给 TreeNode 递归组件 ──
+provide('tree-isNodeVisible', isNodeVisible)
+provide('tree-isExpanded', isExpanded)
+provide('tree-toggleExpand', toggleExpand)
+provide('tree-getChildren', getChildren)
+provide('tree-onPointerDown', onPointerDown)
+provide('tree-dropIndicatorStyle', dropIndicatorStyle)
+provide('tree-isDropInside', isDropInside)
+provide('tree-onEditArticleClick', onEditArticleClick)
+provide('tree-openContextMenu', openContextMenu)
+provide('tree-currentCloudArticleId', currentCloudArticleId)
+provide('tree-dragNodeId', dragNodeId)
+provide('tree-reordering', reordering)
 
 // ── 全部展开/收起 ──
 const isAllExpanded = computed(() => {
-  const allFolders = treeData.value.filter(n => n.type === 'folder')
+  const allFolders = treeData.value.filter((n) => n.type === 'folder')
   if (allFolders.length === 0) return false
-  return allFolders.every(f => expandedIds.value.has(f.id))
+  return allFolders.every((f) => expandedIds.value.has(f.id))
 })
 
 function toggleAllExpand() {
-  const allFolders = treeData.value.filter(n => n.type === 'folder')
+  const allFolders = treeData.value.filter((n) => n.type === 'folder')
   if (allFolders.length === 0) return
 
   if (isAllExpanded.value) {
     // 全部收起
-    allFolders.forEach(f => {
+    allFolders.forEach((f) => {
       if (expandedIds.value.has(f.id)) toggleExpand(f.id)
     })
   } else {
     // 全部展开
-    allFolders.forEach(f => {
+    allFolders.forEach((f) => {
       if (!expandedIds.value.has(f.id)) toggleExpand(f.id)
     })
   }
@@ -552,27 +576,29 @@ function onSettingChanged(e: Event) {
 <template>
   <div
     class="tree-panel flex flex-col h-full overflow-hidden shrink-0 transition-all duration-250 rounded-xl mr-[10px]"
-    style="width: 100%; background: var(--bg-primary);"
+    style="width: 100%; background: var(--bg-primary)"
   >
     <!-- 标题栏 -->
     <div
       class="flex items-center justify-between px-3 py-2 shrink-0"
-      style="border-bottom: 1px solid var(--border-color, #e5e5e5);"
+      style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
     >
-      <div class="flex flex-1 items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 mr-2 px-2">
+      <div
+        class="flex flex-1 items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 mr-2 px-2"
+      >
         <input
           v-model="searchQuery"
           type="text"
           placeholder="搜索文章..."
           class="flex-1 bg-transparent border-none outline-none text-xs w-22"
-          style="color: var(--text-primary);"
+          style="color: var(--text-primary)"
         />
         <button
           v-if="searchQuery"
           class="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--bg-primary)] cursor-pointer border-none bg-transparent"
           @click="searchQuery = ''"
         >
-          <X :size="10" style="color: var(--text-secondary);" />
+          <X :size="10" style="color: var(--text-secondary)" />
         </button>
       </div>
       <div class="flex items-center gap-0.5">
@@ -608,10 +634,10 @@ function onSettingChanged(e: Event) {
     <div class="flex-1 overflow-auto py-1">
       <!-- 未配置 -->
       <div v-if="!isConfigured" class="px-3 py-6 text-center">
-        <p class="text-xs mb-2" style="color: var(--text-secondary);">尚未配置 GitHub 仓库</p>
+        <p class="text-xs mb-2" style="color: var(--text-secondary)">尚未配置 GitHub 仓库</p>
         <button
           class="px-3 py-1 text-xs rounded-lg border-none cursor-pointer transition-colors duration-150"
-          style="background: var(--accent); color: white;"
+          style="background: var(--accent); color: white"
           @click="emit('openSettings', 'cloud')"
         >
           前往设置
@@ -620,15 +646,15 @@ function onSettingChanged(e: Event) {
 
       <!-- 加载中 -->
       <div v-else-if="loading && treeData.length === 0" class="px-3 py-6 text-center">
-        <p class="text-xs" style="color: var(--text-secondary);">加载中...</p>
+        <p class="text-xs" style="color: var(--text-secondary)">加载中...</p>
       </div>
 
       <!-- 错误 -->
       <div v-else-if="error && treeData.length === 0" class="px-3 py-4 text-center">
-        <p class="text-xs" style="color: #e74c3c;">{{ error }}</p>
+        <p class="text-xs" style="color: #e74c3c">{{ error }}</p>
         <button
           class="px-3 py-1 text-xs rounded-lg border-none cursor-pointer mt-2"
-          style="background: var(--accent-light); color: var(--accent);"
+          style="background: var(--accent-light); color: var(--accent)"
           @click="init()"
         >
           重试
@@ -637,145 +663,21 @@ function onSettingChanged(e: Event) {
 
       <!-- 树节点 -->
       <template v-else>
-        <template v-for="root in treeRoots" :key="root.id">
-          <!-- folder -->
-          <template v-if="root.type === 'folder'">
-            <div
-              v-if="!searchQuery || isNodeVisible(root.id)"
-              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
-              :data-node-id="root.id"
-              @pointerdown="onPointerDown($event, root)"
-              @click="toggleExpand(root.id)"
-              @contextmenu.prevent="openContextMenu($event, root)"
-            >
-              <!-- 拖拽指示线 -->
-              <div v-if="dropIndicatorStyle(root.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(root.id)" />
-              <span class="flex items-center justify-center w-4 h-4 shrink-0">
-                <ChevronRight v-if="!isExpanded(root.id)" :size="12" style="color: var(--text-secondary);" />
-                <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
-              </span>
-              <Folder :size="14" class="shrink-0 ml-0.5" style="color: var(--accent);" />
-              <span class="text-xs truncate ml-1" style="color: var(--text-primary);">{{ root.title }}</span>
-            </div>
-            <!-- 子节点 -->
-            <template v-if="isExpanded(root.id)">
-              <template v-for="child in getChildren(root.id)" :key="child.id">
-                <div
-                  v-if="!searchQuery || isNodeVisible(child.id)"
-                  class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
-                  :class="{ 'tree-node--active': currentCloudArticleId === child.id, 'opacity-40': reordering && dragNodeId === child.id }"
-                  :style="{ paddingLeft: '26px' }"
-                  :data-node-id="child.id"
-                  @pointerdown="onPointerDown($event, child)"
-                  @click="child.type === 'folder' ? toggleExpand(child.id) : undefined"
-                  @contextmenu.prevent="openContextMenu($event, child)"
-                >
-                  <!-- 拖拽指示线 -->
-                  <div v-if="dropIndicatorStyle(child.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(child.id)" />
-                  <span class="flex items-center justify-center w-4 h-4 shrink-0">
-                    <ChevronRight
-                      v-if="child.type === 'folder' && !isExpanded(child.id)"
-                      :size="12"
-                      style="color: var(--text-secondary);"
-                    />
-                    <ChevronDown
-                      v-else-if="child.type === 'folder' && isExpanded(child.id)"
-                      :size="12"
-                      style="color: var(--text-secondary);"
-                    />
-                    <span v-else class="w-4" />
-                  </span>
-                  <FileText v-if="child.type === 'article'" :size="14" class="shrink-0" style="color: var(--text-secondary);" />
-                  <Folder v-else :size="14" class="shrink-0" style="color: var(--accent);" />
-                  <div class="flex flex-col min-w-0 flex-1 ml-1">
-                    <span class="text-xs truncate" style="color: var(--text-primary);">{{ child.title }}</span>
-                  </div>
-                  <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
-                    <BaseTooltip text="重新编辑">
-                    <button
-                      v-if="child.type === 'article'"
-                      class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                      @click.stop="onEditArticleClick(child)"
-                    ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                    </BaseTooltip>
-                  </span>
-                </div>
-                <!-- 二级展开的文章（folder 下还有子节点） -->
-                <template v-if="child.type === 'folder' && isExpanded(child.id)">
-                  <template v-for="sub in getChildren(child.id)" :key="sub.id">
-                    <div
-                      v-if="!searchQuery || isNodeVisible(sub.id)"
-                      class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
-                      :class="{ 'tree-node--active': currentCloudArticleId === sub.id, 'opacity-40': reordering && dragNodeId === sub.id }"
-                      :style="{ paddingLeft: '42px' }"
-                      :data-node-id="sub.id"
-                      @pointerdown="onPointerDown($event, sub)"
-                      @click="sub.type === 'folder' ? toggleExpand(sub.id) : undefined"
-                      @contextmenu.prevent="openContextMenu($event, sub)"
-                    >
-                      <!-- 拖拽指示线 -->
-                      <div v-if="dropIndicatorStyle(sub.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(sub.id)" />
-                      <FileText v-if="sub.type === 'article'" :size="14" class="shrink-0" style="color: var(--text-secondary);" />
-                      <Folder v-else :size="14" class="shrink-0" style="color: var(--accent);" />
-                      <div class="flex flex-col min-w-0 flex-1 ml-1">
-                        <span class="text-xs truncate" style="color: var(--text-primary);">{{ sub.title }}</span>
-                      </div>
-                      <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
-                        <BaseTooltip text="重新编辑">
-                        <button
-                          v-if="sub.type === 'article'"
-                          class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                          @click.stop="onEditArticleClick(sub)"
-                        ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                        </BaseTooltip>
-                      </span>
-                    </div>
-                  </template>
-                </template>
-              </template>
-            </template>
-          </template>
-
-          <!-- 根级 article -->
-          <template v-else>
-            <div
-              v-if="!searchQuery || isNodeVisible(root.id)"
-              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
-              :data-node-id="root.id"
-              @pointerdown="onPointerDown($event, root)"
-              @click="undefined"
-              @contextmenu.prevent="openContextMenu($event, root)"
-            >
-              <!-- 拖拽指示线 -->
-              <div v-if="dropIndicatorStyle(root.id)" class="absolute left-0 right-0 pointer-events-none z-10" :style="dropIndicatorStyle(root.id)" />
-              <span class="w-4 shrink-0" />
-              <FileText :size="14" class="shrink-0" style="color: var(--text-secondary);" />
-              <div class="flex flex-col min-w-0 flex-1 ml-1">
-                <span class="text-xs truncate" style="color: var(--text-primary);">{{ root.title }}</span>
-              </div>
-              <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
-                <BaseTooltip text="重新编辑">
-                <button
-                  class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
-                  @click.stop="onEditArticleClick(root)"
-                ><SquarePen :size="14" style="color: var(--text-secondary);" /></button>
-                </BaseTooltip>
-              </span>
-            </div>
-          </template>
-        </template>
+        <TreeNodeComponent v-for="root in treeRoots" :key="root.id" :node="root" :depth="0" />
 
         <!-- 空树 -->
         <div v-if="treeData.length === 0 && !loading" class="px-3 py-6 text-center">
-          <p class="text-xs" style="color: var(--text-secondary);">暂无文章</p>
-          <p class="text-xs mt-1" style="color: var(--text-secondary); opacity: 0.6;">点击右上角 [+] 新建</p>
+          <p class="text-xs" style="color: var(--text-secondary)">暂无文章</p>
+          <p class="text-xs mt-1" style="color: var(--text-secondary); opacity: 0.6">
+            点击右上角 [+] 新建
+          </p>
         </div>
 
         <!-- 搜索无结果 -->
         <div v-if="noSearchResults" class="px-3 py-6 text-center">
-          <p class="text-xs" style="color: var(--text-secondary);">未找到匹配「{{ searchQuery }}」的文章</p>
+          <p class="text-xs" style="color: var(--text-secondary)">
+            未找到匹配「{{ searchQuery }}」的文章
+          </p>
         </div>
       </template>
     </div>
@@ -796,18 +698,34 @@ function onSettingChanged(e: Event) {
       >
         <!-- article 右键菜单 -->
         <template v-if="contextMenu.node.type === 'article'">
-          <button class="ctx-item" @click="onCtxMenuAction('rename', contextMenu.node!)">重命名</button>
-          <button class="ctx-item" @click="onCtxMenuAction('delete', contextMenu.node!)">删除</button>
-          <button class="ctx-item" @click="onCtxMenuAction('move', contextMenu.node!)">移动到...</button>
+          <button class="ctx-item" @click="onCtxMenuAction('rename', contextMenu.node!)">
+            重命名
+          </button>
+          <button class="ctx-item" @click="onCtxMenuAction('delete', contextMenu.node!)">
+            删除
+          </button>
+          <button class="ctx-item" @click="onCtxMenuAction('move', contextMenu.node!)">
+            移动到...
+          </button>
         </template>
         <!-- folder 右键菜单 -->
         <template v-else>
-          <button class="ctx-item" @click="onCtxMenuAction('new-article', contextMenu.node!)">新建子文章</button>
-          <button class="ctx-item" @click="onCtxMenuAction('new-folder', contextMenu.node!)">新建子文件夹</button>
-          <div style="border-top: 1px solid var(--border-color, #e5e5e5); margin: 2px 0;" />
-          <button class="ctx-item" @click="onCtxMenuAction('rename', contextMenu.node!)">重命名</button>
-          <button class="ctx-item" @click="onCtxMenuAction('delete', contextMenu.node!)">删除</button>
-          <button class="ctx-item" @click="onCtxMenuAction('move', contextMenu.node!)">移动到...</button>
+          <button class="ctx-item" @click="onCtxMenuAction('new-article', contextMenu.node!)">
+            新建子文章
+          </button>
+          <button class="ctx-item" @click="onCtxMenuAction('new-folder', contextMenu.node!)">
+            新建子文件夹
+          </button>
+          <div style="border-top: 1px solid var(--border-color, #e5e5e5); margin: 2px 0" />
+          <button class="ctx-item" @click="onCtxMenuAction('rename', contextMenu.node!)">
+            重命名
+          </button>
+          <button class="ctx-item" @click="onCtxMenuAction('delete', contextMenu.node!)">
+            删除
+          </button>
+          <button class="ctx-item" @click="onCtxMenuAction('move', contextMenu.node!)">
+            移动到...
+          </button>
         </template>
       </div>
     </Teleport>
@@ -821,7 +739,12 @@ function onSettingChanged(e: Event) {
       confirm-text="确定"
       :loading="newRootCreating"
       loading-text="正在创建..."
-      @save="(v: string) => { newRootTitle = v; confirmNewRoot() }"
+      @save="
+        (v: string) => {
+          newRootTitle = v
+          confirmNewRoot()
+        }
+      "
     />
 
     <!-- 新建根级文章弹窗 -->
@@ -833,7 +756,12 @@ function onSettingChanged(e: Event) {
       confirm-text="确定"
       :loading="newRootArticleCreating"
       loading-text="正在创建..."
-      @save="(v: string) => { newRootArticleTitle = v; confirmNewRootArticle() }"
+      @save="
+        (v: string) => {
+          newRootArticleTitle = v
+          confirmNewRootArticle()
+        }
+      "
     />
 
     <!-- 新建子节点弹窗 -->
@@ -845,7 +773,12 @@ function onSettingChanged(e: Event) {
       confirm-text="确定"
       :loading="newChildCreating"
       loading-text="正在创建..."
-      @save="(v: string) => { newChildTitle = v; confirmNewChild() }"
+      @save="
+        (v: string) => {
+          newChildTitle = v
+          confirmNewChild()
+        }
+      "
     />
 
     <!-- 重命名弹窗 -->
@@ -857,7 +790,12 @@ function onSettingChanged(e: Event) {
       confirm-text="确定"
       :loading="renaming"
       loading-text="正在重命名..."
-      @save="(v: string) => { renameTitle = v; confirmRename() }"
+      @save="
+        (v: string) => {
+          renameTitle = v
+          confirmRename()
+        }
+      "
     />
 
     <!-- 移动到弹窗 -->
@@ -877,10 +815,14 @@ function onSettingChanged(e: Event) {
         <!-- 根目录 -->
         <div
           class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-          :style="moveParentId === null ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }"
+          :style="
+            moveParentId === null
+              ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+              : { color: 'var(--text-primary)' }
+          "
           @click="moveParentId = null"
         >
-          <Folder :size="14" style="color: var(--accent);" />
+          <Folder :size="14" style="color: var(--accent)" />
           <span>（根目录）</span>
         </div>
 
@@ -888,43 +830,82 @@ function onSettingChanged(e: Event) {
         <template v-for="root in treeRoots.filter((n) => n.type === 'folder')" :key="root.id">
           <div
             class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-            :class="{ 'cursor-pointer': !moveDisabledIds.has(root.id), 'cursor-not-allowed': moveDisabledIds.has(root.id) }"
-            :style="moveParentId === root.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)', opacity: moveDisabledIds.has(root.id) ? 0.3 : 1 }"
+            :class="{
+              'cursor-pointer': !moveDisabledIds.has(root.id),
+              'cursor-not-allowed': moveDisabledIds.has(root.id),
+            }"
+            :style="
+              moveParentId === root.id
+                ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+                : { color: 'var(--text-primary)', opacity: moveDisabledIds.has(root.id) ? 0.3 : 1 }
+            "
             @click="!moveDisabledIds.has(root.id) && (moveParentId = root.id)"
           >
             <span
               class="flex items-center justify-center w-4 h-4 shrink-0 cursor-pointer"
               @click.stop="toggleExpand(root.id)"
             >
-              <ChevronRight v-if="!isExpanded(root.id)" :size="12" style="color: var(--text-secondary);" />
-              <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
+              <ChevronRight
+                v-if="!isExpanded(root.id)"
+                :size="12"
+                style="color: var(--text-secondary)"
+              />
+              <ChevronDown v-else :size="12" style="color: var(--text-secondary)" />
             </span>
-            <Folder :size="14" style="color: var(--accent);" />
+            <Folder :size="14" style="color: var(--accent)" />
             <span>{{ root.title }}</span>
           </div>
 
           <!-- 一级子文件夹 -->
           <template v-if="isExpanded(root.id)">
-            <template v-for="child in getChildren(root.id).filter((n) => n.type === 'folder')" :key="child.id">
+            <template
+              v-for="child in getChildren(root.id).filter((n) => n.type === 'folder')"
+              :key="child.id"
+            >
               <div
                 class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-                :class="{ 'cursor-pointer': !moveDisabledIds.has(child.id), 'cursor-not-allowed': moveDisabledIds.has(child.id) }"
-                :style="{ paddingLeft: '36px', ...(moveParentId === child.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)', opacity: moveDisabledIds.has(child.id) ? 0.3 : 1 }) }"
+                :class="{
+                  'cursor-pointer': !moveDisabledIds.has(child.id),
+                  'cursor-not-allowed': moveDisabledIds.has(child.id),
+                }"
+                :style="{
+                  paddingLeft: '36px',
+                  ...(moveParentId === child.id
+                    ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+                    : {
+                        color: 'var(--text-primary)',
+                        opacity: moveDisabledIds.has(child.id) ? 0.3 : 1,
+                      }),
+                }"
                 @click="!moveDisabledIds.has(child.id) && (moveParentId = child.id)"
               >
-                <Folder :size="14" style="color: var(--accent);" />
+                <Folder :size="14" style="color: var(--accent)" />
                 <span>{{ child.title }}</span>
               </div>
 
               <!-- 二级子文件夹 -->
-              <template v-for="grandchild in getChildren(child.id).filter((n) => n.type === 'folder')" :key="grandchild.id">
+              <template
+                v-for="grandchild in getChildren(child.id).filter((n) => n.type === 'folder')"
+                :key="grandchild.id"
+              >
                 <div
                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-                  :class="{ 'cursor-pointer': !moveDisabledIds.has(grandchild.id), 'cursor-not-allowed': moveDisabledIds.has(grandchild.id) }"
-                  :style="{ paddingLeft: '52px', ...(moveParentId === grandchild.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)', opacity: moveDisabledIds.has(grandchild.id) ? 0.3 : 1 }) }"
+                  :class="{
+                    'cursor-pointer': !moveDisabledIds.has(grandchild.id),
+                    'cursor-not-allowed': moveDisabledIds.has(grandchild.id),
+                  }"
+                  :style="{
+                    paddingLeft: '52px',
+                    ...(moveParentId === grandchild.id
+                      ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+                      : {
+                          color: 'var(--text-primary)',
+                          opacity: moveDisabledIds.has(grandchild.id) ? 0.3 : 1,
+                        }),
+                  }"
                   @click="!moveDisabledIds.has(grandchild.id) && (moveParentId = grandchild.id)"
                 >
-                  <Folder :size="14" style="color: var(--accent);" />
+                  <Folder :size="14" style="color: var(--accent)" />
                   <span>{{ grandchild.title }}</span>
                 </div>
               </template>
@@ -958,27 +939,10 @@ function onSettingChanged(e: Event) {
 }
 
 .tree-panel {
-  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease, margin 0.25s ease;
-}
-
-.tree-node {
-  min-height: 28px;
-  cursor: pointer;
-}
-
-.tree-node:hover {
-  background: color-mix(in srgb, var(--accent) 6%, transparent);
-}
-
-.tree-node--active {
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-}
-
-.tree-node--drop-inside {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  outline: 2px dashed var(--accent);
-  outline-offset: -2px;
-  border-radius: 6px;
+  transition:
+    width 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease,
+    margin 0.25s ease;
 }
 
 .ctx-item {

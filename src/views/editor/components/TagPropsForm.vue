@@ -150,7 +150,9 @@ watch(
 
 function getMeta(key: string): AttrMeta {
   return (
-    resolveSchema(props.tagInfo?.tagName || '', props.tagInfo?.attrs || {}).find((a) => a.key === key) || {
+    resolveSchema(props.tagInfo?.tagName || '', props.tagInfo?.attrs || {}).find(
+      (a) => a.key === key,
+    ) || {
       key,
       label: key,
       default: '',

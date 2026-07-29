@@ -35,14 +35,18 @@ export function useDraft(
     DraftStorage.setCurrentDraftId(val)
   })
 
-  watch(currentDraftId, async (id) => {
-    if (id !== null) {
-      const draft = await DraftStorage.getById(id)
-      currentDraftTitle.value = draft?.title ?? ''
-    } else {
-      currentDraftTitle.value = ''
-    }
-  }, { immediate: true })
+  watch(
+    currentDraftId,
+    async (id) => {
+      if (id !== null) {
+        const draft = await DraftStorage.getById(id)
+        currentDraftTitle.value = draft?.title ?? ''
+      } else {
+        currentDraftTitle.value = ''
+      }
+    },
+    { immediate: true },
+  )
 
   async function refreshDrafts() {
     drafts.value = await DraftStorage.list()
@@ -74,7 +78,11 @@ export function useDraft(
   }
 
   async function handleSaveDraft(_draftId: number, title: string) {
-    const isDup = await DraftStorage.isDuplicate(title, markdown.value, currentDraftId.value ?? undefined)
+    const isDup = await DraftStorage.isDuplicate(
+      title,
+      markdown.value,
+      currentDraftId.value ?? undefined,
+    )
     if (isDup) {
       showToast('内容无变化，无需重复保存')
       return
@@ -118,9 +126,10 @@ export function useDraft(
   }
 
   function handleOverwrite() {
-    const targetId = confirmOverwriteMode.value === 'same-title-draft'
-      ? pendingOverwriteDraftId.value!
-      : currentDraftId.value!
+    const targetId =
+      confirmOverwriteMode.value === 'same-title-draft'
+        ? pendingOverwriteDraftId.value!
+        : currentDraftId.value!
     doSaveDraft(pendingDraftTitle.value, targetId)
   }
 

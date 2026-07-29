@@ -9,14 +9,34 @@ import { useSetting } from '@/composables/useSetting'
 import { useScrollSync } from './composables/useScrollSync'
 import { useExport, exportItems } from './composables/useExport'
 import { useAutoSave, STORAGE_KEY, SAVE_TIME_KEY } from './composables/useAutoSave'
-import { useImageInsert, saveBase64Store, resolveBase64, clearBase64Store } from './composables/useImageInsert'
+import {
+  useImageInsert,
+  saveBase64Store,
+  resolveBase64,
+  clearBase64Store,
+} from './composables/useImageInsert'
 import { useImport } from './composables/useImport'
 import { useDraft } from './composables/useDraft'
 import { useGitHubTree } from './composables/useGitHubTree'
-import { useToolbar, type EditorExposed, formatIcons, markdownInsertOptions, MAX_GRID_COLS, MAX_GRID_ROWS, MAX_COLS, MAX_ROWS } from './composables/useToolbar'
+import {
+  useToolbar,
+  type EditorExposed,
+  formatIcons,
+  markdownInsertOptions,
+  MAX_GRID_COLS,
+  MAX_GRID_ROWS,
+  MAX_COLS,
+  MAX_ROWS,
+} from './composables/useToolbar'
 import { useWechatPublish } from './composables/useWechatPublish'
 import { useMaterial } from './composables/useMaterial'
-import { useAutoUpdater, autoUpdatePending, autoUpdateRid, downloadUpdateWithRid, type UpdateInfo } from '@/composables/useAutoUpdater'
+import {
+  useAutoUpdater,
+  autoUpdatePending,
+  autoUpdateRid,
+  downloadUpdateWithRid,
+  type UpdateInfo,
+} from '@/composables/useAutoUpdater'
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
 import { DEMO_CONTENT } from '@/data/demoContent'
 import { extractTitle } from '@/utils/extractTitle'
@@ -24,8 +44,29 @@ import Editor from './components/Editor.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
 import {
-  Image, ImageUp, Puzzle, Braces, Code2, Save, SquareBottomDashedScissors, CheckCircle, Download, Copy, CircleCheck,
-  Smartphone, SquarePen, CircleQuestionMark, ImagePlus, Send, Package, Columns2, Rows2, Box, Type, Layers, Cloud
+  Image,
+  ImageUp,
+  Puzzle,
+  Braces,
+  Code2,
+  Save,
+  SquareBottomDashedScissors,
+  CheckCircle,
+  Download,
+  Copy,
+  CircleCheck,
+  Smartphone,
+  SquarePen,
+  CircleQuestionMark,
+  ImagePlus,
+  Send,
+  Package,
+  Columns2,
+  Rows2,
+  Box,
+  Type,
+  Layers,
+  Cloud,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
@@ -94,7 +135,10 @@ function onTreeDragStart(e: MouseEvent) {
 
 function onTreeDragMove(e: MouseEvent) {
   const delta = e.clientX - treeDragStartX
-  const newWidth = Math.min(Math.max(treeDragStartWidth + delta, TREE_PANEL_DEFAULT_WIDTH), TREE_PANEL_MAX_WIDTH)
+  const newWidth = Math.min(
+    Math.max(treeDragStartWidth + delta, TREE_PANEL_DEFAULT_WIDTH),
+    TREE_PANEL_MAX_WIDTH,
+  )
   treePanelWidth.value = newWidth
 }
 
@@ -128,12 +172,22 @@ function onTreeHandleLeave() {
   treeHandleBtnVisible.value = false
 }
 
-async function onPushToCloud(result: { parentId: string | null; title: string; content: string; existingArticleId?: string }) {
+async function onPushToCloud(result: {
+  parentId: string | null
+  title: string
+  content: string
+  existingArticleId?: string
+}) {
   pushingCloud.value = true
   // 快照 push 前的草稿 ID，避免 push 过程中被异步清零导致检测失败
   const draftToCheck = currentDraftId.value
   try {
-    await useGitHubTree().pushToCloud(result.parentId, result.title, result.content, result.existingArticleId)
+    await useGitHubTree().pushToCloud(
+      result.parentId,
+      result.title,
+      result.content,
+      result.existingArticleId,
+    )
     pushCloudVisible.value = false
     showToast(result.existingArticleId ? '文章已更新到仓库' : `「${result.title}」已上传到仓库`)
     // 检查是否绑定了本地草稿
@@ -156,9 +210,15 @@ function onSettingsOpen(tab: string) {
 
 // ── 云端文章编辑按钮加载（需确认） ──
 const articleLoadConfirmVisible = ref(false)
-const pendingArticleLoad = ref<{ content: string; node: import('@/services/GitHubTreeService').TreeNode } | null>(null)
+const pendingArticleLoad = ref<{
+  content: string
+  node: import('@/services/GitHubTreeService').TreeNode
+} | null>(null)
 
-async function onTreeEditArticle(content: string, node: import('@/services/GitHubTreeService').TreeNode) {
+async function onTreeEditArticle(
+  content: string,
+  node: import('@/services/GitHubTreeService').TreeNode,
+) {
   // 编辑器有内容且与文章内容不一致时，弹出确认
   if (markdown.value.trim() && markdown.value.trim() !== content.trim()) {
     pendingArticleLoad.value = { content, node }
@@ -187,8 +247,6 @@ function cancelLoadArticle() {
 function onClearEditor() {
   markdown.value = ''
   currentDraftId.value = null
-  currentCloudArticleId.value = null
-  clearCloudArticlePersistence()
   localStorage.setItem(STORAGE_KEY, '')
   localStorage.setItem(SAVE_TIME_KEY, '')
   saveMode.value = ''
@@ -226,12 +284,16 @@ onMounted(() => {
     persistedCloudTitle.value = storedCloudTitle
     // 树加载完成后自动展开关联文章所在路径
     let expanded = false
-    watch(treeData, (data) => {
-      if (data.length > 0 && !expanded) {
-        expanded = true
-        expandAncestors(storedCloudId)
-      }
-    }, { immediate: true })
+    watch(
+      treeData,
+      (data) => {
+        if (data.length > 0 && !expanded) {
+          expanded = true
+          expandAncestors(storedCloudId)
+        }
+      },
+      { immediate: true },
+    )
   }
   // 异步匹配草稿：根据当前标题查找已有同名草稿
   setTimeout(() => matchExistingDraft(), 300)
@@ -321,15 +383,19 @@ const saved = localStorage.getItem(STORAGE_KEY)
 const markdown = ref(saved !== null ? saved : DEMO_CONTENT)
 const resolvedMarkdown = ref(stripIdbSrc(resolveBase64(markdown.value)))
 
-watch(markdown, async (val) => {
-  const step1 = resolveBase64(val)
-  const hasIdb = /idb:DBI_\d+_[a-z0-9]{6}/.test(step1)
-  if (!hasIdb) {
-    resolvedMarkdown.value = step1
-    return
-  }
-  resolvedMarkdown.value = await resolveIdbImages(step1)
-}, { immediate: true, flush: 'sync' })
+watch(
+  markdown,
+  async (val) => {
+    const step1 = resolveBase64(val)
+    const hasIdb = /idb:DBI_\d+_[a-z0-9]{6}/.test(step1)
+    if (!hasIdb) {
+      resolvedMarkdown.value = step1
+      return
+    }
+    resolvedMarkdown.value = await resolveIdbImages(step1)
+  },
+  { immediate: true, flush: 'sync' },
+)
 const previewRef = ref()
 const editorRef = ref<EditorExposed>()
 const xhsVisible = ref(false)
@@ -429,7 +495,14 @@ const {
 } = useDraft(markdown, showToast, extractedTitle, resetMinimap)
 
 // ── 云端文章关联 ──
-const { currentCloudArticleId, treeData, selectedNode: cloudSelectedNode, restoreCloudArticlePersistence, clearCloudArticlePersistence, setCloudArticle, expandAncestors } = useGitHubTree()
+const {
+  currentCloudArticleId,
+  treeData,
+  selectedNode: cloudSelectedNode,
+  restoreCloudArticlePersistence,
+  setCloudArticle,
+  expandAncestors,
+} = useGitHubTree()
 
 // 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
 const persistedCloudTitle = ref('')
@@ -450,7 +523,14 @@ const {
   wechatCoverMediaId,
   handlePublishToWechat,
   handleWechatSaved,
-} = useWechatPublish(markdown, extractedTitle, currentDraftId, showToast, settingsVisible, settingsInitialTab)
+} = useWechatPublish(
+  markdown,
+  extractedTitle,
+  currentDraftId,
+  showToast,
+  settingsVisible,
+  settingsInitialTab,
+)
 
 // ── 素材 ──
 const {
@@ -551,12 +631,12 @@ const {
   onInput,
 } = useAutoSave(markdown, autoSaveEnabled, autoSaveInterval, isMobile, saveBase64Store)
 
-const {
-  handleCopyRichText,
-  handleExportHTML,
-  handleSaveImage,
-  onDropdownSelect,
-} = useExport(extractedTitle, previewRef, showToast, xhsVisible)
+const { handleCopyRichText, handleExportHTML, handleSaveImage, onDropdownSelect } = useExport(
+  extractedTitle,
+  previewRef,
+  showToast,
+  xhsVisible,
+)
 
 function onExampleAction(action: string) {
   if (action === 'load') confirmLoadVisible.value = true
@@ -600,11 +680,18 @@ function loadDemo() {
         >
           <svg class="shrink-0 mr-1.5" viewBox="0 0 24 24" width="26" height="26">
             <rect width="24" height="24" rx="6" :fill="accent" />
-            <text x="3.5" y="16" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RM</text>
+            <text
+              x="3.5"
+              y="16"
+              font-family="Arial, sans-serif"
+              font-size="11"
+              font-weight="bold"
+              fill="white"
+            >
+              RM
+            </text>
           </svg>
-          <span class="hidden sm:inline"
-            >R-Markdown 编辑器</span
-          >
+          <span class="hidden sm:inline">R-Markdown 编辑器</span>
           <span
             class="hidden sm:inline-flex flex-col ml-0.5"
             style="font-size: 0.55em; vertical-align: super; line-height: 1.1"
@@ -615,13 +702,37 @@ function loadDemo() {
           <span class="sm:hidden">R-Markdown</span>
         </router-link>
         <span class="hidden sm:inline text-[11px] opacity-50 ml-1.5 shrink-0">{{ saveHint }}</span>
-        <CircleCheck v-if="saveMode" :size="14" color="var(--accent)" class="hidden sm:inline shrink-0 ml-1" />
+        <CircleCheck
+          v-if="saveMode"
+          :size="14"
+          color="var(--accent)"
+          class="hidden sm:inline shrink-0 ml-1"
+        />
         <span class="sm:hidden text-[11px] opacity-50 ml-2 shrink-0">{{ saveHint }}</span>
-        <CircleCheck v-if="saveMode" :size="14" color="var(--accent)" class="sm:hidden shrink-0 ml-1" />
-        <BaseTooltip v-if="currentDraftId" class="inline-flex ml-1" :text="'已关联草稿：' + currentDraftTitle" placement="bottom">
-          <SquareBottomDashedScissors :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
+        <CircleCheck
+          v-if="saveMode"
+          :size="14"
+          color="var(--accent)"
+          class="sm:hidden shrink-0 ml-1"
+        />
+        <BaseTooltip
+          v-if="currentDraftId"
+          class="inline-flex ml-1"
+          :text="'已关联草稿：' + currentDraftTitle"
+          placement="bottom"
+        >
+          <SquareBottomDashedScissors
+            :size="14"
+            class="w-3.5 h-3.5 shrink-0"
+            :style="{ color: colors.accent }"
+          />
         </BaseTooltip>
-        <BaseTooltip v-if="currentCloudArticleId" class="inline-flex ml-1" :text="'已关联仓库文章：' + currentCloudArticleTitle" placement="bottom">
+        <BaseTooltip
+          v-if="currentCloudArticleId"
+          class="inline-flex ml-1"
+          :text="'已关联仓库文章：' + currentCloudArticleTitle"
+          placement="bottom"
+        >
           <Cloud :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
         </BaseTooltip>
       </div>
@@ -711,520 +822,707 @@ function loadDemo() {
     </div>
 
     <div class="flex flex-1 overflow-hidden">
-      <div class="flex flex-1 overflow-hidden" :style="{ padding: isMobile ? '0px' : '10px', background: 'var(--bg-frame)' }">
-      <!-- 桌面端左侧侧栏 -->
-      <div class="hidden md:flex shrink-0">
-        <EditorSidebar
-          :active-tab="sidebarTab"
-          :draft-count="draftCount"
-          :tree-panel-visible="treePanelVisible"
-          @select="onSidebarSelect"
-          @open-settings="settingsVisible = true"
-          @open-gallery="showGallery = true"
-          @material-action="onMaterialAction"
-          @open-components="$router.push('/components')"
-          @open-drafts="draftListVisible = true"
-          @example-action="onExampleAction"
-          @open-import="onImportClick"
-          @toggle-tree-panel="onToggleTreePanel"
-        />
-      </div>
-      <!-- Tree Panel -->
-      <Transition name="tree-panel">
-        <div v-if="treePanelVisible" class="flex shrink-0">
-          <div :style="{ width: treePanelWidth + 'px' }" class="flex shrink-0">
-            <TreeSidebar
-              @open-settings="onSettingsOpen"
-              @edit-article="onTreeEditArticle"
-              @toast="showToast"
-              @clear-editor="onClearEditor"
-            />
-          </div>
-          <!-- Tree Resize Handle -->
-          <div
-            class="resize-handle hidden md:block"
-            @mousedown="onTreeDragStart"
-            @mouseenter="onTreeHandleEnter"
-            @mousemove="onTreeHandleMove"
-            @mouseleave="onTreeHandleLeave"
-            ref="treeResizeHandleRef"
-          >
+      <div
+        class="flex flex-1 overflow-hidden"
+        :style="{ padding: isMobile ? '0px' : '10px', background: 'var(--bg-frame)' }"
+      >
+        <!-- 桌面端左侧侧栏 -->
+        <div class="hidden md:flex shrink-0">
+          <EditorSidebar
+            :active-tab="sidebarTab"
+            :draft-count="draftCount"
+            :tree-panel-visible="treePanelVisible"
+            @select="onSidebarSelect"
+            @open-settings="settingsVisible = true"
+            @open-gallery="showGallery = true"
+            @material-action="onMaterialAction"
+            @open-components="$router.push('/components')"
+            @open-drafts="draftListVisible = true"
+            @example-action="onExampleAction"
+            @open-import="onImportClick"
+            @toggle-tree-panel="onToggleTreePanel"
+          />
+        </div>
+        <!-- Tree Panel -->
+        <Transition name="tree-panel">
+          <div v-if="treePanelVisible" class="flex shrink-0">
+            <div :style="{ width: treePanelWidth + 'px' }" class="flex shrink-0">
+              <TreeSidebar
+                @open-settings="onSettingsOpen"
+                @edit-article="onTreeEditArticle"
+                @toast="showToast"
+                @clear-editor="onClearEditor"
+              />
+            </div>
+            <!-- Tree Resize Handle -->
             <div
-              class="resize-handle-btn"
-              :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
-              :style="{ top: treeHandleBtnTop + 'px' }"
+              class="resize-handle hidden md:block"
+              @mousedown="onTreeDragStart"
+              @mouseenter="onTreeHandleEnter"
+              @mousemove="onTreeHandleMove"
+              @mouseleave="onTreeHandleLeave"
+              ref="treeResizeHandleRef"
             >
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="17 8 21 12 17 16" />
-                <polyline points="7 8 3 12 7 16" />
-              </svg>
+              <div
+                class="resize-handle-btn"
+                :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
+                :style="{ top: treeHandleBtnTop + 'px' }"
+              >
+                <svg
+                  width="12"
+                  height="12"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polyline points="17 8 21 12 17 16" />
+                  <polyline points="7 8 3 12 7 16" />
+                </svg>
+              </div>
             </div>
           </div>
-        </div>
-      </Transition>
-      <!-- Editor Panel -->
-      <div
-        class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
-        style="background: var(--bg-primary)"
-        :class="{
-          'hidden md:flex': mobileTab !== 'editor',
-          'mobile-near-bottom': nearBottom && isMobile,
-          'rounded-xl': !isMobile,
-        }"
-      >
+        </Transition>
+        <!-- Editor Panel -->
         <div
-          class="panel-header hidden md:flex items-center justify-between px-4 py-2 border-b text-xs font-semibold shrink-0"
+          class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
           style="background: var(--bg-primary)"
+          :class="{
+            'hidden md:flex': mobileTab !== 'editor',
+            'mobile-near-bottom': nearBottom && isMobile,
+            'rounded-xl': !isMobile,
+          }"
         >
-          <span class="flex flex-wrap items-center gap-3">
-            <!-- 操作按钮组：图标+文字 -->
-            <span class="flex items-center gap-1">
-              <!-- 基础语法 -->
-              <span class="relative inline-flex items-center group">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                  :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                  :disabled="!editorRef?.isAtLineStart"
-                >
-                  <component :is="markdownInsertOptions[1].icon" :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>基础语法</span>
-                </button>
-                <span
-                  class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
-                  :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                >
-                  <template v-for="opt in markdownInsertOptions" :key="opt.label">
-                    <div
-                      v-if="opt.table"
-                      class="relative"
-                      :class="editorRef?.isAtLineStart ? 'group/table' : 'cursor-not-allowed opacity-40'"
-                    >
-                      <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none">
-                        <component :is="opt.icon" :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                        <span class="text-[#333] dark:text-white font-medium">表格</span>
+          <div
+            class="panel-header hidden md:flex items-center justify-between px-4 py-2 border-b text-xs font-semibold shrink-0"
+            style="background: var(--bg-primary)"
+          >
+            <span class="flex flex-wrap items-center gap-3">
+              <!-- 操作按钮组：图标+文字 -->
+              <span class="flex items-center gap-1">
+                <!-- 基础语法 -->
+                <span class="relative inline-flex items-center group">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart"
+                  >
+                    <component
+                      :is="markdownInsertOptions[1].icon"
+                      :size="14"
+                      class="w-3.5 h-3.5"
+                      :style="{ color: colors.accent }"
+                    />
+                    <span>基础语法</span>
+                  </button>
+                  <span
+                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                  >
+                    <template v-for="opt in markdownInsertOptions" :key="opt.label">
+                      <div
+                        v-if="opt.table"
+                        class="relative"
+                        :class="
+                          editorRef?.isAtLineStart ? 'group/table' : 'cursor-not-allowed opacity-40'
+                        "
+                      >
+                        <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none">
+                          <component
+                            :is="opt.icon"
+                            :size="14"
+                            class="w-3.5 h-3.5 flex-shrink-0"
+                            :style="{ color: colors.accent }"
+                          />
+                          <span class="text-[#333] dark:text-white font-medium">表格</span>
+                          <span class="text-[#999] dark:text-white/40 ml-auto">{{
+                            opt.label
+                          }}</span>
+                        </div>
+                        <div
+                          class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/table:opacity-100 group-hover/table:visible transition-all duration-150 z-50"
+                          :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                        >
+                          <div
+                            class="grid gap-0.5"
+                            :style="{ gridTemplateColumns: `repeat(${MAX_GRID_COLS}, 22px)` }"
+                          >
+                            <button
+                              v-for="i in MAX_GRID_ROWS * MAX_GRID_COLS"
+                              :key="i"
+                              class="w-[22px] h-[22px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                              :class="getGridCellClass(i)"
+                              :style="
+                                isGridCellActive(i)
+                                  ? {
+                                      borderColor: colors.accent,
+                                      backgroundColor: colors.accent + '20',
+                                    }
+                                  : {}
+                              "
+                              :disabled="!editorRef?.isAtLineStart"
+                              @mousemove="
+                                editorRef?.isAtLineStart &&
+                                (tableGridHovered = {
+                                  rows: Math.ceil(i / MAX_GRID_COLS),
+                                  cols: ((i - 1) % MAX_GRID_COLS) + 1,
+                                })
+                              "
+                              @click="
+                                editorRef?.isAtLineStart &&
+                                insertTable(tableGridHovered.rows, tableGridHovered.cols)
+                              "
+                            />
+                          </div>
+                          <div
+                            class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                          >
+                            {{ tableGridHovered.rows }} 行 × {{ tableGridHovered.cols }} 列
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        v-else
+                        class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        :disabled="!editorRef?.isAtLineStart"
+                        @click="editorRef?.isAtLineStart && editorRef?.insertAtCursor(opt.syntax)"
+                      >
+                        <component
+                          :is="opt.icon"
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">{{
+                          opt.display
+                        }}</span>
                         <span class="text-[#999] dark:text-white/40 ml-auto">{{ opt.label }}</span>
+                      </button>
+                    </template>
+                  </span>
+                </span>
+                <!-- 容器/布局 -->
+                <span class="relative inline-flex items-center group">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart"
+                  >
+                    <Box :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>容器</span>
+                  </button>
+                  <span
+                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[100px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                  >
+                    <!-- 列 -->
+                    <div
+                      class="relative"
+                      :class="
+                        editorRef?.isAtLineStart ? 'group/col' : 'cursor-not-allowed opacity-40'
+                      "
+                    >
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                      >
+                        <Columns2
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">列</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">水平分栏</span>
                       </div>
                       <div
-                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/table:opacity-100 group-hover/table:visible transition-all duration-150 z-50"
+                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/col:opacity-100 group-hover/col:visible transition-all duration-150 z-50"
                         :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
                       >
-                        <div
-                          class="grid gap-0.5"
-                          :style="{ gridTemplateColumns: `repeat(${MAX_GRID_COLS}, 22px)` }"
-                        >
+                        <div class="flex gap-0.5">
                           <button
-                            v-for="i in MAX_GRID_ROWS * MAX_GRID_COLS"
+                            v-for="i in MAX_COLS"
                             :key="i"
-                            class="w-[22px] h-[22px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                            :class="getGridCellClass(i)"
-                            :style="isGridCellActive(i) ? { borderColor: colors.accent, backgroundColor: colors.accent + '20' } : {}"
+                            class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                            :class="
+                              isColCellActive(i)
+                                ? ''
+                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                            "
+                            :style="
+                              isColCellActive(i)
+                                ? {
+                                    borderColor: colors.accent,
+                                    backgroundColor: colors.accent + '20',
+                                  }
+                                : {}
+                            "
                             :disabled="!editorRef?.isAtLineStart"
-                            @mousemove="editorRef?.isAtLineStart && (tableGridHovered = { rows: Math.ceil(i / MAX_GRID_COLS), cols: (i - 1) % MAX_GRID_COLS + 1 })"
-                            @click="editorRef?.isAtLineStart && insertTable(tableGridHovered.rows, tableGridHovered.cols)"
+                            @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
+                            @click="editorRef?.isAtLineStart && insertColumnLayout(colGridHovered)"
                           />
                         </div>
-                        <div class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none">
-                          {{ tableGridHovered.rows }} 行 × {{ tableGridHovered.cols }} 列
-
+                        <div
+                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                        >
+                          {{ colGridHovered }} 列均分
                         </div>
                       </div>
                     </div>
-                    <button
-                      v-else
-                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                    <!-- 列（独立，无 Row 包裹） -->
+                    <div
+                      class="relative"
+                      :class="
+                        editorRef?.isAtLineStart
+                          ? 'group/colstack'
+                          : 'cursor-not-allowed opacity-40'
+                      "
+                    >
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                      >
+                        <Columns2
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">列堆叠</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">独立排列</span>
+                      </div>
+                      <div
+                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/colstack:opacity-100 group-hover/colstack:visible transition-all duration-150 z-50"
+                        :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                      >
+                        <div class="flex gap-0.5">
+                          <button
+                            v-for="i in MAX_COLS"
+                            :key="i"
+                            class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                            :class="
+                              isColCellActive(i)
+                                ? ''
+                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                            "
+                            :style="
+                              isColCellActive(i)
+                                ? {
+                                    borderColor: colors.accent,
+                                    backgroundColor: colors.accent + '20',
+                                  }
+                                : {}
+                            "
+                            :disabled="!editorRef?.isAtLineStart"
+                            @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
+                            @click="editorRef?.isAtLineStart && insertColumnStack(colGridHovered)"
+                          />
+                        </div>
+                        <div
+                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                        >
+                          {{ colGridHovered }} 列独立
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 行 -->
+                    <div
+                      class="relative"
+                      :class="
+                        editorRef?.isAtLineStart ? 'group/row' : 'cursor-not-allowed opacity-40'
+                      "
+                    >
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                      >
+                        <Rows2
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">行</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">纵向堆叠</span>
+                      </div>
+                      <div
+                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/row:opacity-100 group-hover/row:visible transition-all duration-150 z-50"
+                        :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                      >
+                        <div class="flex flex-col gap-1">
+                          <button
+                            v-for="i in MAX_ROWS"
+                            :key="i"
+                            class="w-[80px] h-[20px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                            :class="
+                              isRowCellActive(i)
+                                ? ''
+                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                            "
+                            :style="
+                              isRowCellActive(i)
+                                ? {
+                                    borderColor: colors.accent,
+                                    backgroundColor: colors.accent + '20',
+                                  }
+                                : {}
+                            "
+                            :disabled="!editorRef?.isAtLineStart"
+                            @mousemove="editorRef?.isAtLineStart && (rowGridHovered = i)"
+                            @click="editorRef?.isAtLineStart && insertRowStack(rowGridHovered)"
+                          />
+                        </div>
+                        <div
+                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                        >
+                          {{ rowGridHovered }} 行纵向堆叠
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 层叠 -->
+                    <div
+                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
                       :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      :disabled="!editorRef?.isAtLineStart"
-                      @click="editorRef?.isAtLineStart && editorRef?.insertAtCursor(opt.syntax)"
+                      @click="editorRef?.isAtLineStart && insertStack()"
                     >
-                      <component :is="opt.icon" :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                      <span class="text-[#333] dark:text-white font-medium">{{ opt.display }}</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">{{ opt.label }}</span>
-                    </button>
-                  </template>
-                </span>
-              </span>
-              <!-- 容器/布局 -->
-              <span class="relative inline-flex items-center group">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                  :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                  :disabled="!editorRef?.isAtLineStart"
-                >
-                  <Box :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>容器</span>
-                </button>
-                <span
-                  class="absolute top-full left-0 mt-0.5 py-1 min-w-[100px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
-                  :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                >
-                  <!-- 列 -->
-                  <div
-                    class="relative"
-                    :class="editorRef?.isAtLineStart ? 'group/col' : 'cursor-not-allowed opacity-40'"
-                  >
-                    <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap">
-                      <Columns2 :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                      <span class="text-[#333] dark:text-white font-medium">列</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">水平分栏</span>
+                      <Layers
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span class="text-[#333] dark:text-white font-medium">层叠</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">多层叠加</span>
                     </div>
+                    <!-- 容器 -->
                     <div
-                      class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/col:opacity-100 group-hover/col:visible transition-all duration-150 z-50"
-                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      @click="editorRef?.isAtLineStart && insertContainer()"
                     >
-                      <div class="flex gap-0.5">
-                        <button
-                          v-for="i in MAX_COLS"
-                          :key="i"
-                          class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                          :class="isColCellActive(i) ? '' : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'"
-                          :style="isColCellActive(i) ? { borderColor: colors.accent, backgroundColor: colors.accent + '20' } : {}"
-                          :disabled="!editorRef?.isAtLineStart"
-                          @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
-                          @click="editorRef?.isAtLineStart && insertColumnLayout(colGridHovered)"
-                        />
-                      </div>
-                      <div class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none">
-                        {{ colGridHovered }} 列均分
-                      </div>
+                      <Package
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span class="text-[#333] dark:text-white font-medium">块容器</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">通用包裹</span>
                     </div>
-                  </div>
-                  <!-- 列（独立，无 Row 包裹） -->
-                  <div
-                    class="relative"
-                    :class="editorRef?.isAtLineStart ? 'group/colstack' : 'cursor-not-allowed opacity-40'"
-                  >
-                    <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap">
-                      <Columns2 :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                      <span class="text-[#333] dark:text-white font-medium">列堆叠</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">独立排列</span>
-                    </div>
+                    <!-- 文本 -->
                     <div
-                      class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/colstack:opacity-100 group-hover/colstack:visible transition-all duration-150 z-50"
-                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      @click="editorRef?.isAtLineStart && insertText()"
                     >
-                      <div class="flex gap-0.5">
-                        <button
-                          v-for="i in MAX_COLS"
-                          :key="i"
-                          class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                          :class="isColCellActive(i) ? '' : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'"
-                          :style="isColCellActive(i) ? { borderColor: colors.accent, backgroundColor: colors.accent + '20' } : {}"
-                          :disabled="!editorRef?.isAtLineStart"
-                          @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
-                          @click="editorRef?.isAtLineStart && insertColumnStack(colGridHovered)"
-                        />
-                      </div>
-                      <div class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none">
-                        {{ colGridHovered }} 列独立
-                      </div>
+                      <Type
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span class="text-[#333] dark:text-white font-medium">文本</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">样式文字</span>
                     </div>
-                  </div>
-                  <!-- 行 -->
-                  <div
-                    class="relative"
-                    :class="editorRef?.isAtLineStart ? 'group/row' : 'cursor-not-allowed opacity-40'"
-                  >
-                    <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap">
-                      <Rows2 :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                      <span class="text-[#333] dark:text-white font-medium">行</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">纵向堆叠</span>
-                    </div>
-                    <div
-                      class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/row:opacity-100 group-hover/row:visible transition-all duration-150 z-50"
-                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                    >
-                      <div class="flex flex-col gap-1">
-                        <button
-                          v-for="i in MAX_ROWS"
-                          :key="i"
-                          class="w-[80px] h-[20px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                          :class="isRowCellActive(i) ? '' : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'"
-                          :style="isRowCellActive(i) ? { borderColor: colors.accent, backgroundColor: colors.accent + '20' } : {}"
-                          :disabled="!editorRef?.isAtLineStart"
-                          @mousemove="editorRef?.isAtLineStart && (rowGridHovered = i)"
-                          @click="editorRef?.isAtLineStart && insertRowStack(rowGridHovered)"
-                        />
-                      </div>
-                      <div class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none">
-                        {{ rowGridHovered }} 行纵向堆叠
-                      </div>
-                    </div>
-                  </div>
-                  <!-- 层叠 -->
-                  <div
-                    class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                    :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                    @click="editorRef?.isAtLineStart && insertStack()"
-                  >
-                    <Layers :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                    <span class="text-[#333] dark:text-white font-medium">层叠</span>
-                    <span class="text-[#999] dark:text-white/40 ml-auto">多层叠加</span>
-                  </div>
-                  <!-- 容器 -->
-                  <div
-                    class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                    :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                    @click="editorRef?.isAtLineStart && insertContainer()"
-                  >
-                    <Package :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                    <span class="text-[#333] dark:text-white font-medium">块容器</span>
-                    <span class="text-[#999] dark:text-white/40 ml-auto">通用包裹</span>
-                  </div>
-                  <!-- 文本 -->
-                  <div
-                    class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                    :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                    @click="editorRef?.isAtLineStart && insertText()"
-                  >
-                    <Type :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                    <span class="text-[#333] dark:text-white font-medium">文本</span>
-                    <span class="text-[#999] dark:text-white/40 ml-auto">样式文字</span>
-                  </div>
                     <!-- HTML 容器 -->
-                  <div
-                     class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                     :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                     @click="editorRef?.isAtLineStart && insertHtmlContainer()"
-                  >
-                    <Code2 :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
-                    <span class="text-[#333] dark:text-white font-medium">HTML 容器</span>
-                    <span class="text-[#999] dark:text-white/40 ml-auto">内联样式</span>
-                  </div>
+                    <div
+                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      @click="editorRef?.isAtLineStart && insertHtmlContainer()"
+                    >
+                      <Code2
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span class="text-[#333] dark:text-white font-medium">HTML 容器</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">内联样式</span>
+                    </div>
+                  </span>
                 </span>
+                <BaseTooltip text="临时存储本地图片">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart"
+                    @click="editorRef?.isAtLineStart && handleInsertImage()"
+                  >
+                    <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>临时</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip text="长期存储本地图片">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart"
+                    @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
+                  >
+                    <ImagePlus :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>长期</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip text="上传到图床">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart && !githubUploading
+                        ? 'cursor-pointer'
+                        : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart || githubUploading"
+                    @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
+                  >
+                    <ImageUp :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>图床</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip text="插入组件">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.isAtLineStart"
+                    @click="editorRef?.isAtLineStart && (componentDialogVisible = true)"
+                  >
+                    <Puzzle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>组件</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip
+                  :text="
+                    tagInfo
+                      ? '解析 <' + tagInfo.tagName + '> 属性'
+                      : '解析标签 — 选中组件标签或光标在标签后可用'
+                  "
+                >
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    :class="
+                      tagInfo && !showTagDialog && !isMobile
+                        ? 'cursor-pointer'
+                        : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!tagInfo || showTagDialog || isMobile"
+                    @click="tagInfo && !showTagDialog && !isMobile && (showTagDialog = true)"
+                  >
+                    <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>解析</span>
+                  </button>
+                </BaseTooltip>
               </span>
-              <BaseTooltip text="临时存储本地图片">
-              <button
-                class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!editorRef?.isAtLineStart"
-                @click="editorRef?.isAtLineStart && handleInsertImage()"
-              >
-                <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                <span>临时</span>
-              </button>
-              </BaseTooltip>
-              <BaseTooltip text="长期存储本地图片">
-              <button
-                class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!editorRef?.isAtLineStart"
-                @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
-              >
-                <ImagePlus :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                <span>长期</span>
-              </button>
-              </BaseTooltip>
-              <BaseTooltip text="上传到图床">
-              <button
-                class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                :class="editorRef?.isAtLineStart && !githubUploading ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!editorRef?.isAtLineStart || githubUploading"
-                @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
-              >
-                <ImageUp :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                <span>图床</span>
-              </button>
-              </BaseTooltip>
-              <BaseTooltip text="插入组件">
-              <button
-                class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                :class="editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!editorRef?.isAtLineStart"
-                @click="editorRef?.isAtLineStart && (componentDialogVisible = true)"
-              >
-                <Puzzle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                <span>组件</span>
-              </button>
-              </BaseTooltip>
-              <BaseTooltip :text="tagInfo ? '解析 <' + tagInfo.tagName + '> 属性' : '解析标签 — 选中组件标签或光标在标签后可用'">
-              <button
-                class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                :class="(tagInfo && !showTagDialog && !isMobile) ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!tagInfo || showTagDialog || isMobile"
-                @click="tagInfo && !showTagDialog && !isMobile && (showTagDialog = true)"
-              >
-                <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                <span>解析</span>
-              </button>
+              <!-- 行内样式按钮组 -->
+              <span class="flex items-center gap-0.5">
+                <BaseTooltip
+                  v-for="opt in inlineFormatOptions"
+                  :key="opt.syntax"
+                  :text="opt.label + '：' + opt.hint"
+                >
+                  <button
+                    class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn"
+                    :class="
+                      editorRef?.hasInlineSelection
+                        ? 'cursor-pointer'
+                        : 'cursor-not-allowed opacity-40'
+                    "
+                    :disabled="!editorRef?.hasInlineSelection"
+                    @click="
+                      editorRef?.hasInlineSelection &&
+                      editorRef?.applyInlineFormat(opt.syntax, opt.wrapType ?? 'delim')
+                    "
+                  >
+                    <component
+                      :is="formatIcons[opt.syntax]"
+                      :size="14"
+                      class="w-3.5 h-3.5"
+                      :style="{ color: colors.accent }"
+                    />
+                  </button>
+                </BaseTooltip>
+              </span>
+              <!-- 帮助提示 -->
+              <BaseTooltip placement="bottom">
+                <CircleQuestionMark :size="14" />
+                <template #content>
+                  选中非标签内文字后可加样式<br />基础语法/临时/长期/图床/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
+                </template>
               </BaseTooltip>
             </span>
-            <!-- 行内样式按钮组 -->
-            <span class="flex items-center gap-0.5">
-              <BaseTooltip
-                v-for="opt in inlineFormatOptions"
-                :key="opt.syntax"
-                :text="opt.label + '：' + opt.hint"
-              >
-              <button
-                class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn"
-                :class="editorRef?.hasInlineSelection ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'"
-                :disabled="!editorRef?.hasInlineSelection"
-                @click="editorRef?.hasInlineSelection && editorRef?.applyInlineFormat(opt.syntax, opt.wrapType ?? 'delim')"
-              >
-                <component :is="formatIcons[opt.syntax]" :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-              </button>
+            <span class="flex flex-col lg:flex-row lg:items-center gap-1">
+              <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="saveContent(markdown, true)"
+                >
+                  <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span>暂存</span>
+                </button>
+              </BaseTooltip>
+              <BaseTooltip text="保存草稿">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="handleOpenSaveDraft"
+                >
+                  <SquareBottomDashedScissors
+                    :size="14"
+                    class="w-3.5 h-3.5"
+                    :style="{ color: colors.accent }"
+                  />
+                  <span>草稿</span>
+                </button>
+              </BaseTooltip>
+              <BaseTooltip text="本地导出">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="handleOpenFinalize"
+                >
+                  <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span>定稿</span>
+                </button>
+              </BaseTooltip>
+              <BaseTooltip v-if="cloudConfigured" text="推送到远程仓库">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="pushCloudVisible = true"
+                >
+                  <Cloud :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span>传仓库</span>
+                </button>
               </BaseTooltip>
             </span>
-            <!-- 帮助提示 -->
-            <BaseTooltip placement="bottom">
-              <CircleQuestionMark :size="14" />
-              <template #content>
-                选中非标签内文字后可加样式<br>基础语法/临时/长期/图床/组件：仅空行可点击<br>解析：选中组件标签或光标在标签后可点击。
-              </template>
-            </BaseTooltip>
-          </span>
-          <span class="flex flex-col lg:flex-row lg:items-center gap-1">
-          <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
-          <button
-            class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            @click="saveContent(markdown, true)"
-          >
-            <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-            <span>暂存</span>
-          </button>
-          </BaseTooltip>
-          <BaseTooltip text="保存草稿">
-          <button
-            class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
-                   transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            @click="handleOpenSaveDraft"
-          >
-            <SquareBottomDashedScissors :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-            <span>草稿</span>
-          </button>
-          </BaseTooltip>
-          <BaseTooltip text="本地导出">
-          <button
-            class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
-                   transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            @click="handleOpenFinalize"
-          >
-            <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-            <span>定稿</span>
-          </button>
-          </BaseTooltip>
-          <BaseTooltip v-if="cloudConfigured" text="推送到远程仓库">
-          <button
-            class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent
-                   transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-            @click="pushCloudVisible = true"
-          >
-            <Cloud :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-            <span>传仓库</span>
-          </button>
-          </BaseTooltip>
-          </span>
-        </div>
-        <!-- 图床上传进度 -->
-        <div
-          v-if="githubUploading"
-          class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl bg-[#111] text-white text-sm shadow-lg"
-        >
-          <div class="flex items-center gap-2 mb-1.5">
-            <span>正在上传到 {{ uploadHostingLabel }}...</span>
-            <span class="font-medium text-[var(--accent)]">{{ githubUploadProgress }}%</span>
           </div>
-          <div class="h-1 w-48 rounded-full bg-[#444] overflow-hidden">
-            <div
-              class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
-              :style="{ width: githubUploadProgress + '%' }"
+          <!-- 图床上传进度 -->
+          <div
+            v-if="githubUploading"
+            class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl bg-[#111] text-white text-sm shadow-lg"
+          >
+            <div class="flex items-center gap-2 mb-1.5">
+              <span>正在上传到 {{ uploadHostingLabel }}...</span>
+              <span class="font-medium text-[var(--accent)]">{{ githubUploadProgress }}%</span>
+            </div>
+            <div class="h-1 w-48 rounded-full bg-[#444] overflow-hidden">
+              <div
+                class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
+                :style="{ width: githubUploadProgress + '%' }"
+              />
+            </div>
+          </div>
+          <div class="flex flex-1 overflow-hidden relative">
+            <Editor
+              ref="editorRef"
+              class="flex-1"
+              :model-value="markdown"
+              @update:model-value="onInput"
+              @scroll="onEditorScrollAll"
+              @tag-selected="onTagSelected"
+              @paste-image="handlePasteImage"
+              @paste-multiple-images="handlePasteMultipleImages"
+              @paste-text="onPasteText"
+              @undo-redo="onUndoRedo"
+              @drop-image="handleDropImage"
+              @drop-multiple-images="handleDropMultipleImages"
+              @drop-non-image="handleDropNonImage"
+            />
+            <input
+              ref="imageInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onImageSelected"
+            />
+            <input
+              ref="githubImageInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onGithubImageSelected"
+            />
+            <input
+              ref="persistImageInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onImagePersistSelected"
+            />
+            <TagPropsForm
+              :visible="showTagDialog && !isMobile"
+              :tag-info="tagInfo"
+              @close="
+                showTagDialog = false;
+                tagInfo = null
+              "
+              @update="onTagDialogUpdate"
             />
           </div>
         </div>
-        <div class="flex flex-1 overflow-hidden relative">
-          <Editor
-            ref="editorRef"
-            class="flex-1"
-            :model-value="markdown"
-            @update:model-value="onInput"
-            @scroll="onEditorScrollAll"
-            @tag-selected="onTagSelected"
-            @paste-image="handlePasteImage"
-            @paste-multiple-images="handlePasteMultipleImages"
-            @paste-text="onPasteText"
-            @undo-redo="onUndoRedo"
-            @drop-image="handleDropImage"
-            @drop-multiple-images="handleDropMultipleImages"
-            @drop-non-image="handleDropNonImage"
-          />
-          <input
-            ref="imageInputRef"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onImageSelected"
-          />
-          <input
-            ref="githubImageInputRef"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onGithubImageSelected"
-          />
-          <input
-            ref="persistImageInputRef"
-            type="file"
-            accept="image/*"
-            class="hidden"
-            @change="onImagePersistSelected"
-          />
-          <TagPropsForm
-            :visible="showTagDialog && !isMobile"
-            :tag-info="tagInfo"
-            @close="
-              showTagDialog = false;
-              tagInfo = null
-            "
-            @update="onTagDialogUpdate"
-          />
-        </div>
-      </div>
 
-      <!-- Resize Handle -->
-      <div
-        class="resize-handle hidden md:block"
-        @mousedown="onDragStart"
-        @mouseenter="onHandleEnter"
-        @mousemove="onHandleMove"
-        @mouseleave="onHandleLeave"
-        ref="resizeHandleRef"
-      >
+        <!-- Resize Handle -->
         <div
-          class="resize-handle-btn"
-          :class="{ 'resize-handle-btn--visible': handleBtnVisible }"
-          :style="{ top: handleBtnTop + 'px' }"
+          class="resize-handle hidden md:block"
+          @mousedown="onDragStart"
+          @mouseenter="onHandleEnter"
+          @mousemove="onHandleMove"
+          @mouseleave="onHandleLeave"
+          ref="resizeHandleRef"
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="17 8 21 12 17 16" />
-            <polyline points="7 8 3 12 7 16" />
-          </svg>
+          <div
+            class="resize-handle-btn"
+            :class="{ 'resize-handle-btn--visible': handleBtnVisible }"
+            :style="{ top: handleBtnTop + 'px' }"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="17 8 21 12 17 16" />
+              <polyline points="7 8 3 12 7 16" />
+            </svg>
+          </div>
         </div>
-      </div>
 
-      <!-- Preview Panel -->
-      <div
-        class="flex flex-col overflow-hidden flex-1 md:flex-none"
-        :class="{
-          'hidden md:flex': mobileTab !== 'preview',
-          'mobile-near-bottom': nearBottom && isMobile,
-          'rounded-xl': !isMobile,
-        }"
-        data-theme="light"
-        :style="isMobile ? { background: 'var(--bg-primary)' } : { width: previewWidth + 'px', background: 'var(--bg-primary)' }"
-      >
-        <Preview ref="previewRef" :markdown="resolvedMarkdown" :colors="colors" :is-mobile="isMobile" @click-line="onPreviewClickLine" />
-      </div>
+        <!-- Preview Panel -->
+        <div
+          class="flex flex-col overflow-hidden flex-1 md:flex-none"
+          :class="{
+            'hidden md:flex': mobileTab !== 'preview',
+            'mobile-near-bottom': nearBottom && isMobile,
+            'rounded-xl': !isMobile,
+          }"
+          data-theme="light"
+          :style="
+            isMobile
+              ? { background: 'var(--bg-primary)' }
+              : { width: previewWidth + 'px', background: 'var(--bg-primary)' }
+          "
+        >
+          <Preview
+            ref="previewRef"
+            :markdown="resolvedMarkdown"
+            :colors="colors"
+            :is-mobile="isMobile"
+            @click-line="onPreviewClickLine"
+          />
+        </div>
 
-      <!-- Minimap -->
-      <Minimap
-        v-if="minimapEnabled && !isMobile"
-        :markdown="resolvedMarkdown"
-        :colors="colors"
-        :scroll-ratio="minimapScrollRatio"
-        :viewport-ratio="minimapViewportRatio"
-        :preview-width="previewWidth"
-        @navigate="onMinimapNavigate"
-      />
+        <!-- Minimap -->
+        <Minimap
+          v-if="minimapEnabled && !isMobile"
+          :markdown="resolvedMarkdown"
+          :colors="colors"
+          :scroll-ratio="minimapScrollRatio"
+          :viewport-ratio="minimapViewportRatio"
+          :preview-width="previewWidth"
+          @navigate="onMinimapNavigate"
+        />
       </div>
     </div>
   </div>
@@ -1243,10 +1541,18 @@ function loadDemo() {
     @close="componentDialogVisible = false"
     @insert="(code: string) => editorRef?.insertAtCursor(code)"
   />
-  <SettingsDialog :visible="settingsVisible" :initialTab="settingsInitialTab" @close="settingsVisible = false; cloudConfigured = GitHubTreeService.getConfig() !== null" />
+  <SettingsDialog
+    :visible="settingsVisible"
+    :initialTab="settingsInitialTab"
+    @close="
+      settingsVisible = false;
+      cloudConfigured = GitHubTreeService.getConfig() !== null
+    "
+  />
   <PushToCloudDialog
     :visible="pushCloudVisible"
     :markdown="markdown"
+    :current-cloud-article-id="currentCloudArticleId"
     :loading="pushingCloud"
     @close="pushCloudVisible = false"
     @push="onPushToCloud"
@@ -1264,7 +1570,14 @@ function loadDemo() {
     :visible="showGallery"
     mode="gallery"
     @close="showGallery = false"
-    @insert="(token: string) => { showGallery = false; editorRef?.insertAtCursor(`<img src=&quot;idb:${token}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`) }"
+    @insert="
+      (token: string) => {
+        showGallery = false
+        editorRef?.insertAtCursor(
+          `<img src=&quot;idb:${token}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`,
+        )
+      }
+    "
   />
   <!-- 素材库面板 -->
   <MaterialLibraryPanel
@@ -1361,9 +1674,11 @@ function loadDemo() {
   <ConfirmDialog
     :visible="confirmOverwriteVisible"
     :title="confirmOverwriteMode === 'same-title-draft' ? '存在同名草稿' : '标题已变更'"
-    :message="confirmOverwriteMode === 'same-title-draft'
-      ? '已存在同名草稿「' + pendingDraftTitle + '」，请选择操作：'
-      : '原标题与草稿「' + currentDraftTitle + '」不一致，请选择操作：'"
+    :message="
+      confirmOverwriteMode === 'same-title-draft'
+        ? '已存在同名草稿「' + pendingDraftTitle + '」，请选择操作：'
+        : '原标题与草稿「' + currentDraftTitle + '」不一致，请选择操作：'
+    "
     confirm-text="覆盖现有草稿"
     cancel-text="取消"
     @confirm="handleOverwrite"
@@ -1382,7 +1697,13 @@ function loadDemo() {
   <ConfirmDialog
     :visible="confirmMaterialOverwriteVisible"
     title="存在相同内容的素材"
-    :message="'素材「' + pendingMaterial?.name + '」与已有素材「' + pendingOverwriteMaterialName + '」内容相同，请选择操作：'"
+    :message="
+      '素材「' +
+      pendingMaterial?.name +
+      '」与已有素材「' +
+      pendingOverwriteMaterialName +
+      '」内容相同，请选择操作：'
+    "
     confirm-text="覆盖"
     cancel-text="取消"
     @confirm="handleMaterialOverwrite"

@@ -59,7 +59,12 @@ export const PTitle = PTitle_DA01
 export const components: ComponentDef[] = [
   { id: 'Title_DA01', name: '标题卡片', tag: 'title', render: Title_DA01.render },
   { id: 'Title_DA02', name: '标题卡片', tag: 'title', render: Title_DA02.render },
-  { id: 'ReadingPath_DA01', name: '阅读路线', tag: 'reading-path', render: ReadingPath_DA01.render },
+  {
+    id: 'ReadingPath_DA01',
+    name: '阅读路线',
+    tag: 'reading-path',
+    render: ReadingPath_DA01.render,
+  },
   { id: 'Column_DA01', name: '纵向布局', tag: 'column', render: Column_DA01.render },
   { id: 'Container_DA01', name: '容器', tag: 'container', render: Container_DA01.render },
   { id: 'Row_DA01', name: '横向布局', tag: 'row', render: Row_DA01.render },
@@ -91,7 +96,16 @@ export const componentMap = Object.fromEntries(components.map((c) => [c.id, c]))
 
 export const tagMap = Object.fromEntries(components.map((c) => [c.tag, c]))
 
-export { Title_DA01, Title_DA02, ReadingPath_DA01, Column_DA01, Container_DA01, Row_DA01, Text_DA01, Breaking_DA01 }
+export {
+  Title_DA01,
+  Title_DA02,
+  ReadingPath_DA01,
+  Column_DA01,
+  Container_DA01,
+  Row_DA01,
+  Text_DA01,
+  Breaking_DA01,
+}
 export { Steps_DA01, Steps_DA02, CaseFlow_DA01, Compare_DA01, Compare_DA02 }
 export { Badges_DA01, Statement_DA01, Lead_DA01, Engage_DA01, Engage_DA02 }
 export { Timeline_DA01, Slider_DA01, Img_DA01, Chart_DA01, Mermaid_DA01, Table_DA01, Html_DA01 }

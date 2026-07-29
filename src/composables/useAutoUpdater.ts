@@ -55,7 +55,7 @@ export async function checkForUpdates(): Promise<CheckResult> {
         timeout: 30000,
       }),
       new Promise<null>((_, reject) =>
-        setTimeout(() => reject(new Error('检查更新超时，请检查网络后重试')), 15000)
+        setTimeout(() => reject(new Error('检查更新超时，请检查网络后重试')), 15000),
       ),
     ])
     if (!raw) return { update: null, error: null, rid: null }
@@ -82,9 +82,15 @@ export async function checkForUpdates(): Promise<CheckResult> {
  */
 export async function downloadUpdateWithRid(
   rid: number,
-  onEvent: (event: { event: string; data?: { contentLength?: number; chunkLength?: number } }) => void,
+  onEvent: (event: {
+    event: string
+    data?: { contentLength?: number; chunkLength?: number }
+  }) => void,
 ): Promise<void> {
-  const c = new Channel<{ event: string; data?: { contentLength?: number; chunkLength?: number } }>()
+  const c = new Channel<{
+    event: string
+    data?: { contentLength?: number; chunkLength?: number }
+  }>()
   c.onmessage = onEvent
   await invoke('plugin:updater|download_and_install', {
     onEvent: c,
@@ -99,7 +105,12 @@ function autoCheck() {
       await new Promise<void>((resolve) => {
         const stop = watch(
           () => startupState.resolved,
-          (v) => { if (v) { stop(); resolve() } },
+          (v) => {
+            if (v) {
+              stop()
+              resolve()
+            }
+          },
         )
       })
     }

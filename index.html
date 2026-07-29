@@ -4,19 +4,31 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>R-Markdown 编辑器 for 公众号 - 所见即所得的 Markdown 扩展排版工具</title>
-    <meta name="description" content="R-Markdown 是一款专为微信公众号设计的 Markdown 编辑器，支持自定义组件、主题配色、实时预览，一键导出公众号富文本格式。" />
-    <meta name="keywords" content="公众号编辑器,Markdown编辑器,微信排版,R-Markdown,公众号排版工具" />
+    <meta
+      name="description"
+      content="R-Markdown 是一款专为微信公众号设计的 Markdown 编辑器，支持自定义组件、主题配色、实时预览，一键导出公众号富文本格式。"
+    />
+    <meta
+      name="keywords"
+      content="公众号编辑器,Markdown编辑器,微信排版,R-Markdown,公众号排版工具"
+    />
     <meta name="author" content="R-Markdown" />
     <meta name="robots" content="index, follow" />
     <link rel="canonical" href="https://robocopmao.github.io/r-markdown/" />
     <meta property="og:title" content="R-Markdown 编辑器 for 公众号" />
-    <meta property="og:description" content="所见即所得的 Markdown 排版工具，专为微信公众号设计，支持自定义组件、主题配色、一键导出。" />
+    <meta
+      property="og:description"
+      content="所见即所得的 Markdown 排版工具，专为微信公众号设计，支持自定义组件、主题配色、一键导出。"
+    />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://robocopmao.github.io/r-markdown/" />
     <meta property="og:image" content="https://robocopmao.github.io/r-markdown/og-image.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="R-Markdown 编辑器 for 公众号" />
-    <meta name="twitter:description" content="所见即所得的 Markdown 排版工具，专为微信公众号设计。" />
+    <meta
+      name="twitter:description"
+      content="所见即所得的 Markdown 排版工具，专为微信公众号设计。"
+    />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,12 +38,36 @@
     />
   </head>
   <body>
-    <div id="app-loading" style="display:none" data-loading>
-      <div style="text-align:center">
-        <div style="width:28px;height:28px;border:2.5px solid #e5e7eb;border-top-color:var(--loading-accent, #27ae60);border-radius:50%;animation:app-spin 0.7s linear infinite;margin:0 auto 12px"></div>
+    <div id="app-loading" style="display: none" data-loading>
+      <div style="text-align: center">
+        <div
+          style="
+            width: 28px;
+            height: 28px;
+            border: 2.5px solid #e5e7eb;
+            border-top-color: var(--loading-accent, #27ae60);
+            border-radius: 50%;
+            animation: app-spin 0.7s linear infinite;
+            margin: 0 auto 12px;
+          "
+        ></div>
         加载中...
       </div>
-      <style>@keyframes app-spin{to{transform:rotate(360deg)}}[data-theme="dark"] #app-loading{background:rgba(0,0,0,0.88);color:#6b7280}[data-theme="dark"] #app-loading div div{border-color:#374151;border-top-color:var(--loading-accent, #27ae60)}</style>
+      <style>
+        @keyframes app-spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+        [data-theme='dark'] #app-loading {
+          background: rgba(0, 0, 0, 0.88);
+          color: #6b7280;
+        }
+        [data-theme='dark'] #app-loading div div {
+          border-color: #374151;
+          border-top-color: var(--loading-accent, #27ae60);
+        }
+      </style>
     </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>

@@ -33,22 +33,25 @@ function unlockScroll() {
   }
 }
 
-watch(() => props.visible, async (v) => {
-  if (v) {
-    leaving.value = false
-    show.value = true
-    lockScroll()
-    await nextTick()
-  } else {
-    leaving.value = true
-    if (leaveTimer) clearTimeout(leaveTimer)
-    leaveTimer = setTimeout(() => {
-      show.value = false
+watch(
+  () => props.visible,
+  async (v) => {
+    if (v) {
       leaving.value = false
-    }, 250)
-    unlockScroll()
-  }
-})
+      show.value = true
+      lockScroll()
+      await nextTick()
+    } else {
+      leaving.value = true
+      if (leaveTimer) clearTimeout(leaveTimer)
+      leaveTimer = setTimeout(() => {
+        show.value = false
+        leaving.value = false
+      }, 250)
+      unlockScroll()
+    }
+  },
+)
 
 onBeforeUnmount(() => {
   if (leaveTimer) clearTimeout(leaveTimer)
@@ -64,7 +67,10 @@ onBeforeUnmount(() => {
       :class="leaving ? 'animate-drawer-leave' : 'animate-drawer-enter'"
     >
       <!-- 遮罩（点击关闭） -->
-      <div class="drawer-overlay absolute inset-0 bg-black/40 backdrop-blur-sm" @mousedown="emit('close')" />
+      <div
+        class="drawer-overlay absolute inset-0 bg-black/40 backdrop-blur-sm"
+        @mousedown="emit('close')"
+      />
       <!-- 抽屉面板 -->
       <div
         class="drawer-panel relative flex h-full flex-col overflow-hidden rounded-l-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:bg-[#1a1a1a] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
@@ -73,11 +79,14 @@ onBeforeUnmount(() => {
         @click.stop
       >
         <!-- Header -->
-        <div class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]">
+        <div
+          class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]"
+        >
           <span
             v-if="title"
             class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] shrink-0"
-          >{{ title }}</span>
+            >{{ title }}</span
+          >
           <div class="flex min-w-0 flex-1 items-center gap-2">
             <slot name="header" />
           </div>
@@ -127,20 +136,36 @@ onBeforeUnmount(() => {
 }
 
 @keyframes drawer-overlay-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 @keyframes drawer-overlay-out {
-  from { opacity: 1; }
-  to { opacity: 0; }
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
 }
 @keyframes drawer-slide-in {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 @keyframes drawer-slide-out {
-  from { transform: translateX(0); }
-  to { transform: translateX(100%); }
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
 }
 
 /* ── 滚动条 ── */

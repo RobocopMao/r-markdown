@@ -187,9 +187,12 @@ function extractDigest(content: string): string {
   return result
 }
 
-watch(() => props.visible, (val) => {
-  if (val) initFields()
-})
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) initFields()
+  },
+)
 
 async function handleSelectCover() {
   try {
@@ -287,7 +290,8 @@ async function handleSave() {
 
     // 在隐藏 DOM 中渲染 mermaid 图表（renderAll 需要真实 DOM）
     const mermaidContainer = document.createElement('div')
-    mermaidContainer.style.cssText = 'position:fixed;left:-9999px;top:0;width:800px;visibility:hidden'
+    mermaidContainer.style.cssText =
+      'position:fixed;left:-9999px;top:0;width:800px;visibility:hidden'
     mermaidContainer.innerHTML = renderedHtml
     document.body.appendChild(mermaidContainer)
     await useMermaid().renderAll(mermaidContainer)

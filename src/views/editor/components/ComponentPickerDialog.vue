@@ -30,20 +30,26 @@ const categories = [
 ]
 
 const componentCategoryMap: Record<string, string> = {
-  Title_DA01: 'title', Title_DA02: 'title',
-  PTitle_DA01: 'title', PTitle_DA02: 'title',
+  Title_DA01: 'title',
+  Title_DA02: 'title',
+  PTitle_DA01: 'title',
+  PTitle_DA02: 'title',
   Breaking_DA01: 'title',
   Lead_DA01: 'content',
   Statement_DA01: 'content',
-  Steps_DA01: 'layout', Steps_DA02: 'layout',
+  Steps_DA01: 'layout',
+  Steps_DA02: 'layout',
   CaseFlow_DA01: 'layout',
-  Compare_DA01: 'layout', Compare_DA02: 'layout',
+  Compare_DA01: 'layout',
+  Compare_DA02: 'layout',
   Table_DA01: 'layout',
   Timeline_DA01: 'layout',
   Chart_DA01: 'other',
   CTA_DA01: 'interactive',
-  Engage_DA01: 'interactive', Engage_DA02: 'interactive',
-  Slider_DA01: 'image', Img_DA01: 'image',
+  Engage_DA01: 'interactive',
+  Engage_DA02: 'interactive',
+  Slider_DA01: 'image',
+  Img_DA01: 'image',
   Badges_DA01: 'other',
   Mermaid_DA01: 'other',
 }
@@ -61,12 +67,15 @@ type CompItem = {
 
 const compItems = ref<CompItem[]>([])
 
-watch(() => props.visible, async (v) => {
-  if (!v) return
-  selectedId.value = null
-  activeCategory.value = 'title'
-  await refreshRendered()
-})
+watch(
+  () => props.visible,
+  async (v) => {
+    if (!v) return
+    selectedId.value = null
+    activeCategory.value = 'title'
+    await refreshRendered()
+  },
+)
 
 // 主题色切换时重新渲染所有组件预览 HTML
 watch(colors, async () => {
@@ -106,7 +115,7 @@ async function refreshRendered() {
 }
 
 const filteredComponents = computed(() => {
-  return compItems.value.filter(c => componentCategoryMap[c.id] === activeCategory.value)
+  return compItems.value.filter((c) => componentCategoryMap[c.id] === activeCategory.value)
 })
 
 function selectComponent(id: string) {
@@ -114,7 +123,7 @@ function selectComponent(id: string) {
 }
 
 function confirmInsert() {
-  const comp = compItems.value.find(c => c.id === selectedId.value)
+  const comp = compItems.value.find((c) => c.id === selectedId.value)
   if (comp?.example) {
     emit('insert', comp.example)
     emit('close')
@@ -142,9 +151,18 @@ function handleClose() {
           v-for="cat in categories"
           :key="cat.key"
           class="cursor-pointer whitespace-nowrap rounded-full border-0 transition-colors px-3 py-[5px] text-xs"
-          :class="activeCategory === cat.key ? 'bg-[var(--accent)] text-white' : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
-          @click="activeCategory = cat.key; selectedId = null"
-        >{{ cat.label }}</button>
+          :class="
+            activeCategory === cat.key
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
+          @click="
+            activeCategory = cat.key;
+            selectedId = null
+          "
+        >
+          {{ cat.label }}
+        </button>
       </div>
     </template>
 
@@ -153,16 +171,30 @@ function handleClose() {
         v-for="comp in filteredComponents"
         :key="comp.id"
         class="cursor-pointer overflow-hidden rounded-[10px] border border-[var(--border-color,#e0e0e0)] bg-[var(--bg-primary,#fff)] shadow-[0_1px_3px_rgba(0,0,0,0.05),0_1px_2px_rgba(0,0,0,0.04)] dark:shadow-none transition-all hover:-translate-y-px hover:border-[var(--accent,#6c5ce7)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08),0_1px_4px_rgba(0,0,0,0.04)] dark:hover:shadow-none"
-        :class="{ '!border-[var(--accent,#6c5ce7)] !shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.15)),0_4px_16px_rgba(0,0,0,0.08)] -translate-y-px dark:!shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.3))]': selectedId === comp.id }"
+        :class="{
+          '!border-[var(--accent,#6c5ce7)] !shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.15)),0_4px_16px_rgba(0,0,0,0.08)] -translate-y-px dark:!shadow-[0_0_0_2px_var(--accent-light,rgba(108,92,231,0.3))]':
+            selectedId === comp.id,
+        }"
         @click="selectComponent(comp.id)"
       >
         <div class="flex items-center justify-between px-3 pt-2.5">
-          <span class="text-xs font-semibold text-[var(--text-primary,#1a1a1a)]">{{ comp.name }}</span>
-          <span class="rounded px-1.5 py-px font-mono text-[10px] font-medium text-[var(--accent,#6c5ce7)] bg-[var(--accent-light,rgba(108,92,231,0.08))]">{{ comp.idSuffix }}</span>
+          <span class="text-xs font-semibold text-[var(--text-primary,#1a1a1a)]">{{
+            comp.name
+          }}</span>
+          <span
+            class="rounded px-1.5 py-px font-mono text-[10px] font-medium text-[var(--accent,#6c5ce7)] bg-[var(--accent-light,rgba(108,92,231,0.08))]"
+            >{{ comp.idSuffix }}</span
+          >
         </div>
-        <div class="pointer-events-none px-3 pb-3.5 pt-1.5 text-[13px] leading-relaxed text-[var(--text-secondary,#666)]" v-html="comp.rendered"></div>
+        <div
+          class="pointer-events-none px-3 pb-3.5 pt-1.5 text-[13px] leading-relaxed text-[var(--text-secondary,#666)]"
+          v-html="comp.rendered"
+        ></div>
       </div>
-      <div v-if="filteredComponents.length === 0" class="flex min-h-[120px] items-center justify-center text-[13px] text-[var(--text-muted,#999)]">
+      <div
+        v-if="filteredComponents.length === 0"
+        class="flex min-h-[120px] items-center justify-center text-[13px] text-[var(--text-muted,#999)]"
+      >
         该分类暂无组件
       </div>
     </div>
@@ -173,7 +205,9 @@ function handleClose() {
         :style="{ backgroundColor: colors.accent }"
         :disabled="!selectedId"
         @click="confirmInsert"
-      >插入</button>
+      >
+        插入
+      </button>
     </template>
   </BaseDrawer>
 </template>

@@ -33,13 +33,15 @@ const sortedImages = computed(() => {
   return [...pinned, ...unpinned]
 })
 
-const allSelected = computed(() =>
-  images.value.length > 0 && selectedTokens.value.size === images.value.length,
+const allSelected = computed(
+  () => images.value.length > 0 && selectedTokens.value.size === images.value.length,
 )
 
-const titleText = computed(() => isGallery.value ? '图库' : '清理图片缓存')
+const titleText = computed(() => (isGallery.value ? '图库' : '清理图片缓存'))
 
-const isPinned = computed(() => gallerySelected.value ? pinnedTokens.value.has(gallerySelected.value) : false)
+const isPinned = computed(() =>
+  gallerySelected.value ? pinnedTokens.value.has(gallerySelected.value) : false,
+)
 
 function loadPinnedTokens() {
   const saved = getSetting<string[]>('pinnedImageTokens') || []
@@ -135,15 +137,18 @@ async function doCleanup(tokens: string[]) {
 // 移除 handleConfirm、confirmVisible、confirmMessage、pendingTokens，用 emit + doCleanup 代替
 // doCleanup 通过 defineExpose 暴露给父组件调用
 
-watch(() => props.visible, (val) => {
-  if (val) {
-    selectedTokens.value.clear()
-    multiSelect.value = false
-    gallerySelected.value = null
-    loadPinnedTokens()
-    loadImages()
-  }
-})
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      selectedTokens.value.clear()
+      multiSelect.value = false
+      gallerySelected.value = null
+      loadPinnedTokens()
+      loadImages()
+    }
+  },
+)
 
 loadPinnedTokens()
 loadImages()
@@ -152,121 +157,142 @@ defineExpose({ doCleanup })
 </script>
 
 <template>
-    <BaseDrawer
-        :visible="visible"
-        :title="titleText"
-        width="min(95vw, 1000px)"
-        :show-footer="isGallery ? (gallerySelected !== null) : (multiSelect && selectedTokens.size > 0)"
-        @close="emit('close')"
+  <BaseDrawer
+    :visible="visible"
+    :title="titleText"
+    width="min(95vw, 1000px)"
+    :show-footer="isGallery ? gallerySelected !== null : multiSelect && selectedTokens.size > 0"
+    @close="emit('close')"
+  >
+    <template v-if="isGallery" #header>
+      <div class="text-xs text-[#999] dark:text-[#666]">{{ images.length }} 张</div>
+      <span v-if="gallerySelected" class="ml-auto shrink-0">
+        <BaseTooltip :text="isPinned ? '取消置顶' : '置顶'" placement="bottom">
+          <button
+            class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+            :class="isPinned ? 'text-[var(--accent)]' : 'text-[#999]'"
+            @click="togglePin"
+          >
+            <PinOff v-if="isPinned" :size="16" />
+            <Pin v-else :size="16" />
+          </button>
+        </BaseTooltip>
+      </span>
+    </template>
+    <template v-else #header>
+      <div class="ml-auto flex items-center gap-1">
+        <BaseTooltip
+          v-if="multiSelect"
+          :text="allSelected ? '取消全选' : '全选'"
+          placement="bottom"
+        >
+          <button
+            class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+            :class="allSelected ? 'text-[var(--accent)]' : 'text-[#999]'"
+            @click="toggleSelectAll"
+          >
+            <CheckCheck :size="16" />
+          </button>
+        </BaseTooltip>
+        <BaseTooltip :text="multiSelect ? '退出多选' : '多选'" placement="bottom">
+          <button
+            class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
+            :class="multiSelect ? 'text-[var(--accent)]' : 'text-[#999]'"
+            @click="toggleMultiSelect"
+          >
+            <ListChecks :size="16" />
+          </button>
+        </BaseTooltip>
+      </div>
+    </template>
+
+    <div v-if="loading" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">
+      加载中...
+    </div>
+    <div
+      v-else-if="images.length === 0"
+      class="py-10 text-center text-sm text-[#999] dark:text-[#666]"
     >
-        <template v-if="isGallery" #header>
-            <div class="text-xs text-[#999] dark:text-[#666]">{{ images.length }} 张</div>
-            <span v-if="gallerySelected" class="ml-auto shrink-0">
-                <BaseTooltip :text="isPinned ? '取消置顶' : '置顶'" placement="bottom">
-                    <button
-                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                        :class="isPinned ? 'text-[var(--accent)]' : 'text-[#999]'"
-                        @click="togglePin"
-                    >
-                        <PinOff v-if="isPinned" :size="16" />
-                        <Pin v-else :size="16" />
-                    </button>
-                </BaseTooltip>
-            </span>
-        </template>
-        <template v-else #header>
-            <div class="ml-auto flex items-center gap-1">
-                <BaseTooltip v-if="multiSelect" :text="allSelected ? '取消全选' : '全选'" placement="bottom">
-                    <button
-                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                        :class="allSelected ? 'text-[var(--accent)]' : 'text-[#999]'"
-                        @click="toggleSelectAll"
-                    >
-                        <CheckCheck :size="16" />
-                    </button>
-                </BaseTooltip>
-                <BaseTooltip :text="multiSelect ? '退出多选' : '多选'" placement="bottom">
-                    <button
-                        class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
-                        :class="multiSelect ? 'text-[var(--accent)]' : 'text-[#999]'"
-                        @click="toggleMultiSelect"
-                    >
-                        <ListChecks :size="16" />
-                    </button>
-                </BaseTooltip>
-            </div>
-        </template>
-
-        <div v-if="loading" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">加载中...</div>
-        <div v-else-if="images.length === 0" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">暂无缓存图片</div>
-        <div v-else class="relative grid grid-cols-6 gap-3">
-            <div
-                v-for="img in sortedImages"
-                :key="img.token"
-                class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
-                :class="isGallery
-          ? (gallerySelected === img.token
-            ? 'cursor-pointer border-[var(--accent)]'
-            : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]')
-          : (multiSelect
-            ? (selectedTokens.has(img.token)
+      暂无缓存图片
+    </div>
+    <div v-else class="relative grid grid-cols-6 gap-3">
+      <div
+        v-for="img in sortedImages"
+        :key="img.token"
+        class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
+        :class="
+          isGallery
+            ? gallerySelected === img.token
               ? 'cursor-pointer border-[var(--accent)]'
-              : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]')
-            : 'cursor-default border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]')"
-                @click="isGallery ? toggleGallery(img.token) : (multiSelect && toggleSelect(img.token))"
-            >
-                <img :src="img.dataUrl" class="block h-full w-full object-cover" />
-                <!-- Pin badge -->
-                <div
-                    v-if="pinnedTokens.has(img.token)"
-                    class="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/55 px-1 py-[2px] text-[10px] text-white"
-                >
-                    <Pin :size="10" />
-                </div>
-                <!-- Selected checkmark -->
-                <div
-                    v-if="isGallery ? (gallerySelected === img.token) : (multiSelect && selectedTokens.has(img.token))"
-                    class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90"
-                    :class="isGallery || selectedTokens.has(img.token) ? '!border-[var(--accent)] !bg-[var(--accent)]' : 'border-[#d9d9d9] dark:border-[#555]'"
-                >
-                    <span class="text-[13px] font-bold text-white">✓</span>
-                </div>
-                <!-- Size label -->
-                <div class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80">
-                    {{ formatSize(img.size) }}
-                </div>
-                <!-- Date label -->
-                <div class="absolute bottom-1.5 right-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80">
-                    {{ formatDate(img.createdAt) }}
-                </div>
-                <button
-                    v-if="!isGallery && !multiSelect"
-                    class="absolute bottom-1.5 right-1.5 cursor-pointer rounded border-0 bg-black/55 px-2.5 py-[3px] text-xs text-white opacity-0 transition-opacity hover:bg-red-600/80"
-                    @click.stop="confirmDelete(img.token)"
-                >
-                    清理
-                </button>
-            </div>
-
-
+              : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
+            : multiSelect
+              ? selectedTokens.has(img.token)
+                ? 'cursor-pointer border-[var(--accent)]'
+                : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
+              : 'cursor-default border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
+        "
+        @click="isGallery ? toggleGallery(img.token) : multiSelect && toggleSelect(img.token)"
+      >
+        <img :src="img.dataUrl" class="block h-full w-full object-cover" />
+        <!-- Pin badge -->
+        <div
+          v-if="pinnedTokens.has(img.token)"
+          class="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/55 px-1 py-[2px] text-[10px] text-white"
+        >
+          <Pin :size="10" />
         </div>
+        <!-- Selected checkmark -->
+        <div
+          v-if="
+            isGallery ? gallerySelected === img.token : multiSelect && selectedTokens.has(img.token)
+          "
+          class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90"
+          :class="
+            isGallery || selectedTokens.has(img.token)
+              ? '!border-[var(--accent)] !bg-[var(--accent)]'
+              : 'border-[#d9d9d9] dark:border-[#555]'
+          "
+        >
+          <span class="text-[13px] font-bold text-white">✓</span>
+        </div>
+        <!-- Size label -->
+        <div
+          class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+        >
+          {{ formatSize(img.size) }}
+        </div>
+        <!-- Date label -->
+        <div
+          class="absolute bottom-1.5 right-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+        >
+          {{ formatDate(img.createdAt) }}
+        </div>
+        <button
+          v-if="!isGallery && !multiSelect"
+          class="absolute bottom-1.5 right-1.5 cursor-pointer rounded border-0 bg-black/55 px-2.5 py-[3px] text-xs text-white opacity-0 transition-opacity hover:bg-red-600/80"
+          @click.stop="confirmDelete(img.token)"
+        >
+          清理
+        </button>
+      </div>
+    </div>
 
-        <template v-if="isGallery" #footer>
-            <button
-                class="cursor-pointer rounded-md border-0 px-5 py-[7px] text-[13px] text-white transition-colors"
-                :style="{ background: 'var(--accent)' }"
-                @click="handleInsert"
-            >
-                插入
-            </button>
-        </template>
-        <template v-else #footer>
-            <button
-                class="cursor-pointer rounded-md border-0 bg-[#dc2626] px-5 py-[7px] text-[13px] text-white transition-colors hover:bg-[#b91c1c]"
-                @click="confirmBatchDelete"
-            >
-                清理选中（{{ selectedTokens.size }}）
-            </button>
-        </template>
-    </BaseDrawer>
+    <template v-if="isGallery" #footer>
+      <button
+        class="cursor-pointer rounded-md border-0 px-5 py-[7px] text-[13px] text-white transition-colors"
+        :style="{ background: 'var(--accent)' }"
+        @click="handleInsert"
+      >
+        插入
+      </button>
+    </template>
+    <template v-else #footer>
+      <button
+        class="cursor-pointer rounded-md border-0 bg-[#dc2626] px-5 py-[7px] text-[13px] text-white transition-colors hover:bg-[#b91c1c]"
+        @click="confirmBatchDelete"
+      >
+        清理选中（{{ selectedTokens.size }}）
+      </button>
+    </template>
+  </BaseDrawer>
 </template>

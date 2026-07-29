@@ -67,7 +67,16 @@ onBeforeUnmount(() => {
   >
     <svg class="logo-icon" viewBox="0 0 24 24" width="26" height="26">
       <rect width="24" height="24" rx="6" :fill="accentColor" />
-      <text x="3.5" y="16" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="white">RM</text>
+      <text
+        x="3.5"
+        y="16"
+        font-family="Arial, sans-serif"
+        font-size="11"
+        font-weight="bold"
+        fill="white"
+      >
+        RM
+      </text>
     </svg>
     <span
       ref="logoTextRef"

@@ -59,11 +59,16 @@ function fetchWithTimeout(url: string, timeout = FETCH_TIMEOUT): Promise<Respons
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timer))
 }
 
-/** 
+/**
  * 多源降级拉取 JSON
  * 依次尝试 jsDelivr → GitHub raw，index.json 失败则读 localStorage 缓存兜底
  */
-async function fetchJsonWithFallback(repo: string, sha: string, path: string, useCache = false): Promise<any> {
+async function fetchJsonWithFallback(
+  repo: string,
+  sha: string,
+  path: string,
+  useCache = false,
+): Promise<any> {
   const cdnUrl = `${CDN_BASE}/${repo}@${sha}/${path}`
   const rawUrl = `${RAW_BASE}/${repo}/${sha}/${path}`
 
@@ -75,7 +80,9 @@ async function fetchJsonWithFallback(repo: string, sha: string, path: string, us
       if (useCache) localStorage.setItem(LS_PREFIX + path, JSON.stringify(data))
       return data
     }
-  } catch { /* 继续降级 */ }
+  } catch {
+    /* 继续降级 */
+  }
 
   // 2. 尝试 GitHub raw
   try {
@@ -85,7 +92,9 @@ async function fetchJsonWithFallback(repo: string, sha: string, path: string, us
       if (useCache) localStorage.setItem(LS_PREFIX + path, JSON.stringify(data))
       return data
     }
-  } catch { /* 继续降级 */ }
+  } catch {
+    /* 继续降级 */
+  }
 
   // 3. 仅 index.json 读 localStorage 缓存兜底
   if (useCache) {

@@ -57,7 +57,9 @@ async function ensureHashCache(): Promise<void> {
         hashCache.set(record.hash, key as string)
       }
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   cachePopulated = true
 }
 
@@ -86,7 +88,10 @@ export async function putImage(file: File): Promise<string> {
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite')
       const store = tx.objectStore(STORE_NAME)
-      const req = store.put({ buffer, mime: file.type || 'image/png', hash, createdAt: Date.now() }, token)
+      const req = store.put(
+        { buffer, mime: file.type || 'image/png', hash, createdAt: Date.now() },
+        token,
+      )
 
       tx.oncomplete = () => resolve()
       tx.onabort = () => reject(tx.error || new Error('transaction aborted'))
@@ -208,7 +213,9 @@ export async function cleanupImages(tokensInUse: Set<string>): Promise<void> {
 }
 
 /** 获取所有已存储图片的缩略预览（token + data URL + 原始大小 + 上传时间） */
-export async function getAllImagePreviews(): Promise<{ token: string; dataUrl: string; size: number; createdAt: number }[]> {
+export async function getAllImagePreviews(): Promise<
+  { token: string; dataUrl: string; size: number; createdAt: number }[]
+> {
   const result: { token: string; dataUrl: string; size: number; createdAt: number }[] = []
   try {
     const db = await openDB()

@@ -50,7 +50,9 @@ async function copyCurrentColor() {
   try {
     await navigator.clipboard.writeText(props.currentAccent)
     copied.value = true
-    setTimeout(() => { copied.value = false }, 5000)
+    setTimeout(() => {
+      copied.value = false
+    }, 5000)
   } catch {
     // 降级方案
     const ta = document.createElement('textarea')
@@ -60,7 +62,9 @@ async function copyCurrentColor() {
     document.execCommand('copy')
     document.body.removeChild(ta)
     copied.value = true
-    setTimeout(() => { copied.value = false }, 5000)
+    setTimeout(() => {
+      copied.value = false
+    }, 5000)
   }
 }
 </script>
@@ -72,7 +76,7 @@ async function copyCurrentColor() {
       :style="{ background: currentAccent, color: '#fff' }"
       @click="toggle"
     >
-     <Palette :size="24" />
+      <Palette :size="24" />
     </button>
     <div
       class="theme-picker absolute top-full right-0 mt-2 p-3 rounded-xl z-10 w-50"
@@ -111,7 +115,9 @@ async function copyCurrentColor() {
       <div class="current-color-row mt-2 pt-2 border-t border-[var(--accent-border)]">
         <div class="flex items-center gap-1.5 px-0.5">
           <span class="text-[11px] font-medium" :style="{ color: 'var(--text-secondary)' }">
-            当前主题色值：<span class="font-mono" :style="{ color: 'var(--text-primary)' }">{{ currentAccent }}</span>
+            当前主题色值：<span class="font-mono" :style="{ color: 'var(--text-primary)' }">{{
+              currentAccent
+            }}</span>
           </span>
           <Copy
             v-if="!copied"

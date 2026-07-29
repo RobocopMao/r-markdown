@@ -31,10 +31,15 @@ if (isTauri) {
       }
     } catch {}
     const mode = localStorage.getItem('r-markdown-darkMode') || 'system'
-    const isDark = mode === 'dark' || (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    const isDark =
+      mode === 'dark' ||
+      (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
     const bg = isDark ? 'rgba(0,0,0,0.88)' : '#f5f5f7'
     const textColor = isDark ? '#6b7280' : '#9ca3af'
-    loading.setAttribute('style', `display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:${textColor};font-size:14px;background:${bg}`)
+    loading.setAttribute(
+      'style',
+      `display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:${textColor};font-size:14px;background:${bg}`,
+    )
   }
 }
 

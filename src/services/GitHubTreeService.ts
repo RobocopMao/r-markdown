@@ -169,7 +169,7 @@ export const GitHubTreeService = {
           if (idx !== -1) {
             merged[idx] = ourNode // 覆盖已存在的节点（处理重命名/移动等）
           } else {
-            merged.push(ourNode)  // 追加新节点
+            merged.push(ourNode) // 追加新节点
           }
         }
         currentNodes = merged
@@ -399,9 +399,7 @@ export const GitHubTreeService = {
     const idsToDelete = new Set<string>()
     function collect(pid: string) {
       idsToDelete.add(pid)
-      tree.nodes
-        .filter((n) => n.parentId === pid)
-        .forEach((n) => collect(n.id))
+      tree.nodes.filter((n) => n.parentId === pid).forEach((n) => collect(n.id))
     }
     collect(id)
 

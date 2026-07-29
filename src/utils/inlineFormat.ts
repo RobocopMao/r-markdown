@@ -24,7 +24,11 @@ export const inlineFormatOptions: InlineOption[] = [
   { label: 'HTML下划线', syntax: 'u', hint: '<u>文字</u>', wrapType: 'tag' },
 ]
 
-export function inlineFormat(text: string, t: ThemeColors, formulaMap?: Map<string, string>): string {
+export function inlineFormat(
+  text: string,
+  t: ThemeColors,
+  formulaMap?: Map<string, string>,
+): string {
   // 脚注占位符 __FN_N__（渲染为带下划线的文字 + 上标数字）
   // 格式：__FN_N__|显示文字，其中显示文字由 markdownParser 传入
   text = text.replace(
@@ -40,26 +44,22 @@ export function inlineFormat(text: string, t: ThemeColors, formulaMap?: Map<stri
   )
   // `行内代码` — 先用占位符隔离，避免内部 $...$ / ** 等被后续正则误匹配
   const codeStore: string[] = []
-  text = text.replace(
-    /`([^`]+)`/g,
-    (_m, p1: string) => {
-      const idx = codeStore.length
-      codeStore.push(`<code style="background:#f0f0f5;padding:2px 6px;border-radius:4px;font-size:13px;font-family:SF Mono,Consolas,monospace;color:#e83e8c;word-break:break-all">${esc(p1)}</code>`)
-      return `\x00CODE_${idx}\x00`
-    },
-  )
+  text = text.replace(/`([^`]+)`/g, (_m, p1: string) => {
+    const idx = codeStore.length
+    codeStore.push(
+      `<code style="background:#f0f0f5;padding:2px 6px;border-radius:4px;font-size:13px;font-family:SF Mono,Consolas,monospace;color:#e83e8c;word-break:break-all">${esc(p1)}</code>`,
+    )
+    return `\x00CODE_${idx}\x00`
+  })
   // $行内公式$ — 优先取 formulaMap 中的预渲染 SVG；无可用时显示公式原文
-  text = text.replace(
-    /(?<!\$)(?<!\d)\$([^\$]+?)\$(?!\$|[\w])/g,
-    (_m, formula: string) => {
-      if (formulaMap) {
-        const svg = formulaMap.get(`i:${formula}`)
-        if (svg) return `<span style="color:var(--text-primary)">${svg}</span>`
-      }
-      // 降级：显示公式原文
-      return `<code style="font-style:italic;background:var(--hl-code-bg);padding:1px 4px;border-radius:3px">${esc(formula)}</code>`
-    },
-  )
+  text = text.replace(/(?<!\$)(?<!\d)\$([^\$]+?)\$(?!\$|[\w])/g, (_m, formula: string) => {
+    if (formulaMap) {
+      const svg = formulaMap.get(`i:${formula}`)
+      if (svg) return `<span style="color:var(--text-primary)">${svg}</span>`
+    }
+    // 降级：显示公式原文
+    return `<code style="font-style:italic;background:var(--hl-code-bg);padding:1px 4px;border-radius:3px">${esc(formula)}</code>`
+  })
   // ==渐变背景==
   text = text.replace(
     /==([^=]+)==/g,

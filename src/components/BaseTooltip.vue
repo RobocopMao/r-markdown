@@ -1,7 +1,9 @@
 <script setup vapor lang="ts">
 import { ref, useSlots } from 'vue'
 
-const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom' }>(), { placement: 'top' })
+const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom' }>(), {
+  placement: 'top',
+})
 const slots = useSlots()
 
 const triggerRef = ref<HTMLElement>()
@@ -26,8 +28,13 @@ function calcStyle() {
   }
 }
 
-function show() { calcStyle(); visible.value = true }
-function hide() { visible.value = false }
+function show() {
+  calcStyle()
+  visible.value = true
+}
+function hide() {
+  visible.value = false
+}
 </script>
 
 <template>

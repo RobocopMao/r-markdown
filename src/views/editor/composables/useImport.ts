@@ -15,7 +15,7 @@ export function useImport(
         const { open } = await import('@tauri-apps/plugin-dialog')
         const filePath = await open({
           multiple: false,
-          filters: [{ name: '文档', extensions: ['md', 'txt', 'docx'] }]
+          filters: [{ name: '文档', extensions: ['md', 'txt', 'docx'] }],
         })
         if (!filePath) return
 

@@ -4,9 +4,22 @@ import { invoke } from '@tauri-apps/api/core'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
-import { autoUpdateEnabled, autoUpdatePending, autoUpdateRid, checkForUpdates, downloadUpdateWithRid, type UpdateInfo } from '@/composables/useAutoUpdater'
+import {
+  autoUpdateEnabled,
+  autoUpdatePending,
+  autoUpdateRid,
+  checkForUpdates,
+  downloadUpdateWithRid,
+  type UpdateInfo,
+} from '@/composables/useAutoUpdater'
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
-import { paraFontSize, paraLineHeight, paraFontWeight, paraMargin, paraIndent } from '@/composables/useParagraphSettings'
+import {
+  paraFontSize,
+  paraLineHeight,
+  paraFontWeight,
+  paraMargin,
+  paraIndent,
+} from '@/composables/useParagraphSettings'
 import { testConnection } from '@/services/githubUploader'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { useTheme } from '@/composables/useTheme'
@@ -35,11 +48,14 @@ const selectChevronStyle = {
 const settingsTab = ref('basic')
 
 // 当对话框打开时，若指定了 initialTab 则自动切换
-watch(() => props.visible, (isVisible) => {
-  if (isVisible && props.initialTab) {
-    settingsTab.value = props.initialTab
-  }
-})
+watch(
+  () => props.visible,
+  (isVisible) => {
+    if (isVisible && props.initialTab) {
+      settingsTab.value = props.initialTab
+    }
+  },
+)
 // 图床上传子 tab：upload | github | leta
 const hostingTab = ref('upload')
 
@@ -131,11 +147,21 @@ function saveEditorTheme(theme: string) {
 }
 
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
-function saveParaFontSize(val: number) { paraFontSize.value = val }
-function saveParaLineHeight(val: number) { paraLineHeight.value = val }
-function saveParaFontWeight(val: string) { paraFontWeight.value = val }
-function saveParaMargin(val: number) { paraMargin.value = val }
-function saveParaIndent(val: string) { paraIndent.value = val }
+function saveParaFontSize(val: number) {
+  paraFontSize.value = val
+}
+function saveParaLineHeight(val: number) {
+  paraLineHeight.value = val
+}
+function saveParaFontWeight(val: string) {
+  paraFontWeight.value = val
+}
+function saveParaMargin(val: number) {
+  paraMargin.value = val
+}
+function saveParaIndent(val: string) {
+  paraIndent.value = val
+}
 
 function resetParaDefaults() {
   saveParaFontSize(16)
@@ -222,9 +248,18 @@ const wechatAppId = ref(getSetting<string>('wechatAppId'))
 const wechatAppSecret = ref(getSetting<string>('wechatAppSecret'))
 const wechatDefaultAuthor = ref(getSetting<string>('wechatDefaultAuthor'))
 
-function saveWechatAppId(val: string) { wechatAppId.value = val; setSetting('wechatAppId', val) }
-function saveWechatAppSecret(val: string) { wechatAppSecret.value = val; setSetting('wechatAppSecret', val) }
-function saveWechatDefaultAuthor(val: string) { wechatDefaultAuthor.value = val; setSetting('wechatDefaultAuthor', val) }
+function saveWechatAppId(val: string) {
+  wechatAppId.value = val
+  setSetting('wechatAppId', val)
+}
+function saveWechatAppSecret(val: string) {
+  wechatAppSecret.value = val
+  setSetting('wechatAppSecret', val)
+}
+function saveWechatDefaultAuthor(val: string) {
+  wechatDefaultAuthor.value = val
+  setSetting('wechatDefaultAuthor', val)
+}
 
 // ── 云端文章 GitHub 配置 ──
 const cloudToken = ref(GitHubTreeService.getToken() || '')
@@ -372,7 +407,6 @@ async function doDownloadUpdate() {
     downloading.value = false
   }
 }
-
 </script>
 
 <template>
@@ -387,27 +421,33 @@ async function doDownloadUpdate() {
       <div class="flex gap-1">
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-          :class="settingsTab === 'basic'
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          :class="
+            settingsTab === 'basic'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
           @click="settingsTab = 'basic'"
         >
           基础设置
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-          :class="settingsTab === 'github'
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          :class="
+            settingsTab === 'github'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
           @click="settingsTab = 'github'"
         >
           图片设置
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-          :class="settingsTab === 'cloud'
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          :class="
+            settingsTab === 'cloud'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
           @click="settingsTab = 'cloud'"
         >
           文章仓库
@@ -415,9 +455,11 @@ async function doDownloadUpdate() {
         <button
           v-if="isTauri"
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-          :class="settingsTab === 'wechat'
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          :class="
+            settingsTab === 'wechat'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
           @click="settingsTab = 'wechat'"
         >
           公众号
@@ -425,9 +467,11 @@ async function doDownloadUpdate() {
         <button
           v-if="isTauri"
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-          :class="settingsTab === 'other'
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'"
+          :class="
+            settingsTab === 'other'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
           @click="settingsTab = 'other'"
         >
           其他设置
@@ -440,9 +484,7 @@ async function doDownloadUpdate() {
       <!-- 普通段落 -->
       <section class="mb-4">
         <div class="flex items-center justify-between mb-3">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">
-            普通段落
-          </h3>
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">普通段落</h3>
           <button
             class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
             @click="resetParaDefaults"
@@ -455,7 +497,9 @@ async function doDownloadUpdate() {
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">字体大小</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{ paraFontSize }}px</span>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ paraFontSize }}px</span
+            >
           </div>
           <input
             type="range"
@@ -476,7 +520,9 @@ async function doDownloadUpdate() {
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">行高</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{ paraLineHeight }}</span>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+              paraLineHeight
+            }}</span>
           </div>
           <input
             type="range"
@@ -514,7 +560,9 @@ async function doDownloadUpdate() {
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">段落间距</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{ paraMargin }}px</span>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ paraMargin }}px</span
+            >
           </div>
           <input
             type="range"
@@ -535,7 +583,11 @@ async function doDownloadUpdate() {
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">首行缩进</label>
-            <span v-if="paraIndent" class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{ paraIndent }}</span>
+            <span
+              v-if="paraIndent"
+              class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ paraIndent }}</span
+            >
           </div>
           <input
             type="text"
@@ -549,9 +601,7 @@ async function doDownloadUpdate() {
 
       <!-- 自动保存（仅桌面端） -->
       <section v-if="isTauri">
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-          自动保存
-        </h3>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">自动保存</h3>
         <div class="flex items-center justify-between mb-3">
           <span class="text-[12px] text-[#666] dark:text-[#999]">启用自动保存</span>
           <button
@@ -574,18 +624,22 @@ async function doDownloadUpdate() {
           自动保存已关闭，请及时手动保存（工具栏「暂存」按钮）
         </p>
         <div>
-          <span class="text-[12px] text-[#666] dark:text-[#999] mb-2 block"
+          <span
+            class="text-[12px] text-[#666] dark:text-[#999] mb-2 block"
             :class="{ 'opacity-40': !autoSaveEnabled }"
-          >保存间隔</span>
+            >保存间隔</span
+          >
           <div class="flex flex-nowrap gap-2">
             <button
               v-for="s in SAVE_INTERVAL_PRESETS"
               :key="s"
               :disabled="!autoSaveEnabled"
               class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0 disabled:cursor-not-allowed disabled:opacity-30"
-              :class="autoSaveInterval === s
-                ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'"
+              :class="
+                autoSaveInterval === s
+                  ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
+              "
               @click="autoSaveInterval = s"
             >
               {{ s }}s
@@ -603,7 +657,9 @@ async function doDownloadUpdate() {
           预览缩略图
         </h3>
         <div class="flex items-center justify-between mb-2">
-          <span class="text-[12px] text-[#666] dark:text-[#999]">在预览区右侧显示文档全貌缩略图</span>
+          <span class="text-[12px] text-[#666] dark:text-[#999]"
+            >在预览区右侧显示文档全貌缩略图</span
+          >
           <button
             class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
             :class="minimapEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
@@ -660,27 +716,33 @@ async function doDownloadUpdate() {
       <div class="flex gap-1.5 mb-4">
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-          :class="hostingTab === 'upload'
-            ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-            : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'"
+          :class="
+            hostingTab === 'upload'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
           @click="hostingTab = 'upload'"
         >
           上传设置
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-          :class="hostingTab === 'github'
-            ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-            : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'"
+          :class="
+            hostingTab === 'github'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
           @click="hostingTab = 'github'"
         >
           GitHub 图床
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-          :class="hostingTab === 'leta'
-            ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-            : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'"
+          :class="
+            hostingTab === 'leta'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
           @click="hostingTab = 'leta'"
         >
           乐塔图床
@@ -689,27 +751,59 @@ async function doDownloadUpdate() {
 
       <section v-if="hostingTab === 'upload'">
         <!-- 上传方式 -->
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">{{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}</h3>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+          {{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}
+        </h3>
         <div class="flex gap-2">
           <label
             class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="pasteDropMode === 'local' ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'"
+            :class="
+              pasteDropMode === 'local'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+            "
           >
-            <input type="radio" class="sr-only" value="local" :checked="pasteDropMode === 'local'" @change="savePasteDropMode('local')" />
+            <input
+              type="radio"
+              class="sr-only"
+              value="local"
+              :checked="pasteDropMode === 'local'"
+              @change="savePasteDropMode('local')"
+            />
             本地存储
           </label>
           <label
             class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="pasteDropMode === 'github' ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'"
+            :class="
+              pasteDropMode === 'github'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+            "
           >
-            <input type="radio" class="sr-only" value="github" :checked="pasteDropMode === 'github'" @change="savePasteDropMode('github')" />
+            <input
+              type="radio"
+              class="sr-only"
+              value="github"
+              :checked="pasteDropMode === 'github'"
+              @change="savePasteDropMode('github')"
+            />
             GitHub 图床
           </label>
           <label
             class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="pasteDropMode === 'leta' ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'"
+            :class="
+              pasteDropMode === 'leta'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+            "
           >
-            <input type="radio" class="sr-only" value="leta" :checked="pasteDropMode === 'leta'" @change="savePasteDropMode('leta')" />
+            <input
+              type="radio"
+              class="sr-only"
+              value="leta"
+              :checked="pasteDropMode === 'leta'"
+              @change="savePasteDropMode('leta')"
+            />
             乐塔图床
           </label>
         </div>
@@ -721,23 +815,45 @@ async function doDownloadUpdate() {
 
         <!-- 默认图床（工具栏上传按钮使用） -->
         <div class="mt-4">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">默认图床</h3>
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            默认图床
+          </h3>
           <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
             点击工具栏「图床」按钮上传时使用的图床服务，独立于粘贴/拖拽方式。
           </p>
           <div class="flex gap-2">
             <label
               class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-              :class="defaultHosting === 'github' ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'"
+              :class="
+                defaultHosting === 'github'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
             >
-              <input type="radio" class="sr-only" value="github" :checked="defaultHosting === 'github'" @change="saveDefaultHosting('github')" />
+              <input
+                type="radio"
+                class="sr-only"
+                value="github"
+                :checked="defaultHosting === 'github'"
+                @change="saveDefaultHosting('github')"
+              />
               GitHub 图床
             </label>
             <label
               class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-              :class="defaultHosting === 'leta' ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]' : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'"
+              :class="
+                defaultHosting === 'leta'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
             >
-              <input type="radio" class="sr-only" value="leta" :checked="defaultHosting === 'leta'" @change="saveDefaultHosting('leta')" />
+              <input
+                type="radio"
+                class="sr-only"
+                value="leta"
+                :checked="defaultHosting === 'leta'"
+                @change="saveDefaultHosting('leta')"
+              />
               乐塔图床
             </label>
           </div>
@@ -747,7 +863,9 @@ async function doDownloadUpdate() {
         <div class="mt-4">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">压缩质量</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{ compressQuality }}%</span>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ compressQuality }}%</span
+            >
           </div>
           <input
             type="range"
@@ -763,7 +881,9 @@ async function doDownloadUpdate() {
             <span>高（高画质）</span>
           </div>
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
-            对应 JPEG 压缩质量，值越高图片越清晰，体积越大。压缩比100%时，不会对图片做任何处理。压缩后图片将统一转为 JPEG 格式。
+            对应 JPEG
+            压缩质量，值越高图片越清晰，体积越大。压缩比100%时，不会对图片做任何处理。压缩后图片将统一转为
+            JPEG 格式。
           </p>
         </div>
 
@@ -786,8 +906,8 @@ async function doDownloadUpdate() {
           GitHub 图床
         </h3>
         <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-          图片通过 GitHub API 上传后，使用 jsDelivr CDN 返回链接。
-          需要公共仓库 + Personal Access Token（repo 权限）。
+          图片通过 GitHub API 上传后，使用 jsDelivr CDN 返回链接。 需要公共仓库 + Personal Access
+          Token（repo 权限）。
         </p>
         <div class="mb-3">
           <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
@@ -799,7 +919,9 @@ async function doDownloadUpdate() {
           />
         </div>
         <div class="mb-3">
-          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Personal Access Token</label>
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block"
+            >Personal Access Token</label
+          >
           <input
             :value="githubToken"
             type="password"
@@ -825,15 +947,20 @@ async function doDownloadUpdate() {
           >
             {{ githubTesting ? '测试中…' : '测试连接' }}
           </button>
-          <span v-if="githubTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }">连接成功</span>
-          <span v-if="githubTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">连接失败</span>
+          <span
+            v-if="githubTestResult === 'ok'"
+            class="text-[12px]"
+            :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="githubTestResult === 'fail'" class="text-[12px] text-[#e74c3c]"
+            >连接失败</span
+          >
         </div>
       </section>
 
       <section v-if="hostingTab === 'leta'">
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-          乐塔图床
-        </h3>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">乐塔图床</h3>
         <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
           通过乐塔图床 API 上传图片，返回直链地址。
         </p>
@@ -856,9 +983,9 @@ async function doDownloadUpdate() {
             @input="saveLetuStorageId(($event.target as HTMLInputElement).value)"
           />
         </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            登录乐塔图床，按F12打开控制台，切换到Network标签，上传一张图片，点击upload接口，点击Payload，找到storage_id的值。
-          </p>
+        <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+          登录乐塔图床，按F12打开控制台，切换到Network标签，上传一张图片，点击upload接口，点击Payload，找到storage_id的值。
+        </p>
         <div class="flex items-center gap-3">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
@@ -867,7 +994,9 @@ async function doDownloadUpdate() {
           >
             {{ letaTesting ? '测试中…' : '测试连接' }}
           </button>
-          <span v-if="letaTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }">连接成功</span>
+          <span v-if="letaTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }"
+            >连接成功</span
+          >
           <span v-if="letaTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">连接失败</span>
         </div>
       </section>
@@ -917,7 +1046,8 @@ async function doDownloadUpdate() {
     <template v-if="settingsTab === 'cloud'">
       <section>
         <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
-          GitHub 私有仓库（文章仓库存储）。仅需 <code class="text-[var(--accent)]">repo</code> scope 的 Personal Access Token。
+          GitHub 私有仓库（文章仓库存储）。仅需 <code class="text-[var(--accent)]">repo</code> scope
+          的 Personal Access Token。
         </p>
         <div class="mb-3">
           <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
@@ -949,15 +1079,11 @@ async function doDownloadUpdate() {
           <span
             v-if="cloudTestResult === 'ok'"
             class="text-[12px]"
-            style="color: var(--accent-green, #27ae60);"
+            style="color: var(--accent-green, #27ae60)"
           >
             连接成功
           </span>
-          <span
-            v-if="cloudTestResult === 'fail'"
-            class="text-[12px]"
-            style="color: #e74c3c;"
-          >
+          <span v-if="cloudTestResult === 'fail'" class="text-[12px]" style="color: #e74c3c">
             {{ cloudTestError || '连接失败' }}
           </span>
         </div>
@@ -968,17 +1094,17 @@ async function doDownloadUpdate() {
     <template v-if="settingsTab === 'other'">
       <!-- 页面缩放 -->
       <section>
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-          页面缩放
-        </h3>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">页面缩放</h3>
         <div class="flex flex-nowrap gap-2">
           <button
             v-for="p in ZOOM_PRESETS"
             :key="p"
             class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0"
-            :class="currentZoom === p
-              ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
-              : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'"
+            :class="
+              currentZoom === p
+                ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
+            "
             @click="applyZoom(p)"
           >
             {{ p }}%
@@ -991,9 +1117,7 @@ async function doDownloadUpdate() {
 
       <!-- 版本更新 -->
       <section class="mt-6 pt-6 border-t border-[#f0f0f0] dark:border-[#333]">
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-          版本更新
-        </h3>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">版本更新</h3>
         <div class="flex items-center justify-between mb-3">
           <span class="text-[12px] text-[#666] dark:text-[#999]">启动时自动检查更新</span>
           <button
@@ -1029,7 +1153,9 @@ async function doDownloadUpdate() {
         <div v-if="downloading" class="mt-3">
           <div class="flex items-center gap-2 mb-1.5">
             <span class="text-[12px] text-[#666] dark:text-[#999]">正在下载更新...</span>
-            <span class="text-[12px] font-medium text-[var(--accent)]">{{ downloadProgress }}%</span>
+            <span class="text-[12px] font-medium text-[var(--accent)]"
+              >{{ downloadProgress }}%</span
+            >
           </div>
           <div class="h-1.5 w-full rounded-full bg-[#eee] dark:bg-[#444] overflow-hidden">
             <div
@@ -1051,7 +1177,12 @@ async function doDownloadUpdate() {
       @cancel="updateDialogVisible = false"
     />
 
-    <ImageCacheDialog ref="imgCacheRef" :visible="showImageCache" @close="showImageCache = false" @request-cleanup="onImgRequestCleanup" />
+    <ImageCacheDialog
+      ref="imgCacheRef"
+      :visible="showImageCache"
+      @close="showImageCache = false"
+      @request-cleanup="onImgRequestCleanup"
+    />
   </BaseDrawer>
 
   <!-- 清理图片缓存全局确认弹窗 -->

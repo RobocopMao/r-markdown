@@ -58,16 +58,15 @@ function onCancel() {
       <p v-if="message" class="confirm-dialog-message m-0 mb-4 text-[13px] text-[#8a8175]">
         {{ message }}
       </p>
-      <div
-        class="flex gap-2 mt-4"
-        :class="hasSlot() ? 'flex-col' : 'justify-end'"
-      >
+      <div class="flex gap-2 mt-4" :class="hasSlot() ? 'flex-col' : 'justify-end'">
         <template v-if="hasSlot()">
           <button
             class="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border-none text-white transition-colors whitespace-nowrap"
             :class="[
-              confirmType === 'danger' ? 'bg-[#e74c3c] hover:bg-[#c0392b]' : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]',
-              { 'w-full': hasSlot(), 'opacity-60 pointer-events-none': loading }
+              confirmType === 'danger'
+                ? 'bg-[#e74c3c] hover:bg-[#c0392b]'
+                : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]',
+              { 'w-full': hasSlot(), 'opacity-60 pointer-events-none': loading },
             ]"
             :disabled="loading"
             @click="onConfirm"
@@ -93,8 +92,10 @@ function onCancel() {
           <button
             class="px-4 py-2 rounded-lg text-[13px] font-semibold cursor-pointer border-none text-white transition-colors whitespace-nowrap"
             :class="{
-              [confirmType === 'danger' ? 'bg-[#e74c3c] hover:bg-[#c0392b]' : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]']: true,
-              'opacity-60 pointer-events-none': loading
+              [confirmType === 'danger'
+                ? 'bg-[#e74c3c] hover:bg-[#c0392b]'
+                : 'bg-[var(--accent)] hover:bg-[var(--accent-dark)]']: true,
+              'opacity-60 pointer-events-none': loading,
             }"
             :disabled="loading"
             @click="onConfirm"
@@ -109,8 +110,12 @@ function onCancel() {
 
 <style scoped>
 @keyframes base-dialog-fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 .animate-base-dialog-fade-in {
   animation: base-dialog-fade-in 0.2s ease-out;

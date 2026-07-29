@@ -19,7 +19,7 @@ async function githubFetch(path: string, options: RequestInit = {}): Promise<Res
   const url = `${API_BASE}/github/${path}`
   const headers: Record<string, string> = {
     Accept: 'application/vnd.github.v3+json',
-    ...(options.headers as Record<string, string> || {}),
+    ...((options.headers as Record<string, string>) || {}),
   }
   if (isTauri && R_MARKDOWN_SECRET) {
     headers['r-markdown-secret'] = R_MARKDOWN_SECRET
@@ -39,7 +39,7 @@ interface MaterialData {
 /** 上传素材文件到仓库 */
 export async function publishMaterial(
   materialId: string,
-  data: MaterialData
+  data: MaterialData,
 ): Promise<PublishResult> {
   try {
     // 1. 获取当前 index.json（需要 sha 用于更新）
@@ -87,7 +87,9 @@ export async function publishMaterial(
         const d = await existing.json()
         materialSha = d.sha
       }
-    } catch { /* 不存在，新建 */ }
+    } catch {
+      /* 不存在，新建 */
+    }
 
     // 4. 上传素材文件
     const materialBody: Record<string, string> = {
@@ -177,9 +179,7 @@ export interface ImageUrlValidation {
 
 export function validateImageUrls(content: string): ImageUrlValidation {
   const urls = extractImageUrls(content)
-  const localUrls = urls.filter(
-    (url) => !url.startsWith('http://') && !url.startsWith('https://'),
-  )
+  const localUrls = urls.filter((url) => !url.startsWith('http://') && !url.startsWith('https://'))
   return {
     valid: localUrls.length === 0,
     localUrls,
@@ -189,14 +189,14 @@ export function validateImageUrls(content: string): ImageUrlValidation {
 /** 格式化素材 ID（分类/日期/序号） */
 export function generateMaterialId(category: string, date?: string, index?: number): string {
   const catMap: Record<string, string> = {
-    '标题': 'headings',
-    '正文': 'body',
-    '图文': 'media',
-    '引导': 'cta',
-    '布局': 'layout',
-    '节日': 'festival',
-    '行业': 'verticals',
-    '其他': 'others',
+    标题: 'headings',
+    正文: 'body',
+    图文: 'media',
+    引导: 'cta',
+    布局: 'layout',
+    节日: 'festival',
+    行业: 'verticals',
+    其他: 'others',
   }
   const prefix = catMap[category] || 'others'
   const d = date || new Date().toISOString().slice(0, 10).replace(/-/g, '/') // YYYY/MM/DD

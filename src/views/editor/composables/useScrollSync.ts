@@ -88,7 +88,10 @@ export function useScrollSync(
       }
     }
     minimapScrollRatio.value = maxScroll > 0 ? previewScrollEl.scrollTop / maxScroll : 0
-    minimapViewportRatio.value = previewScrollEl.scrollHeight > 0 ? previewScrollEl.clientHeight / previewScrollEl.scrollHeight : 1
+    minimapViewportRatio.value =
+      previewScrollEl.scrollHeight > 0
+        ? previewScrollEl.clientHeight / previewScrollEl.scrollHeight
+        : 1
   }
 
   function onMinimapNavigate(ratio: number) {

@@ -265,24 +265,24 @@ interface ThemeColors {
 
 在 `src/editor-components/` 目录下定义，通过 `<tag>` 标签使用：
 
-| 标签            | 组件           | 说明                   |
-| --------------- | -------------- | ---------------------- |
-| `<title>`       | 标题组件       | 支持 v1/v2 两种样式    |
-| `<ptitle>`      | 副标题组件     | 支持 hide 属性隐藏元素 |
-| `<statement>`   | 居中强调语     | -                      |
-| `<lead>`        | 引导文字段     | -                      |
-| `<breaking>`    | 突发新闻卡片   | -                      |
-| `<compare>`     | 对比布局       | 支持 v1/v2 两种样式    |
-| `<cta>`         | 行动召唤卡片   | -                      |
-| `<steps>`       | 横向步骤流     | 支持 v1/v2 两种样式    |
-| `<timeline>`    | 时间线组件     | -                      |
-| `<engage>`      | 互动引导组件   | 支持 v1/v2 两种样式    |
-| `<caseflow>`    | 案例流程组件   | -                      |
-| `<readingpath>` | 阅读路径组件   | -                      |
+| 标签            | 组件           | 说明                       |
+| --------------- | -------------- | -------------------------- |
+| `<title>`       | 标题组件       | 支持 v1/v2 两种样式        |
+| `<ptitle>`      | 副标题组件     | 支持 hide 属性隐藏元素     |
+| `<statement>`   | 居中强调语     | -                          |
+| `<lead>`        | 引导文字段     | -                          |
+| `<breaking>`    | 突发新闻卡片   | -                          |
+| `<compare>`     | 对比布局       | 支持 v1/v2 两种样式        |
+| `<cta>`         | 行动召唤卡片   | -                          |
+| `<steps>`       | 横向步骤流     | 支持 v1/v2 两种样式        |
+| `<timeline>`    | 时间线组件     | -                          |
+| `<engage>`      | 互动引导组件   | 支持 v1/v2 两种样式        |
+| `<caseflow>`    | 案例流程组件   | -                          |
+| `<readingpath>` | 阅读路径组件   | -                          |
 | `<img>`         | 单图组件       | 支持宽高、圆角、裁切、对齐 |
-| `<slider>`      | 图片幻灯片轮播 | 支持 4 种轮播模式      |
-| `<chart>`       | 图表组件       | -                      |
-| `<badges>`      | 标签徽章       | -                      |
+| `<slider>`      | 图片幻灯片轮播 | 支持 4 种轮播模式          |
+| `<chart>`       | 图表组件       | -                          |
+| `<badges>`      | 标签徽章       | -                          |
 
 ## Extension 子模块机制
 
@@ -294,8 +294,8 @@ interface ThemeColors {
 
 ```typescript
 const extensionDir = `${__dirname}/src/extension`
-const hasExtension = existsSync(extensionDir)
-  && readdirSync(extensionDir).filter(f => !f.startsWith('.')).length > 0
+const hasExtension =
+  existsSync(extensionDir) && readdirSync(extensionDir).filter((f) => !f.startsWith('.')).length > 0
 
 export default defineConfig({
   resolve: {
@@ -403,6 +403,7 @@ pnpm tauri:build
 ```
 
 构建产物：
+
 - macOS: `src-tauri/target/release/bundle/dmg/R-Markdown_*.dmg`
 - Windows: `src-tauri/target/release/bundle/msi/R-Markdown_*.msi`
 
@@ -410,9 +411,9 @@ pnpm tauri:build
 
 项目配置了两条 GitHub Actions 工作流，均在 `.github/workflows/` 下：
 
-| 文件 | 触发条件 | 用途 |
-|------|----------|------|
-| `deploy.yml` | 推送 `main` 分支 | 构建 Web 版并部署到 GitHub Pages |
+| 文件                | 触发条件                 | 用途                                                          |
+| ------------------- | ------------------------ | ------------------------------------------------------------- |
+| `deploy.yml`        | 推送 `main` 分支         | 构建 Web 版并部署到 GitHub Pages                              |
 | `build-desktop.yml` | 推送 `v*` 标签或手动触发 | 构建 macOS (aarch64) + Windows (x64) 桌面客户端并发布 Release |
 
 **重要配置说明**：
@@ -432,7 +433,7 @@ pnpm preview
 ## 注意事项
 
 1. **不要手动编辑 `.vue.js` 文件**：这些是 Vue 编译器生成的临时文件，已在 `.gitignore` 中排除
-2. **不要提交 `src/**/*.js` 文件**：TypeScript 源码编译产物，已在 `.gitignore` 中排除
+2. **不要提交 `src/**/\*.js`文件**：TypeScript 源码编译产物，已在`.gitignore` 中排除
 3. **修改行内格式化语法后**：同步更新本文档的语法对照表
 4. **新增组件后**：同步更新本文档的目录结构和组件解析语法表
 5. **构建前确认**：确保 `pnpm check` 通过，无 ESLint/Prettier 错误

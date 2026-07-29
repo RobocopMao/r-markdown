@@ -1,10 +1,29 @@
 import { ref, watch, type Ref } from 'vue'
 import {
-  Highlighter, Sparkles, Pill, TriangleAlert,
-  Baseline, Strikethrough, Bold, Italic,
-  Code2, Superscript, Subscript, RemoveFormatting,
-  Underline, Minus, ListOrdered, List, Quote, Link,
-  StickyNote, ListChecks, Braces, Crop, Images, Table,
+  Highlighter,
+  Sparkles,
+  Pill,
+  TriangleAlert,
+  Baseline,
+  Strikethrough,
+  Bold,
+  Italic,
+  Code2,
+  Superscript,
+  Subscript,
+  RemoveFormatting,
+  Underline,
+  Minus,
+  ListOrdered,
+  List,
+  Quote,
+  Link,
+  StickyNote,
+  ListChecks,
+  Braces,
+  Crop,
+  Images,
+  Table,
 } from 'lucide-vue-next'
 
 export const formatIcons: Record<string, any> = {
@@ -12,15 +31,15 @@ export const formatIcons: Record<string, any> = {
   '::': Sparkles,
   '!!': Pill,
   '^^': TriangleAlert,
-  '__': Baseline,
+  __: Baseline,
   '~~': Strikethrough,
   '**': Bold,
   '*': Italic,
   '***': RemoveFormatting,
   '`': Code2,
-  'sup': Superscript,
-  'sub': Subscript,
-  'u': Underline,
+  sup: Superscript,
+  sub: Subscript,
+  u: Underline,
 }
 
 export const markdownInsertOptions = [
@@ -29,12 +48,33 @@ export const markdownInsertOptions = [
   { label: '无序列表', display: '-  -  -', syntax: '- \n- \n- ', icon: List },
   { label: '引用', display: '> 引用文字', syntax: '> ', icon: Quote },
   { label: '链接', display: '[文字](url)', syntax: '[链接文字](url)', icon: Link },
-  { label: '脚注', display: '[文字](url "标题")', syntax: '[脚注文字](url "脚注描述")', icon: StickyNote },
-  { label: '任务列表', display: '☑ 任务1  ☐ 任务2', syntax: '- [x] 任务1\n- [ ] 任务2', icon: ListChecks },
+  {
+    label: '脚注',
+    display: '[文字](url "标题")',
+    syntax: '[脚注文字](url "脚注描述")',
+    icon: StickyNote,
+  },
+  {
+    label: '任务列表',
+    display: '☑ 任务1  ☐ 任务2',
+    syntax: '- [x] 任务1\n- [ ] 任务2',
+    icon: ListChecks,
+  },
   { label: '行内代码', display: '`code`', syntax: '``', icon: Code2 },
   { label: '代码块', display: '``` ... ```', syntax: '```\n\n```', icon: Braces },
-  { label: '限高图', display: '![图](url)[w h]', syntax: '![图片描述](https://robocopmao.github.io/r-markdown/empty.webp)[100% 100%]', icon: Crop },
-  { label: '横向多图', display: '<图1, 图2>', syntax: '<![图1描述](https://robocopmao.github.io/r-markdown/empty.webp),![图2描述](https://robocopmao.github.io/r-markdown/empty.webp)>', icon: Images },
+  {
+    label: '限高图',
+    display: '![图](url)[w h]',
+    syntax: '![图片描述](https://robocopmao.github.io/r-markdown/empty.webp)[100% 100%]',
+    icon: Crop,
+  },
+  {
+    label: '横向多图',
+    display: '<图1, 图2>',
+    syntax:
+      '<![图1描述](https://robocopmao.github.io/r-markdown/empty.webp),![图2描述](https://robocopmao.github.io/r-markdown/empty.webp)>',
+    icon: Images,
+  },
   { label: '表格', display: '', syntax: '', icon: Table, table: true },
 ]
 
@@ -76,7 +116,7 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
 
   function getGridCellClass(i: number) {
     const rows = Math.ceil(i / MAX_GRID_COLS)
-    const cols = (i - 1) % MAX_GRID_COLS + 1
+    const cols = ((i - 1) % MAX_GRID_COLS) + 1
     const active = rows <= tableGridHovered.value.rows && cols <= tableGridHovered.value.cols
     return {
       'border-[#d0d0d0] dark:border-white/15 bg-transparent': !active,
@@ -85,7 +125,7 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
 
   function isGridCellActive(i: number) {
     const rows = Math.ceil(i / MAX_GRID_COLS)
-    const cols = (i - 1) % MAX_GRID_COLS + 1
+    const cols = ((i - 1) % MAX_GRID_COLS) + 1
     return rows <= tableGridHovered.value.rows && cols <= tableGridHovered.value.cols
   }
 
@@ -103,23 +143,27 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
 
   function insertColumnLayout(cols: number) {
     if (!editorRef.value || cols < 1 || cols > MAX_COLS) return
-    const colBlocks = Array.from({ length: cols }, () => '<column flex="1">\n内容\n</column>').join('\n')
+    const colBlocks = Array.from({ length: cols }, () => '<column flex="1">\n内容\n</column>').join(
+      '\n',
+    )
     const template = `<row gap="16px">\n${colBlocks}\n</row>`
     editorRef.value.insertAtCursor('\n' + template + '\n')
   }
 
   function insertColumnStack(cols: number) {
     if (!editorRef.value || cols < 1 || cols > MAX_COLS) return
-    const colBlocks = Array.from({ length: cols }, (_, i) =>
-      `<column flex="1">\n第 ${i + 1} 列内容\n</column>`
+    const colBlocks = Array.from(
+      { length: cols },
+      (_, i) => `<column flex="1">\n第 ${i + 1} 列内容\n</column>`,
     ).join('\n')
     editorRef.value.insertAtCursor('\n' + colBlocks + '\n')
   }
 
   function insertRowStack(rows: number) {
     if (!editorRef.value || rows < 1 || rows > MAX_ROWS) return
-    const rowBlocks = Array.from({ length: rows }, (_, i) =>
-      `<row gap="16px">\n第 ${i + 1} 行内容\n</row>`
+    const rowBlocks = Array.from(
+      { length: rows },
+      (_, i) => `<row gap="16px">\n第 ${i + 1} 行内容\n</row>`,
     ).join('\n')
     editorRef.value.insertAtCursor('\n' + rowBlocks + '\n')
   }
@@ -177,7 +221,9 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
       .map(([k, v]) => `${k}="${v}"`)
       .join(' ')
     const attrsStr = attrParts ? ` ${attrParts}` : ''
-    const newTag = prev.selfClose ? `<${prev.tagName}${attrsStr} />` : `<${prev.tagName}${attrsStr}>`
+    const newTag = prev.selfClose
+      ? `<${prev.tagName}${attrsStr} />`
+      : `<${prev.tagName}${attrsStr}>`
     editorRef.value?.replaceRange(prev.from, prev.to, newTag)
   }
 

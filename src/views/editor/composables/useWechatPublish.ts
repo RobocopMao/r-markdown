@@ -46,7 +46,8 @@ export function useWechatPublish(
     showToast('草稿已保存，请前往公众号后台查看')
     if (currentDraftId.value) {
       if (mediaId) await DraftStorage.updateWechatMediaId(currentDraftId.value, mediaId)
-      if (coverMediaId) await DraftStorage.updateWechatCoverMediaId(currentDraftId.value, coverMediaId)
+      if (coverMediaId)
+        await DraftStorage.updateWechatCoverMediaId(currentDraftId.value, coverMediaId)
     }
   }
 

@@ -18,7 +18,13 @@ export function useMaterial(
 
   // 素材重复内容确认弹窗状态
   const confirmMaterialOverwriteVisible = ref(false)
-  const pendingMaterial = ref<{ name: string; author: string; category: string; subCategory: string; description: string } | null>(null)
+  const pendingMaterial = ref<{
+    name: string
+    author: string
+    category: string
+    subCategory: string
+    description: string
+  } | null>(null)
   const pendingMaterialContent = ref('')
   const pendingOverwriteMaterialId = ref<string | null>(null)
   const pendingOverwriteMaterialName = ref('')
@@ -36,7 +42,13 @@ export function useMaterial(
     saveMaterialVisible.value = true
   }
 
-  async function handleSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string) {
+  async function handleSaveMaterial(
+    name: string,
+    author: string,
+    category: string,
+    subCategory: string,
+    description: string,
+  ) {
     const raw = markdown.value
     if (!raw.trim()) {
       showToast('编辑器内容为空')
@@ -59,7 +71,14 @@ export function useMaterial(
     await doSaveMaterial(name, author || '匿名', category, subCategory, description, content)
   }
 
-  async function doSaveMaterial(name: string, author: string, category: string, subCategory: string, description: string, content: string) {
+  async function doSaveMaterial(
+    name: string,
+    author: string,
+    category: string,
+    subCategory: string,
+    description: string,
+    content: string,
+  ) {
     const item: MaterialItem = {
       id: crypto.randomUUID(),
       name,
@@ -100,7 +119,14 @@ export function useMaterial(
   async function handleMaterialSaveAsNew() {
     if (!pendingMaterial.value) return
     confirmMaterialOverwriteVisible.value = false
-    await doSaveMaterial(pendingMaterial.value.name, pendingMaterial.value.author, pendingMaterial.value.category, pendingMaterial.value.subCategory, pendingMaterial.value.description, pendingMaterialContent.value)
+    await doSaveMaterial(
+      pendingMaterial.value.name,
+      pendingMaterial.value.author,
+      pendingMaterial.value.category,
+      pendingMaterial.value.subCategory,
+      pendingMaterial.value.description,
+      pendingMaterialContent.value,
+    )
   }
 
   function handleCancelMaterialOverwrite() {

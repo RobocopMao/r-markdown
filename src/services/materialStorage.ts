@@ -13,9 +13,7 @@ export interface MaterialItem {
   officialId?: string
 }
 
-export const DEFAULT_CATEGORIES = [
-  '标题', '正文', '图文', '引导', '布局', '节日', '行业', '其他',
-]
+export const DEFAULT_CATEGORIES = ['标题', '正文', '图文', '引导', '布局', '节日', '行业', '其他']
 
 const DB_NAME = 'RMaterialLibrary'
 const STORE_NAME = 'materials'
@@ -77,7 +75,9 @@ async function readAllMaterialFiles(): Promise<MaterialItem[]> {
         try {
           const text = await readTextFile(`${dir}/${entry.name}`)
           items.push(JSON.parse(text))
-        } catch { /* skip corrupt files */ }
+        } catch {
+          /* skip corrupt files */
+        }
       }
     }
     return items
@@ -236,11 +236,19 @@ export const MaterialStorage = {
         let count = fileItems.length
         for (const item of fileItems) {
           const req = store.put(item)
-          req.onsuccess = () => { count--; if (count === 0) resolve() }
-          req.onerror = () => { count--; if (count === 0) reject(req.error) }
+          req.onsuccess = () => {
+            count--
+            if (count === 0) resolve()
+          }
+          req.onerror = () => {
+            count--
+            if (count === 0) reject(req.error)
+          }
         }
       })
-    } catch { /* Web 端忽略 */ }
+    } catch {
+      /* Web 端忽略 */
+    }
   },
 
   async togglePin(id: string): Promise<boolean> {

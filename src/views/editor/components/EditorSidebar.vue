@@ -4,15 +4,32 @@ import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
 import { useDarkMode, type DarkMode } from '@/composables/useDarkMode'
 import {
-  Component, Paperclip, FilePlus, Bot, Import, Images,
-  Sun, Moon, Monitor, Bolt, ChevronDown, ChevronUp, SquareBottomDashedScissors,
-  HelpCircle, Package, Library, BookMarked, Folder
+  Component,
+  Paperclip,
+  FilePlus,
+  Bot,
+  Import,
+  Images,
+  Sun,
+  Moon,
+  Monitor,
+  Bolt,
+  ChevronDown,
+  ChevronUp,
+  SquareBottomDashedScissors,
+  HelpCircle,
+  Package,
+  Library,
+  BookMarked,
+  Folder,
 } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const router = useRouter()
-const helpHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help' : undefined)
-const aiDemoHref = computed(() => isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined)
+const helpHref = computed(() => (isTauri ? 'https://r-markdown.pages.dev/#/help' : undefined))
+const aiDemoHref = computed(() =>
+  isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined,
+)
 
 function openHelp() {
   if (isTauri) {
@@ -24,7 +41,11 @@ function openHelp() {
 
 function openAiDemo() {
   if (isTauri) {
-    window.open('https://r-markdown.pages.dev/#/help/r-markdown-formatter', '_blank', 'noopener,noreferrer')
+    window.open(
+      'https://r-markdown.pages.dev/#/help/r-markdown-formatter',
+      '_blank',
+      'noopener,noreferrer',
+    )
   } else {
     router.push('/help/r-markdown-formatter')
   }
@@ -69,7 +90,10 @@ const darkModePopoverPos = ref({ top: '0px', left: '0px' })
 let darkModeHideTimer: ReturnType<typeof setTimeout> | null = null
 
 async function showDarkModePopover() {
-  if (darkModeHideTimer) { clearTimeout(darkModeHideTimer); darkModeHideTimer = null }
+  if (darkModeHideTimer) {
+    clearTimeout(darkModeHideTimer)
+    darkModeHideTimer = null
+  }
   if (showDarkMode.value) return
   showDarkMode.value = true
   if (darkModeBtnRef.value) {
@@ -77,7 +101,7 @@ async function showDarkModePopover() {
     const rect = darkModeBtnRef.value.getBoundingClientRect()
     darkModePopoverPos.value = {
       top: rect.top + 'px',
-      left: (rect.right + 4) + 'px',
+      left: rect.right + 4 + 'px',
     }
   }
 }
@@ -89,7 +113,10 @@ function hideDarkModePopover() {
 }
 
 function cancelDarkModeHide() {
-  if (darkModeHideTimer) { clearTimeout(darkModeHideTimer); darkModeHideTimer = null }
+  if (darkModeHideTimer) {
+    clearTimeout(darkModeHideTimer)
+    darkModeHideTimer = null
+  }
 }
 
 function selectDarkMode(mode: DarkMode) {
@@ -104,7 +131,10 @@ const darkModeTitle = computed(() => {
 })
 
 async function showExamplesPopover() {
-  if (exampleHideTimer) { clearTimeout(exampleHideTimer); exampleHideTimer = null }
+  if (exampleHideTimer) {
+    clearTimeout(exampleHideTimer)
+    exampleHideTimer = null
+  }
   if (showExamples.value) return
   showExamples.value = true
   if (exampleBtnRef.value) {
@@ -112,7 +142,7 @@ async function showExamplesPopover() {
     const rect = exampleBtnRef.value.getBoundingClientRect()
     popoverPos.value = {
       top: rect.top + 'px',
-      left: (rect.right + 4) + 'px',
+      left: rect.right + 4 + 'px',
     }
   }
 }
@@ -124,11 +154,17 @@ function hideExamplesPopover() {
 }
 
 function cancelExampleHide() {
-  if (exampleHideTimer) { clearTimeout(exampleHideTimer); exampleHideTimer = null }
+  if (exampleHideTimer) {
+    clearTimeout(exampleHideTimer)
+    exampleHideTimer = null
+  }
 }
 
 async function showMaterialsPopover() {
-  if (materialHideTimer) { clearTimeout(materialHideTimer); materialHideTimer = null }
+  if (materialHideTimer) {
+    clearTimeout(materialHideTimer)
+    materialHideTimer = null
+  }
   if (showMaterials.value) return
   showMaterials.value = true
   if (materialBtnRef.value) {
@@ -136,7 +172,7 @@ async function showMaterialsPopover() {
     const rect = materialBtnRef.value.getBoundingClientRect()
     materialPopoverPos.value = {
       top: rect.top + 'px',
-      left: (rect.right + 4) + 'px',
+      left: rect.right + 4 + 'px',
     }
   }
 }
@@ -148,7 +184,10 @@ function hideMaterialsPopover() {
 }
 
 function cancelMaterialHide() {
-  if (materialHideTimer) { clearTimeout(materialHideTimer); materialHideTimer = null }
+  if (materialHideTimer) {
+    clearTimeout(materialHideTimer)
+    materialHideTimer = null
+  }
 }
 
 function selectMaterialAction(action: 'my' | 'library') {
@@ -178,7 +217,9 @@ function toggleCollapse() {
       height: collapsed ? 'auto' : '100%',
       marginRight: collapsed ? '0px' : '10px',
       left: collapsed ? '10px' : undefined,
-      background: collapsed ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)' : 'var(--bg-primary)',
+      background: collapsed
+        ? 'color-mix(in srgb, var(--bg-primary) 80%, transparent)'
+        : 'var(--bg-primary)',
       borderRadius: collapsed ? '20px' : '12px',
       overflow: collapsed ? 'hidden' : 'visible',
     }"
@@ -198,7 +239,14 @@ function toggleCollapse() {
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
         :class="{ active: props.treePanelVisible }"
-        :style="props.treePanelVisible ? { color: 'var(--accent)', background: 'color-mix(in srgb, var(--accent) 10%, transparent)' } : undefined"
+        :style="
+          props.treePanelVisible
+            ? {
+                color: 'var(--accent)',
+                background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+              }
+            : undefined
+        "
         @click="emit('toggleTreePanel')"
       >
         <Folder :size="24" class="shrink-0" />
@@ -207,7 +255,6 @@ function toggleCollapse() {
       <!-- 草稿列表 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         @click="emit('openDrafts')"
       >
         <SquareBottomDashedScissors :size="24" class="shrink-0" />
@@ -216,12 +263,12 @@ function toggleCollapse() {
           v-if="draftCount && draftCount > 0"
           class="min-w-[16px] h-4 px-1 flex items-center justify-center rounded-full text-[10px] font-semibold text-white"
           :style="{ background: 'var(--accent)' }"
-        >{{ draftCount > 99 ? '99+' : draftCount }}</span>
+          >{{ draftCount > 99 ? '99+' : draftCount }}</span
+        >
       </button>
       <!-- 导入 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         @click="emit('openImport')"
       >
         <Import :size="24" class="shrink-0" />
@@ -230,7 +277,6 @@ function toggleCollapse() {
       <!-- 扩展组件 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         @click="emit('openComponents')"
       >
         <Component :size="24" class="shrink-0" />
@@ -239,7 +285,6 @@ function toggleCollapse() {
       <!-- 图库 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         @click="emit('openGallery')"
       >
         <Images :size="24" class="shrink-0" />
@@ -254,7 +299,6 @@ function toggleCollapse() {
         <button
           ref="materialBtnRef"
           class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         >
           <Package :size="24" class="shrink-0" />
           <span class="text-[10px] leading-tight">素材</span>
@@ -264,7 +308,12 @@ function toggleCollapse() {
           v-if="showMaterials"
           ref="materialsRef"
           class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[120px]"
-          :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: materialPopoverPos.top, left: materialPopoverPos.left }"
+          :style="{
+            background: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            top: materialPopoverPos.top,
+            left: materialPopoverPos.left,
+          }"
           @mouseenter="cancelMaterialHide"
           @mouseleave="hideMaterialsPopover"
         >
@@ -293,7 +342,6 @@ function toggleCollapse() {
         <button
           ref="exampleBtnRef"
           class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-
         >
           <Paperclip :size="24" class="shrink-0" />
           <span class="text-[10px] leading-tight">示例</span>
@@ -303,7 +351,12 @@ function toggleCollapse() {
           v-if="showExamples"
           ref="examplesRef"
           class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[120px]"
-          :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: popoverPos.top, left: popoverPos.left }"
+          :style="{
+            background: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            top: popoverPos.top,
+            left: popoverPos.left,
+          }"
           @mouseenter="cancelExampleHide"
           @mouseleave="hideExamplesPopover"
         >
@@ -330,7 +383,6 @@ function toggleCollapse() {
         :href="helpHref"
         :target="isTauri ? '_blank' : undefined"
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150 no-underline"
-
         @click.prevent="openHelp"
       >
         <HelpCircle :size="24" class="shrink-0" />
@@ -353,7 +405,6 @@ function toggleCollapse() {
           ref="darkModeBtnRef"
           class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
           :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-
         >
           <Sun v-if="darkModeState === 'light'" :size="20" />
           <Moon v-else-if="darkModeState === 'dark'" :size="20" />
@@ -364,13 +415,20 @@ function toggleCollapse() {
           v-if="showDarkMode"
           ref="darkModePopoverRef"
           class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[110px]"
-          :style="{ background: 'white', boxShadow: '0 8px 32px rgba(0,0,0,0.12)', top: darkModePopoverPos.top, left: darkModePopoverPos.left }"
+          :style="{
+            background: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            top: darkModePopoverPos.top,
+            left: darkModePopoverPos.left,
+          }"
           @mouseenter="cancelDarkModeHide"
           @mouseleave="hideDarkModePopover"
         >
           <button
             class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
-            :style="darkModeState === 'light' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            :style="
+              darkModeState === 'light' ? { color: 'var(--accent)', fontWeight: '600' } : undefined
+            "
             @click="selectDarkMode('light')"
           >
             <Sun :size="14" class="shrink-0" />
@@ -378,7 +436,9 @@ function toggleCollapse() {
           </button>
           <button
             class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
-            :style="darkModeState === 'dark' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            :style="
+              darkModeState === 'dark' ? { color: 'var(--accent)', fontWeight: '600' } : undefined
+            "
             @click="selectDarkMode('dark')"
           >
             <Moon :size="14" class="shrink-0" />
@@ -386,7 +446,9 @@ function toggleCollapse() {
           </button>
           <button
             class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
-            :style="darkModeState === 'system' ? { color: 'var(--accent)', fontWeight: '600' } : undefined"
+            :style="
+              darkModeState === 'system' ? { color: 'var(--accent)', fontWeight: '600' } : undefined
+            "
             @click="selectDarkMode('system')"
           >
             <Monitor :size="14" class="shrink-0" />
@@ -397,7 +459,6 @@ function toggleCollapse() {
       <button
         class="sidebar-bottom-btn flex items-center justify-center w-8 h-8 cursor-pointer transition-all duration-200 hover:scale-110"
         :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-
         @click="emit('openSettings')"
       >
         <Bolt :size="20" />
@@ -407,8 +468,10 @@ function toggleCollapse() {
       <button
         class="flex items-center justify-center w-8 h-8 border-none cursor-pointer transition-colors duration-150"
         :class="collapsed ? 'rounded-full' : 'rounded-lg'"
-        :style="{ background: `color-mix(in srgb, var(--accent) 10%, transparent)`, color: 'var(--accent)' }"
-
+        :style="{
+          background: `color-mix(in srgb, var(--accent) 10%, transparent)`,
+          color: 'var(--accent)',
+        }"
         @click="toggleCollapse"
       >
         <ChevronDown v-if="!collapsed" :size="20" />

@@ -1,41 +1,61 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { Folder, FileText, ChevronRight, ChevronDown } from 'lucide-vue-next'
+import { Folder } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { extractTitle } from '@/utils/extractTitle'
+import PushToCloudTree from './PushToCloudTree.vue'
 
 const props = defineProps<{
   visible: boolean
   /** 当前编辑器中的 Markdown 内容 */
   markdown: string
+  /** 当前编辑器关联的云端文章 ID */
+  currentCloudArticleId?: string | null
   loading?: boolean
 }>()
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'push', params: { parentId: string | null; title: string; content: string; existingArticleId?: string }): void
+  (
+    e: 'push',
+    params: { parentId: string | null; title: string; content: string; existingArticleId?: string },
+  ): void
 }>()
 
-const {
-  treeRoots,
-  expandedIds,
-  isExpanded,
-  toggleExpand,
-  getChildren,
-  init,
-} = useGitHubTree()
+const { treeRoots, expandedIds, isExpanded, toggleExpand, getChildren, init, expandAncestors } =
+  useGitHubTree()
 
 // 当 visible 为 true 时初始化
-watch(() => props.visible, (val) => {
-  if (val) {
-    // 每次打开弹窗都重新从 markdown 提取最新标题
-    const extracted = extractTitle(props.markdown)
-    if (extracted) {
-      title.value = extracted
+watch(
+  () => props.visible,
+  (val) => {
+    if (val) {
+      const extracted = extractTitle(props.markdown)
+      if (extracted) {
+        title.value = extracted
+      }
+      // 已关联云端文章则直接切到更新模式并自动选中
+      if (props.currentCloudArticleId) {
+        mode.value = 'update'
+        selectedArticleId.value = props.currentCloudArticleId
+      } else {
+        mode.value = 'new'
+        selectedParentId.value = null
+        selectedArticleId.value = ''
+      }
+      init()
     }
-    init()
+  },
+)
+
+// 树加载完成后展开关联文章的祖先并回填标题
+watch(treeRoots, (roots) => {
+  if (roots.length > 0 && props.currentCloudArticleId && mode.value === 'update') {
+    expandAncestors(props.currentCloudArticleId)
+    const node = findArticleNode(props.currentCloudArticleId)
+    if (node) title.value = node.title
   }
 })
 
@@ -98,8 +118,8 @@ function confirm() {
   }
 }
 
-const confirmDisabled = computed(() =>
-  !title.value.trim() || (mode.value === 'update' && !selectedArticleId.value),
+const confirmDisabled = computed(
+  () => !title.value.trim() || (mode.value === 'update' && !selectedArticleId.value),
 )
 
 function close() {
@@ -123,18 +143,40 @@ function close() {
     @confirm="confirm"
   >
     <!-- 模式切换 -->
-    <div class="flex gap-2 mb-4" style="background: var(--bg-secondary, #f5f5f5); border-radius: 8px; padding: 3px;">
+    <div
+      class="flex gap-2 mb-4"
+      style="background: var(--bg-secondary, #f5f5f5); border-radius: 8px; padding: 3px"
+    >
       <button
         class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
-        :style="mode === 'new' ? { background: 'var(--accent)', color: 'white' } : { background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color, #e0e0e0)' }"
+        :style="
+          mode === 'new'
+            ? { background: 'var(--accent)', color: 'white' }
+            : {
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color, #e0e0e0)',
+              }
+        "
         @click="mode = 'new'"
       >
         新建文章
       </button>
       <button
         class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
-        :style="mode === 'update' ? { background: 'var(--accent)', color: 'white' } : { background: 'transparent', color: 'var(--text-secondary)', border: '1px solid var(--border-color, #e0e0e0)' }"
-        @click="mode = 'update'; selectedParentId = null"
+        :style="
+          mode === 'update'
+            ? { background: 'var(--accent)', color: 'white' }
+            : {
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1px solid var(--border-color, #e0e0e0)',
+              }
+        "
+        @click="
+          mode = 'update';
+          selectedParentId = null
+        "
       >
         更新已有文章
       </button>
@@ -142,154 +184,78 @@ function close() {
 
     <!-- 标题 -->
     <div class="mb-3">
-      <label class="text-xs mb-1 block" style="color: var(--text-secondary);">文章标题</label>
+      <label class="text-xs mb-1 block" style="color: var(--text-secondary)">文章标题</label>
       <input
         v-model="title"
         placeholder="输入文章标题"
         class="w-full rounded-lg border px-3 py-2 text-sm outline-none"
-        style="border-color: var(--border-color, #e5e5e5); background: var(--bg-secondary, #f9f9f9); color: var(--text-primary);"
+        style="
+          border-color: var(--border-color, #e5e5e5);
+          background: var(--bg-secondary, #f9f9f9);
+          color: var(--text-primary);
+        "
       />
     </div>
 
     <!-- 新建：选择目标文件夹 -->
     <template v-if="mode === 'new'">
-      <label class="text-xs mb-2 block" style="color: var(--text-secondary);">选择目标文件夹</label>
+      <label class="text-xs mb-2 block" style="color: var(--text-secondary)">选择目标文件夹</label>
 
       <!-- 根目录 -->
       <div
         class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-        :style="isParentSelected(null) ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }"
+        :style="
+          isParentSelected(null)
+            ? { background: 'var(--accent-light)', color: 'var(--accent)' }
+            : { color: 'var(--text-primary)' }
+        "
         @click="selectParent(null)"
       >
-        <Folder :size="14" style="color: var(--accent);" />
+        <Folder :size="14" style="color: var(--accent)" />
         <span>（根目录）</span>
         <span
           v-if="isParentSelected(null)"
           class="ml-auto w-2 h-2 rounded-full"
-          style="background: var(--accent);"
+          style="background: var(--accent)"
         />
       </div>
 
-      <!-- 文件夹树 -->
+      <!-- 递归文件夹树 -->
       <div class="overflow-auto mt-1">
-        <template v-for="root in treeRoots.filter((n) => n.type === 'folder')" :key="root.id">
-          <div
-            class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-            :style="isParentSelected(root.id) ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }"
-            @click="selectParent(root.id)"
-          >
-            <span
-              class="flex items-center justify-center w-4 h-4 shrink-0"
-              @click.stop="toggleExpand(root.id)"
-            >
-              <ChevronRight v-if="!isExpanded(root.id)" :size="12" style="color: var(--text-secondary);" />
-              <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
-            </span>
-            <Folder :size="14" style="color: var(--accent);" />
-            <span>{{ root.title }}</span>
-            <span
-              v-if="isParentSelected(root.id)"
-              class="ml-auto w-2 h-2 rounded-full"
-              style="background: var(--accent);"
-            />
-          </div>
-
-          <!-- 子文件夹 -->
-          <template v-if="isExpanded(root.id)">
-            <template v-for="child in getChildren(root.id).filter((n) => n.type === 'folder')" :key="child.id">
-              <div
-                class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-                :style="{ paddingLeft: '36px', ...(isParentSelected(child.id) ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }) }"
-                @click="selectParent(child.id)"
-              >
-                <Folder :size="14" style="color: var(--accent);" />
-                <span>{{ child.title }}</span>
-                <span
-                  v-if="isParentSelected(child.id)"
-                  class="ml-auto w-2 h-2 rounded-full"
-                  style="background: var(--accent);"
-                />
-              </div>
-            </template>
-          </template>
-        </template>
+        <PushToCloudTree
+          :nodes="treeRoots"
+          :depth="0"
+          mode="new"
+          :selected-id="selectedParentId"
+          :get-children="getChildren"
+          :is-expanded="isExpanded"
+          :toggle-expand="toggleExpand"
+          @select="selectParent"
+        />
       </div>
     </template>
 
-    <!-- 更新：树形选择已有文章 -->
+    <!-- 更新：递归选择已有文章 -->
     <template v-if="mode === 'update'">
-      <label class="text-xs mb-2 block" style="color: var(--text-secondary);">选择要更新的文章</label>
-      <div class="overflow-auto mt-1" style="max-height: 280px;">
-        <template v-for="root in treeRoots" :key="root.id">
-          <!-- 根级文件夹 -->
-          <template v-if="root.type === 'folder'">
-            <div
-              class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-              style="color: var(--text-primary);"
-              @click="toggleExpand(root.id)"
-            >
-              <span class="flex items-center justify-center w-4 h-4 shrink-0">
-                <ChevronRight v-if="!isExpanded(root.id)" :size="12" style="color: var(--text-secondary);" />
-                <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
-              </span>
-              <Folder :size="14" style="color: var(--accent);" />
-              <span>{{ root.title }}</span>
-            </div>
-            <!-- 展开的子节点 -->
-            <template v-if="isExpanded(root.id)">
-              <template v-for="child in getChildren(root.id)" :key="child.id">
-                <div
-                  v-if="child.type === 'article'"
-                  class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-                  :style="{ paddingLeft: '36px', ...(selectedArticleId === child.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }) }"
-                  @click="selectArticle(child.id)"
-                >
-                  <FileText :size="14" class="shrink-0 ml-0.5" style="color: var(--text-secondary);" />
-                  <span>{{ child.title }}</span>
-                </div>
-                <template v-else>
-                  <!-- 子文件夹 -->
-                  <div
-                    class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-                    :style="{ paddingLeft: '36px', color: 'var(--text-primary)' }"
-                    @click="toggleExpand(child.id)"
-                  >
-                    <span class="flex items-center justify-center w-4 h-4 shrink-0">
-                      <ChevronRight v-if="!isExpanded(child.id)" :size="12" style="color: var(--text-secondary);" />
-                      <ChevronDown v-else :size="12" style="color: var(--text-secondary);" />
-                    </span>
-                    <Folder :size="14" style="color: var(--accent);" />
-                    <span>{{ child.title }}</span>
-                  </div>
-                  <!-- 二级子节点 -->
-                  <template v-if="isExpanded(child.id)">
-                    <div
-                      v-for="sub in getChildren(child.id)"
-                      :key="sub.id"
-                      class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-                      :style="{ paddingLeft: '52px', ...(selectedArticleId === sub.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }) }"
-                      @click="selectArticle(sub.id)"
-                    >
-                      <FileText :size="14" class="shrink-0 ml-0.5" style="color: var(--text-secondary);" />
-                      <span>{{ sub.title }}</span>
-                    </div>
-                  </template>
-                </template>
-              </template>
-            </template>
-          </template>
-          <!-- 根级文章 -->
-          <div
-            v-else
-            class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
-            :style="selectedArticleId === root.id ? { background: 'var(--accent-light)', color: 'var(--accent)' } : { color: 'var(--text-primary)' }"
-            @click="selectArticle(root.id)"
-          >
-            <FileText :size="14" class="shrink-0 ml-0.5" style="color: var(--text-secondary);" />
-            <span>{{ root.title }}</span>
-          </div>
-        </template>
-        <div v-if="treeRoots.length === 0" class="text-xs py-4 text-center" style="color: var(--text-secondary);">
+      <label class="text-xs mb-2 block" style="color: var(--text-secondary)"
+        >选择要更新的文章</label
+      >
+      <div class="overflow-auto mt-1" style="max-height: 280px">
+        <PushToCloudTree
+          :nodes="treeRoots"
+          :depth="0"
+          mode="update"
+          :selected-id="selectedArticleId"
+          :get-children="getChildren"
+          :is-expanded="isExpanded"
+          :toggle-expand="toggleExpand"
+          @select="selectArticle"
+        />
+        <div
+          v-if="treeRoots.length === 0"
+          class="text-xs py-4 text-center"
+          style="color: var(--text-secondary)"
+        >
           暂无文章
         </div>
       </div>
