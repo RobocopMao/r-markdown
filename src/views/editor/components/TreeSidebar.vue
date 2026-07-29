@@ -370,93 +370,102 @@ async function onEditArticleClick(node: TreeNode) {
   }
 }
 
-// ── 拖拽排序 ──
+// ── 拖拽排序（pointer events，兼容 WKWebView）──
 const dragNodeId = ref<string | null>(null)
 const dragOverNodeId = ref<string | null>(null)
 const dragOverPosition = ref<'before' | 'after' | 'inside'>('after')
+const isDragging = ref(false)
+let dragStartY = 0
 
-function onDragStart(e: DragEvent, node: TreeNode) {
+function onPointerDown(e: PointerEvent, node: TreeNode) {
+  if (e.button !== 0) return
+  dragStartY = e.clientY
   dragNodeId.value = node.id
-  document.body.style.cursor = 'move'
-  if (e.dataTransfer) {
-    e.dataTransfer.effectAllowed = 'move'
-    e.dataTransfer.setData('text/plain', node.id)
-    const el = e.target as HTMLElement
-    e.dataTransfer.setDragImage(el, 0, 0)
-  }
+  isDragging.value = false
 }
 
-function onDragOver(e: DragEvent, node: TreeNode) {
-  e.preventDefault()
-  if (!dragNodeId.value || dragNodeId.value === node.id) return
-
-  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
-  if (!draggedNode) return
-
-  // 防止拖入自己的后代
-  if (isDescendantOf(node.id, dragNodeId.value)) return
-
-  dragOverNodeId.value = node.id
-  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-  const yRatio = (e.clientY - rect.top) / rect.height
-
-  if (node.type === 'folder' && yRatio > 0.33 && yRatio < 0.67) {
-    dragOverPosition.value = 'inside'
-  } else {
-    dragOverPosition.value = yRatio < 0.5 ? 'before' : 'after'
+function findTreeNodeAtPoint(x: number, y: number): { node: TreeNode; el: HTMLElement } | null {
+  const elements = document.elementsFromPoint(x, y)
+  for (const el of elements) {
+    const treeEl = (el as HTMLElement).closest('[data-node-id]') as HTMLElement | null
+    if (!treeEl) continue
+    const id = treeEl.dataset.nodeId
+    if (!id) continue
+    const node = treeData.value.find(n => n.id === id)
+    if (node) return { node, el: treeEl }
   }
-
-  if (e.dataTransfer) {
-    e.dataTransfer.dropEffect = 'move'
-  }
+  return null
 }
 
-function onDragLeave() {
-  dragOverNodeId.value = null
-}
+function onPointerMove(e: PointerEvent) {
+  if (!dragNodeId.value) return
 
-async function onDrop(e: DragEvent, targetNode: TreeNode) {
-  e.preventDefault()
-  if (!dragNodeId.value || dragNodeId.value === targetNode.id) return
+  if (!isDragging.value) {
+    if (Math.abs(e.clientY - dragStartY) < 5) return
+    isDragging.value = true
+  }
 
-  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
-  if (!draggedNode) return
-
-  // 跨文件夹移动
-  if (dragOverPosition.value === 'inside' && targetNode.type === 'folder') {
-    await moveNode(dragNodeId.value, targetNode.id)
-    dragNodeId.value = null
+  const hit = findTreeNodeAtPoint(e.clientX, e.clientY)
+  if (!hit || hit.node.id === dragNodeId.value) {
     dragOverNodeId.value = null
     return
   }
 
-  // 同级排序：仅允许同级拖拽
-  if (draggedNode.parentId !== targetNode.parentId) return
+  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  if (!draggedNode) return
+  if (isDescendantOf(hit.node.id, dragNodeId.value)) return
 
-  const targetSiblings = getSiblings(targetNode.id)
+  dragOverNodeId.value = hit.node.id
+  const rect = hit.el.getBoundingClientRect()
+  const yRatio = (e.clientY - rect.top) / rect.height
 
-  let newIndex = targetSiblings.findIndex(n => n.id === targetNode.id)
-  if (newIndex === -1) return
-
-  if (dragOverPosition.value === 'after') {
-    newIndex++
+  if (hit.node.type === 'folder' && yRatio > 0.33 && yRatio < 0.67) {
+    dragOverPosition.value = 'inside'
+  } else {
+    dragOverPosition.value = yRatio < 0.5 ? 'before' : 'after'
   }
-
-  // 调整索引：从旧位置移除后，目标索引可能偏移
-  const oldIndex = targetSiblings.findIndex(n => n.id === dragNodeId.value)
-  if (oldIndex < newIndex) {
-    newIndex--
-  }
-
-  await reorderToPosition(dragNodeId.value, newIndex)
-  dragNodeId.value = null
-  dragOverNodeId.value = null
 }
 
-function onDragEnd() {
-  document.body.style.cursor = ''
+async function onPointerUp(e: PointerEvent) {
+  if (!isDragging.value || !dragNodeId.value) {
+    dragNodeId.value = null
+    return
+  }
+
+  const hit = findTreeNodeAtPoint(e.clientX, e.clientY)
+  const targetNode = hit?.node
+
+  if (!targetNode || targetNode.id === dragNodeId.value) {
+    resetDrag()
+    return
+  }
+
+  const draggedNode = treeData.value.find(n => n.id === dragNodeId.value)
+  if (!draggedNode) {
+    resetDrag()
+    return
+  }
+
+  if (dragOverPosition.value === 'inside' && targetNode.type === 'folder') {
+    await moveNode(dragNodeId.value, targetNode.id)
+  } else if (draggedNode.parentId === targetNode.parentId) {
+    const targetSiblings = getSiblings(targetNode.id)
+    let newIndex = targetSiblings.findIndex(n => n.id === targetNode.id)
+    if (newIndex !== -1) {
+      if (dragOverPosition.value === 'after') newIndex++
+      const oldIndex = targetSiblings.findIndex(n => n.id === dragNodeId.value)
+      if (oldIndex < newIndex) newIndex--
+      await reorderToPosition(dragNodeId.value, newIndex)
+    }
+  }
+
+  resetDrag()
+}
+
+function resetDrag() {
   dragNodeId.value = null
   dragOverNodeId.value = null
+  isDragging.value = false
 }
 
 /** 防止节点拖入自己的后代文件夹（形成循环） */
@@ -472,7 +481,7 @@ function isDescendantOf(ancestorId: string, nodeId: string): boolean {
 
 /** 计算拖拽指示线样式 */
 function dropIndicatorStyle(nodeId: string) {
-  if (dragOverNodeId.value !== nodeId || !dragNodeId.value) return null
+  if (dragOverNodeId.value !== nodeId || !dragNodeId.value || !isDragging.value) return null
   if (dragOverPosition.value === 'inside') return null
   return dragOverPosition.value === 'before'
     ? { top: '0', borderTop: '2px solid var(--accent)' }
@@ -484,6 +493,7 @@ function isDropInside(node: TreeNode): boolean {
   return dragOverNodeId.value === node.id
     && dragOverPosition.value === 'inside'
     && !!dragNodeId.value
+    && isDragging.value
 }
 
 // ── 全部展开/收起 ──
@@ -518,11 +528,15 @@ function onDocumentClick() {
 onMounted(() => {
   init()
   document.addEventListener('click', onDocumentClick)
+  document.addEventListener('pointermove', onPointerMove)
+  document.addEventListener('pointerup', onPointerUp)
   window.addEventListener('setting-changed', onSettingChanged)
 })
 
 onBeforeUnmount(() => {
   document.removeEventListener('click', onDocumentClick)
+  document.removeEventListener('pointermove', onPointerMove)
+  document.removeEventListener('pointerup', onPointerUp)
   window.removeEventListener('setting-changed', onSettingChanged)
 })
 
@@ -628,14 +642,10 @@ function onSettingChanged(e: Event) {
           <template v-if="root.type === 'folder'">
             <div
               v-if="!searchQuery || isNodeVisible(root.id)"
-              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
+              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
               :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
-              draggable="true"
-              @dragstart="onDragStart($event, root)"
-              @dragover="onDragOver($event, root)"
-              @dragleave="onDragLeave"
-              @drop="onDrop($event, root)"
-              @dragend="onDragEnd"
+              :data-node-id="root.id"
+              @pointerdown="onPointerDown($event, root)"
               @click="toggleExpand(root.id)"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
@@ -653,15 +663,11 @@ function onSettingChanged(e: Event) {
               <template v-for="child in getChildren(root.id)" :key="child.id">
                 <div
                   v-if="!searchQuery || isNodeVisible(child.id)"
-                  class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
+                  class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
                   :class="{ 'tree-node--active': currentCloudArticleId === child.id, 'opacity-40': reordering && dragNodeId === child.id }"
                   :style="{ paddingLeft: '26px' }"
-                  draggable="true"
-                  @dragstart="onDragStart($event, child)"
-                  @dragover="onDragOver($event, child)"
-                  @dragleave="onDragLeave"
-                  @drop="onDrop($event, child)"
-                  @dragend="onDragEnd"
+                  :data-node-id="child.id"
+                  @pointerdown="onPointerDown($event, child)"
                   @click="child.type === 'folder' ? toggleExpand(child.id) : undefined"
                   @contextmenu.prevent="openContextMenu($event, child)"
                 >
@@ -700,15 +706,11 @@ function onSettingChanged(e: Event) {
                   <template v-for="sub in getChildren(child.id)" :key="sub.id">
                     <div
                       v-if="!searchQuery || isNodeVisible(sub.id)"
-                      class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
+                      class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
                       :class="{ 'tree-node--active': currentCloudArticleId === sub.id, 'opacity-40': reordering && dragNodeId === sub.id }"
                       :style="{ paddingLeft: '42px' }"
-                      draggable="true"
-                      @dragstart="onDragStart($event, sub)"
-                      @dragover="onDragOver($event, sub)"
-                      @dragleave="onDragLeave"
-                      @drop="onDrop($event, sub)"
-                      @dragend="onDragEnd"
+                      :data-node-id="sub.id"
+                      @pointerdown="onPointerDown($event, sub)"
                       @click="sub.type === 'folder' ? toggleExpand(sub.id) : undefined"
                       @contextmenu.prevent="openContextMenu($event, sub)"
                     >
@@ -739,14 +741,10 @@ function onSettingChanged(e: Event) {
           <template v-else>
             <div
               v-if="!searchQuery || isNodeVisible(root.id)"
-              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
+              class="tree-node group relative flex items-center gap-0.5 px-2 py-1 select-none transition-colors duration-100"
               :class="{ 'tree-node--active': currentCloudArticleId === root.id, 'opacity-40': reordering && dragNodeId === root.id, 'tree-node--drop-inside': isDropInside(root) }"
-              draggable="true"
-              @dragstart="onDragStart($event, root)"
-              @dragover="onDragOver($event, root)"
-              @dragleave="onDragLeave"
-              @drop="onDrop($event, root)"
-              @dragend="onDragEnd"
+              :data-node-id="root.id"
+              @pointerdown="onPointerDown($event, root)"
               @click="undefined"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
@@ -965,6 +963,7 @@ function onSettingChanged(e: Event) {
 
 .tree-node {
   min-height: 28px;
+  cursor: pointer;
 }
 
 .tree-node:hover {
