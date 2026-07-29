@@ -25,7 +25,7 @@ import BaseTooltip from '@/components/BaseTooltip.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
 import {
   Image, ImageUp, Puzzle, Braces, Code2, Save, SquareBottomDashedScissors, CheckCircle, Download, Copy, CircleCheck,
-  Smartphone, SquarePen, CircleQuestionMark, ImagePlus, Link, Send, Package, Columns2, Rows2, Box, Type, Layers
+  Smartphone, SquarePen, CircleQuestionMark, ImagePlus, Send, Package, Columns2, Rows2, Box, Type, Layers, Cloud
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
@@ -156,20 +156,24 @@ function onSettingsOpen(tab: string) {
 
 // ── 云端文章编辑按钮加载（需确认） ──
 const articleLoadConfirmVisible = ref(false)
-const pendingArticleLoad = ref<{ content: string; title: string } | null>(null)
+const pendingArticleLoad = ref<{ content: string; node: import('@/services/GitHubTreeService').TreeNode } | null>(null)
 
 async function onTreeEditArticle(content: string, node: import('@/services/GitHubTreeService').TreeNode) {
   // 编辑器有内容且与文章内容不一致时，弹出确认
   if (markdown.value.trim() && markdown.value.trim() !== content.trim()) {
-    pendingArticleLoad.value = { content, title: node.title }
+    pendingArticleLoad.value = { content, node }
     articleLoadConfirmVisible.value = true
     return
   }
+  setCloudArticle(node)
+  persistedCloudTitle.value = node.title
   doLoadArticle(content)
 }
 
 function confirmLoadArticle() {
   if (!pendingArticleLoad.value) return
+  setCloudArticle(pendingArticleLoad.value.node)
+  persistedCloudTitle.value = pendingArticleLoad.value.node.title
   doLoadArticle(pendingArticleLoad.value.content)
   articleLoadConfirmVisible.value = false
   pendingArticleLoad.value = null
@@ -183,6 +187,8 @@ function cancelLoadArticle() {
 function onClearEditor() {
   markdown.value = ''
   currentDraftId.value = null
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
   localStorage.setItem(STORAGE_KEY, '')
   localStorage.setItem(SAVE_TIME_KEY, '')
   saveMode.value = ''
@@ -213,6 +219,12 @@ function onPreviewClickLine(lineNo: number) {
 
 onMounted(() => {
   refreshDrafts()
+  // 恢复云端文章关联（刷新后 selectedNode 为 null，但 ID 已持久化到 localStorage）
+  const { id: storedCloudId, title: storedCloudTitle } = restoreCloudArticlePersistence()
+  if (storedCloudId) {
+    currentCloudArticleId.value = storedCloudId
+    persistedCloudTitle.value = storedCloudTitle
+  }
   // 异步匹配草稿：根据当前标题查找已有同名草稿
   setTimeout(() => matchExistingDraft(), 300)
   window.addEventListener('resize', onResize)
@@ -408,6 +420,22 @@ const {
   handlePushCloudDeleteConfirm,
 } = useDraft(markdown, showToast, extractedTitle, resetMinimap)
 
+// ── 云端文章关联 ──
+const { currentCloudArticleId, selectedNode: cloudSelectedNode, restoreCloudArticlePersistence, clearCloudArticlePersistence, setCloudArticle } = useGitHubTree()
+
+// 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
+const persistedCloudTitle = ref('')
+
+const currentCloudArticleTitle = computed(() => {
+  if (!currentCloudArticleId.value) return ''
+  // 只有当 selectedNode 的 id 与当前关联的 cloudArticleId 一致时，才使用 selectedNode 的标题；
+  // 否则说明用户只是点击了其他节点（还未确认关联），应回退到持久化标题，避免 tooltip 提前变化
+  if (cloudSelectedNode.value?.id === currentCloudArticleId.value) {
+    return cloudSelectedNode.value.title
+  }
+  return persistedCloudTitle.value
+})
+
 const {
   wechatPublishVisible,
   wechatMediaId,
@@ -583,7 +611,10 @@ function loadDemo() {
         <span class="sm:hidden text-[11px] opacity-50 ml-2 shrink-0">{{ saveHint }}</span>
         <CircleCheck v-if="saveMode" :size="14" color="var(--accent)" class="sm:hidden shrink-0 ml-1" />
         <BaseTooltip v-if="currentDraftId" class="inline-flex ml-1" :text="'已关联草稿：' + currentDraftTitle" placement="bottom">
-          <Link :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
+          <SquareBottomDashedScissors :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
+        </BaseTooltip>
+        <BaseTooltip v-if="currentCloudArticleId" class="inline-flex ml-1" :text="'已关联仓库文章：' + currentCloudArticleTitle" placement="bottom">
+          <Cloud :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
         </BaseTooltip>
       </div>
       <div class="flex items-center gap-1.5">
@@ -1070,7 +1101,7 @@ function loadDemo() {
                    transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
             @click="pushCloudVisible = true"
           >
-            <Send :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+            <Cloud :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
             <span>传仓库</span>
           </button>
           </BaseTooltip>
@@ -1371,7 +1402,7 @@ function loadDemo() {
   <ConfirmDialog
     :visible="articleLoadConfirmVisible"
     title="加载仓库文章"
-    :message="`当前编辑器内容与仓库中的「${pendingArticleLoad?.title}」不一致，确定加载仓库版本？编辑器中的修改将被覆盖。`"
+    :message="`当前编辑器内容与仓库中的「${pendingArticleLoad?.node.title}」不一致，确定加载仓库版本？编辑器中的修改将被覆盖。`"
     confirm-text="加载仓库文章"
     @confirm="confirmLoadArticle"
     @cancel="cancelLoadArticle"

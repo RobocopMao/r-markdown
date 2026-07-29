@@ -12,6 +12,27 @@ const error = ref('')
 const currentCloudArticleId = ref<string | null>(null)
 const reordering = ref(false)
 
+// ── 云端文章关联持久化 ──
+const CLOUD_ARTICLE_ID_KEY = 'r-markdown-cloudArticleId'
+const CLOUD_ARTICLE_TITLE_KEY = 'r-markdown-cloudArticleTitle'
+
+function persistCloudArticle(id: string, title?: string) {
+  localStorage.setItem(CLOUD_ARTICLE_ID_KEY, id)
+  if (title) localStorage.setItem(CLOUD_ARTICLE_TITLE_KEY, title)
+}
+
+function clearCloudArticlePersistence() {
+  localStorage.removeItem(CLOUD_ARTICLE_ID_KEY)
+  localStorage.removeItem(CLOUD_ARTICLE_TITLE_KEY)
+}
+
+function restoreCloudArticlePersistence(): { id: string | null; title: string } {
+  return {
+    id: localStorage.getItem(CLOUD_ARTICLE_ID_KEY),
+    title: localStorage.getItem(CLOUD_ARTICLE_TITLE_KEY) || '',
+  }
+}
+
 export function useGitHubTree() {
   // ── 计算属性 ──
 
@@ -150,7 +171,6 @@ export function useGitHubTree() {
       // 先看缓存
       const cached = await GitHubArticleCache.getArticle(node.id)
       if (cached) {
-        currentCloudArticleId.value = node.id
         // 后台更新
         GitHubTreeService.fetchArticle(node.id).then((remote) => {
           if (remote !== cached) {
@@ -163,7 +183,6 @@ export function useGitHubTree() {
       // 没缓存，直接请求
       const content = await GitHubTreeService.fetchArticle(node.id)
       await GitHubArticleCache.setArticle(node.id, content)
-      currentCloudArticleId.value = node.id
       return content
     } catch (e: any) {
       error.value = e.message || '加载文章失败'
@@ -176,6 +195,13 @@ export function useGitHubTree() {
   function clearSelection() {
     selectedNode.value = null
     currentCloudArticleId.value = null
+    clearCloudArticlePersistence()
+  }
+
+  /** 将指定节点设为当前关联的云端文章 */
+  function setCloudArticle(node: TreeNode) {
+    currentCloudArticleId.value = node.id
+    persistCloudArticle(node.id, node.title)
   }
 
   // ── 树编辑操作 ──
@@ -211,6 +237,7 @@ export function useGitHubTree() {
     if (selectedNode.value?.id === id) {
       selectedNode.value = null
       currentCloudArticleId.value = null
+      clearCloudArticlePersistence()
     }
     await loadTree()
   }
@@ -296,6 +323,7 @@ export function useGitHubTree() {
     toggleExpand,
     selectNode,
     clearSelection,
+    setCloudArticle,
     createFolder,
     createArticle,
     renameNode,
@@ -303,5 +331,9 @@ export function useGitHubTree() {
     moveNode,
     reorderNode,
     pushToCloud,
+
+    // 持久化
+    restoreCloudArticlePersistence,
+    clearCloudArticlePersistence,
   }
 }

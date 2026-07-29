@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { Folder, FileText, Plus, ChevronRight, ChevronDown, FolderPlus, FilePlus, SquarePen, ArrowUp, ArrowDown } from 'lucide-vue-next'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
+import { Folder, FileText, Plus, ChevronRight, ChevronDown, FolderPlus, FilePlus, SquarePen, ArrowUp, ArrowDown, Search, X } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
@@ -23,6 +23,7 @@ const {
   treeRoots,
   folders,
   selectedNode,
+  currentCloudArticleId,
   expandedIds,
   loading,
   error,
@@ -40,6 +41,95 @@ const {
   reorderNode,
   getSiblings,
 } = useGitHubTree()
+
+// ── 搜索 ──
+const searchQuery = ref('')
+
+/** 递归收集某节点的所有后代 ID */
+function getAllDescendantIds(nodeId: string): Set<string> {
+  const ids = new Set<string>()
+  const children = getChildren(nodeId)
+  for (const child of children) {
+    ids.add(child.id)
+    if (child.type === 'folder') {
+      for (const descId of getAllDescendantIds(child.id)) {
+        ids.add(descId)
+      }
+    }
+  }
+  return ids
+}
+
+const visibleNodeIds = computed<Set<string>>(() => {
+  const q = searchQuery.value.trim().toLowerCase()
+  if (!q) return new Set() // 空 set 表示不过滤，isNodeVisible 在空查询时直接返回 true
+
+  const matched = new Set<string>()
+  // 收集所有 node（含后代）中标题匹配的节点
+  function collect(node: TreeNode) {
+    if (node.title.toLowerCase().includes(q)) {
+      matched.add(node.id)
+    }
+    for (const child of getChildren(node.id)) {
+      collect(child)
+    }
+  }
+  for (const root of treeRoots.value) {
+    collect(root)
+  }
+
+  // 收集这些匹配节点的所有祖先
+  const result = new Set(matched)
+  function collectAncestors(nodeId: string) {
+    const node = findNodeById(nodeId)
+    if (node && 'parentId' in node && node.parentId) {
+      result.add(node.parentId)
+      collectAncestors(node.parentId)
+    }
+  }
+  for (const id of matched) {
+    collectAncestors(id)
+  }
+  return result
+})
+
+function findNodeById(id: string): TreeNode | undefined {
+  for (const root of treeRoots.value) {
+    if (root.id === id) return root
+    const stack = [...getChildren(root.id)]
+    while (stack.length) {
+      const n = stack.pop()!
+      if (n.id === id) return n
+      stack.push(...getChildren(n.id))
+    }
+  }
+  return undefined
+}
+
+function isNodeVisible(id: string): boolean {
+  const q = searchQuery.value.trim()
+  if (!q) return true
+  return visibleNodeIds.value.has(id)
+}
+
+const noSearchResults = computed(() => {
+  if (!searchQuery.value.trim()) return false
+  if (!treeData.value || treeData.value.length === 0) return false
+  return treeRoots.value.every((root) => !isNodeVisible(root.id))
+})
+
+// 搜索结果自动展开所有祖先文件夹
+watch(visibleNodeIds, (ids) => {
+  if (ids.size === 0 || !searchQuery.value.trim()) return
+  const newExpanded = new Set(expandedIds.value)
+  for (const id of ids) {
+    const node = findNodeById(id)
+    if (node?.type === 'folder') {
+      newExpanded.add(id)
+    }
+  }
+  expandedIds.value = newExpanded
+})
 
 // ── 右键菜单 ──
 const contextMenu = ref<{
@@ -354,7 +444,22 @@ function onSettingChanged(e: Event) {
       class="flex items-center justify-between px-3 py-2 shrink-0"
       style="border-bottom: 1px solid var(--border-color, #e5e5e5);"
     >
-      <span class="text-xs font-semibold" style="color: var(--text-primary);">仓库文章</span>
+      <div class="flex flex-1 items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 mr-2 px-2">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索文章..."
+          class="flex-1 bg-transparent border-none outline-none text-xs w-22"
+          style="color: var(--text-primary);"
+        />
+        <button
+          v-if="searchQuery"
+          class="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--bg-primary)] cursor-pointer border-none bg-transparent"
+          @click="searchQuery = ''"
+        >
+          <X :size="10" style="color: var(--text-secondary);" />
+        </button>
+      </div>
       <div class="flex items-center gap-0.5">
         <BaseTooltip :text="isAllExpanded ? '收起全部' : '展开全部'">
           <button
@@ -421,8 +526,9 @@ function onSettingChanged(e: Event) {
           <!-- folder -->
           <template v-if="root.type === 'folder'">
             <div
+              v-if="!searchQuery || isNodeVisible(root.id)"
               class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': selectedNode?.id === root.id }"
+              :class="{ 'tree-node--active': currentCloudArticleId === root.id }"
               @click="toggleExpand(root.id)"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
@@ -451,8 +557,9 @@ function onSettingChanged(e: Event) {
             <template v-if="isExpanded(root.id)">
               <template v-for="child in getChildren(root.id)" :key="child.id">
                 <div
+                  v-if="!searchQuery || isNodeVisible(child.id)"
                   class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-                  :class="{ 'tree-node--active': selectedNode?.id === child.id }"
+                  :class="{ 'tree-node--active': currentCloudArticleId === child.id }"
                   :style="{ paddingLeft: '26px' }"
                   @click="child.type === 'folder' ? toggleExpand(child.id) : undefined"
                   @contextmenu.prevent="openContextMenu($event, child)"
@@ -500,8 +607,9 @@ function onSettingChanged(e: Event) {
                 <template v-if="child.type === 'folder' && isExpanded(child.id)">
                   <template v-for="sub in getChildren(child.id)" :key="sub.id">
                     <div
+                      v-if="!searchQuery || isNodeVisible(sub.id)"
                       class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-                      :class="{ 'tree-node--active': selectedNode?.id === sub.id }"
+                      :class="{ 'tree-node--active': currentCloudArticleId === sub.id }"
                       :style="{ paddingLeft: '42px' }"
                       @click="sub.type === 'folder' ? toggleExpand(sub.id) : undefined"
                       @contextmenu.prevent="openContextMenu($event, sub)"
@@ -541,8 +649,9 @@ function onSettingChanged(e: Event) {
           <!-- 根级 article -->
           <template v-else>
             <div
+              v-if="!searchQuery || isNodeVisible(root.id)"
               class="tree-node group relative flex items-center gap-0.5 px-2 py-1 cursor-pointer select-none transition-colors duration-100"
-              :class="{ 'tree-node--active': selectedNode?.id === root.id }"
+              :class="{ 'tree-node--active': currentCloudArticleId === root.id }"
               @click="undefined"
               @contextmenu.prevent="openContextMenu($event, root)"
             >
@@ -578,6 +687,11 @@ function onSettingChanged(e: Event) {
         <div v-if="treeData.length === 0 && !loading" class="px-3 py-6 text-center">
           <p class="text-xs" style="color: var(--text-secondary);">暂无文章</p>
           <p class="text-xs mt-1" style="color: var(--text-secondary); opacity: 0.6;">点击右上角 [+] 新建</p>
+        </div>
+
+        <!-- 搜索无结果 -->
+        <div v-if="noSearchResults" class="px-3 py-6 text-center">
+          <p class="text-xs" style="color: var(--text-secondary);">未找到匹配「{{ searchQuery }}」的文章</p>
         </div>
       </template>
     </div>
