@@ -225,10 +225,11 @@ onMounted(() => {
     currentCloudArticleId.value = storedCloudId
     persistedCloudTitle.value = storedCloudTitle
     // 树加载完成后自动展开关联文章所在路径
-    const stopWatch = watch(treeData, (data) => {
-      if (data.length > 0) {
+    let expanded = false
+    watch(treeData, (data) => {
+      if (data.length > 0 && !expanded) {
+        expanded = true
         expandAncestors(storedCloudId)
-        stopWatch()
       }
     }, { immediate: true })
   }
