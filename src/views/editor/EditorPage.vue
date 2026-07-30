@@ -106,7 +106,9 @@ function onSidebarSelect(tab: string) {
 }
 
 // ── 云端文章 ──
-const treePanelVisible = ref(getSetting<boolean>('treeSidebarExpanded'))
+const treePanelVisible = ref(
+  window.innerWidth < 768 ? false : getSetting<boolean>('treeSidebarExpanded'),
+)
 const pushCloudVisible = ref(false)
 const pushingCloud = ref(false)
 const cloudConfigured = ref(GitHubTreeService.getConfig() !== null)
@@ -1376,7 +1378,7 @@ function loadDemo() {
               <BaseTooltip placement="bottom">
                 <CircleQuestionMark :size="14" />
                 <template #content>
-                  选中非标签内文字后可加样式<br />基础语法/临时/长期/图床/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
+                  选中非标签内文字后可加样式<br />基础/语法/图片/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
                 </template>
               </BaseTooltip>
             </span>
