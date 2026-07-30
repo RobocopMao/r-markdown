@@ -863,46 +863,49 @@ function loadDemo() {
         </div>
         <!-- Tree Panel -->
         <Transition name="tree-panel">
-          <div v-if="treePanelVisible" class="flex shrink-0">
-            <div :style="{ width: treePanelWidth + 'px' }" class="flex shrink-0">
-              <TreeSidebar
-                @open-settings="onSettingsOpen"
-                @edit-article="onTreeEditArticle"
-                @toast="showToast"
-                @clear-editor="onClearEditor"
-              />
-            </div>
-            <!-- Tree Resize Handle -->
-            <div
-              class="resize-handle hidden md:block"
-              @mousedown="onTreeDragStart"
-              @mouseenter="onTreeHandleEnter"
-              @mousemove="onTreeHandleMove"
-              @mouseleave="onTreeHandleLeave"
-              ref="treeResizeHandleRef"
-            >
-              <div
-                class="resize-handle-btn"
-                :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
-                :style="{ top: treeHandleBtnTop + 'px' }"
-              >
-                <svg
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <polyline points="17 8 21 12 17 16" />
-                  <polyline points="7 8 3 12 7 16" />
-                </svg>
-              </div>
-            </div>
+          <div
+            v-if="treePanelVisible"
+            :style="{ width: treePanelWidth + 'px' }"
+            class="overflow-hidden"
+          >
+            <TreeSidebar
+              @open-settings="onSettingsOpen"
+              @edit-article="onTreeEditArticle"
+              @toast="showToast"
+              @clear-editor="onClearEditor"
+            />
           </div>
         </Transition>
+        <!-- Tree Resize Handle -->
+        <div
+          v-if="treePanelVisible"
+          class="resize-handle shrink-0 hidden md:block"
+          @mousedown="onTreeDragStart"
+          @mouseenter="onTreeHandleEnter"
+          @mousemove="onTreeHandleMove"
+          @mouseleave="onTreeHandleLeave"
+          ref="treeResizeHandleRef"
+        >
+          <div
+            class="resize-handle-btn"
+            :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
+            :style="{ top: treeHandleBtnTop + 'px' }"
+          >
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="17 8 21 12 17 16" />
+              <polyline points="7 8 3 12 7 16" />
+            </svg>
+          </div>
+        </div>
         <!-- Editor Panel -->
         <div
           class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
