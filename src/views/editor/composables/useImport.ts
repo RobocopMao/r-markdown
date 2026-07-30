@@ -6,6 +6,7 @@ export function useImport(
   showToast: (msg: string) => void,
   currentDraftId: Ref<number | null>,
   matchExistingDraft: () => void,
+  currentCloudArticleId: Ref<string | null>,
 ) {
   async function onImportClick() {
     const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -32,6 +33,7 @@ export function useImport(
         }
         localStorage.setItem(STORAGE_KEY, markdown.value)
         currentDraftId.value = null
+        currentCloudArticleId.value = null
         setTimeout(() => matchExistingDraft(), 300)
         showToast('导入成功')
       } catch (e: any) {
@@ -59,6 +61,7 @@ export function useImport(
         }
         localStorage.setItem(STORAGE_KEY, markdown.value)
         currentDraftId.value = null
+        currentCloudArticleId.value = null
         setTimeout(() => matchExistingDraft(), 300)
         showToast('导入成功')
       } catch (e: any) {

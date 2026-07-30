@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onBeforeUnmount, provide } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
 import {
   Folder,
   Plus,
@@ -9,6 +9,8 @@ import {
   FilePlus,
   Search,
   X,
+  ArrowUpDown,
+  Crosshair,
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
@@ -50,6 +52,8 @@ const {
   moveNode,
   reorderToPosition,
   getSiblings,
+  autoExpandEnabled,
+  toggleAutoExpand,
 } = useGitHubTree()
 
 // ── 搜索 ──
@@ -141,6 +145,83 @@ watch(visibleNodeIds, (ids) => {
   expandedIds.value = newExpanded
 })
 
+// ── 排序 ──
+type SortMode = 'created-desc' | 'created-asc' | 'updated-desc' | 'updated-asc' | 'alpha-asc' | 'alpha-desc'
+
+const SORT_OPTIONS: { label: string; value: SortMode }[] = [
+  { label: '文件名 A-Z', value: 'alpha-asc' },
+  { label: '文件名 Z-A', value: 'alpha-desc' },
+  { label: '创建时间降序', value: 'created-desc' },
+  { label: '创建时间升序', value: 'created-asc' },
+  { label: '修改时间降序', value: 'updated-desc' },
+  { label: '修改时间升序', value: 'updated-asc' },
+]
+
+const sortMode = ref<SortMode>(
+  (localStorage.getItem('tree-sort-mode') as SortMode) || 'created-desc',
+)
+
+const isSorting = ref(localStorage.getItem('tree-sort-active') === 'true')
+
+const sortMenuVisible = ref(false)
+
+function getSortModeLabel(): string {
+  return SORT_OPTIONS.find((o) => o.value === sortMode.value)?.label || '排序'
+}
+
+function setSortMode(mode: SortMode) {
+  if (sortMode.value === mode && isSorting.value) {
+    // 再次点击同一模式 → 取消排序，恢复默认
+    isSorting.value = false
+    localStorage.setItem('tree-sort-active', 'false')
+  } else {
+    sortMode.value = mode
+    isSorting.value = true
+    localStorage.setItem('tree-sort-mode', mode)
+    localStorage.setItem('tree-sort-active', 'true')
+  }
+  sortMenuVisible.value = false
+}
+
+function toggleSortMenu() {
+  sortMenuVisible.value = !sortMenuVisible.value
+}
+
+function sortByMode(a: TreeNode, b: TreeNode): number {
+  switch (sortMode.value) {
+    case 'created-desc':
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+    case 'created-asc':
+      return new Date(a.createdAt ?? 0).getTime() - new Date(b.createdAt ?? 0).getTime()
+    case 'updated-desc':
+      return new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime()
+    case 'updated-asc':
+      return new Date(a.updatedAt ?? 0).getTime() - new Date(b.updatedAt ?? 0).getTime()
+    case 'alpha-asc':
+      return a.title.localeCompare(b.title)
+    case 'alpha-desc':
+      return b.title.localeCompare(a.title)
+    default:
+      return 0
+  }
+}
+
+const sortedTreeRoots = computed(() => {
+  const roots = [...treeRoots.value]
+  const folders = roots.filter(n => n.type === 'folder').sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const articles = roots.filter(n => n.type === 'article')
+  articles.sort(isSorting.value ? sortByMode : (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  return [...folders, ...articles]
+})
+
+function sortedGetChildren(parentId: string): TreeNode[] {
+  const children = [...getChildren(parentId)]
+  const folders = children.filter(n => n.type === 'folder').sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const articles = children.filter(n => n.type === 'article')
+  articles.sort(isSorting.value ? sortByMode : (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  return [...folders, ...articles]
+}
+
 // ── 右键菜单 ──
 const contextMenu = ref<{
   visible: boolean
@@ -149,13 +230,25 @@ const contextMenu = ref<{
   node: TreeNode | null
 }>({ visible: false, x: 0, y: 0, node: null })
 
-function openContextMenu(e: MouseEvent, node: TreeNode) {
+const ctxMenuRef = ref<HTMLElement | null>(null)
+
+async function openContextMenu(e: MouseEvent, node: TreeNode) {
   e.preventDefault()
   contextMenu.value = {
     visible: true,
     x: e.clientX,
     y: e.clientY,
     node,
+  }
+  await nextTick()
+  if (!ctxMenuRef.value) return
+  const rect = ctxMenuRef.value.getBoundingClientRect()
+  const padding = 8
+  if (rect.bottom > window.innerHeight - padding) {
+    contextMenu.value.y = e.clientY - rect.height
+  }
+  if (rect.right > window.innerWidth - padding) {
+    contextMenu.value.x = e.clientX - rect.width
   }
 }
 
@@ -520,7 +613,7 @@ function isDropInside(node: TreeNode): boolean {
 provide('tree-isNodeVisible', isNodeVisible)
 provide('tree-isExpanded', isExpanded)
 provide('tree-toggleExpand', toggleExpand)
-provide('tree-getChildren', getChildren)
+provide('tree-getChildren', sortedGetChildren)
 provide('tree-onPointerDown', onPointerDown)
 provide('tree-dropIndicatorStyle', dropIndicatorStyle)
 provide('tree-isDropInside', isDropInside)
@@ -557,6 +650,7 @@ function toggleAllExpand() {
 // ── 点击外部关闭菜单 ──
 function onDocumentClick() {
   closeContextMenu()
+  sortMenuVisible.value = false
 }
 
 onMounted(() => {
@@ -585,7 +679,7 @@ function onSettingChanged(e: Event) {
 
 <template>
   <div
-    class="tree-panel flex flex-col h-full overflow-hidden shrink-0 transition-all duration-250 rounded-xl mr-[10px]"
+    class="tree-panel flex flex-col h-full overflow-hidden shrink-0 transition-all duration-290 rounded-xl mr-[10px]"
     style="width: 100%; background: var(--bg-primary)"
   >
     <!-- 标题栏 -->
@@ -622,6 +716,47 @@ function onSettingChanged(e: Event) {
             <ChevronDown v-else :size="14" />
           </button>
         </BaseTooltip>
+        <BaseTooltip :text="autoExpandEnabled ? '关闭自动定位' : '自动定位到当前文章'">
+          <button
+            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+            @click="toggleAutoExpand()"
+          >
+            <Crosshair :size="14" :style="{ opacity: autoExpandEnabled ? 1 : 0.4 }" />
+          </button>
+        </BaseTooltip>
+        <div class="relative">
+          <BaseTooltip text="排序">
+            <button
+              class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+              @click.stop="toggleSortMenu"
+            >
+              <ArrowUpDown :size="14" :style="{ opacity: isSorting ? 1 : 0.4 }" />
+            </button>
+          </BaseTooltip>
+          <div
+            v-if="sortMenuVisible"
+            class="absolute left-0 top-full mt-1 rounded-lg py-1 min-w-[140px] z-50"
+            :style="{
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-color, #e5e5e5)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            }"
+            @click.stop
+          >
+            <button
+              v-for="opt in SORT_OPTIONS"
+              :key="opt.value"
+              class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
+              :style="{
+                color: isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
+                background: isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
+              }"
+              @click="setSortMode(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          </div>
+        </div>
         <BaseTooltip text="新建文件">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
@@ -674,7 +809,7 @@ function onSettingChanged(e: Event) {
 
       <!-- 树节点 -->
       <template v-else>
-        <TreeNodeComponent v-for="root in treeRoots" :key="root.id" :node="root" :depth="0" />
+        <TreeNodeComponent v-for="root in sortedTreeRoots" :key="root.id" :node="root" :depth="0" />
 
         <!-- 空树 -->
         <div v-if="treeData.length === 0 && !loading" class="px-3 py-6 text-center">
@@ -696,6 +831,7 @@ function onSettingChanged(e: Event) {
     <!-- 右键菜单 -->
     <Teleport to="body">
       <div
+        ref="ctxMenuRef"
         v-if="contextMenu.visible && contextMenu.node"
         class="ctx-menu fixed z-[9999] rounded-lg py-1 min-w-[140px]"
         :style="{

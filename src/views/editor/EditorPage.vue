@@ -608,7 +608,7 @@ const {
 } = useImageInsert(editorRef, showToast, markdown)
 
 // ── 导入 ──
-const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft)
+const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft, currentCloudArticleId)
 
 function onPasteText() {
   currentDraftId.value = null

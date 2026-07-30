@@ -4,6 +4,12 @@ import { GitHubArticleCache } from '@/services/GitHubArticleCache'
 
 // ── 模块级单例状态（所有调用方共享同一份数据）──
 const isConfigured = ref(false)
+
+// ── 云端文章关联持久化 ──
+const CLOUD_ARTICLE_ID_KEY = 'r-markdown-cloudArticleId'
+const CLOUD_ARTICLE_TITLE_KEY = 'r-markdown-cloudArticleTitle'
+const AUTO_EXPAND_KEY = 'r-markdown-autoExpand'
+
 const treeData = ref<TreeNode[]>([])
 const selectedNode = ref<TreeNode | null>(null)
 const expandedIds = ref<Set<string>>(new Set())
@@ -12,9 +18,8 @@ const error = ref('')
 const currentCloudArticleId = ref<string | null>(null)
 const reordering = ref(false)
 
-// ── 云端文章关联持久化 ──
-const CLOUD_ARTICLE_ID_KEY = 'r-markdown-cloudArticleId'
-const CLOUD_ARTICLE_TITLE_KEY = 'r-markdown-cloudArticleTitle'
+/** 是否自动展开当前关联文章所在文件夹 */
+const autoExpandEnabled = ref(localStorage.getItem(AUTO_EXPAND_KEY) !== 'false')
 
 function persistCloudArticle(id: string, title?: string) {
   localStorage.setItem(CLOUD_ARTICLE_ID_KEY, id)
@@ -35,6 +40,7 @@ function restoreCloudArticlePersistence(): { id: string | null; title: string } 
 
 /** 展开目标节点的所有祖先 folder，使关联文章在树中可见 */
 function expandAncestors(nodeId: string) {
+  if (!autoExpandEnabled.value) return
   if (treeData.value.length === 0) return
   const ancestors: string[] = []
   let current = treeData.value.find((n) => n.id === nodeId)
@@ -88,6 +94,11 @@ export function useGitHubTree() {
       s.add(id)
     }
     expandedIds.value = s
+  }
+
+  function toggleAutoExpand() {
+    autoExpandEnabled.value = !autoExpandEnabled.value
+    localStorage.setItem(AUTO_EXPAND_KEY, String(autoExpandEnabled.value))
   }
 
   /**
@@ -362,22 +373,21 @@ export function useGitHubTree() {
       // 更新已有文章
       await GitHubTreeService.saveArticle(existingArticleId, content)
       await GitHubTreeService.renameNode(existingArticleId, title)
-      // 同步更新树的 updatedAt 时间戳（renameNode 已更新，此处兜底以防 renameNode 失败）
       try {
         await GitHubTreeService.updateNodeUpdatedAt(existingArticleId)
       } catch {
         /* 时间戳更新失败不影响主流程 */
       }
-      // 缓存和刷新失败不阻塞流程（文章已成功更新到 GitHub）
+      // 本地立即更新 treeData，避免依赖 API 回读（GitHub 内容 API 有短暂缓存延迟）
+      const idx = treeData.value.findIndex((n) => n.id === existingArticleId)
+      if (idx !== -1) {
+        treeData.value[idx] = { ...treeData.value[idx], title, updatedAt: new Date().toISOString() }
+      }
       try {
+        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
         await GitHubArticleCache.setArticle(existingArticleId, content)
       } catch {
         /* 缓存失败不影响主流程 */
-      }
-      try {
-        await loadTree()
-      } catch {
-        /* 刷新树失败使用已有缓存数据 */
       }
       const node = treeData.value.find((n) => n.id === existingArticleId)
       if (!node) throw new Error('文章节点未找到')
@@ -386,16 +396,13 @@ export function useGitHubTree() {
     } else {
       // 新建文章
       const node = await GitHubTreeService.createArticle(parentId, title, content)
-      // 缓存和刷新失败不阻塞流程（文章已成功上传到 GitHub）
+      // 本地立即更新 treeData，避免依赖 API 回读（GitHub 内容 API 有短暂缓存延迟）
+      treeData.value = [...treeData.value, node]
       try {
+        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
         await GitHubArticleCache.setArticle(node.id, content)
       } catch {
         /* 缓存失败不影响主流程 */
-      }
-      try {
-        await loadTree()
-      } catch {
-        /* 刷新树失败使用已有缓存数据 */
       }
       setCloudArticle(node)
       return node
@@ -439,5 +446,9 @@ export function useGitHubTree() {
     restoreCloudArticlePersistence,
     clearCloudArticlePersistence,
     expandAncestors,
+
+    // 自动展开开关
+    autoExpandEnabled,
+    toggleAutoExpand,
   }
 }

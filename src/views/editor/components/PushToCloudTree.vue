@@ -49,11 +49,6 @@ function onSelect(id: string) {
           </span>
           <Folder :size="14" style="color: var(--accent)" />
           <span>{{ node.title }}</span>
-          <span
-            v-if="selectedId === node.id"
-            class="ml-auto w-2 h-2 rounded-full"
-            style="background: var(--accent)"
-          />
         </div>
         <PushToCloudTree
           v-if="isExpanded(node.id)"

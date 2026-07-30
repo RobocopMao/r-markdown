@@ -39,6 +39,20 @@ const paddingStyle = computed(() => ({
   paddingLeft: `${10 + props.depth * 16}px`,
 }))
 
+/** 递归统计文件夹下所有后代文章数量 */
+function countArticles(nodeId: string): number {
+  const children = injectGetChildren(nodeId)
+  let count = 0
+  for (const child of children) {
+    if (child.type === 'article') {
+      count++
+    } else if (child.type === 'folder') {
+      count += countArticles(child.id)
+    }
+  }
+  return count
+}
+
 function dropIndicator(nodeId: string) {
   return injectDropIndicatorStyle(nodeId)
 }
@@ -75,9 +89,14 @@ function dropIndicator(nodeId: string) {
           <ChevronDown v-else :size="12" style="color: var(--text-secondary)" />
         </span>
         <Folder :size="14" class="shrink-0 ml-0.5" style="color: var(--accent)" />
-        <span class="text-xs truncate ml-1" style="color: var(--text-primary)">{{
-          node.title
-        }}</span>
+        <BaseTooltip :text="node.title" :delay="2000">
+          <span class="text-xs truncate ml-1" style="color: var(--text-primary)">{{ node.title }}</span>
+        </BaseTooltip>
+        <span
+          v-if="countArticles(node.id) > 0"
+          class="text-[11px] ml-1 shrink-0 font-mono"
+          style="color: var(--text-secondary); opacity: 0.6"
+        >[{{ countArticles(node.id) }}]</span>
       </div>
 
       <!-- 递归子节点 -->
@@ -114,7 +133,9 @@ function dropIndicator(nodeId: string) {
         </span>
         <FileText :size="14" class="shrink-0" style="color: var(--text-secondary)" />
         <div class="flex flex-col min-w-0 flex-1 ml-1">
-          <span class="text-xs truncate" style="color: var(--text-primary)">{{ node.title }}</span>
+          <BaseTooltip :text="node.title" :delay="2000">
+            <span class="text-xs truncate" style="color: var(--text-primary)">{{ node.title }}</span>
+          </BaseTooltip>
         </div>
         <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
           <BaseTooltip text="重新编辑">

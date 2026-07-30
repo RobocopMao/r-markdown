@@ -1,14 +1,16 @@
 <script setup vapor lang="ts">
 import { ref, useSlots } from 'vue'
 
-const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom' }>(), {
+const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom'; delay?: number }>(), {
   placement: 'top',
+  delay: 0,
 })
 const slots = useSlots()
 
 const triggerRef = ref<HTMLElement>()
 const visible = ref(false)
 const tooltipStyle = ref<Record<string, string>>({})
+let timer: ReturnType<typeof setTimeout> | null = null
 
 function calcStyle() {
   if (!triggerRef.value) return
@@ -29,11 +31,26 @@ function calcStyle() {
 }
 
 function show() {
-  calcStyle()
-  visible.value = true
+  clearTimer()
+  if (props.delay > 0) {
+    timer = setTimeout(() => {
+      calcStyle()
+      visible.value = true
+    }, props.delay)
+  } else {
+    calcStyle()
+    visible.value = true
+  }
 }
 function hide() {
+  clearTimer()
   visible.value = false
+}
+function clearTimer() {
+  if (timer !== null) {
+    clearTimeout(timer)
+    timer = null
+  }
 }
 </script>
 
