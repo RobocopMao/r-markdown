@@ -695,7 +695,7 @@ function onSettingChanged(e: Event) {
           v-model="searchQuery"
           type="text"
           placeholder="搜索文章..."
-          class="flex-1 bg-transparent border-none outline-none text-xs w-22"
+          class="flex-1 bg-transparent border-none outline-none text-xs w-18"
           style="color: var(--text-primary)"
         />
         <button
