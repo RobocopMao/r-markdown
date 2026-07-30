@@ -590,6 +590,7 @@ function onSettingChanged(e: Event) {
   >
     <!-- 标题栏 -->
     <div
+      v-if="isConfigured"
       class="flex items-center justify-between px-3 py-2 shrink-0"
       style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
     >
