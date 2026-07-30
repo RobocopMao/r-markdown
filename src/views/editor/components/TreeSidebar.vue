@@ -349,6 +349,8 @@ async function confirmMove() {
     await moveNode(target.id, moveParentId.value)
     movePopup.value = false
     emit('toast', `「${targetTitle}」已移动到「${destName}」`)
+  } catch {
+    emit('toast', '移动失败')
   } finally {
     moving.value = false
   }
@@ -455,7 +457,11 @@ async function onPointerUp(e: PointerEvent) {
   }
 
   if (dragOverPosition.value === 'inside' && targetNode.type === 'folder') {
-    await moveNode(dragNodeId.value, targetNode.id)
+    try {
+      await moveNode(dragNodeId.value, targetNode.id)
+    } catch {
+      emit('toast', '移动失败')
+    }
   } else if (draggedNode.parentId === targetNode.parentId) {
     const targetSiblings = getSiblings(targetNode.id)
     let newIndex = targetSiblings.findIndex((n) => n.id === targetNode.id)
@@ -463,7 +469,11 @@ async function onPointerUp(e: PointerEvent) {
       if (dragOverPosition.value === 'after') newIndex++
       const oldIndex = targetSiblings.findIndex((n) => n.id === dragNodeId.value)
       if (oldIndex < newIndex) newIndex--
-      await reorderToPosition(dragNodeId.value, newIndex)
+      try {
+        await reorderToPosition(dragNodeId.value, newIndex)
+      } catch {
+        emit('toast', '排序失败')
+      }
     }
   }
 
