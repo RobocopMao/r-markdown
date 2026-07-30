@@ -117,7 +117,7 @@ function onToggleTreePanel() {
 }
 
 // ── Tree Panel 拖动调整宽度 ──
-const TREE_PANEL_DEFAULT_WIDTH = 250
+const TREE_PANEL_DEFAULT_WIDTH = 275
 const TREE_PANEL_MAX_WIDTH = 350
 const treePanelWidth = ref(getSetting<number>('treePanelWidth') || TREE_PANEL_DEFAULT_WIDTH)
 
@@ -339,7 +339,7 @@ function onDragStart(e: MouseEvent) {
 
 function onDragMove(e: MouseEvent) {
   const delta = startX - e.clientX
-  const minW = 407
+  const minW = 400
   const maxW = 700
   const newWidth = Math.min(Math.max(startWidth + delta, minW), maxW)
   previewWidth.value = newWidth
@@ -606,6 +606,22 @@ const {
   handleUploadToGitHub,
   onGithubImageSelected,
 } = useImageInsert(editorRef, showToast, markdown)
+
+const imageMenuOpen = ref(false)
+let imageMenuTimer: ReturnType<typeof setTimeout> | undefined
+
+function openImageMenu() {
+  clearTimeout(imageMenuTimer)
+  imageMenuOpen.value = true
+  uploadHostingLabel.value =
+    getSetting<string>('defaultHosting') === 'leta' ? '乐塔图床' : 'GitHub 图床'
+}
+
+function closeImageMenu() {
+  imageMenuTimer = setTimeout(() => {
+    imageMenuOpen.value = false
+  }, 150)
+}
 
 // ── 导入 ──
 const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft, currentCloudArticleId)
@@ -896,10 +912,10 @@ function loadDemo() {
           }"
         >
           <div
-            class="panel-header hidden md:flex items-center justify-between px-4 py-2 border-b text-xs font-semibold shrink-0"
+            class="panel-header hidden md:flex items-center justify-between px-2 py-2 border-b text-xs font-semibold shrink-0"
             style="background: var(--bg-primary)"
           >
-            <span class="flex flex-wrap items-center gap-3">
+            <span class="flex flex-wrap items-center gap-2">
               <!-- 操作按钮组：图标+文字 -->
               <span class="flex items-center gap-1">
                 <!-- 基础语法 -->
@@ -917,7 +933,7 @@ function loadDemo() {
                       class="w-3.5 h-3.5"
                       :style="{ color: colors.accent }"
                     />
-                    <span>基础语法</span>
+                    <span>基础</span>
                   </button>
                   <span
                     class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
@@ -1238,47 +1254,60 @@ function loadDemo() {
                     </div>
                   </span>
                 </span>
-                <BaseTooltip text="临时存储本地图片">
+                <span
+                  class="relative inline-flex items-center"
+                  @mouseenter="openImageMenu"
+                  @mouseleave="closeImageMenu"
+                >
                   <button
                     class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
                     :class="
                       editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                     "
                     :disabled="!editorRef?.isAtLineStart"
-                    @click="editorRef?.isAtLineStart && handleInsertImage()"
                   >
                     <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>临时</span>
+                    <span>图片</span>
                   </button>
-                </BaseTooltip>
-                <BaseTooltip text="长期存储本地图片">
-                  <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                    :class="
-                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.isAtLineStart"
-                    @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
+                  <span
+                    v-show="imageMenuOpen"
+                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 transition-all duration-150 z-50"
+                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
                   >
-                    <ImagePlus :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>长期</span>
-                  </button>
-                </BaseTooltip>
-                <BaseTooltip text="上传到图床">
-                  <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
-                    :class="
-                      editorRef?.isAtLineStart && !githubUploading
-                        ? 'cursor-pointer'
-                        : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.isAtLineStart || githubUploading"
-                    @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
-                  >
-                    <ImageUp :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>图床</span>
-                  </button>
-                </BaseTooltip>
+                    <button
+                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      :disabled="!editorRef?.isAtLineStart"
+                      @click="editorRef?.isAtLineStart && handleInsertImage()"
+                    >
+                      <Image :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <span class="text-[#333] dark:text-white font-medium">临时存储</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">本地临时图片</span>
+                    </button>
+                    <button
+                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      :disabled="!editorRef?.isAtLineStart"
+                      @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
+                    >
+                      <ImagePlus :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <span class="text-[#333] dark:text-white font-medium">长期存储</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">本地永久图片</span>
+                    </button>
+                    <button
+                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100"
+                      :class="!editorRef?.isAtLineStart || githubUploading ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'"
+                      :disabled="!editorRef?.isAtLineStart || githubUploading"
+                      @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
+                    >
+                      <ImageUp :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <span class="text-[#333] dark:text-white font-medium">上传图床</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">{{
+                        githubUploading ? '上传中...' : uploadHostingLabel
+                      }}</span>
+                    </button>
+                  </span>
+                </span>
                 <BaseTooltip text="插入组件">
                   <button
                     class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
@@ -1389,7 +1418,7 @@ function loadDemo() {
                   @click="pushCloudVisible = true"
                 >
                   <Cloud :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>传仓库</span>
+                  <span>仓库</span>
                 </button>
               </BaseTooltip>
             </span>

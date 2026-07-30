@@ -151,7 +151,9 @@ export function useImageInsert(
   const githubImageInputRef = ref<HTMLInputElement>()
   const githubUploading = ref(false)
   const githubUploadProgress = ref(0)
-  const uploadHostingLabel = ref('图床')
+  const uploadHostingLabel = ref(
+    getSetting<string>('defaultHosting') === 'leta' ? '乐塔图床' : 'GitHub 图床',
+  )
 
   function handleInsertImage() {
     imageInputRef.value?.click()
