@@ -1,5 +1,6 @@
 import { type Ref } from 'vue'
 import { STORAGE_KEY } from './useAutoSave'
+import { extractTitle } from '@/utils/extractTitle'
 
 export function useImport(
   markdown: Ref<string>,
@@ -7,6 +8,7 @@ export function useImport(
   currentDraftId: Ref<number | null>,
   matchExistingDraft: () => void,
   currentCloudArticleId: Ref<string | null>,
+  matchCloudArticle?: (title: string | null) => boolean,
 ) {
   async function onImportClick() {
     const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -34,7 +36,10 @@ export function useImport(
         localStorage.setItem(STORAGE_KEY, markdown.value)
         currentDraftId.value = null
         currentCloudArticleId.value = null
-        setTimeout(() => matchExistingDraft(), 300)
+        setTimeout(() => {
+          matchExistingDraft()
+          matchCloudArticle?.(extractTitle(markdown.value))
+        }, 300)
         showToast('导入成功')
       } catch (e: any) {
         showToast(e?.toString() || '导入失败')
@@ -62,7 +67,10 @@ export function useImport(
         localStorage.setItem(STORAGE_KEY, markdown.value)
         currentDraftId.value = null
         currentCloudArticleId.value = null
-        setTimeout(() => matchExistingDraft(), 300)
+        setTimeout(() => {
+          matchExistingDraft()
+          matchCloudArticle?.(extractTitle(markdown.value))
+        }, 300)
         showToast('导入成功')
       } catch (e: any) {
         showToast(e?.toString() || '导入失败')

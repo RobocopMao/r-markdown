@@ -230,8 +230,18 @@ export function useGitHubTree() {
     persistCloudArticle(node.id, node.title)
   }
 
-  // ── 树编辑操作 ──
+  /** 根据标题自动匹配云端文章并关联（仅当尚未关联时生效） */
+  function matchCloudArticle(title: string | null): boolean {
+    if (!title || treeData.value.length === 0 || currentCloudArticleId.value) return false
+    const node = treeData.value.find((n) => n.type === 'article' && n.title === title)
+    if (node) {
+      setCloudArticle(node)
+      return true
+    }
+    return false
+  }
 
+  // ── 树编辑操作 ──
   async function createFolder(parentId: string | null, title: string): Promise<TreeNode> {
     const node = await GitHubTreeService.createFolder(parentId, title)
     await loadTree()
@@ -433,6 +443,7 @@ export function useGitHubTree() {
     selectNode,
     clearSelection,
     setCloudArticle,
+    matchCloudArticle,
     createFolder,
     createArticle,
     renameNode,

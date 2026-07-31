@@ -249,6 +249,8 @@ function cancelLoadArticle() {
 function onClearEditor() {
   markdown.value = ''
   currentDraftId.value = null
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
   localStorage.setItem(STORAGE_KEY, '')
   localStorage.setItem(SAVE_TIME_KEY, '')
   saveMode.value = ''
@@ -459,6 +461,18 @@ async function doAutoUpdateDownload() {
 // ── 插入扩展组件 ──
 const confirmLoadVisible = ref(false)
 
+// ── 云端文章关联 ──
+const {
+  currentCloudArticleId,
+  treeData,
+  selectedNode: cloudSelectedNode,
+  restoreCloudArticlePersistence,
+  setCloudArticle,
+  matchCloudArticle,
+  expandAncestors,
+  clearCloudArticlePersistence,
+} = useGitHubTree()
+
 // ── 草稿功能 ──
 const extractedTitle = computed(() => extractTitle(markdown.value) || '')
 
@@ -494,17 +508,7 @@ const {
   handleFinalize,
   handleDeleteAfterFinalize,
   handlePushCloudDeleteConfirm,
-} = useDraft(markdown, showToast, extractedTitle, resetMinimap)
-
-// ── 云端文章关联 ──
-const {
-  currentCloudArticleId,
-  treeData,
-  selectedNode: cloudSelectedNode,
-  restoreCloudArticlePersistence,
-  setCloudArticle,
-  expandAncestors,
-} = useGitHubTree()
+} = useDraft(markdown, showToast, extractedTitle, resetMinimap, currentCloudArticleId, matchCloudArticle)
 
 // 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
 const persistedCloudTitle = ref('')
@@ -626,16 +630,26 @@ function closeImageMenu() {
 }
 
 // ── 导入 ──
-const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft, currentCloudArticleId)
+const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft, currentCloudArticleId, matchCloudArticle)
 
 function onPasteText() {
   currentDraftId.value = null
-  setTimeout(() => matchExistingDraft(), 300)
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
+  setTimeout(() => {
+    matchExistingDraft()
+    matchCloudArticle(extractTitle(markdown.value))
+  }, 300)
 }
 
 function onUndoRedo() {
   currentDraftId.value = null
-  setTimeout(() => matchExistingDraft(), 300)
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
+  setTimeout(() => {
+    matchExistingDraft()
+    matchCloudArticle(extractTitle(markdown.value))
+  }, 300)
 }
 
 // ── 标签解析表单（合并在下方 useToolbar 调用中）──

@@ -1,12 +1,14 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
 import { DraftStorage, type Draft } from '@/services/DraftStorage'
-import { sanitizeFilename } from '@/utils/extractTitle'
+import { extractTitle, sanitizeFilename } from '@/utils/extractTitle'
 
 export function useDraft(
   markdown: Ref<string>,
   showToast: (msg: string) => void,
   extractedTitle: ComputedRef<string>,
   resetMinimap: () => void,
+  currentCloudArticleId: Ref<string | null>,
+  matchCloudArticle: (title: string | null) => boolean,
 ) {
   const draftListVisible = ref(false)
   const saveDraftVisible = ref(false)
@@ -148,6 +150,8 @@ export function useDraft(
     if (draft) {
       markdown.value = draft.content
       currentDraftId.value = draft.id!
+      currentCloudArticleId.value = null
+      setTimeout(() => matchCloudArticle(extractTitle(markdown.value)), 300)
       resetMinimap()
       showToast('已加载草稿')
       draftListVisible.value = false
