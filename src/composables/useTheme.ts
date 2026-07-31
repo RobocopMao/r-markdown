@@ -49,24 +49,28 @@ function lightenHex(hex: string, factor: number): string {
 const saved = (() => {
   const raw = localStorage.getItem(STORAGE_KEY)
   if (!raw) return null
-  try { return JSON.parse(raw) } catch { return null }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return null
+  }
 })()
 
 let init = THEMES[3]
-let isCustom = false
+const isCustom = ref(false)
 if (saved?.accent) {
   const match = THEMES.find((t2) => t2.accent.toLowerCase() === saved.accent.toLowerCase())
   if (match) {
     init = match
   } else {
     init = { accent: saved.accent, dark: saved.dark }
-    isCustom = true
+    isCustom.value = true
   }
 }
 
 const accent = ref(init.accent)
 const accentDark = ref(init.dark)
-const customColor = ref(isCustom ? init.accent : '#6c5ce7')
+const customColor = ref(isCustom.value ? init.accent : init.accent)
 
 const colors = computed<ThemeColors>(() => ({
   accent: accent.value,
@@ -77,10 +81,11 @@ const colors = computed<ThemeColors>(() => ({
 }))
 
 export function useTheme() {
-
   function setTheme(a: string, d: string) {
     accent.value = a
     accentDark.value = d
+    isCustom.value = false
+    customColor.value = a
     localStorage.setItem(STORAGE_KEY, JSON.stringify({ accent: a, dark: d }))
     applyCssVars(a, d)
   }
@@ -89,6 +94,7 @@ export function useTheme() {
     customColor.value = hex
     const dark = darkenHex(hex, 0.15)
     setTheme(hex, dark)
+    isCustom.value = true
   }
 
   function darkenHex(hex: string, factor: number): string {

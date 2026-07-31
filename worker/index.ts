@@ -7,10 +7,7 @@
 
 const REPO = 'RobocopMao/r-markdown-materials'
 
-const ALLOWED_ORIGINS = [
-  'https://robocopmao.github.io',
-  'https://r-markdown.pages.dev',
-]
+const ALLOWED_ORIGINS = ['https://robocopmao.github.io', 'https://r-markdown.pages.dev']
 
 function corsHeaders(origin: string): Record<string, string> {
   return {
@@ -41,10 +38,7 @@ export default {
       }
 
       // Web 端 Origin 白名单（含 pages.dev 分支预览）
-      if (
-        ALLOWED_ORIGINS.includes(origin) ||
-        origin.endsWith('.r-markdown.pages.dev')
-      ) {
+      if (ALLOWED_ORIGINS.includes(origin) || origin.endsWith('.r-markdown.pages.dev')) {
         return forwardToGitHub(request, origin, GITHUB_TOKEN)
       }
 
@@ -53,10 +47,10 @@ export default {
         headers: corsHeaders(origin),
       })
     } catch (e) {
-      return new Response(
-        `Worker Error: ${(e as Error).message || String(e)}`,
-        { status: 500, headers: corsHeaders(origin) },
-      )
+      return new Response(`Worker Error: ${(e as Error).message || String(e)}`, {
+        status: 500,
+        headers: corsHeaders(origin),
+      })
     }
   },
 }

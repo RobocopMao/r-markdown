@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch, computed, nextTick, onBeforeUnmount } from 'vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import type { ThemeColors } from '@/composables/useTheme'
@@ -27,30 +27,37 @@ const CONTAINER_W = 80
 const contentWidth = computed(() => props.previewWidth || 700)
 const scaleFactor = computed(() => CONTAINER_W / contentWidth.value)
 
-watch(() => props.markdown, async (md) => {
-  if (!md) {
-    renderedHtml.value = ''
-    unscaledContentH.value = 0
+watch(
+  () => props.markdown,
+  async (md) => {
+    if (!md) {
+      renderedHtml.value = ''
+      unscaledContentH.value = 0
+      minimapScrollRatio.value = 0
+      return
+    }
+    // 内容变化时重置内部滚动位置，避免旧位置与新内容不匹配
     minimapScrollRatio.value = 0
-    return
-  }
-  // 内容变化时重置内部滚动位置，避免旧位置与新内容不匹配
-  minimapScrollRatio.value = 0
-  renderedHtml.value = await parseMarkdownAsync(md, props.colors)
-  await nextTick()
-  if (innerRef.value) {
-    unscaledContentH.value = innerRef.value.scrollHeight
-  }
-}, { immediate: true })
+    renderedHtml.value = await parseMarkdownAsync(md, props.colors)
+    await nextTick()
+    if (innerRef.value) {
+      unscaledContentH.value = innerRef.value.scrollHeight
+    }
+  },
+  { immediate: true },
+)
 
-watch(() => props.colors, async (c) => {
-  if (!props.markdown) return
-  renderedHtml.value = await parseMarkdownAsync(props.markdown, c)
-  await nextTick()
-  if (innerRef.value) {
-    unscaledContentH.value = innerRef.value.scrollHeight
-  }
-})
+watch(
+  () => props.colors,
+  async (c) => {
+    if (!props.markdown) return
+    renderedHtml.value = await parseMarkdownAsync(props.markdown, c)
+    await nextTick()
+    if (innerRef.value) {
+      unscaledContentH.value = innerRef.value.scrollHeight
+    }
+  },
+)
 
 // 内容变化时重新读取高度
 watch(contentWidth, async () => {
@@ -88,8 +95,12 @@ const maxScroll = computed(() => {
 // 指示条在可视内容坐标系中的位置。
 // EditorPage 的 scrollRatio = scrollTop / (scrollHeight - clientHeight)，
 // 指示条顶部在内容中的比例 = scrollTop / scrollHeight = scrollRatio * (1 - viewportRatio)
-const indicatorTopInContent = computed(() => props.scrollRatio * visualH.value * (1 - props.viewportRatio))
-const indicatorBottomInContent = computed(() => indicatorTopInContent.value + props.viewportRatio * visualH.value)
+const indicatorTopInContent = computed(
+  () => props.scrollRatio * visualH.value * (1 - props.viewportRatio),
+)
+const indicatorBottomInContent = computed(
+  () => indicatorTopInContent.value + props.viewportRatio * visualH.value,
+)
 
 // minimap 视口在内容中的范围
 const viewTop = computed(() => minimapScrollRatio.value * maxScroll.value)
@@ -140,9 +151,7 @@ const indicatorStyle = computed(() => {
 function onWheel(e: WheelEvent) {
   const max = maxScroll.value
   if (max <= 0) return
-  minimapScrollRatio.value = Math.max(0, Math.min(1,
-    minimapScrollRatio.value + e.deltaY / max
-  ))
+  minimapScrollRatio.value = Math.max(0, Math.min(1, minimapScrollRatio.value + e.deltaY / max))
 }
 
 function onClick(e: MouseEvent) {
@@ -152,9 +161,10 @@ function onClick(e: MouseEvent) {
   const clickVisualY = viewY + scrollOffset.value
   const denom = 1 - props.viewportRatio
   if (denom <= 0) return
-  const ratio = Math.max(0, Math.min(1,
-    (clickVisualY / visualH.value - props.viewportRatio / 2) / denom
-  ))
+  const ratio = Math.max(
+    0,
+    Math.min(1, (clickVisualY / visualH.value - props.viewportRatio / 2) / denom),
+  )
   emit('navigate', ratio)
 }
 </script>
@@ -166,7 +176,12 @@ function onClick(e: MouseEvent) {
     @click="onClick"
     @wheel.prevent="onWheel"
   >
-    <div v-if="renderedHtml" ref="innerRef" class="relative pointer-events-none" :style="innerStyle">
+    <div
+      v-if="renderedHtml"
+      ref="innerRef"
+      class="relative pointer-events-none"
+      :style="innerStyle"
+    >
       <div
         class="text-[#333] text-[15px] leading-[1.8] break-words bg-transparent p-[18px]"
         :style="{ width: contentWidth + 'px' }"

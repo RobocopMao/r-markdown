@@ -6,7 +6,7 @@
  */
 
 export interface GitHubUploadConfig {
-  repo: string   // 格式 "用户名/仓库名"
+  repo: string // 格式 "用户名/仓库名"
   token: string
   branch: string // 默认 "main"
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { useTheme } from '@/composables/useTheme'
@@ -62,7 +62,9 @@ function handleSave() {
           @keyup.enter="handleSave"
         />
         <p v-if="errorMsg" class="text-[var(--danger)] text-[11px] mt-1">{{ errorMsg }}</p>
-        <p v-else class="text-[var(--text-tertiary,#aaa)] text-[11px] mt-1">标题默认从#/p-title标签/breaking标签获取</p>
+        <p v-else class="text-[var(--text-tertiary,#aaa)] text-[11px] mt-1">
+          标题默认从#/p-title标签/breaking标签获取
+        </p>
       </div>
     </div>
   </BaseDialog>

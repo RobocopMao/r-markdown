@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { useTheme } from '@/composables/useTheme'
@@ -69,11 +69,11 @@ function handleFinalize() {
           @keyup.enter="handleFinalize"
         />
         <p v-if="errorMsg" class="text-[var(--danger)] text-[11px] mt-1">{{ errorMsg }}</p>
-        <p v-else class="text-[var(--text-tertiary,#aaa)] text-[11px] mt-1">将导出为 Markdown 文件到本地</p>
+        <p v-else class="text-[var(--text-tertiary,#aaa)] text-[11px] mt-1">
+          将导出为 Markdown 文件到本地
+        </p>
       </div>
-      <div
-        class="py-1 rounded-[5px] bg-[var(--bg-hover)] text-[12px] text-[var(--text-secondary)]"
-      >
+      <div class="py-1 rounded-[5px] bg-[var(--bg-hover)] text-[12px] text-[var(--text-secondary)]">
         文件名预览：{{ preview }}
       </div>
     </div>

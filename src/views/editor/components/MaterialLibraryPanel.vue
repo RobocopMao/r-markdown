@@ -5,6 +5,7 @@ import { MaterialStorage, DEFAULT_CATEGORIES, type MaterialItem } from '@/servic
 import { publishMaterial, generateMaterialId, validateImageUrls } from '@/services/materialPublish'
 import MaterialCard from './MaterialCard.vue'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 
 const props = defineProps<{
@@ -32,7 +33,9 @@ const publishConfirmVisible = ref(false)
 function showToast(msg: string) {
   toastMessage.value = msg
   toastVisible.value = true
-  setTimeout(() => { toastVisible.value = false }, 2000)
+  setTimeout(() => {
+    toastVisible.value = false
+  }, 2000)
 }
 
 async function loadMyMaterials() {
@@ -47,11 +50,12 @@ async function loadMyMaterials() {
 
 const filteredMaterials = computed(() => {
   const q = searchQuery.value.trim().toLowerCase()
-  let filtered = myCategoryFilter.value === '全部'
-    ? myMaterials.value
-    : myCategoryFilter.value === '其他'
-      ? myMaterials.value.filter((m) => m.category.startsWith('其他'))
-      : myMaterials.value.filter((m) => m.category === myCategoryFilter.value)
+  let filtered =
+    myCategoryFilter.value === '全部'
+      ? myMaterials.value
+      : myCategoryFilter.value === '其他'
+        ? myMaterials.value.filter((m) => m.category.startsWith('其他'))
+        : myMaterials.value.filter((m) => m.category === myCategoryFilter.value)
   if (q) {
     filtered = filtered.filter(
       (m) =>
@@ -113,7 +117,7 @@ async function handlePin(item: MaterialItem) {
 
 async function handlePublish() {
   if (!activeMaterialId.value || uploading.value) return
-  const item = myMaterials.value.find(m => m.id === activeMaterialId.value)
+  const item = myMaterials.value.find((m) => m.id === activeMaterialId.value)
   if (!item) return
 
   // 发布前验证：素材内容中的图片地址必须是在线地址
@@ -130,7 +134,7 @@ async function handlePublish() {
 async function doPublish() {
   publishConfirmVisible.value = false
   if (!activeMaterialId.value || uploading.value) return
-  const item = myMaterials.value.find(m => m.id === activeMaterialId.value)
+  const item = myMaterials.value.find((m) => m.id === activeMaterialId.value)
   if (!item) return
 
   uploading.value = true
@@ -161,7 +165,7 @@ async function doPublish() {
 
 function handleInsertSelected() {
   if (!activeMaterialId.value) return
-  const item = myMaterials.value.find(m => m.id === activeMaterialId.value)
+  const item = myMaterials.value.find((m) => m.id === activeMaterialId.value)
   if (item) {
     emit('insert', item)
     emit('close')
@@ -171,11 +175,14 @@ function handleInsertSelected() {
 // ── Footer 显示逻辑 ──
 const activeMaterial = computed(() => {
   if (!activeMaterialId.value) return null
-  return myMaterials.value.find(m => m.id === activeMaterialId.value) || null
+  return myMaterials.value.find((m) => m.id === activeMaterialId.value) || null
 })
 
 const showFooter = computed(() => {
-  return (!!activeMaterialId.value && !selectMode.value) || (selectMode.value && selectedIds.value.size > 0)
+  return (
+    (!!activeMaterialId.value && !selectMode.value) ||
+    (selectMode.value && selectedIds.value.size > 0)
+  )
 })
 
 const myCategoryOptions = computed(() => {
@@ -192,13 +199,25 @@ onMounted(() => {
   loadMyMaterials()
 })
 
-watch(() => props.visible, (newVal) => {
-  if (newVal) { loadMyMaterials() }
-})
+watch(
+  () => props.visible,
+  (newVal) => {
+    if (newVal) {
+      loadMyMaterials()
+    }
+  },
+)
 </script>
 
 <template>
-  <BaseDrawer :visible="visible" width="800px" title="我的素材" :show-footer="showFooter" no-body-padding @close="emit('close')">
+  <BaseDrawer
+    :visible="visible"
+    width="800px"
+    title="我的素材"
+    :show-footer="showFooter"
+    no-body-padding
+    @close="emit('close')"
+  >
     <template #header>
       <span class="text-[11px] opacity-50 shrink-0">{{ myMaterials.length }} 个素材</span>
       <input
@@ -207,13 +226,19 @@ watch(() => props.visible, (newVal) => {
         placeholder="搜索素材"
         class="w-[160px] shrink px-2 py-1 rounded-full text-[11px] border outline-none border-[var(--border-color)] bg-[var(--bg-primary)] text-[var(--text-primary)] focus:border-[var(--accent)]"
       />
-      <button
-        class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors shrink-0 ml-auto"
-        :class="selectMode ? 'text-[var(--accent)]' : 'text-[#999] hover:text-[var(--text-primary)]'"
-        @click="toggleSelectMode"
-      >
-        <CheckSquare :size="16" />
-      </button>
+      <span class="ml-auto shrink-0">
+        <BaseTooltip :text="selectMode ? '取消选择' : '多选'" placement="bottom">
+          <button
+            class="cursor-pointer flex items-center justify-center size-6 rounded border-none bg-transparent transition-colors"
+            :class="
+              selectMode ? 'text-[var(--accent)]' : 'text-[#999] hover:text-[var(--text-primary)]'
+            "
+            @click="toggleSelectMode"
+          >
+            <CheckSquare :size="16" />
+          </button>
+        </BaseTooltip>
+      </span>
     </template>
 
     <div class="flex flex-col flex-1 min-h-0">
@@ -225,9 +250,11 @@ watch(() => props.visible, (newVal) => {
           v-for="cat in myCategoryOptions"
           :key="cat"
           class="cursor-pointer px-2.5 py-1 rounded-full text-[11px] font-medium whitespace-nowrap transition-colors border-none"
-          :class="myCategoryFilter === cat
-            ? 'bg-[var(--accent)] text-white'
-            : 'bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] dark:bg-[rgba(255,255,255,0.06)]'"
+          :class="
+            myCategoryFilter === cat
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] dark:bg-[rgba(255,255,255,0.06)]'
+          "
           @click="myCategoryFilter = cat"
         >
           {{ cat }}
@@ -235,7 +262,10 @@ watch(() => props.visible, (newVal) => {
       </div>
 
       <div class="flex-1 pt-1 pb-3 px-3">
-        <div v-if="myMaterials.length === 0" class="flex flex-col items-center justify-center h-full gap-2 opacity-40">
+        <div
+          v-if="myMaterials.length === 0"
+          class="flex flex-col items-center justify-center h-full gap-2 opacity-40"
+        >
           <Package :size="32" />
           <span class="text-[12px]">还没有素材</span>
           <span class="text-[11px]">在编辑器中设计内容后，点右上角保存按钮即可</span>
@@ -265,7 +295,7 @@ watch(() => props.visible, (newVal) => {
             />
           </div>
         </div>
-    </div>
+      </div>
     </div>
 
     <!-- 底部按钮 -->

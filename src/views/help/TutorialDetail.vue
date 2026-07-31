@@ -1,20 +1,26 @@
-<script setup lang="ts">
-</script>
+<script setup lang="ts"></script>
 
 <template>
   <div class="tutorial-detail-placeholder">
     <div class="placeholder-wrapper">
       <div class="placeholder-icon">
-        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg
+          width="64"
+          height="64"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
           <line x1="12" y1="17" x2="12.01" y2="17" />
         </svg>
       </div>
       <h2 class="placeholder-title">教程详情</h2>
-      <p class="placeholder-desc">
-        views-private 子模块未拉取，此页面不可用。
-      </p>
+      <p class="placeholder-desc">views-private 子模块未拉取，此页面不可用。</p>
       <p class="placeholder-hint">
         请执行 <code>git submodule update --init --recursive</code> 拉取子模块后重试。
       </p>

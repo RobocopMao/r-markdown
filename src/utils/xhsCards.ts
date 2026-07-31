@@ -229,7 +229,12 @@ function chipsHtml(chips: string[], t: ThemeColors): string {
  * 结构：橙色徽章 → 大标题(==橙==+暖黑) + 波浪线 → 摘要(撑满、末尾渐隐) →
  * 可选黑色高亮条 → 话题标签 → 页脚(字数·分钟 + 品牌)。右上 / 左下点缀星点。
  */
-export function buildCover(meta: XhsMeta, aspect: XhsAspect, t: ThemeColors, isDark = false): string {
+export function buildCover(
+  meta: XhsMeta,
+  aspect: XhsAspect,
+  t: ThemeColors,
+  isDark = false,
+): string {
   const { w, h } = ASPECTS[aspect]
   const contentW = w - PAD_X * 2
   const c = isDark ? XHS.dark : XHS

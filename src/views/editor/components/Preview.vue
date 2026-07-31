@@ -1,15 +1,21 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch, nextTick } from 'vue'
 import { toPng } from 'html-to-image'
 import type { ThemeColors } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { parseMarkdownAsync, type ParagraphStyle } from '@/utils/markdownParser'
 import { getSetting } from '@/config/settings'
-import { paraFontSize, paraLineHeight, paraFontWeight, paraMargin, paraIndent } from '@/composables/useParagraphSettings'
+import {
+  paraFontSize,
+  paraLineHeight,
+  paraFontWeight,
+  paraMargin,
+  paraIndent,
+} from '@/composables/useParagraphSettings'
 import { useMermaid } from '@/composables/useMermaid'
 import Toast from '@/components/Toast.vue'
 
-const isTauri = import.meta.env.VITE_TAURI === 'true';
+const isTauri = import.meta.env.VITE_TAURI === 'true'
 const { isDark } = useDarkMode()
 const { renderAll } = useMermaid()
 
@@ -291,67 +297,67 @@ defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
 </script>
 
 <template>
-  <div style="position:relative;height:100%;">
-  <div
-    ref="scrollContainerRef"
-    class="preview-scroll"
-    style="
-      height: 100%;
-      overflow-y: auto;
-      scrollbar-width: none;
-      -webkit-overflow-scrolling: touch;
-      overscroll-behavior: contain;
-    "
-    @scroll="onScroll"
-  >
+  <div style="position: relative; height: 100%">
     <div
-      class="phone-frame"
-      :style="{
-        width: '100%',
-        maxWidth: '700px',
-        flexShrink: 0,
-        background: 'transparent',
-        boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
-        overflow: 'hidden',
-        margin: '0 auto',
-      }"
+      ref="scrollContainerRef"
+      class="preview-scroll"
+      style="
+        height: 100%;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      "
+      @scroll="onScroll"
     >
       <div
-        ref="previewRef"
-        @click="onPreviewClick"
-        style="
-          padding: 18px;
-          color: #333;
-          font-size: 15px;
-          line-height: 1.8;
-          word-wrap: break-word;
-          overflow-wrap: break-word;
-          background-color: transparent;
-        "
-      ></div>
+        class="phone-frame"
+        :style="{
+          width: '100%',
+          maxWidth: '700px',
+          flexShrink: 0,
+          background: 'transparent',
+          boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+          overflow: 'hidden',
+          margin: '0 auto',
+        }"
+      >
+        <div
+          ref="previewRef"
+          @click="onPreviewClick"
+          style="
+            padding: 18px;
+            color: #333;
+            font-size: 15px;
+            line-height: 1.8;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            background-color: transparent;
+          "
+        ></div>
+      </div>
     </div>
-  </div>
-  <Transition name="hint-fade">
-    <div
-      v-show="hintVisible"
-      :style="{
-        position: 'absolute',
-        top: isMobile ? '0' : undefined,
-        bottom: isMobile ? undefined : '0',
-        left: '0',
-        right: '0',
-        padding: '10px 16px',
-        background: 'var(--bg-primary)',
-        [isMobile ? 'borderBottom' : 'borderTop']: '1px solid var(--border-color)',
-        textAlign: 'center',
-        fontSize: '12px',
-        color: 'var(--text-muted)',
-        pointerEvents: 'none',
-      }"
-    >
-      深色模式下，请以微信实际预览结果为准
-    </div>
-  </Transition>
+    <Transition name="hint-fade">
+      <div
+        v-show="hintVisible"
+        :style="{
+          position: 'absolute',
+          top: isMobile ? '0' : undefined,
+          bottom: isMobile ? undefined : '0',
+          left: '0',
+          right: '0',
+          padding: '10px 16px',
+          background: 'var(--bg-primary)',
+          [isMobile ? 'borderBottom' : 'borderTop']: '1px solid var(--border-color)',
+          textAlign: 'center',
+          fontSize: '12px',
+          color: 'var(--text-muted)',
+          pointerEvents: 'none',
+        }"
+      >
+        深色模式下，请以微信实际预览结果为准
+      </div>
+    </Transition>
   </div>
   <Toast :visible="toastVisible" :message="toastMessage" />
 </template>

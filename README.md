@@ -34,25 +34,25 @@
 
 ### 块级组件
 
-| 组件            | 说明                  |
-| --------------- | --------------------- |
-| `<statement>`   | 居中强调语            |
-| `<lead>`        | 引导文字段            |
-| `<breaking>`    | 突发/重大更新卡片     |
-| `<compare>`     | Before/After 对比布局 |
-| `<cta>`         | 行动召唤卡片          |
-| `<steps>`       | 横向步骤流            |
-| `<timeline>`    | 时间线组件            |
-| `<title>`       | 标题组件              |
-| `<ptitle>`      | 副标题组件            |
-| `<engage>`      | 互动引导组件          |
-| `<caseflow>`    | 案例流程组件          |
-| `<readingpath>` | 阅读路径组件          |
+| 组件            | 说明                                   |
+| --------------- | -------------------------------------- |
+| `<statement>`   | 居中强调语                             |
+| `<lead>`        | 引导文字段                             |
+| `<breaking>`    | 突发/重大更新卡片                      |
+| `<compare>`     | Before/After 对比布局                  |
+| `<cta>`         | 行动召唤卡片                           |
+| `<steps>`       | 横向步骤流                             |
+| `<timeline>`    | 时间线组件                             |
+| `<title>`       | 标题组件                               |
+| `<ptitle>`      | 副标题组件                             |
+| `<engage>`      | 互动引导组件                           |
+| `<caseflow>`    | 案例流程组件                           |
+| `<readingpath>` | 阅读路径组件                           |
 | `<img>`         | 单图组件（宽高、圆角、裁切、容器对齐） |
-| `<slider>`      | 图片幻灯片轮播        |
-| `<chart>`       | 图表组件              |
-| ` ``` `         | 代码块                |
-| `> [TIP]`       | 提示框                |
+| `<slider>`      | 图片幻灯片轮播                         |
+| `<chart>`       | 图表组件                               |
+| ` ``` `         | 代码块                                 |
+| `> [TIP]`       | 提示框                                 |
 
 ## 🚀 快速开始
 
@@ -111,6 +111,7 @@ pnpm tauri:build
 ```
 
 构建产物：
+
 - macOS: `src-tauri/target/release/bundle/dmg/R-Markdown_*.dmg`
 - Windows: `src-tauri/target/release/bundle/msi/R-Markdown_*.msi`
 

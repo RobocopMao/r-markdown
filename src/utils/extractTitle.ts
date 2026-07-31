@@ -8,17 +8,13 @@
  */
 export function extractTitle(markdown: string): string | null {
   // 1. 优先从 <title> 组件 body 提取
-  const titleMatch = markdown.match(
-    /^<title\b[^>]*>([\s\S]*?)<\/title>/m,
-  )
+  const titleMatch = markdown.match(/^<title\b[^>]*>([\s\S]*?)<\/title>/m)
   if (titleMatch && titleMatch[1].trim()) {
     return titleMatch[1].trim()
   }
 
   // 2. 其次从 front-matter 的 title 字段提取
-  const fmTitleMatch = markdown.match(
-    /^---\s*\n(?:[\s\S]*?\n)?title:\s*(.+?)(?:\n|$)/m,
-  )
+  const fmTitleMatch = markdown.match(/^---\s*\n(?:[\s\S]*?\n)?title:\s*(.+?)(?:\n|$)/m)
   if (fmTitleMatch && fmTitleMatch[1].trim()) {
     return fmTitleMatch[1].trim()
   }

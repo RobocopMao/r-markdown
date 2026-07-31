@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Check, Pin } from 'lucide-vue-next'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { useTheme } from '@/composables/useTheme'
@@ -71,28 +72,30 @@ function formatDate(iso: string): string {
   try {
     const d = new Date(iso)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-  } catch { return '' }
+  } catch {
+    return ''
+  }
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  '标题': '#6366f1',
-  '卡片': '#f59e0b',
-  '分隔线': '#10b981',
-  '图文': '#3b82f6',
-  '引导关注': '#ec4899',
-  '引用': '#8b5cf6',
-  '代码块': '#14b8a6',
-  '列表': '#f97316',
-  '其他': '#6b7280',
-  '正文': '#3b82f6',
-  '引导': '#ec4899',
-  '布局': '#8b5cf6',
-  '节日': '#f97316',
-  '行业': '#14b8a6',
+  标题: '#6366f1',
+  卡片: '#f59e0b',
+  分隔线: '#10b981',
+  图文: '#3b82f6',
+  引导关注: '#ec4899',
+  引用: '#8b5cf6',
+  代码块: '#14b8a6',
+  列表: '#f97316',
+  其他: '#6b7280',
+  正文: '#3b82f6',
+  引导: '#ec4899',
+  布局: '#8b5cf6',
+  节日: '#f97316',
+  行业: '#14b8a6',
 }
 
 const displayCategory = computed(() =>
-  props.subCategory ? `${props.category} · ${props.subCategory}` : props.category
+  props.subCategory ? `${props.category} · ${props.subCategory}` : props.category,
 )
 
 const displayId = computed(() => {
@@ -121,25 +124,30 @@ function categoryColor(cat: string): string {
     <div
       v-if="showCheck"
       class="absolute top-2 left-2 w-5 h-5 rounded border-2 flex items-center justify-center transition-colors z-10"
-      :class="selected
-        ? 'bg-[var(--accent)] border-[var(--accent)]'
-        : 'border-[#ccc] dark:border-[#555] bg-white dark:bg-[#2a2a2a]'"
+      :class="
+        selected
+          ? 'bg-[var(--accent)] border-[var(--accent)]'
+          : 'border-[#ccc] dark:border-[#555] bg-white dark:bg-[#2a2a2a]'
+      "
     >
       <Check v-if="selected" :size="12" class="text-white" />
     </div>
 
-    <!-- 置顶按钮 -->
-    <button
-      v-if="!showCheck"
-      class="absolute top-2 right-2 w-5 h-5 flex items-center justify-center rounded cursor-pointer transition-colors border-none z-10"
-      :class="pinned
-        ? 'bg-[color-mix(in_srgb,_var(--accent)_12%,_transparent)] text-[var(--accent)]'
-        : 'bg-white/80 dark:bg-[#2a2a2a]/80 text-[#999] dark:text-[#666] opacity-0 group-hover:opacity-100 hover:opacity-100'"
-      :title="pinned ? '取消置顶' : '置顶'"
-      @click.stop="emit('pin')"
-    >
-      <Pin :size="12" :fill="pinned ? 'currentColor' : 'none'" />
-    </button>
+    <div v-if="!showCheck" class="absolute top-2 right-2 z-10">
+      <BaseTooltip :text="pinned ? '取消置顶' : '置顶'" placement="top">
+        <button
+          class="w-5 h-5 flex items-center justify-center rounded cursor-pointer transition-colors border-none"
+          :class="
+            pinned
+              ? 'bg-[color-mix(in_srgb,_var(--accent)_12%,_transparent)] text-[var(--accent)]'
+              : 'bg-white/80 dark:bg-[#2a2a2a]/80 text-[#999] dark:text-[#666] opacity-0 group-hover:opacity-100 hover:opacity-100'
+          "
+          @click.stop="emit('pin')"
+        >
+          <Pin :size="12" :fill="pinned ? 'currentColor' : 'none'" />
+        </button>
+      </BaseTooltip>
+    </div>
 
     <!-- 内容预览 -->
     <div
@@ -158,7 +166,8 @@ function categoryColor(cat: string): string {
             <span
               v-if="displayId"
               class="absolute bottom-full left-0 mb-0.5 hidden group-hover/title:block px-1.5 py-0.5 rounded text-[10px] font-mono whitespace-nowrap bg-gray-800 text-gray-100 dark:bg-gray-200 dark:text-gray-800 shadow z-10"
-            >[ID:{{ displayId }}]</span>
+              >[ID:{{ displayId }}]</span
+            >
           </div>
           <span
             class="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium shrink-0"
@@ -168,7 +177,9 @@ function categoryColor(cat: string): string {
           </span>
         </div>
         <p v-if="description" class="text-[10px] opacity-50 truncate mt-0.5">{{ description }}</p>
-        <p v-if="author" class="text-[10px] opacity-50 truncate mt-0.5">作者：{{ author }}<span v-if="updatedAt"> ｜ {{ formatDate(updatedAt) }}</span></p>
+        <p v-if="author" class="text-[10px] opacity-50 truncate mt-0.5">
+          作者：{{ author }}<span v-if="updatedAt"> ｜ {{ formatDate(updatedAt) }}</span>
+        </p>
       </div>
     </div>
 
@@ -187,6 +198,6 @@ function categoryColor(cat: string): string {
 
 <style scoped>
 .material-preview :deep(span) {
- line-height: 1.8;
+  line-height: 1.8;
 }
 </style>

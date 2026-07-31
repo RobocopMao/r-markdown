@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { SquarePen, Home } from 'lucide-vue-next'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
@@ -65,9 +65,7 @@ const filteredComponents = computed(() => {
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 
 const showcaseNavItems = computed(() => {
-  const items = [
-    { key: 'editor', label: '编辑器', to: '/editor', icon: SquarePen },
-  ]
+  const items = [{ key: 'editor', label: '编辑器', to: '/editor', icon: SquarePen }]
   // Web 端首页和编辑器是不同页面，Tauri 客户端首页即编辑器，去除重复项
   if (!isTauri) {
     items.unshift({ key: 'home', label: '首页', to: '/', icon: Home })

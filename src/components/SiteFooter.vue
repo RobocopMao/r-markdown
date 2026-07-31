@@ -6,7 +6,7 @@
   </footer>
 </template>
 
-<script setup lang="ts"></script>
+<script setup vapor lang="ts"></script>
 
 <style scoped>
 [data-theme='dark'] .site-footer {

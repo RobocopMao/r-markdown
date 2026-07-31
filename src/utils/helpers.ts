@@ -89,8 +89,15 @@ export function parseAlignment(sep: string): Alignment {
   return 'left'
 }
 
-export function parseMarkdownTable(body: string): { headers: string[]; rows: string[][]; alignments: Alignment[] } {
-  const lines = body.split('\n').map((l) => l.trim()).filter(Boolean)
+export function parseMarkdownTable(body: string): {
+  headers: string[]
+  rows: string[][]
+  alignments: Alignment[]
+} {
+  const lines = body
+    .split('\n')
+    .map((l) => l.trim())
+    .filter(Boolean)
   if (lines.length < 2) return { headers: [], rows: [], alignments: [] }
 
   // 解析表头行

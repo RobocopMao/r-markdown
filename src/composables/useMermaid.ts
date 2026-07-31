@@ -77,7 +77,10 @@ export function useMermaid() {
       const mermaid = await getMermaid()
       mermaid.initialize({ startOnLoad: false, theme: theme as any })
       await mermaid.parse(code)
-      const { svg } = await mermaid.render('mermaid-' + Math.random().toString(36).slice(2, 8), code)
+      const { svg } = await mermaid.render(
+        'mermaid-' + Math.random().toString(36).slice(2, 8),
+        code,
+      )
       const pxWidth = parsePixelValue(renderWidth)
       const pngDataUri = await svgToPng(svg, pxWidth || undefined)
       const widthStyle = renderWidth ? `width:${renderWidth};` : ''

@@ -3,13 +3,7 @@ import hljs from 'highlight.js/lib/common'
 import { leaf, esc, parseAttrs, parseAlignment, type Alignment } from './helpers'
 import { inlineFormat } from './inlineFormat'
 import { renderMath, preloadMathJax } from './mathRenderer'
-import {
-  parseCtaInline,
-  parseCtaTag,
-  parseCompare,
-  parseCallout,
-  parseGallery,
-} from './components'
+import { parseCtaInline, parseCtaTag, parseCompare, parseCallout, parseGallery } from './components'
 import { Title_DA01 } from '@/extension/Title_DA01'
 import { Title_DA02 } from '@/extension/Title_DA02'
 import { PTitle } from '@/extension/PTitle_DA01'
@@ -41,50 +35,50 @@ import { Positioned_DA01 } from '@/extension/Positioned_DA01'
 // 语法高亮配色（one-dark 风，配深色代码块底）。把 highlight.js 的 class 转成内联颜色，
 // 这样预览和粘贴到公众号都能直接显示（不依赖外部样式表）。
 const HL_COLORS: Record<string, string> = {
-    keyword: '#c678dd',
-    built_in: '#56b6c2',
-    type: '#e5c07b',
-    literal: '#56b6c2',
-    number: '#d19a66',
-    string: '#98c379',
-    regexp: '#98c379',
-    comment: '#7f848e',
-    doctag: '#7f848e',
-    meta: '#7f848e',
-    title: '#61afef',
-    attr: '#d19a66',
-    attribute: '#d19a66',
-    variable: '#e06c75',
-    tag: '#e06c75',
-    name: '#e06c75',
-    params: '#abb2bf',
-    property: '#e06c75',
-    operator: '#56b6c2',
-    symbol: '#56b6c2',
-    selector: '#e06c75',
-    bullet: '#61afef',
-    link: '#98c379',
-    quote: '#98c379',
-    addition: '#98c379',
-    deletion: '#e06c75',
-    section: '#61afef',
-    function: '#61afef',
+  keyword: '#c678dd',
+  built_in: '#56b6c2',
+  type: '#e5c07b',
+  literal: '#56b6c2',
+  number: '#d19a66',
+  string: '#98c379',
+  regexp: '#98c379',
+  comment: '#7f848e',
+  doctag: '#7f848e',
+  meta: '#7f848e',
+  title: '#61afef',
+  attr: '#d19a66',
+  attribute: '#d19a66',
+  variable: '#e06c75',
+  tag: '#e06c75',
+  name: '#e06c75',
+  params: '#abb2bf',
+  property: '#e06c75',
+  operator: '#56b6c2',
+  symbol: '#56b6c2',
+  selector: '#e06c75',
+  bullet: '#61afef',
+  link: '#98c379',
+  quote: '#98c379',
+  addition: '#98c379',
+  deletion: '#e06c75',
+  section: '#61afef',
+  function: '#61afef',
 }
 
 // 单行高亮：highlight.js 出 class 标记，再把 class 换成内联 color（自包含，不依赖外部样式表）。
 function highlightLine(rest: string, lang: string): string {
-    let out: string
-    try {
-        out =
-            lang && hljs.getLanguage(lang)
-                ? hljs.highlight(rest, { language: lang }).value
-                : hljs.highlightAuto(rest).value
-    } catch {
-        out = esc(rest)
-    }
-    return out.replace(/class="hljs-([a-z_]+)[^"]*"/g, (_m, c: string) =>
-        HL_COLORS[c] ? `style="color:${HL_COLORS[c]}"` : '',
-    )
+  let out: string
+  try {
+    out =
+      lang && hljs.getLanguage(lang)
+        ? hljs.highlight(rest, { language: lang }).value
+        : hljs.highlightAuto(rest).value
+  } catch {
+    out = esc(rest)
+  }
+  return out.replace(/class="hljs-([a-z_]+)[^"]*"/g, (_m, c: string) =>
+    HL_COLORS[c] ? `style="color:${HL_COLORS[c]}"` : '',
+  )
 }
 
 /**
@@ -95,9 +89,7 @@ export function collectFormulas(md: string): Array<{ formula: string; display: b
   const result: Array<{ formula: string; display: boolean }> = []
 
   // 先删围栏代码块（行首锚定），再删行内代码（支持多重反引号嵌套）
-  const cleaned = md
-    .replace(/^```[\s\S]*?\n```/gm, '')
-    .replace(/(`+)(.*?)\1/gs, '')
+  const cleaned = md.replace(/^```[\s\S]*?\n```/gm, '').replace(/(`+)(.*?)\1/gs, '')
 
   // 行内公式 $...$
   const inlineRe = /(?<!\$)(?<!\d)\$([^\$]+?)\$(?!\$|[\w])/g
@@ -163,19 +155,32 @@ export interface ParagraphStyle {
  * 一步完成：收集公式 → 预渲染 → 解析。
  * 推荐所有 caller 使用这个入口。
  */
-export async function parseMarkdownAsync(md: string, t: ThemeColors, paragraphStyle?: ParagraphStyle): Promise<string> {
+export async function parseMarkdownAsync(
+  md: string,
+  t: ThemeColors,
+  paragraphStyle?: ParagraphStyle,
+): Promise<string> {
   const formulas = collectFormulas(md)
   const formulaMap = formulas.length > 0 ? await preRenderFormulas(formulas) : undefined
   return parseMarkdown(md, t, formulaMap, paragraphStyle)
 }
 
-export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<string, string>, paragraphStyle?: ParagraphStyle, depth = 0, lineOffset = 0): string {
+export function parseMarkdown(
+  md: string,
+  t: ThemeColors,
+  formulaMap?: Map<string, string>,
+  paragraphStyle?: ParagraphStyle,
+  depth = 0,
+  lineOffset = 0,
+): string {
   function withSourceLine(lineNo: number, html: string): string {
     // trimStart 后再匹配：render 返回的 HTML 往往以 \n 或缩进开头（模板字符串的格式空白），
     // 这些前导空白会让 /^<(\w+)/ 静默失败。分离 → 替换 → 拼回，确保 data-source-line 注入到第一个 HTML 标签。
     const trimmed = html.trimStart()
     const leadingWs = html.slice(0, html.length - trimmed.length)
-    return leadingWs + trimmed.replace(/^<(\w+)/, `<$1 data-source-line="${lineNo + lineOffset + 1}"`)
+    return (
+      leadingWs + trimmed.replace(/^<(\w+)/, `<$1 data-source-line="${lineNo + lineOffset + 1}"`)
+    )
   }
   // 收集脚注：[text](url "desc") 带引号标题的链接 → 脚注
   const footnotes: { label: string; url: string; desc: string }[] = []
@@ -311,7 +316,7 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
 
     // 多行 container：收集直到匹配的 </container>（追踪嵌套深度）
     let j = startIdx + 1
-    let bodyText = (openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n')
+    let bodyText = openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n'
     let conDepth = 1
     while (j < lines.length && conDepth > 0) {
       const openCount = (lines[j].match(/<container\b/g) || []).length
@@ -388,7 +393,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
 
     // 单行模式：<stack ...>content</stack>
     if (/<\/stack>\s*$/.test(line)) {
-      const bodyText = line.replace(re, '').replace(/<\/stack>\s*$/, '').trim()
+      const bodyText = line
+        .replace(re, '')
+        .replace(/<\/stack>\s*$/, '')
+        .trim()
       const bodyHtml = bodyText
         ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
         : ''
@@ -403,7 +411,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       if (/<stack\b/.test(lines[j])) bodyDepth++
       if (/^<\/stack>/.test(lines[j])) {
         bodyDepth--
-        if (bodyDepth === 0) { j++; break }
+        if (bodyDepth === 0) {
+          j++
+          break
+        }
       }
       bodyLines.push(lines[j])
       j++
@@ -431,7 +442,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
 
     // 单行模式
     if (/<\/positioned>\s*$/.test(line)) {
-      const bodyText = line.replace(re, '').replace(/<\/positioned>\s*$/, '').trim()
+      const bodyText = line
+        .replace(re, '')
+        .replace(/<\/positioned>\s*$/, '')
+        .trim()
       const bodyHtml = bodyText
         ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
         : ''
@@ -446,7 +460,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       if (/<positioned\b/.test(lines[j])) bodyDepth++
       if (/^<\/positioned>/.test(lines[j])) {
         bodyDepth--
-        if (bodyDepth === 0) { j++; break }
+        if (bodyDepth === 0) {
+          j++
+          break
+        }
       }
       bodyLines.push(lines[j])
       j++
@@ -486,7 +503,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       continue
     }
     if (/^---+\s*$/.test(line.trim())) {
-      html += withSourceLine(i, `<section style="border:none;height:1px;background:linear-gradient(90deg,transparent,rgb(221,221,221),transparent);margin:24px 0px"></section>`)
+      html += withSourceLine(
+        i,
+        `<section style="border:none;height:1px;background:linear-gradient(90deg,transparent,rgb(221,221,221),transparent);margin:24px 0px"></section>`,
+      )
       i++
       continue
     }
@@ -734,7 +754,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const body = ptMatch[2].trim()
         // 给根节点打个标记（不影响样式），分页时用它避免小节标题落在页底跟正文分家
         const pTitleRenderer = attrs.type === 'DA02' ? PTitle_DA02 : PTitle
-        html += withSourceLine(i, pTitleRenderer.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'))
+        html += withSourceLine(
+          i,
+          pTitleRenderer.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'),
+        )
       }
       i++
       continue
@@ -764,7 +787,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         ql.push(lines[i].replace(/^>\s?/, ''))
         i++
       }
-      html += withSourceLine(quoteStartLine, `<section style="margin:14px 0px;padding:12px 16px;background:rgb(247,248,252);border-left:3px solid ${t.accent};border-radius:0px 6px 6px 0px;color:rgb(85,85,85);font-size:14px">`)
+      html += withSourceLine(
+        quoteStartLine,
+        `<section style="margin:14px 0px;padding:12px 16px;background:rgb(247,248,252);border-left:3px solid ${t.accent};border-radius:0px 6px 6px 0px;color:rgb(85,85,85);font-size:14px">`,
+      )
       ql.forEach((l) => {
         html += `<section><p style="margin:4px 0px">${inlineFormat(l, t, formulaMap)}</p></section>`
       })
@@ -794,7 +820,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         caseLines.push(lines[i])
         i++
       }
-      html += withSourceLine(caseFlowInlineStartLine, CaseFlow_DA01.render({}, caseLines.join('\n'), t))
+      html += withSourceLine(
+        caseFlowInlineStartLine,
+        CaseFlow_DA01.render({}, caseLines.join('\n'), t),
+      )
       continue
     }
     // <timeline> 标签
@@ -852,28 +881,40 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     // 标题 — Markdown 原生语法，不走 PTitle
     const h1m = line.match(/^#\s+(.+)/)
     if (h1m) {
-      html += withSourceLine(i, `<h1 style="margin:0px 0px 16px;font-size:24px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h1m[1], t, formulaMap)}</h1>`)
+      html += withSourceLine(
+        i,
+        `<h1 style="margin:0px 0px 16px;font-size:24px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h1m[1], t, formulaMap)}</h1>`,
+      )
       i++
       continue
     }
 
     const h2m = line.match(/^##\s+(.+)/)
     if (h2m) {
-      html += withSourceLine(i, `<h2 style="margin:28px 0px 12px;font-size:20px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h2m[1], t, formulaMap)}</h2>`)
+      html += withSourceLine(
+        i,
+        `<h2 style="margin:28px 0px 12px;font-size:20px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h2m[1], t, formulaMap)}</h2>`,
+      )
       i++
       continue
     }
 
     const h3m = line.match(/^###\s+(.+)/)
     if (h3m) {
-      html += withSourceLine(i, `<h3 style="margin:24px 0px 10px;font-size:17px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h3m[1], t, formulaMap)}</h3>`)
+      html += withSourceLine(
+        i,
+        `<h3 style="margin:24px 0px 10px;font-size:17px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h3m[1], t, formulaMap)}</h3>`,
+      )
       i++
       continue
     }
 
     const h4m = line.match(/^####\s+(.+)/)
     if (h4m) {
-      html += withSourceLine(i, `<h4 style="margin:20px 0px 8px;font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h4m[1], t, formulaMap)}</h4>`)
+      html += withSourceLine(
+        i,
+        `<h4 style="margin:20px 0px 8px;font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h4m[1], t, formulaMap)}</h4>`,
+      )
       i++
       continue
     }
@@ -891,7 +932,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       const singleMatch = line.match(/^\$\$(.+?)\$\$/)
       if (singleMatch) {
         const formula = singleMatch[1].trim()
-        html += withSourceLine(i, `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`)
+        html += withSourceLine(
+          i,
+          `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
+        )
         i++
         continue
       }
@@ -905,7 +949,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       }
       if (i < lines.length) i++ // 跳过闭合的 $$
       const formula = formulaLines.join('\n').trim()
-      html += withSourceLine(formulaStartLine, `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`)
+      html += withSourceLine(
+        formulaStartLine,
+        `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
+      )
       continue
     }
 
@@ -963,11 +1010,16 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         const lead = (ln.match(/^[ \t]*/) || [''])[0]
         const indent = lead.replace(/\t/g, '  ').replace(/ /g, '&nbsp;')
         const rest = ln.slice(lead.length)
-        const hl = rest ? highlightLine(rest, lang).replace(/<\/span> <span/g, '</span>&nbsp;<span') : ''
+        const hl = rest
+          ? highlightLine(rest, lang).replace(/<\/span> <span/g, '</span>&nbsp;<span')
+          : ''
         const body = indent + hl || '&nbsp;'
         codeInner += `<section leaf="" style="white-space:nowrap">${body}</section>`
       }
-      html += withSourceLine(codeStartLine, `<section data-lang="${esc(lang)}" style="white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);padding:14px 16px;border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${codeInner}</section>`)
+      html += withSourceLine(
+        codeStartLine,
+        `<section data-lang="${esc(lang)}" style="white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);padding:14px 16px;border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${codeInner}</section>`,
+      )
       continue
     }
 
@@ -1013,7 +1065,10 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
         rows.push(cells)
         i++
       }
-      html += withSourceLine(tableStartLine, `<section style="margin:24px 0px;box-shadow:rgba(15,23,42,0.05) 0px 10px 24px;border-radius:14px;border:1px solid rgba(229,231,235,0.9);overflow:hidden;background:linear-gradient(135deg,rgb(248,250,252) 0%,rgb(238,244,251) 100%)"><section style="padding:20px 20px;background:rgba(255,255,255,0.92)"><section class="tableWrapper" style="width:100%"><table style="border:0px;border-collapse:collapse;table-layout:fixed;min-width:115px;width:100%"><thead><tr>`)
+      html += withSourceLine(
+        tableStartLine,
+        `<section style="margin:24px 0px;box-shadow:rgba(15,23,42,0.05) 0px 10px 24px;border-radius:14px;border:1px solid rgba(229,231,235,0.9);overflow:hidden;background:linear-gradient(135deg,rgb(248,250,252) 0%,rgb(238,244,251) 100%)"><section style="padding:20px 20px;background:rgba(255,255,255,0.92)"><section class="tableWrapper" style="width:100%"><table style="border:0px;border-collapse:collapse;table-layout:fixed;min-width:115px;width:100%"><thead><tr>`,
+      )
       headers.forEach((h, hi) => {
         const al: Alignment = alignments[hi] || 'left'
         html += `<td valign="top" align="${al === 'center' ? 'center' : al === 'right' ? 'right' : 'left'}" style="vertical-align:top;border:0px;padding:0px;text-align:${al};font-size:13px;font-weight:700;color:rgb(51,65,85)">${inlineFormat(h, t, formulaMap)}</td>`
@@ -1079,9 +1134,15 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
       const [, alt, src, size] = imgMatch
       if (size) {
         const parts = size.split(/\s+/)
-        html += withSourceLine(i, `<section style="max-height:${parts[1] || '250px'};overflow-y:auto;border-radius:8px;margin:24px 0px"><img src="${esc(src)}" alt="${esc(alt)}" style="width:${parts[0] || '100%'};display:block"></section>`)
+        html += withSourceLine(
+          i,
+          `<section style="max-height:${parts[1] || '250px'};overflow-y:auto;border-radius:8px;margin:24px 0px"><img src="${esc(src)}" alt="${esc(alt)}" style="width:${parts[0] || '100%'};display:block"></section>`,
+        )
       } else {
-        html += withSourceLine(i, `<img src="${esc(src)}" alt="${esc(alt)}" style="max-width:100%;border-radius:6px;margin:24px 0px;display:block">`)
+        html += withSourceLine(
+          i,
+          `<img src="${esc(src)}" alt="${esc(alt)}" style="max-width:100%;border-radius:6px;margin:24px 0px;display:block">`,
+        )
       }
       i++
       continue
@@ -1122,8 +1183,17 @@ export function parseMarkdown(md: string, t: ThemeColors, formulaMap?: Map<strin
     }
 
     // 普通段落
-    const ps = paragraphStyle ?? { fontSize: 16, lineHeight: 1.85, fontWeight: '400', margin: 24, indent: '' }
-    html += withSourceLine(i, `<section style="margin:0px 0px ${ps.margin}px"><p style="margin:0px;font-size:${ps.fontSize}px;color:var(--text-primary);line-height:${ps.lineHeight};font-weight:${ps.fontWeight};text-align:justify;overflow-wrap:break-word;word-break:break-all;text-indent:${ps.indent || '0'}">${inlineFormat(line, t, formulaMap)}</p></section>`)
+    const ps = paragraphStyle ?? {
+      fontSize: 16,
+      lineHeight: 1.85,
+      fontWeight: '400',
+      margin: 24,
+      indent: '',
+    }
+    html += withSourceLine(
+      i,
+      `<section style="margin:0px 0px ${ps.margin}px"><p style="margin:0px;font-size:${ps.fontSize}px;color:var(--text-primary);line-height:${ps.lineHeight};font-weight:${ps.fontWeight};text-align:justify;overflow-wrap:break-word;word-break:break-all;text-indent:${ps.indent || '0'}">${inlineFormat(line, t, formulaMap)}</p></section>`,
+    )
     i++
   }
 

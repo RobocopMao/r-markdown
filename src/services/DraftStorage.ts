@@ -98,11 +98,7 @@ export const DraftStorage = {
     return dbPromise
   },
 
-  async save(
-    title: string,
-    content: string,
-    existingId?: number,
-  ): Promise<number> {
+  async save(title: string, content: string, existingId?: number): Promise<number> {
     const db = await this.initDB()
     const now = Date.now()
 
@@ -242,11 +238,7 @@ export const DraftStorage = {
     })
   },
 
-  async isDuplicate(
-    title: string,
-    content: string,
-    excludeId?: number,
-  ): Promise<boolean> {
+  async isDuplicate(title: string, content: string, excludeId?: number): Promise<boolean> {
     const drafts = await this.list()
     return drafts.some(
       (d) =>

@@ -80,7 +80,7 @@ useAutoUpdater()
   background: var(--accent-light, rgba(108, 92, 231, 0.08));
   border-color: var(--accent, #6c5ce7);
   color: var(--accent, #6c5ce7);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.10);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .resize-handle:active .resize-handle-btn--visible {

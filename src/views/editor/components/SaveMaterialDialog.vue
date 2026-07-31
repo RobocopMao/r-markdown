@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch } from 'vue'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { DEFAULT_CATEGORIES } from '@/services/materialStorage'
@@ -34,7 +34,14 @@ function handleSave() {
   const authorVal = author.value.trim()
   if (authorVal) localStorage.setItem(LAST_AUTHOR_KEY, authorVal)
 
-  emit('save', name.value.trim(), authorVal, selectedCategory.value, subCategory.value.trim(), description.value.trim())
+  emit(
+    'save',
+    name.value.trim(),
+    authorVal,
+    selectedCategory.value,
+    subCategory.value.trim(),
+    description.value.trim(),
+  )
 }
 
 function reset() {
@@ -93,7 +100,9 @@ watch(
 
       <!-- 子分类 -->
       <div>
-        <label class="block text-[12px] text-[#666] dark:text-[#999] mb-1.5">子分类（非必填）</label>
+        <label class="block text-[12px] text-[#666] dark:text-[#999] mb-1.5"
+          >子分类（非必填）</label
+        >
         <input
           v-model="subCategory"
           type="text"

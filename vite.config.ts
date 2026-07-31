@@ -10,7 +10,8 @@ const isWebDeploy = process.env.GITHUB_ACTIONS && !isTauri
 
 // 闭源 extension 子模块：目录为空（拉取失败）时 fallback 到本地空 stub，避免编译报错
 const extensionDir = `${__dirname}/src/extension`
-const hasExtension = existsSync(extensionDir) && readdirSync(extensionDir).filter(f => !f.startsWith('.')).length > 0
+const hasExtension =
+  existsSync(extensionDir) && readdirSync(extensionDir).filter((f) => !f.startsWith('.')).length > 0
 
 // 私有 views 子模块：拉取失败时 fallback 到公开版首页
 const privateHomeFile = `${__dirname}/src/views-private/home/HomePage.vue`

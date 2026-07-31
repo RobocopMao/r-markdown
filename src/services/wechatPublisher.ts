@@ -11,7 +11,7 @@ export interface DraftArticle {
 export async function uploadCoverImage(
   appid: string,
   appsecret: string,
-  imagePath: string
+  imagePath: string,
 ): Promise<{ media_id: string; url: string }> {
   return invoke('wechat_upload_image', { appid, appsecret, imagePath })
 }
@@ -20,7 +20,7 @@ export async function saveDraft(
   appid: string,
   appsecret: string,
   article: DraftArticle,
-  updateMediaId?: string
+  updateMediaId?: string,
 ): Promise<{ media_id: string }> {
   return invoke('wechat_save_draft', {
     appid,
