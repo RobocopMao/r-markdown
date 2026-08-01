@@ -1167,16 +1167,6 @@ async function doDownloadUpdate() {
       </section>
     </template>
 
-    <!-- 更新确认弹窗 -->
-    <ConfirmDialog
-      v-model:visible="updateDialogVisible"
-      title="发现新版本"
-      :message="`版本 ${updateDialogVersion} 可用，是否立即下载安装？`"
-      confirm-text="立即更新"
-      @confirm="doDownloadUpdate"
-      @cancel="updateDialogVisible = false"
-    />
-
     <ImageCacheDialog
       ref="imgCacheRef"
       :visible="showImageCache"
@@ -1184,6 +1174,16 @@ async function doDownloadUpdate() {
       @request-cleanup="onImgRequestCleanup"
     />
   </BaseDrawer>
+
+  <!-- 更新确认弹窗（全局显示） -->
+  <ConfirmDialog
+    v-model:visible="updateDialogVisible"
+    title="发现新版本"
+    :message="`版本 ${updateDialogVersion} 可用，是否立即下载安装？`"
+    confirm-text="立即更新"
+    @confirm="doDownloadUpdate"
+    @cancel="updateDialogVisible = false"
+  />
 
   <!-- 清理图片缓存全局确认弹窗 -->
   <ConfirmDialog
