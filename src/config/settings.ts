@@ -82,11 +82,13 @@ export function setSetting(key: string, value: unknown): void {
   syncToDisk()
 }
 
+const SENSITIVE_KEYS: Set<string> = new Set(['cloudArticleToken'])
+
 /** 导出当前所有设置（用于写入磁盘 JSON） */
 export function getAllSettings(): Record<string, unknown> {
   const result: Record<string, unknown> = {}
   for (const key of Object.keys(DEFAULT_SETTINGS)) {
-    result[key] = getSetting(key)
+    if (!SENSITIVE_KEYS.has(key)) result[key] = getSetting(key)
   }
   return result
 }
