@@ -794,6 +794,11 @@ defineExpose({
 
 .editor-container :deep(.cm-editor) {
   height: 100%;
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei', monospace !important;
+}
+
+.editor-container :deep(.cm-content) {
+  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei', monospace !important;
 }
 
 .editor-container :deep(.cm-scroller) {
