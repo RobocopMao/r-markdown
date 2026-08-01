@@ -432,7 +432,7 @@ const warmEditorTheme = EditorView.theme(
       color: 'var(--text-primary)',
       fontSize: '13px',
       fontFamily:
-        'ui-monospace, SF Mono, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
+        'ui-monospace, SF Mono, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Microsoft YaHei", monospace',
       lineHeight: '1.6',
       height: '100%',
     },
