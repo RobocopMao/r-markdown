@@ -148,13 +148,15 @@ export function setSetting(key: string, value: unknown): void {
   if (SENSITIVE_KEYS.has(key)) {
     // 立即更新缓存，后续 getSetting 立即可用
     sensitiveCache.set(key, serialized)
-    // 异步加密持久化
-    encrypt(serialized).then((encrypted) => {
-      localStorage.setItem(PREFIX + key, encrypted)
-    }).catch(() => {
-      // 加密失败兜底：明文存储（不应发生，但防崩溃）
-      localStorage.setItem(PREFIX + key, serialized)
-    })
+    // 异步加密持久化。加密失败时不写明文（避免泄露敏感字段），
+    // 仅记录错误，下次 setSetting 会重新尝试加密。
+    encrypt(serialized)
+      .then((encrypted) => {
+        localStorage.setItem(PREFIX + key, encrypted)
+      })
+      .catch((e) => {
+        console.error('[settings] encrypt failed for key:', key, e)
+      })
   } else {
     const storageKey = PREFIX + key
     localStorage.setItem(storageKey, serialized)

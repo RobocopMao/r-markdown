@@ -57,10 +57,12 @@ async function ensureHashCache(): Promise<void> {
         hashCache.set(record.hash, key as string)
       }
     }
+    // 仅在成功填充后才标记为已初始化，瞬时失败时下次调用可重试
+    cachePopulated = true
   } catch {
-    /* ignore */
+    // IDB 瞬时错误：重置 dbPromise 让下次 openDB 重新打开连接
+    dbPromise = null
   }
-  cachePopulated = true
 }
 
 function invalidateHashCache(): void {

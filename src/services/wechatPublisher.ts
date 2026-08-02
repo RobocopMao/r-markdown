@@ -21,7 +21,7 @@ export async function saveDraft(
   appsecret: string,
   article: DraftArticle,
   updateMediaId?: string,
-): Promise<{ media_id: string }> {
+): Promise<{ media_id: string; failed_images?: string[] }> {
   return invoke('wechat_save_draft', {
     appid,
     appsecret,

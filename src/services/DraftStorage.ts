@@ -102,39 +102,45 @@ export const DraftStorage = {
     const db = await this.initDB()
     const now = Date.now()
 
-    return new Promise<number>((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite')
-      const store = tx.objectStore(STORE_NAME)
-
-      if (existingId !== undefined) {
-        const draft: Draft = {
-          id: existingId,
-          title,
-          content,
-          createdAt: now,
-          updatedAt: now,
-        }
+    if (existingId !== undefined) {
+      // 更新已有草稿：保留原 createdAt，避免覆盖创建时间
+      const existing = await this.getById(existingId)
+      const createdAt = existing?.createdAt ?? now
+      const draft: Draft = {
+        id: existingId,
+        title,
+        content,
+        createdAt,
+        updatedAt: now,
+      }
+      return new Promise<number>((resolve, reject) => {
+        const tx = db.transaction(STORE_NAME, 'readwrite')
+        const store = tx.objectStore(STORE_NAME)
         const request = store.put(draft)
         request.onsuccess = () => {
           writeDraftFile(existingId, title, content)
           resolve(existingId)
         }
         request.onerror = () => reject(request.error)
-      } else {
-        const draft: Draft = {
-          title,
-          content,
-          createdAt: now,
-          updatedAt: now,
-        }
-        const request = store.add(draft)
-        request.onsuccess = () => {
-          const id = request.result as number
-          writeDraftFile(id, title, content)
-          resolve(id)
-        }
-        request.onerror = () => reject(request.error)
+      })
+    }
+
+    return new Promise<number>((resolve, reject) => {
+      const draft: Draft = {
+        title,
+        content,
+        createdAt: now,
+        updatedAt: now,
       }
+      const tx = db.transaction(STORE_NAME, 'readwrite')
+      const store = tx.objectStore(STORE_NAME)
+      const request = store.add(draft)
+      request.onsuccess = () => {
+        const id = request.result as number
+        writeDraftFile(id, title, content)
+        resolve(id)
+      }
+      request.onerror = () => reject(request.error)
     })
   },
 

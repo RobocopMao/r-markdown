@@ -318,8 +318,14 @@ async function handleSave() {
     }
     emit('saved', resp.media_id, coverMediaId.value)
     emit('close')
-  } catch (e: any) {
-    const msg: string = e?.message || String(e)
+    // 提示用户哪些图片上传失败（保留在 HTML 原始 src，公众号后台会显示破图）
+    if (resp.failed_images && resp.failed_images.length > 0) {
+      const preview = resp.failed_images.slice(0, 3).join('\n')
+      const extra = resp.failed_images.length > 3 ? `\n等共 ${resp.failed_images.length} 张` : ''
+      console.warn('[wechat] 部分图片上传失败：\n' + preview + extra)
+    }
+  } catch (e: unknown) {
+    const msg: string = e instanceof Error ? e.message : String(e)
     if (thumbMediaId && /thumb|media.id|封面/i.test(msg)) {
       clearMediaId(thumbMediaId)
       coverMediaId.value = ''
