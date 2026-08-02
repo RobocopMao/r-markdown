@@ -248,13 +248,20 @@ export function useGitHubTree() {
   }
 
   // ── 树编辑操作 ──
-  async function createFolder(parentId: string | null, title: string): Promise<TreeNode> {
+  async function createFolder(parentId: string | null, title: string, prepend = false): Promise<TreeNode> {
     const node = await GitHubTreeService.createFolder(parentId, title)
-    // 本地立即更新，避免依赖 loadTree() 回读（GitHub API 有缓存延迟）
     treeData.value = [...treeData.value, node]
-    try {
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-    } catch { /* 缓存失败不影响主流程 */ }
+    if (prepend) {
+      try {
+        await reorderToPosition(node.id, 0)
+      } catch {
+        // reorderToPosition 内部已回滚
+      }
+    } else {
+      try {
+        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      } catch { /* 缓存失败不影响主流程 */ }
+    }
     if (parentId) expandedIds.value.add(parentId)
     return node
   }
@@ -263,10 +270,17 @@ export function useGitHubTree() {
     parentId: string | null,
     title: string,
     content: string,
+    prepend = false,
   ): Promise<TreeNode> {
     const node = await GitHubTreeService.createArticle(parentId, title, content)
-    // 本地立即更新，避免依赖 loadTree() 回读
     treeData.value = [...treeData.value, node]
+    if (prepend) {
+      try {
+        await reorderToPosition(node.id, 0)
+      } catch {
+        // reorderToPosition 内部已回滚
+      }
+    }
     try {
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
       await GitHubArticleCache.setArticle(node.id, content)

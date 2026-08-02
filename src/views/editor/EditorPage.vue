@@ -249,8 +249,6 @@ function cancelLoadArticle() {
 function onClearEditor() {
   markdown.value = ''
   currentDraftId.value = null
-  currentCloudArticleId.value = null
-  clearCloudArticlePersistence()
   localStorage.setItem(STORAGE_KEY, '')
   localStorage.setItem(SAVE_TIME_KEY, '')
   saveMode.value = ''

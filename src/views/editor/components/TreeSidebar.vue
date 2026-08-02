@@ -11,6 +11,9 @@ import {
   X,
   ArrowUpDown,
   Crosshair,
+  RefreshCw,
+  ArrowUpToLine,
+  ArrowDownToLine,
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
@@ -41,6 +44,7 @@ const {
   error,
   reordering,
   init,
+  loadTree,
   getChildren,
   isExpanded,
   toggleExpand,
@@ -57,7 +61,30 @@ const {
 } = useGitHubTree()
 
 // ── 搜索 ──
+const SEARCH_VISIBLE_KEY = 'r-markdown-treeSearchVisible'
 const searchQuery = ref('')
+const searchVisible = ref(localStorage.getItem(SEARCH_VISIBLE_KEY) === 'true')
+
+function toggleSearch() {
+  searchVisible.value = !searchVisible.value
+  localStorage.setItem(SEARCH_VISIBLE_KEY, String(searchVisible.value))
+  if (!searchVisible.value) searchQuery.value = ''
+}
+
+// ── 新建文章位置偏好 ──
+const NEW_ARTICLE_POSITION_KEY = 'r-markdown-treeNewArticlePosition'
+const newAtTop = ref(localStorage.getItem(NEW_ARTICLE_POSITION_KEY) === 'top')
+
+function toggleNewArticlePosition() {
+  newAtTop.value = !newAtTop.value
+  localStorage.setItem(NEW_ARTICLE_POSITION_KEY, newAtTop.value ? 'top' : 'bottom')
+}
+
+// ── 手动刷新 ──
+async function refreshTree() {
+  await loadTree()
+  emit('toast', '树结构已刷新')
+}
 
 /** 递归收集某节点的所有后代 ID */
 function getAllDescendantIds(nodeId: string): Set<string> {
@@ -157,11 +184,14 @@ const SORT_OPTIONS: { label: string; value: SortMode }[] = [
   { label: '修改时间升序', value: 'updated-asc' },
 ]
 
+const SORT_MODE_KEY = 'r-markdown-treeSortMode'
+const SORT_ACTIVE_KEY = 'r-markdown-treeSortActive'
+
 const sortMode = ref<SortMode>(
-  (localStorage.getItem('tree-sort-mode') as SortMode) || 'created-desc',
+  (localStorage.getItem(SORT_MODE_KEY) as SortMode) || 'created-desc',
 )
 
-const isSorting = ref(localStorage.getItem('tree-sort-active') === 'true')
+const isSorting = ref(localStorage.getItem(SORT_ACTIVE_KEY) === 'true')
 
 const sortMenuVisible = ref(false)
 
@@ -173,12 +203,12 @@ function setSortMode(mode: SortMode) {
   if (sortMode.value === mode && isSorting.value) {
     // 再次点击同一模式 → 取消排序，恢复默认
     isSorting.value = false
-    localStorage.setItem('tree-sort-active', 'false')
+    localStorage.setItem(SORT_ACTIVE_KEY, 'false')
   } else {
     sortMode.value = mode
     isSorting.value = true
-    localStorage.setItem('tree-sort-mode', mode)
-    localStorage.setItem('tree-sort-active', 'true')
+    localStorage.setItem(SORT_MODE_KEY, mode)
+    localStorage.setItem(SORT_ACTIVE_KEY, 'true')
   }
   sortMenuVisible.value = false
 }
@@ -286,7 +316,7 @@ async function confirmNewRoot() {
   if (!title) return
   newRootCreating.value = true
   try {
-    await createFolder(null, title)
+    await createFolder(null, title, newAtTop.value)
     newRootPopup.value = false
   } finally {
     newRootCreating.value = false
@@ -310,7 +340,7 @@ async function confirmNewRootArticle() {
   const finalTitle = title.endsWith('.md') ? title : title + '.md'
   newRootArticleCreating.value = true
   try {
-    await createArticle(null, finalTitle, '# ' + finalTitle.replace(/\.md$/, '') + '\n')
+    await createArticle(null, finalTitle, '# ' + finalTitle.replace(/\.md$/, '') + '\n', newAtTop.value)
     newRootArticlePopup.value = false
     emit('toast', `文章「${finalTitle}」已创建`)
     emit('clearEditor')
@@ -340,10 +370,10 @@ async function confirmNewChild() {
   newChildCreating.value = true
   try {
     if (newChildType.value === 'article') {
-      await createArticle(parent.id, title, '# ' + title + '\n')
+      await createArticle(parent.id, title, '# ' + title + '\n', newAtTop.value)
       emit('clearEditor')
     } else {
-      await createFolder(parent.id, title)
+      await createFolder(parent.id, title, newAtTop.value)
     }
     newChildPopup.value = false
   } finally {
@@ -686,26 +716,8 @@ function onSettingChanged(e: Event) {
     <div
       v-if="isConfigured"
       class="flex items-center justify-between px-3 py-2 shrink-0"
-      style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
+      :style="{ borderBottom: searchVisible ? 'none' : '1px solid var(--border-color, #e5e5e5)' }"
     >
-      <div
-        class="flex flex-1 items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 mr-2 px-2"
-      >
-        <input
-          v-model="searchQuery"
-          type="text"
-          placeholder="搜索文章..."
-          class="flex-1 bg-transparent border-none outline-none text-xs w-18"
-          style="color: var(--text-primary)"
-        />
-        <button
-          v-if="searchQuery"
-          class="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--bg-primary)] cursor-pointer border-none bg-transparent"
-          @click="searchQuery = ''"
-        >
-          <X :size="10" style="color: var(--text-secondary)" />
-        </button>
-      </div>
       <div class="flex items-center gap-0.5">
         <BaseTooltip :text="isAllExpanded ? '收起全部' : '展开全部'">
           <button
@@ -721,7 +733,7 @@ function onSettingChanged(e: Event) {
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
             @click="toggleAutoExpand()"
           >
-            <Crosshair :size="14" :style="{ opacity: autoExpandEnabled ? 1 : 0.4 }" />
+            <Crosshair :size="14" :style="{ color: autoExpandEnabled ? 'var(--accent)' : undefined }" />
           </button>
         </BaseTooltip>
         <div class="relative">
@@ -730,7 +742,7 @@ function onSettingChanged(e: Event) {
               class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
               @click.stop="toggleSortMenu"
             >
-              <ArrowUpDown :size="14" :style="{ opacity: isSorting ? 1 : 0.4 }" />
+              <ArrowUpDown :size="14" :style="{ color: isSorting ? 'var(--accent)' : undefined }" />
             </button>
           </BaseTooltip>
           <div
@@ -757,6 +769,23 @@ function onSettingChanged(e: Event) {
             </button>
           </div>
         </div>
+        <BaseTooltip text="刷新树结构">
+          <button
+            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+            @click="refreshTree"
+          >
+            <RefreshCw :size="14" />
+          </button>
+        </BaseTooltip>
+        <BaseTooltip :text="newAtTop ? '新建文章添加到头部' : '新建文章添加到尾部'">
+          <button
+            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+            @click="toggleNewArticlePosition"
+          >
+            <ArrowUpToLine v-if="newAtTop" :size="14" :style="{ color: 'var(--accent)' }" />
+            <ArrowDownToLine v-else :size="14" :style="{ color: 'var(--accent)' }" />
+          </button>
+        </BaseTooltip>
         <BaseTooltip text="新建文件">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
@@ -773,6 +802,41 @@ function onSettingChanged(e: Event) {
             <Folder :size="14" />
           </button>
         </BaseTooltip>
+        <BaseTooltip :text="searchVisible ? '关闭搜索' : '搜索文章'">
+          <button
+            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+            @click="toggleSearch"
+          >
+            <Search :size="14" :style="{ color: searchVisible ? 'var(--accent)' : undefined }" />
+          </button>
+        </BaseTooltip>
+      </div>
+    </div>
+
+    <!-- 搜索栏 -->
+    <div
+      v-if="isConfigured && searchVisible"
+      class="px-3 pb-2 shrink-0"
+      style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
+    >
+      <div
+        class="flex items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 px-3"
+      >
+        <Search :size="12" style="color: var(--text-secondary)" />
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="搜索文章..."
+          class="flex-1 bg-transparent border-none outline-none text-xs"
+          style="color: var(--text-primary)"
+        />
+        <button
+          v-if="searchQuery"
+          class="flex items-center justify-center w-4 h-4 rounded-full hover:bg-[var(--bg-primary)] cursor-pointer border-none bg-transparent"
+          @click="searchQuery = ''"
+        >
+          <X :size="10" style="color: var(--text-secondary)" />
+        </button>
       </div>
     </div>
 
