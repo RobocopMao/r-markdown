@@ -841,7 +841,7 @@ function onSettingChanged(e: Event) {
     </div>
 
     <!-- 树形区域 -->
-    <div class="flex-1 overflow-auto py-1">
+    <div class="flex-1 overflow-auto py-1 scrollbar-hide">
       <!-- 未配置 -->
       <div v-if="!isConfigured" class="px-3 py-6 text-center">
         <p class="text-xs mb-2" style="color: var(--text-secondary)">尚未配置 GitHub 仓库</p>
@@ -1172,5 +1172,12 @@ function onSettingChanged(e: Event) {
 .ctx-item:hover {
   background: color-mix(in srgb, var(--accent) 8%, transparent);
   color: var(--accent);
+}
+
+.scrollbar-hide {
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 </style>
