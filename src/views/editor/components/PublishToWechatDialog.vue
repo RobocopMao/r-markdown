@@ -408,7 +408,7 @@ async function handleSave() {
           :disabled="saving"
           @click="handleSave"
         >
-          {{ saving ? '保存中…' : '存为草稿' }}
+          {{ saving ? '保存中…' : '存到公众号草稿' }}
         </button>
       </div>
     </div>

@@ -769,7 +769,7 @@ function onSettingChanged(e: Event) {
             </button>
           </div>
         </div>
-        <BaseTooltip text="刷新树结构">
+        <BaseTooltip text="手动刷新">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
             @click="refreshTree"
