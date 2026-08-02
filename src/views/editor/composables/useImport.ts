@@ -1,6 +1,7 @@
 import { type Ref } from 'vue'
 import { STORAGE_KEY } from './useAutoSave'
 import { extractTitle } from '@/utils/extractTitle'
+import { getErrorMessage } from '@/utils/helpers'
 
 export function useImport(
   markdown: Ref<string>,
@@ -41,8 +42,8 @@ export function useImport(
           matchCloudArticle?.(extractTitle(markdown.value))
         }, 300)
         showToast('导入成功')
-      } catch (e: any) {
-        showToast(e?.toString() || '导入失败')
+      } catch (e: unknown) {
+        showToast(getErrorMessage(e) || '导入失败')
         console.error('导入失败:', e)
       }
       return
@@ -72,8 +73,8 @@ export function useImport(
           matchCloudArticle?.(extractTitle(markdown.value))
         }, 300)
         showToast('导入成功')
-      } catch (e: any) {
-        showToast(e?.toString() || '导入失败')
+      } catch (e: unknown) {
+        showToast(getErrorMessage(e) || '导入失败')
         console.error('导入失败:', e)
       }
     })

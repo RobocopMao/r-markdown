@@ -1,3 +1,5 @@
+import { getErrorMessage } from '@/utils/helpers'
+
 let mermaidModule: typeof import('mermaid').default | null = null
 let mermaidInitialized = false
 
@@ -86,9 +88,9 @@ export function useMermaid() {
       const widthStyle = renderWidth ? `width:${renderWidth};` : ''
       svgContainer.innerHTML = `<img src="${pngDataUri}" style="display:block;max-width:1000%!important;${widthStyle}" />`
       return true
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[Mermaid] render failed:', e)
-      svgContainer.innerHTML = `<pre style="color:#e74c3c;font-size:12px;white-space:pre-wrap">${e.message || e}\n\n${code}</pre>`
+      svgContainer.innerHTML = `<pre style="color:#e74c3c;font-size:12px;white-space:pre-wrap">${getErrorMessage(e, String(e))}\n\n${code}</pre>`
       return false
     }
   }

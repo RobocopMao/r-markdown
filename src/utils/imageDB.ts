@@ -214,37 +214,48 @@ export async function cleanupImages(tokensInUse: Set<string>): Promise<void> {
   }
 }
 
-/** 获取所有已存储图片的缩略预览（token + data URL + 原始大小 + 上传时间） */
+/** 获取所有已存储图片的缩略预览（token + data URL + 原始大小 + 上传时间）
+ *  使用单次 getAll 一次性读取所有记录，避免逐条 store.get 的 N+1 事务开销。
+ */
 export async function getAllImagePreviews(): Promise<
   { token: string; dataUrl: string; size: number; createdAt: number }[]
 > {
   const result: { token: string; dataUrl: string; size: number; createdAt: number }[] = []
   try {
     const db = await openDB()
-    const keys: string[] = await new Promise((resolve) => {
+    // 单次事务拉取全部记录（key + value），后续在内存中循环
+    const records: Array<{ key: string; value: any }> = await new Promise((resolve) => {
       const tx = db.transaction(STORE_NAME, 'readonly')
       const store = tx.objectStore(STORE_NAME)
-      const req = store.getAllKeys()
-      req.onsuccess = () => resolve(req.result as string[])
+      const req = store.getAll()
+      req.onsuccess = () => {
+        const values = (req.result as any[]) || []
+        // getAll 不返回 key，用 getAllKeys 配合同一事务取 key
+        const keysReq = store.getAllKeys()
+        keysReq.onsuccess = () => {
+          const keys = (keysReq.result as string[]) || []
+          resolve(keys.map((k, i) => ({ key: k, value: values[i] })))
+        }
+        keysReq.onerror = () => resolve([])
+      }
       req.onerror = () => resolve([])
     })
-    for (const key of keys) {
-      const dataUrl = await getDataURL(key as string)
-      if (dataUrl) {
-        // 从 data URL 的 base64 部分估算原始文件大小
-        const base64Part = dataUrl.split(',')[1] || ''
-        const size = Math.round((base64Part.length * 3) / 4)
-        // 读取 createdAt 记录
-        const record: any = await new Promise((resolve) => {
-          const tx = db.transaction(STORE_NAME, 'readonly')
-          const store = tx.objectStore(STORE_NAME)
-          const req = store.get(key)
-          req.onsuccess = () => resolve(req.result)
-          req.onerror = () => resolve(undefined)
-        })
-        const createdAt = record?.createdAt || 0
-        result.push({ token: key as string, dataUrl, size, createdAt })
-      }
+    for (const { key, value: record } of records) {
+      if (!record) continue
+      const { buffer, mime } = unpack(record)
+      const blob = new Blob([buffer], mime ? { type: mime } : undefined)
+      const dataUrl: string | null = await new Promise((resolve) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = () => resolve(null)
+        reader.readAsDataURL(blob)
+      })
+      if (!dataUrl) continue
+      // 从 data URL 的 base64 部分估算原始文件大小
+      const base64Part = dataUrl.split(',')[1] || ''
+      const size = Math.round((base64Part.length * 3) / 4)
+      const createdAt = record?.createdAt || 0
+      result.push({ token: key, dataUrl, size, createdAt })
     }
   } catch {
     /* ignore */

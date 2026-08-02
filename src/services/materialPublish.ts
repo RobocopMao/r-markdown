@@ -4,6 +4,7 @@
  */
 
 import type { IndexEntry } from './materialLibrary'
+import { getErrorMessage } from '@/utils/helpers'
 
 const DEFAULT_BRANCH = 'main'
 const API_BASE = import.meta.env.VITE_API_PROXY || ''
@@ -146,8 +147,8 @@ export async function publishMaterial(
     }
 
     return { ok: true, message: '发布成功' }
-  } catch (e: any) {
-    return { ok: false, message: `发布失败: ${e.message}` }
+  } catch (e: unknown) {
+    return { ok: false, message: `发布失败: ${getErrorMessage(e)}` }
   }
 }
 

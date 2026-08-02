@@ -7,6 +7,7 @@ import { uploadCoverImage, saveDraft } from '@/services/wechatPublisher'
 import { getCoverMediaId, setCoverMediaId, clearMediaId } from '@/services/coverCache'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { getDataURL } from '@/utils/imageDB'
+import { getErrorMessage } from '@/utils/helpers'
 import { useTheme } from '@/composables/useTheme'
 import { useMermaid } from '@/composables/useMermaid'
 
@@ -223,8 +224,8 @@ async function handleSelectCover() {
     coverUrl.value = resp.url
     // 写入缓存
     setCoverMediaId(imagePath, resp.media_id)
-  } catch (e: any) {
-    error.value = `上传封面失败: ${e?.message || e}`
+  } catch (e: unknown) {
+    error.value = `上传封面失败: ${getErrorMessage(e) || '未知错误'}`
   } finally {
     uploading.value = false
   }

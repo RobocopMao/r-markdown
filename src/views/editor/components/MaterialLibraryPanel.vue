@@ -7,6 +7,7 @@ import MaterialCard from './MaterialCard.vue'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { getErrorMessage } from '@/utils/helpers'
 
 const props = defineProps<{
   visible: boolean
@@ -156,8 +157,8 @@ async function doPublish() {
       await MaterialStorage.save(item)
       loadMyMaterials()
     }
-  } catch (e: any) {
-    showToast(`发布失败: ${e.message}`)
+  } catch (e: unknown) {
+    showToast(`发布失败: ${getErrorMessage(e)}`)
   } finally {
     uploading.value = false
   }

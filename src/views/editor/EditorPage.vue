@@ -69,6 +69,7 @@ import {
   Cloud,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
+import { getErrorMessage } from '@/utils/helpers'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
 
 import Preview from './components/Preview.vue'
@@ -198,8 +199,8 @@ async function onPushToCloud(result: {
         pushToCloudDeleteConfirmVisible.value = true
       }, 200)
     }
-  } catch (e: any) {
-    showToast(e?.message || '上传失败，请检查网络和仓库配置')
+  } catch (e: unknown) {
+    showToast(getErrorMessage(e, '上传失败，请检查网络和仓库配置'))
   } finally {
     pushingCloud.value = false
   }
@@ -506,7 +507,14 @@ const {
   handleFinalize,
   handleDeleteAfterFinalize,
   handlePushCloudDeleteConfirm,
-} = useDraft(markdown, showToast, extractedTitle, resetMinimap, currentCloudArticleId, matchCloudArticle)
+} = useDraft(
+  markdown,
+  showToast,
+  extractedTitle,
+  resetMinimap,
+  currentCloudArticleId,
+  matchCloudArticle,
+)
 
 // 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
 const persistedCloudTitle = ref('')
@@ -628,7 +636,14 @@ function closeImageMenu() {
 }
 
 // ── 导入 ──
-const { onImportClick } = useImport(markdown, showToast, currentDraftId, matchExistingDraft, currentCloudArticleId, matchCloudArticle)
+const { onImportClick } = useImport(
+  markdown,
+  showToast,
+  currentDraftId,
+  matchExistingDraft,
+  currentCloudArticleId,
+  matchCloudArticle,
+)
 
 function onPasteText() {
   currentDraftId.value = null
@@ -1297,7 +1312,11 @@ function loadDemo() {
                       :disabled="!editorRef?.isAtLineStart"
                       @click="editorRef?.isAtLineStart && handleInsertImage()"
                     >
-                      <Image :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <Image
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
                       <span class="text-[#333] dark:text-white font-medium">临时存储</span>
                       <span class="text-[#999] dark:text-white/40 ml-auto">本地临时图片</span>
                     </button>
@@ -1307,17 +1326,31 @@ function loadDemo() {
                       :disabled="!editorRef?.isAtLineStart"
                       @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
                     >
-                      <ImagePlus :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <ImagePlus
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
                       <span class="text-[#333] dark:text-white font-medium">长期存储</span>
                       <span class="text-[#999] dark:text-white/40 ml-auto">本地永久图片</span>
                     </button>
                     <button
                       class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100"
-                      :class="!editorRef?.isAtLineStart || githubUploading ? 'cursor-not-allowed opacity-40' : 'cursor-pointer'"
+                      :class="
+                        !editorRef?.isAtLineStart || githubUploading
+                          ? 'cursor-not-allowed opacity-40'
+                          : 'cursor-pointer'
+                      "
                       :disabled="!editorRef?.isAtLineStart || githubUploading"
-                      @click="editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()"
+                      @click="
+                        editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()
+                      "
                     >
-                      <ImageUp :size="14" class="w-3.5 h-3.5 flex-shrink-0" :style="{ color: colors.accent }" />
+                      <ImageUp
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
                       <span class="text-[#333] dark:text-white font-medium">上传图床</span>
                       <span class="text-[#999] dark:text-white/40 ml-auto">{{
                         githubUploading ? '上传中...' : uploadHostingLabel
@@ -1497,7 +1530,7 @@ function loadDemo() {
               :visible="showTagDialog && !isMobile"
               :tag-info="tagInfo"
               @close="
-                showTagDialog = false;
+                showTagDialog = false
                 tagInfo = null
               "
               @update="onTagDialogUpdate"
@@ -1591,7 +1624,7 @@ function loadDemo() {
     :visible="settingsVisible"
     :initialTab="settingsInitialTab"
     @close="
-      settingsVisible = false;
+      settingsVisible = false
       cloudConfigured = GitHubTreeService.getConfig() !== null
     "
   />

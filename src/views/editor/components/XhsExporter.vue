@@ -353,8 +353,9 @@ async function triggerDownload(dataUrl: string, name: string): Promise<boolean> 
       }
       await writeFile(filePath, bytes)
       return true
-    } catch {
-      // 降级为浏览器 a.click()
+    } catch (e) {
+      // atob / writeFile 失败时降级为浏览器 a.click()
+      console.error('[XhsExporter] 桌面端保存失败，降级为浏览器下载:', e)
     }
   }
 

@@ -1,3 +1,14 @@
+/** 安全地从 unknown 类型的 catch 值中提取错误消息，避免 catch (e: any) 反模式 */
+export function getErrorMessage(e: unknown, fallback = ''): string {
+  if (e instanceof Error) return e.message
+  if (typeof e === 'string') return e
+  if (e && typeof e === 'object' && 'message' in e) {
+    const m = (e as { message: unknown }).message
+    if (typeof m === 'string') return m
+  }
+  return fallback || String(e ?? '')
+}
+
 export function esc(s: string): string {
   return String(s)
     .replace(/&/g, '&amp;')

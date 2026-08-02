@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 import eslintConfigPrettier from 'eslint-config-prettier'
+import globals from 'globals'
 
 export default [
   js.configs.recommended,
@@ -16,33 +17,10 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
       },
+      // 一次性导入浏览器 + ES2022 全套 globals，避免手动列举不全导致 no-undef 误报
       globals: {
-        // Browser globals
-        document: 'readonly',
-        window: 'readonly',
-        navigator: 'readonly',
-        localStorage: 'readonly',
-        sessionStorage: 'readonly',
-        setTimeout: 'readonly',
-        clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        requestAnimationFrame: 'readonly',
-        cancelAnimationFrame: 'readonly',
-        console: 'readonly',
-        // DOM types
-        HTMLElement: 'readonly',
-        HTMLTextAreaElement: 'readonly',
-        HTMLDivElement: 'readonly',
-        MouseEvent: 'readonly',
-        KeyboardEvent: 'readonly',
-        Event: 'readonly',
-        Blob: 'readonly',
-        ClipboardItem: 'readonly',
-        // URL / fetch
-        URL: 'readonly',
-        fetch: 'readonly',
-        AbortController: 'readonly',
+        ...globals.browser,
+        ...globals.es2022,
       },
     },
   },

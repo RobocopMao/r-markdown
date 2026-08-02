@@ -25,6 +25,7 @@ import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { useTheme } from '@/composables/useTheme'
 import ImageCacheDialog from './ImageCacheDialog.vue'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
+import { getErrorMessage } from '@/utils/helpers'
 
 const props = defineProps<{
   visible: boolean
@@ -183,9 +184,9 @@ async function handleTestConnection() {
       branch: githubBranch.value || 'main',
     })
     githubTestResult.value = 'ok'
-  } catch (e: any) {
+  } catch (e: unknown) {
     githubTestResult.value = 'fail'
-    githubTestError.value = e.message || '连接失败'
+    githubTestError.value = getErrorMessage(e, '连接失败')
   }
   githubTesting.value = false
 }
@@ -201,9 +202,9 @@ async function handleTestLetuConnection() {
       storageId: letaStorageId.value || '1',
     })
     letaTestResult.value = 'ok'
-  } catch (e: any) {
+  } catch (e: unknown) {
     letaTestResult.value = 'fail'
-    letaTestError.value = e.message || '连接失败'
+    letaTestError.value = getErrorMessage(e, '连接失败')
   }
   letaTesting.value = false
 }
@@ -326,9 +327,9 @@ async function handleCloudTestConnection() {
   try {
     await GitHubTreeService.testConnection(owner, repoName, token)
     cloudTestResult.value = 'ok'
-  } catch (e: any) {
+  } catch (e: unknown) {
     cloudTestResult.value = 'fail'
-    cloudTestError.value = e.message || '连接失败'
+    cloudTestError.value = getErrorMessage(e, '连接失败')
   }
   cloudTesting.value = false
 }

@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
 import { GitHubTreeService, type TreeNode } from '@/services/GitHubTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
+import { getErrorMessage } from '@/utils/helpers'
 
 // ── 模块级单例状态（所有调用方共享同一份数据）──
 const isConfigured = ref(false)
@@ -76,9 +77,7 @@ export function useGitHubTree() {
   // ── 方法 ──
 
   function getChildren(parentId: string): TreeNode[] {
-    return treeData.value
-      .filter((n) => n.parentId === parentId)
-      .sort(defaultSort)
+    return treeData.value.filter((n) => n.parentId === parentId).sort(defaultSort)
   }
 
   /** 获取某节点的所有兄弟节点（包含自身），按 sortOrder 排序 */
@@ -141,8 +140,8 @@ export function useGitHubTree() {
   /**
    * 将 GitHub API 原始错误转为用户友好提示
    */
-  function formatError(e: any): string {
-    const msg: string = e.message || ''
+  function formatError(e: unknown): string {
+    const msg = getErrorMessage(e)
     // 仓库为空
     if (msg.includes('This repository is empty')) {
       return '仓库为空，请先创建文章或文件夹'
@@ -177,7 +176,7 @@ export function useGitHubTree() {
       const tree = await GitHubTreeService.fetchTree()
       treeData.value = tree.nodes
       await GitHubArticleCache.setTreeCache(JSON.stringify(tree))
-    } catch (e: any) {
+    } catch (e: unknown) {
       error.value = formatError(e)
       // 缓存不可用时尝试用旧数据
       if (treeData.value.length === 0) {
@@ -216,8 +215,8 @@ export function useGitHubTree() {
       const content = await GitHubTreeService.fetchArticle(node.id)
       await GitHubArticleCache.setArticle(node.id, content)
       return content
-    } catch (e: any) {
-      error.value = e.message || '加载文章失败'
+    } catch (e: unknown) {
+      error.value = getErrorMessage(e, '加载文章失败')
       return null
     } finally {
       loading.value = false
@@ -248,7 +247,11 @@ export function useGitHubTree() {
   }
 
   // ── 树编辑操作 ──
-  async function createFolder(parentId: string | null, title: string, prepend = false): Promise<TreeNode> {
+  async function createFolder(
+    parentId: string | null,
+    title: string,
+    prepend = false,
+  ): Promise<TreeNode> {
     const node = await GitHubTreeService.createFolder(parentId, title)
     treeData.value = [...treeData.value, node]
     if (prepend) {
@@ -260,7 +263,9 @@ export function useGitHubTree() {
     } else {
       try {
         await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-      } catch { /* 缓存失败不影响主流程 */ }
+      } catch {
+        /* 缓存失败不影响主流程 */
+      }
     }
     if (parentId) expandedIds.value.add(parentId)
     return node
@@ -284,7 +289,9 @@ export function useGitHubTree() {
     try {
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
       await GitHubArticleCache.setArticle(node.id, content)
-    } catch { /* 缓存失败不影响主流程 */ }
+    } catch {
+      /* 缓存失败不影响主流程 */
+    }
     if (parentId) expandedIds.value.add(parentId)
     setCloudArticle(node)
     return node
@@ -299,7 +306,9 @@ export function useGitHubTree() {
     }
     try {
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-    } catch { /* 缓存失败不影响主流程 */ }
+    } catch {
+      /* 缓存失败不影响主流程 */
+    }
   }
 
   async function deleteNode(id: string): Promise<void> {
@@ -313,7 +322,9 @@ export function useGitHubTree() {
     }
     try {
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-    } catch { /* 缓存失败不影响主流程 */ }
+    } catch {
+      /* 缓存失败不影响主流程 */
+    }
     if (selectedNode.value?.id === id) {
       selectedNode.value = null
     }

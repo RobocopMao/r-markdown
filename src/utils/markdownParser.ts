@@ -185,7 +185,7 @@ export function parseMarkdown(
   // 收集脚注：[text](url "desc") 带引号标题的链接 → 脚注
   const footnotes: { label: string; url: string; desc: string }[] = []
   const footnoteRegex = /\[([^\]]+)\]\(([^)\s]+)\s+"([^"]+)"\)/g
-  const processedMd = md.replace(footnoteRegex, (_match, _label, url, desc) => {
+  const processedMd = md.replace(footnoteRegex, (_match, label, url, desc) => {
     // 检查是否已存在相同的脚注（根据 url 和 desc 判断）
     const existing = footnotes.findIndex((f) => f.url === url && f.desc === desc)
     let num: number
@@ -195,9 +195,9 @@ export function parseMarkdown(
     } else {
       // 新脚注，分配新序号
       num = footnotes.length + 1
-      footnotes.push({ label: _label, url, desc })
+      footnotes.push({ label, url, desc })
     }
-    return `__FN_${num - 1}__|${_label}|`
+    return `__FN_${num - 1}__|${label}|`
   })
 
   const lines = processedMd.split('\n')

@@ -1,6 +1,7 @@
 import { ref, nextTick, type Ref } from 'vue'
 import { getSetting } from '@/config/settings'
 import { putImage } from '@/utils/imageDB'
+import { getErrorMessage } from '@/utils/helpers'
 import { uploadToGitHub } from '@/services/githubUploader'
 import { uploadToLeta } from '@/services/letaUploader'
 
@@ -454,8 +455,8 @@ export function useImageInsert(
           `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
         )
         showToast('上传成功')
-      } catch (e: any) {
-        showToast(e.message || '上传失败')
+      } catch (e: unknown) {
+        showToast(getErrorMessage(e, '上传失败'))
       }
       githubUploading.value = false
       githubUploadProgress.value = 0
@@ -483,8 +484,8 @@ export function useImageInsert(
         `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
       )
       showToast('上传成功')
-    } catch (e: any) {
-      showToast(e.message || '上传失败')
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e, '上传失败'))
     }
     githubUploading.value = false
     githubUploadProgress.value = 0

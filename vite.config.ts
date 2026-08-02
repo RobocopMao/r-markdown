@@ -17,9 +17,9 @@ const hasExtension =
 const privateHomeFile = `${__dirname}/src/views-private/home/HomePage.vue`
 const hasPrivateHome = existsSync(privateHomeFile)
 
-// 百度的两个不同跟踪 ID
-const BAIDU_CF_ID = '1e39ca5c4cef3fe3c3abdd64d9d567e1'
-const BAIDU_GH_ID = 'a5fcc93a9e4cafcc7bea63232dd8a85f'
+// 百度的两个不同跟踪 ID（可通过环境变量覆盖）
+const BAIDU_CF_ID = process.env.BAIDU_CF_ID || '1e39ca5c4cef3fe3c3abdd64d9d567e1'
+const BAIDU_GH_ID = process.env.BAIDU_GH_ID || 'a5fcc93a9e4cafcc7bea63232dd8a85f'
 
 function baiduPlugin(): Plugin {
   const baiduId = process.env.CF_PAGES ? BAIDU_CF_ID : isWebDeploy ? BAIDU_GH_ID : null
