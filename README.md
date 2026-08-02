@@ -213,44 +213,13 @@ r-markdown/
 │   │   ├── home/HomePage.vue          # 首页
 │   │   ├── editor/
 │   │   │   ├── EditorPage.vue         # 编辑器页
-│   │   │   ├── components/            # 编辑器专用组件
-│   │   │   │   ├── ComponentPickerDialog.vue  # 组件选择弹窗
-│   │   │   │   ├── DraftListDialog.vue        # 草稿列表
-│   │   │   │   ├── Editor.vue                 # CodeMirror 编辑器
-│   │   │   │   ├── Preview.vue                # 公众号预览面板
-│   │   │   │   ├── SettingsDialog.vue         # 设置弹窗
-│   │   │   │   ├── PushToCloudDialog.vue      # 推送云端弹窗
-│   │   │   │   ├── PublishToWechatDialog.vue  # 微信发布弹窗
-│   │   │   │   ├── TreeSidebar.vue            # 文章树侧栏
-│   │   │   │   ├── MaterialLibraryPanel.vue   # 素材库面板
-│   │   │   │   ├── TagPropsForm.vue           # 组件属性表单
-│   │   │   │   ├── ThemePicker.vue            # 主题色选择器
-│   │   │   │   ├── XhsExporter.vue            # 图片导出
-│   │   │   │   └── mobile/                    # 移动端操作菜单
-│   │   │   └── composables/           # 编辑器专用组合式函数
-│   │   │       ├── useAutoSave.ts         # 自动保存
-│   │   │       ├── useDraft.ts            # 草稿管理
-│   │   │       ├── useGitHubTree.ts       # GitHub 文章树交互
-│   │   │       ├── useImageInsert.ts      # 图片插入 / 上传
-│   │   │       ├── useImport.ts           # 文件导入
-│   │   │       ├── useScrollSync.ts       # 滚动同步
-│   │   │       └── useWechatPublish.ts    # 微信发布
-│   │   └── extension/ExtensionPage.vue    # 组件展示页
-│   ├── views-private/        # 私有视图（git 子模块，闭源）
-│   │   ├── home/HomePage.vue            # 私有首页
-│   │   ├── material/MaterialLibraryPage.vue # 私有素材库
-│   │   └── help/                        # 帮助文档
+│   │   │   ├── components/            # 编辑器专用组件（Editor/Preview/各弹窗等）
+│   │   │   └── composables/           # 编辑器专用组合式函数（草稿/云文章/图片/微信发布等）
+│   │   └── extension/ExtensionPage.vue # 组件展示页
+│   ├── views-private/        # 私有视图（git 子模块，闭源）：私有首页 / 素材库 / 帮助
 │   ├── App.vue               # 根组件
 │   └── main.ts               # 入口
-├── src-tauri/                # Tauri 桌面客户端（Rust）
-│   ├── src/
-│   │   ├── main.rs               # Rust 入口
-│   │   ├── lib.rs                # Tauri 插件注册
-│   │   └── wechat.rs             # 微信公众号 API（token / 上传图片 / 草稿）
-│   ├── icons/                 # 应用图标
-│   ├── capabilities/          # 权限配置
-│   ├── Cargo.toml             # Rust 依赖
-│   └── tauri.conf.json        # Tauri 配置
+├── src-tauri/                # Tauri 桌面客户端（git 子模块，Rust）
 ├── scripts/
 │   └── clean-artifacts.mjs    # 清理 src/**.js 编译产物
 ├── .github/workflows/

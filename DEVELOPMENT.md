@@ -85,59 +85,15 @@ src/
 │   │   └── HomePage.vue         # 首页
 │   ├── editor/
 │   │   ├── EditorPage.vue       # 编辑器页
-│   │   ├── components/          # 编辑器专用组件
-│   │   │   ├── ComponentPickerDialog.vue  # 组件选择弹窗
-│   │   │   ├── DraftListDialog.vue        # 草稿列表
-│   │   │   ├── Dropdown.vue               # 下拉菜单
-│   │   │   ├── Editor.vue                 # CodeMirror 编辑器
-│   │   │   ├── EditorSidebar.vue          # 编辑器侧栏
-│   │   │   ├── FinalizeDialog.vue         # 定稿弹窗
-│   │   │   ├── ImageCacheDialog.vue       # 图片缓存管理
-│   │   │   ├── MaterialCard.vue           # 素材卡片
-│   │   │   ├── MaterialLibraryPanel.vue   # 素材库面板
-│   │   │   ├── Minimap.vue                # 缩略地图
-│   │   │   ├── Preview.vue                # 公众号预览面板
-│   │   │   ├── PublishToWechatDialog.vue  # 微信发布弹窗
-│   │   │   ├── PushToCloudDialog.vue      # 推送到云端弹窗
-│   │   │   ├── PushToCloudTree.vue        # 推送目标树
-│   │   │   ├── SaveDraftDialog.vue        # 草稿保存弹窗
-│   │   │   ├── SaveMaterialDialog.vue     # 素材保存弹窗
-│   │   │   ├── SettingsDialog.vue         # 设置弹窗
-│   │   │   ├── TagPropsForm.vue           # 组件属性表单
-│   │   │   ├── ThemePicker.vue            # 主题色选择器
-│   │   │   ├── TreeNode.vue               # 树节点
-│   │   │   ├── TreeSidebar.vue            # 文章树侧栏
-│   │   │   ├── XhsExporter.vue            # 图片导出
-│   │   │   └── mobile/                    # 移动端操作菜单
-│   │   └── composables/       # 编辑器专用组合式函数
-│   │       ├── useAutoSave.ts     # 自动保存
-│   │       ├── useDraft.ts        # 草稿管理
-│   │       ├── useExport.ts       # 导出
-│   │       ├── useGitHubTree.ts   # GitHub 文章树交互
-│   │       ├── useImageInsert.ts  # 图片插入/上传
-│   │       ├── useImport.ts       # 文件导入
-│   │       ├── useMaterial.ts     # 素材库交互
-│   │       ├── useScrollSync.ts   # 编辑器/预览滚动同步
-│   │       ├── useToolbar.ts      # 工具栏
-│   │       └── useWechatPublish.ts# 微信发布
+│   │   ├── components/          # 编辑器专用组件（Editor/Preview/TreeSidebar/各弹窗等，mobile/ 下为移动端操作菜单）
+│   │   └── composables/         # 编辑器专用组合式函数（草稿/云文章/图片/导入/滚动同步/微信发布等）
 │   └── extension/
-│       └── ExtensionPage.vue # 组件展示页
-├── views-private/       # 私有视图（git 子模块，闭源）
-│   ├── home/HomePage.vue        # 私有首页（覆盖 views/home）
-│   ├── material/MaterialLibraryPage.vue  # 私有素材库页
-│   └── help/                    # 帮助文档（tutorials/）
+│       └── ExtensionPage.vue    # 组件展示页
+├── views-private/       # 私有视图（git 子模块，闭源）：私有首页 / 素材库页 / 帮助文档
 ├── App.vue              # 根组件
 └── main.ts              # 入口文件
 
-src-tauri/               # Tauri 桌面客户端（Rust）
-├── src/
-│   ├── main.rs              # Rust 程序入口
-│   ├── lib.rs               # Tauri 插件注册与配置
-│   └── wechat.rs            # 微信公众号 API（token/上传图片/草稿）
-├── icons/                   # 应用图标（ico/icns/png）
-├── capabilities/            # 权限声明（shell/updater 等）
-├── Cargo.toml               # Rust 依赖与包配置
-└── tauri.conf.json          # Tauri 构建与打包配置
+src-tauri/               # Tauri 桌面客户端（git 子模块，Rust）：入口 / 插件注册 / 微信 API / 图标 / 权限 / 配置
 
 scripts/
 └── clean-artifacts.mjs      # 清理 src/**.js 编译产物（dev/build 前自动执行）
@@ -437,19 +393,22 @@ style: 调整深色模式下卡片边框颜色
 
 示例：`v0.1.3`
 
-### ⚠️ 推送规则（强制）
+### ⚠️ Git 操作规则（强制）
 
-**只有用户主动提出推送代码时，才执行 `git push`。** 无论哪个分支（main / develop / 功能分支），AI 不得自行决定推送。
+**commit 与 push 均需用户明确指示，AI 不得自行执行。**
 
-- 提交（commit）可以在开发过程中自动执行
-- 推送（push）必须等用户明确说"推送"、"push"、"推到线上"等指令后才执行
+- 提交（commit）：用户明确说"提交"、"commit"、"提交一下"等指令后才执行
+- 推送（push）：用户明确说"推送"、"push"、"推到线上"等指令后才执行
 - 合并（merge）到 main 分支也需要用户确认后才执行
-- 删除远程 tag 同理，需用户确认
+- 删除远程 tag、强制推送、重置等破坏性操作同理，需用户明确确认
+- 无论哪个分支（main / develop / 功能分支），规则一致
 
 ### 发布流程
 
+> 以下每一步均需用户明确指示后才执行，AI 不得自行 commit / push / merge / tag。
+
 ```bash
-# 1. 在 develop 分支开发并提交
+# 1. 在 develop 分支开发（用户指示"提交"后执行 commit）
 git add .
 git commit -m "feat: xxx"
 
