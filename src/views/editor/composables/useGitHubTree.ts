@@ -59,9 +59,15 @@ function expandAncestors(nodeId: string) {
 export function useGitHubTree() {
   // ── 计算属性 ──
 
-  /** 根级节点（parentId === null），按 sortOrder 排序 */
+  /** 默认排序：文件夹在前，同类型内按 sortOrder 升序 */
+  function defaultSort(a: TreeNode, b: TreeNode): number {
+    if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+    return a.sortOrder - b.sortOrder
+  }
+
+  /** 根级节点（parentId === null） */
   const treeRoots = computed(() =>
-    treeData.value.filter((n) => n.parentId === null).sort((a, b) => a.sortOrder - b.sortOrder),
+    treeData.value.filter((n) => n.parentId === null).sort(defaultSort),
   )
 
   /** 所有 folder 节点 */
@@ -72,7 +78,7 @@ export function useGitHubTree() {
   function getChildren(parentId: string): TreeNode[] {
     return treeData.value
       .filter((n) => n.parentId === parentId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .sort(defaultSort)
   }
 
   /** 获取某节点的所有兄弟节点（包含自身），按 sortOrder 排序 */
@@ -244,7 +250,11 @@ export function useGitHubTree() {
   // ── 树编辑操作 ──
   async function createFolder(parentId: string | null, title: string): Promise<TreeNode> {
     const node = await GitHubTreeService.createFolder(parentId, title)
-    await loadTree()
+    // 本地立即更新，避免依赖 loadTree() 回读（GitHub API 有缓存延迟）
+    treeData.value = [...treeData.value, node]
+    try {
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+    } catch { /* 缓存失败不影响主流程 */ }
     if (parentId) expandedIds.value.add(parentId)
     return node
   }
@@ -255,9 +265,12 @@ export function useGitHubTree() {
     content: string,
   ): Promise<TreeNode> {
     const node = await GitHubTreeService.createArticle(parentId, title, content)
-    // 同步写入缓存
-    await GitHubArticleCache.setArticle(node.id, content)
-    await loadTree()
+    // 本地立即更新，避免依赖 loadTree() 回读
+    treeData.value = [...treeData.value, node]
+    try {
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setArticle(node.id, content)
+    } catch { /* 缓存失败不影响主流程 */ }
     if (parentId) expandedIds.value.add(parentId)
     setCloudArticle(node)
     return node
@@ -265,25 +278,35 @@ export function useGitHubTree() {
 
   async function renameNode(id: string, newTitle: string): Promise<void> {
     await GitHubTreeService.renameNode(id, newTitle)
-    await loadTree()
+    // 本地立即更新 treeData，避免依赖 loadTree() 回读
+    const idx = treeData.value.findIndex((n) => n.id === id)
+    if (idx !== -1) {
+      treeData.value[idx] = { ...treeData.value[idx], title: newTitle }
+    }
+    try {
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+    } catch { /* 缓存失败不影响主流程 */ }
   }
 
   async function deleteNode(id: string): Promise<void> {
     const node = treeData.value.find((n) => n.id === id)
     await GitHubTreeService.deleteNode(id)
+    // 本地立即更新 treeData，避免依赖 loadTree() 回读
+    treeData.value = treeData.value.filter((n) => n.id !== id)
     // 清除缓存
     if (node?.type === 'article') {
       await GitHubArticleCache.deleteArticle(id)
     }
+    try {
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+    } catch { /* 缓存失败不影响主流程 */ }
     if (selectedNode.value?.id === id) {
       selectedNode.value = null
     }
-    // 如果删除的是当前编辑器关联的云端文章，清除关联
     if (currentCloudArticleId.value === id) {
       currentCloudArticleId.value = null
       clearCloudArticlePersistence()
     }
-    await loadTree()
   }
 
   async function moveNode(id: string, newParentId: string | null): Promise<void> {
@@ -326,9 +349,23 @@ export function useGitHubTree() {
     if (direction === 'down' && index >= siblings.length - 1) return
 
     reordering.value = true
+    // 乐观更新：立即重排本地节点
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    const a = siblings[index]
+    const b = siblings[swapIndex]
+    const tmp = a.sortOrder
+    a.sortOrder = b.sortOrder
+    b.sortOrder = tmp
+
     try {
       await GitHubTreeService.reorderNode(id, direction)
-      await loadTree()
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+    } catch {
+      // 失败时回滚
+      const tmp2 = a.sortOrder
+      a.sortOrder = b.sortOrder
+      b.sortOrder = tmp2
+      throw new Error('排序失败，已还原')
     } finally {
       reordering.value = false
     }
