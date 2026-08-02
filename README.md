@@ -11,9 +11,15 @@
 - **主题切换** — 15 款预设主题色 + 自定义颜色，支持暗色模式
 - **滚动同步** — 编辑器与预览面板滚动位置按比例联动
 - **自动保存** — 内容实时保存到 localStorage，刷新不丢失
+- **草稿管理** — IndexedDB 多草稿存储，支持导入 / 关联 / 自动匹配
+- **云文章** — 基于 GitHub 仓库的文章树管理（CRUD、缓存、自动关联）
+- **图床上传** — 支持 GitHub / Leta 图床，图片持久化托管
+- **素材库** — 可视化浏览 / 安装 / 发布排版素材
+- **微信发布** — 直接上传草稿到微信公众号素材库（桌面端）
 - **可调面板** — 拖拽调整编辑器与预览区宽度
 - **组件展示** — 内置排版组件库，可视化浏览所有可用组件及效果
 - **图片轮播** — SVG 动画实现的图片幻灯片，支持 4 种轮播模式
+- **公式 / 图表** — MathJax 数学公式 + Mermaid 流程图 / 时序图 / 甘特图
 - **桌面客户端** — 基于 Tauri 2 的 macOS（Apple Silicon）和 Windows（x64）原生应用
 - **自动更新** — 桌面客户端启动时自动检查新版本，一键下载安装
 
@@ -65,9 +71,12 @@
 ### 安装与运行
 
 ```bash
-# 克隆项目
-git clone https://github.com/RobocopMao/r-markdown.git
+# 克隆项目（含子模块）
+git clone --recursive https://github.com/RobocopMao/r-markdown.git
 cd r-markdown
+
+# 若已克隆但未带子模块，初始化子模块
+pnpm sm:update   # 或 bash update-submodules.sh
 
 # 安装依赖
 pnpm install
@@ -77,6 +86,8 @@ pnpm dev
 ```
 
 浏览器打开终端输出的地址即可使用。
+
+> `pnpm dev` / `build` / `tauri:dev` / `tauri:build` 会先自动执行 `pnpm clean` 清理 `src/**.js` 编译产物。
 
 ### 构建生产版本
 
@@ -117,7 +128,7 @@ pnpm tauri:build
 
 ### 桌面客户端安装
 
-从 [GitHub Releases](https://github.com/robocopmao/r-markdown/releases) 下载最新版本。
+从 [GitHub Releases](https://github.com/RobocopMao/r-markdown/releases) 下载最新版本。
 
 macOS 首次打开时若提示"已损坏"，执行以下命令放行：
 
@@ -133,9 +144,12 @@ sudo xattr -rd com.apple.quarantine /Applications/R-Markdown.app
 - **Vue Router** — 路由管理
 - **CodeMirror 6** — Markdown 编辑器内核
 - **Tailwind CSS 4** — 样式系统
+- **IndexedDB** — 图片 / 草稿 / 缓存本地存储
+- **MathJax** — 数学公式渲染
+- **Mermaid** — 流程图 / 时序图 / 甘特图
 - **html-to-image** — 图片导出
 - **awesome-design-md** — 公众号排版引擎
-- **Tauri 2** — 桌面客户端框架（macOS + Windows）
+- **Tauri 2** — 桌面客户端框架（macOS + Windows，Rust 后端调用微信 API）
 
 ## 📁 项目结构
 
@@ -143,87 +157,105 @@ sudo xattr -rd com.apple.quarantine /Applications/R-Markdown.app
 r-markdown/
 ├── src/
 │   ├── components/            # 公用 UI 组件
-│   │   ├── BaseDialog.vue     # 通用弹窗
-│   │   ├── DarkModeToggle.vue # 暗色模式切换
-│   │   ├── NavCapsule.vue     # 顶部导航胶囊
-│   │   │── PromptDialog.vue   # 提示词弹窗
-│   │   ├── SiteFooter.vue     # 页脚
-│   │   ├── SiteLogo.vue       # 站点 Logo
-│   │   ├── Toast.vue          # 轻提示
-│   │   └── mobile/            # 移动端专用组件
-│   │       └── MobileNavMenu.vue  # 移动端导航菜单
-│   ├── extension/             # 排版组件库（git 子模块）
-│   │   ├── Badges_DA01.ts     # 标签徽章
-│   │   ├── Breaking_DA01.ts   # 突发新闻卡片
-│   │   ├── CaseFlow_DA01.ts   # 案例流程
-│   │   ├── Chart_DA01.ts      # 图表组件
-│   │   ├── Compare_DA01.ts    # 对比布局 v1
-│   │   ├── Compare_DA02.ts    # 对比布局 v2
-│   │   ├── Cta_DA01.ts        # 行动召唤
-│   │   ├── Engage_DA01.ts     # 互动引导 v1
-│   │   ├── Engage_DA02.ts     # 互动引导 v2
-│   │   ├── Img_DA01.ts        # 单图组件
-│   │   ├── Lead_DA01.ts       # 引导文段
-│   │   ├── PTitle_DA01.ts     # 副标题
-│   │   ├── ReadingPath_DA01.ts # 阅读路径
-│   │   ├── Slider_DA01.ts     # 图片幻灯片轮播
-│   │   ├── Statement_DA01.ts  # 居中强调语
-│   │   ├── Steps_DA01.ts      # 步骤流 v1
-│   │   ├── Steps_DA02.ts      # 步骤流 v2
-│   │   ├── Timeline_DA01.ts   # 时间线
-│   │   ├── Title_DA01.ts      # 标题 v1
-│   │   ├── Title_DA02.ts      # 标题 v2
-│   │   └── index.ts           # 组件注册与导出
-│   ├── extension-stubs/       # 排版组件空桩（extension 不可用时的 fallback）
-│   │   ├── Badges_DA01.ts     # …（21 个组件，render 返回空字符串）
-│   │   └── index.ts
-│   ├── composables/           # 组合式函数
-│   │   ├── useTheme.ts        # 主题管理
-│   │   ├── useDarkMode.ts     # 暗色模式
-│   │   ├── useAutoUpdater.ts  # Tauri 自动更新
-│   │   └── useDropdownGroup.ts # 下拉菜单组
-│   ├── views/                 # 页面视图
-│   │   ├── home/
-│   │   │   └── HomePage.vue       # 首页
+│   │   ├── BaseDialog.vue         # 通用弹窗
+│   │   ├── BaseDrawer.vue         # 通用抽屉
+│   │   ├── BaseTooltip.vue        # 通用 tooltip
+│   │   ├── ConfirmDialog.vue      # 确认弹窗
+│   │   ├── DarkModeToggle.vue     # 暗色模式切换
+│   │   ├── NavCapsule.vue         # 顶部导航胶囊
+│   │   ├── PromptDialog.vue       # 提示词弹窗
+│   │   ├── SiteFooter.vue         # 页脚
+│   │   ├── SiteLogo.vue           # 站点 Logo
+│   │   ├── Toast.vue              # 轻提示
+│   │   └── mobile/                # 移动端专用组件
+│   ├── composables/           # 全局组合式函数
+│   │   ├── useTheme.ts            # 主题管理
+│   │   ├── useDarkMode.ts         # 暗色模式
+│   │   ├── useAutoUpdater.ts      # Tauri 自动更新
+│   │   ├── useMermaid.ts          # Mermaid 渲染
+│   │   ├── useEditorSettings.ts   # 编辑器全局设置
+│   │   ├── useParagraphSettings.ts# 段落格式设置
+│   │   ├── useDropdownGroup.ts    # 下拉菜单组
+│   │   └── useSetting.ts          # 通用设置读写
+│   ├── config/               # 配置层
+│   │   ├── defaults.ts            # 设置默认值
+│   │   └── settings.ts            # 设置读写（敏感项 AES-GCM-256 加密）
+│   ├── data/                 # 静态数据
+│   │   └── demoContent.ts         # 示例内容
+│   ├── extension/            # 排版组件库（git 子模块，闭源）
+│   ├── extension-stubs/      # 排版组件空桩（fallback）
+│   ├── router/               # 路由
+│   ├── services/             # 业务服务层
+│   │   ├── DraftStorage.ts        # IndexedDB 草稿存储
+│   │   ├── GitHubArticleCache.ts  # GitHub 文章本地缓存
+│   │   ├── GitHubTreeService.ts   # GitHub 仓库文章树 CRUD
+│   │   ├── encryption.ts          # AES-GCM-256 加解密
+│   │   ├── githubUploader.ts      # GitHub 图床
+│   │   ├── letaUploader.ts        # Leta 图床
+│   │   ├── materialLibrary.ts     # 素材库存储
+│   │   ├── materialPublish.ts     # 素材发布
+│   │   ├── coverCache.ts          # 微信封面缓存
+│   │   ├── configPersistence.ts   # 配置持久化
+│   │   ├── startupCheck.ts        # 启动配置恢复检查
+│   │   └── wechatPublisher.ts     # 微信公众号发布
+│   ├── styles/               # 全局样式
+│   ├── utils/                # 工具函数
+│   │   ├── markdownParser.ts      # Markdown → HTML 解析
+│   │   ├── colorUtils.ts          # 颜色处理
+│   │   ├── extractTitle.ts        # 标题提取
+│   │   ├── helpers.ts             # 通用辅助（esc/hexToRgb/getErrorMessage 等）
+│   │   ├── imageDB.ts             # IndexedDB 图片存储
+│   │   ├── components.ts          # 组件工具
+│   │   ├── inlineFormat.ts        # 内联格式化
+│   │   ├── mathRenderer.ts        # MathJax 公式渲染
+│   │   └── xhsCards.ts            # 小红书卡片
+│   ├── views/                # 页面视图
+│   │   ├── home/HomePage.vue          # 首页
 │   │   ├── editor/
-│   │   │   ├── EditorPage.vue     # 编辑器页
-│   │   │   └── components/        # 编辑器专用组件
-│   │   │       ├── ComponentPickerDialog.vue # 组件选择弹窗
-│   │   │       ├── Dropdown.vue       # 下拉菜单
-│   │   │       ├── Editor.vue         # CodeMirror 编辑器
-│   │   │       ├── Preview.vue        # 公众号预览面板
-│   │   │       ├── TagPropsForm.vue   # 组件属性表单
-│   │   │       ├── ThemePicker.vue    # 主题色选择器
-│   │   │       ├── XhsExporter.vue    # 图片导出
-│   │   │       └── mobile/
-│   │   │           └── MobileActionsMenu.vue  # 移动端操作菜单
-│   │   └── extension/
-│   │       └── ExtensionPage.vue # 组件展示页
-│   ├── utils/                 # 工具函数
-│   │   ├── markdownParser.ts  # Markdown → HTML 解析
-│   │   ├── colorUtils.ts      # 颜色处理
-│   │   ├── components.ts      # 组件工具
-│   │   ├── helpers.ts         # 通用辅助函数
-│   │   ├── inlineFormat.ts    # 内联格式化
-│   │   └── mathRenderer.ts    # MathJax 公式渲染
-│   ├── data/
-│   │   └── demoContent.ts     # 示例内容
-│   ├── router/
-│   │   └── index.ts           # 路由配置
-│   ├── styles/                # 全局样式
-│   ├── App.vue                # 根组件
-│   └── main.ts                # 入口
-├── src-tauri/                 # Tauri 桌面客户端
+│   │   │   ├── EditorPage.vue         # 编辑器页
+│   │   │   ├── components/            # 编辑器专用组件
+│   │   │   │   ├── ComponentPickerDialog.vue  # 组件选择弹窗
+│   │   │   │   ├── DraftListDialog.vue        # 草稿列表
+│   │   │   │   ├── Editor.vue                 # CodeMirror 编辑器
+│   │   │   │   ├── Preview.vue                # 公众号预览面板
+│   │   │   │   ├── SettingsDialog.vue         # 设置弹窗
+│   │   │   │   ├── PushToCloudDialog.vue      # 推送云端弹窗
+│   │   │   │   ├── PublishToWechatDialog.vue  # 微信发布弹窗
+│   │   │   │   ├── TreeSidebar.vue            # 文章树侧栏
+│   │   │   │   ├── MaterialLibraryPanel.vue   # 素材库面板
+│   │   │   │   ├── TagPropsForm.vue           # 组件属性表单
+│   │   │   │   ├── ThemePicker.vue            # 主题色选择器
+│   │   │   │   ├── XhsExporter.vue            # 图片导出
+│   │   │   │   └── mobile/                    # 移动端操作菜单
+│   │   │   └── composables/           # 编辑器专用组合式函数
+│   │   │       ├── useAutoSave.ts         # 自动保存
+│   │   │       ├── useDraft.ts            # 草稿管理
+│   │   │       ├── useGitHubTree.ts       # GitHub 文章树交互
+│   │   │       ├── useImageInsert.ts      # 图片插入 / 上传
+│   │   │       ├── useImport.ts           # 文件导入
+│   │   │       ├── useScrollSync.ts       # 滚动同步
+│   │   │       └── useWechatPublish.ts    # 微信发布
+│   │   └── extension/ExtensionPage.vue    # 组件展示页
+│   ├── views-private/        # 私有视图（git 子模块，闭源）
+│   │   ├── home/HomePage.vue            # 私有首页
+│   │   ├── material/MaterialLibraryPage.vue # 私有素材库
+│   │   └── help/                        # 帮助文档
+│   ├── App.vue               # 根组件
+│   └── main.ts               # 入口
+├── src-tauri/                # Tauri 桌面客户端（Rust）
 │   ├── src/
-│   │   ├── main.rs            # Rust 入口
-│   │   └── lib.rs             # Tauri 插件注册
+│   │   ├── main.rs               # Rust 入口
+│   │   ├── lib.rs                # Tauri 插件注册
+│   │   └── wechat.rs             # 微信公众号 API（token / 上传图片 / 草稿）
 │   ├── icons/                 # 应用图标
 │   ├── capabilities/          # 权限配置
 │   ├── Cargo.toml             # Rust 依赖
 │   └── tauri.conf.json        # Tauri 配置
+├── scripts/
+│   └── clean-artifacts.mjs    # 清理 src/**.js 编译产物
 ├── .github/workflows/
-│   ├── deploy.yml             # 网页版自动部署
-│   └── build-desktop.yml      # 桌面端 CI/CD 构建
+│   ├── deploy.yml             # 网页版部署（手动触发）
+│   └── build-desktop.yml      # 桌面端 CI/CD 构建（tag 触发）
 ├── package.json
 ├── vite.config.ts
 └── tsconfig.json
@@ -231,7 +263,7 @@ r-markdown/
 
 ## 🌐 在线体验
 
-访问 [GitHub Pages](https://robocopmao.github.io/r-markdown/) 直接使用。
+访问 [GitHub Pages](https://RobocopMao.github.io/r-markdown/) 直接使用。
 
 ## 📄 License
 

@@ -4,7 +4,7 @@
 
 ## 项目概述
 
-公众号 Markdown 排版编辑器，支持实时预览、主题切换、深色模式。
+公众号 Markdown 排版编辑器，支持实时预览、主题切换、深色模式、草稿管理、GitHub 云文章、图床上传、素材库、微信发布、Mermaid/MathJax 公式、桌面客户端（macOS / Windows）。
 
 ## 技术栈
 
@@ -26,71 +26,121 @@
 src/
 ├── components/          # 公用组件
 │   ├── BaseDialog.vue       # 通用弹窗
+│   ├── BaseDrawer.vue       # 通用抽屉
+│   ├── BaseTooltip.vue      # 通用 tooltip
+│   ├── ConfirmDialog.vue    # 确认弹窗
 │   ├── DarkModeToggle.vue   # 深色模式切换
 │   ├── NavCapsule.vue       # 顶部导航胶囊
+│   ├── PromptDialog.vue     # 提示词弹窗
 │   ├── SiteFooter.vue       # 页脚
 │   ├── SiteLogo.vue         # 站点 Logo
 │   ├── Toast.vue            # 轻提示
 │   └── mobile/              # 移动端专用
 │       └── MobileNavMenu.vue    # 移动端导航菜单
-├── extension/            # 排版组件库（git 子模块）
-│   ├── index.ts             # 组件注册与导出
-│   ├── Badges_DA01.ts       # 标签徽章
-│   ├── Breaking_DA01.ts     # 突发新闻卡片
-│   ├── CaseFlow_DA01.ts     # 案例流程
-│   ├── Chart_DA01.ts        # 图表组件
-│   ├── Compare_DA01.ts      # 对比布局 v1
-│   ├── Compare_DA02.ts      # 对比布局 v2
-│   ├── Cta_DA01.ts          # 行动召唤
-│   ├── Engage_DA01.ts       # 互动引导 v1
-│   ├── Engage_DA02.ts       # 互动引导 v2
-│   ├── Img_DA01.ts          # 单图组件
-│   ├── Lead_DA01.ts         # 引导文段
-│   ├── PTitle_DA01.ts       # 副标题
-│   ├── ReadingPath_DA01.ts  # 阅读路径
-│   ├── Slider_DA01.ts       # 图片幻灯片轮播
-│   ├── Statement_DA01.ts    # 居中强调语
-│   ├── Steps_DA01.ts        # 步骤流 v1
-│   ├── Steps_DA02.ts        # 步骤流 v2
-│   ├── Timeline_DA01.ts     # 时间线
-│   ├── Title_DA01.ts        # 标题 v1
-│   └── Title_DA02.ts        # 标题 v2
-├── extension-stubs/     # 排版组件空桩（extension 不可用时的 fallback）
-│   ├── index.ts             # 与 extension/index.ts 接口一致的 stub
-│   ├── Badges_DA01.ts       # …（21 个组件，render 返回空字符串）
-│   └── ...
-├── composables/         # Vue 组合式函数
+├── composables/         # Vue 组合式函数（全局通用）
 │   ├── useAutoUpdater.ts    # Tauri 自动更新检查
 │   ├── useDarkMode.ts       # 深色模式逻辑
+│   ├── useDropdownGroup.ts  # 下拉菜单组
+│   ├── useEditorSettings.ts # 编辑器全局设置（自动保存开关等）
+│   ├── useMermaid.ts        # Mermaid 图表渲染
+│   ├── useParagraphSettings.ts # 段落格式全局设置
+│   ├── useSetting.ts        # 通用设置读写
 │   └── useTheme.ts          # 主题管理
+├── config/              # 配置层
+│   ├── defaults.ts          # 设置默认值
+│   └── settings.ts          # 设置读写（带 AES-GCM-256 加密敏感项）
+├── data/                # 静态数据
+│   └── demoContent.ts       # 编辑器示例内容
+├── extension/           # 排版组件库（git 子模块，闭源）
+├── extension-stubs/     # 排版组件空桩（extension 不可用时的 fallback）
 ├── router/              # 路由配置
 │   └── index.ts
+├── services/            # 业务服务层
+│   ├── DraftStorage.ts      # IndexedDB 草稿存储
+│   ├── GitHubArticleCache.ts# GitHub 文章本地缓存（IndexedDB）
+│   ├── GitHubTreeService.ts # GitHub 仓库文章树 CRUD
+│   ├── configPersistence.ts # 配置持久化
+│   ├── coverCache.ts        # 微信封面 media_id 缓存
+│   ├── encryption.ts        # AES-GCM-256 加解密
+│   ├── githubUploader.ts    # GitHub 图床
+│   ├── letaUploader.ts      # Leta 图床
+│   ├── materialLibrary.ts   # 素材库存储
+│   ├── materialPublish.ts   # 素材发布到 GitHub
+│   ├── startupCheck.ts      # 配置恢复启动检查
+│   └── wechatPublisher.ts   # 微信公众号发布
 ├── styles/              # 全局样式
 │   └── style.css
 ├── utils/               # 工具函数
 │   ├── components.ts        # 组件解析器（callout/timeline 等）
-│   ├── helpers.ts           # 通用工具（esc/leaf/lightenHex 等）
+│   ├── colorUtils.ts        # 颜色处理
+│   ├── extractTitle.ts      # 从 Markdown 提取标题
+│   ├── helpers.ts           # 通用工具（esc/leaf/hexToRgb/withAlpha/getErrorMessage 等）
+│   ├── imageDB.ts           # IndexedDB 图片存储
 │   ├── inlineFormat.ts      # 行内格式化（==渐变::柔光!!胶囊^^上标等）
-│   └── mathRenderer.ts      # MathJax 公式渲染
-├── App.vue              # 根组件
-├── main.ts              # 入口文件
+│   ├── markdownParser.ts    # Markdown → HTML 解析（含自定义块级标签）
+│   ├── mathRenderer.ts      # MathJax 公式渲染
+│   └── xhsCards.ts          # 小红书卡片生成
 ├── views/               # 页面视图
 │   ├── home/
-│   │   └── HomePage.vue     # 首页
+│   │   └── HomePage.vue         # 首页
 │   ├── editor/
-│   │   ├── EditorPage.vue   # 编辑器页
-│   │   └── components/      # 编辑器专用组件（Editor/Preview/ThemePicker 等，mobile/ 下为移动端操作菜单）
+│   │   ├── EditorPage.vue       # 编辑器页
+│   │   ├── components/          # 编辑器专用组件
+│   │   │   ├── ComponentPickerDialog.vue  # 组件选择弹窗
+│   │   │   ├── DraftListDialog.vue        # 草稿列表
+│   │   │   ├── Dropdown.vue               # 下拉菜单
+│   │   │   ├── Editor.vue                 # CodeMirror 编辑器
+│   │   │   ├── EditorSidebar.vue          # 编辑器侧栏
+│   │   │   ├── FinalizeDialog.vue         # 定稿弹窗
+│   │   │   ├── ImageCacheDialog.vue       # 图片缓存管理
+│   │   │   ├── MaterialCard.vue           # 素材卡片
+│   │   │   ├── MaterialLibraryPanel.vue   # 素材库面板
+│   │   │   ├── Minimap.vue                # 缩略地图
+│   │   │   ├── Preview.vue                # 公众号预览面板
+│   │   │   ├── PublishToWechatDialog.vue  # 微信发布弹窗
+│   │   │   ├── PushToCloudDialog.vue      # 推送到云端弹窗
+│   │   │   ├── PushToCloudTree.vue        # 推送目标树
+│   │   │   ├── SaveDraftDialog.vue        # 草稿保存弹窗
+│   │   │   ├── SaveMaterialDialog.vue     # 素材保存弹窗
+│   │   │   ├── SettingsDialog.vue         # 设置弹窗
+│   │   │   ├── TagPropsForm.vue           # 组件属性表单
+│   │   │   ├── ThemePicker.vue            # 主题色选择器
+│   │   │   ├── TreeNode.vue               # 树节点
+│   │   │   ├── TreeSidebar.vue            # 文章树侧栏
+│   │   │   ├── XhsExporter.vue            # 图片导出
+│   │   │   └── mobile/                    # 移动端操作菜单
+│   │   └── composables/       # 编辑器专用组合式函数
+│   │       ├── useAutoSave.ts     # 自动保存
+│   │       ├── useDraft.ts        # 草稿管理
+│   │       ├── useExport.ts       # 导出
+│   │       ├── useGitHubTree.ts   # GitHub 文章树交互
+│   │       ├── useImageInsert.ts  # 图片插入/上传
+│   │       ├── useImport.ts       # 文件导入
+│   │       ├── useMaterial.ts     # 素材库交互
+│   │       ├── useScrollSync.ts   # 编辑器/预览滚动同步
+│   │       ├── useToolbar.ts      # 工具栏
+│   │       └── useWechatPublish.ts# 微信发布
 │   └── extension/
 │       └── ExtensionPage.vue # 组件展示页
+├── views-private/       # 私有视图（git 子模块，闭源）
+│   ├── home/HomePage.vue        # 私有首页（覆盖 views/home）
+│   ├── material/MaterialLibraryPage.vue  # 私有素材库页
+│   └── help/                    # 帮助文档（tutorials/）
+├── App.vue              # 根组件
+└── main.ts              # 入口文件
 
 src-tauri/               # Tauri 桌面客户端（Rust）
 ├── src/
 │   ├── main.rs              # Rust 程序入口
-│   └── lib.rs               # Tauri 插件注册与配置
+│   ├── lib.rs               # Tauri 插件注册与配置
+│   └── wechat.rs            # 微信公众号 API（token/上传图片/草稿）
 ├── icons/                   # 应用图标（ico/icns/png）
 ├── capabilities/            # 权限声明（shell/updater 等）
 ├── Cargo.toml               # Rust 依赖与包配置
 └── tauri.conf.json          # Tauri 构建与打包配置
+
+scripts/
+└── clean-artifacts.mjs      # 清理 src/**.js 编译产物（dev/build 前自动执行）
 ```
 
 ## 开发环境搭建
@@ -99,7 +149,10 @@ src-tauri/               # Tauri 桌面客户端（Rust）
 # 安装依赖
 pnpm install
 
-# 启动 Web 开发服务器
+# 初始化/更新 git 子模块（src-tauri / src/extension / src/views-private）
+pnpm sm:update        # 或 bash update-submodules.sh
+
+# 启动 Web 开发服务器（会先执行 pnpm clean 清理 .js 编译产物）
 pnpm dev
 
 # 启动 Tauri 桌面客户端开发模式（热更新）
@@ -115,7 +168,12 @@ pnpm tauri:build
 pnpm check        # ESLint + Prettier 检查
 pnpm lint         # ESLint 自动修复
 pnpm format       # Prettier 格式化
+
+# 清理编译产物（IDE / vue-tsc 增量编译会在 src/ 下生成 .js 残留）
+pnpm clean
 ```
+
+> `pnpm dev` / `build` / `tauri:dev` / `tauri:build` 均会先自动执行 `pnpm clean`，避免旧的 `.js` 文件被 Vite 优先加载导致行为异常。
 
 ## 代码规范
 
@@ -128,6 +186,13 @@ pnpm format       # Prettier 格式化
 - `@typescript-eslint/no-unused-vars`: 警告（`_` 开头的变量/参数忽略）
 - `vue/multi-word-component-names`: 关闭
 - `vue/no-v-html`: 关闭（项目需要 v-html 渲染 Markdown）
+- 浏览器 globals 通过 `globals` 包一次性导入（`globals.browser` + `globals.es2022`），不要在 `eslint.config.js` 手动列举 DOM 全局变量
+
+### 错误处理规范
+
+- **禁止 `catch (e: any)`**，统一使用 `catch (e: unknown)`
+- 提取错误消息用 `getErrorMessage(e: unknown, fallback?: string)`（`src/utils/helpers.ts`），自动处理 `Error` / `string` / `{message}` 三种形态
+- 不要写 `e?.message || '...'`，用 `getErrorMessage(e, '...')` 替代
 
 ### Prettier 规则
 
@@ -215,8 +280,9 @@ onMounted(() => {
 ## TypeScript 规范
 
 - **严格模式**已开启（`strict: true`）
-- **避免 `any`**，用 `unknown` 或具体类型替代
-- **正则回调参数**用 `_m`, `_p1`, `_p2` 命名（匹配但不使用）
+- **避免 `any`**，用 `unknown` 或具体类型替代；`catch` 子句必须用 `unknown`
+- **正则回调参数**用 `_m`, `_p1`, `_p2` 命名（仅匹配但不使用时）
+- **正则回调参数若实际有使用**，去掉 `_` 前缀（如 `(_match, label, url, desc) =>` 中 `label` 被使用就命名 `label` 而非 `_label`）
 - **工具函数导出**用 `export function`，不用 `export default`
 - **类型定义**集中在文件顶部或独立类型文件中
 
@@ -284,24 +350,34 @@ interface ThemeColors {
 | `<chart>`       | 图表组件       | -                          |
 | `<badges>`      | 标签徽章       | -                          |
 
-## Extension 子模块机制
+## 子模块机制
 
-`src/extension/` 是 git 子模块，仓库为闭源私有。无权限克隆时该目录为空。
+项目包含三个 git 子模块，均为闭源私有：
+
+| 子模块路径            | 用途                       | Fallback                                              |
+| --------------------- | -------------------------- | ----------------------------------------------------- |
+| `src/extension/`      | 排版组件库                 | 重定向到 `src/extension-stubs/`（render 返回空字符串）|
+| `src/views-private/`  | 私有首页 / 素材库 / 帮助页 | 重定向到 `src/views/`（公开版首页）                   |
+| `src-tauri/`          | Tauri Rust 桌面端源码      | 无（仅桌面构建需要）                                  |
 
 ### Fallback 策略
 
-`vite.config.ts` 在构建时检测 `src/extension/` 是否为空目录（过滤 `.` / `..` 后无文件），若为空则通过 Vite alias 将 `@/extension` 重定向到 `src/extension-stubs/`：
+`vite.config.ts` 在构建时检测 `src/extension/` 和 `src/views-private/home/HomePage.vue` 是否存在：
 
 ```typescript
 const extensionDir = `${__dirname}/src/extension`
 const hasExtension =
   existsSync(extensionDir) && readdirSync(extensionDir).filter((f) => !f.startsWith('.')).length > 0
 
+const privateHomeFile = `${__dirname}/src/views-private/home/HomePage.vue`
+const hasPrivateHome = existsSync(privateHomeFile)
+
 export default defineConfig({
   resolve: {
     alias: [
       // 必须用数组形式确保 @/extension 优先于 @
       ...(!hasExtension ? [{ find: '@/extension', replacement: '/src/extension-stubs' }] : []),
+      ...(!hasPrivateHome ? [{ find: '@/views-private', replacement: '/src/views' }] : []),
       { find: '@', replacement: '/src' },
     ],
   },
@@ -311,6 +387,15 @@ export default defineConfig({
 ### Stub 结构
 
 `src/extension-stubs/` 包含 21 个组件，每个组件导出与 `extension/` 同名的 `ComponentDef` 对象，`render` 返回空字符串。`index.ts` 导出与 `extension/index.ts` 完全一致的 `ComponentDef` 接口、`components[]`、`componentMap`、`tagMap` 及所有独立组件。
+
+### 子模块更新
+
+```bash
+# 初始化 / 更新所有子模块
+pnpm sm:update
+# 或
+bash update-submodules.sh
+```
 
 ### 依赖
 
@@ -411,10 +496,10 @@ pnpm tauri:build
 
 项目配置了两条 GitHub Actions 工作流，均在 `.github/workflows/` 下：
 
-| 文件                | 触发条件                 | 用途                                                          |
-| ------------------- | ------------------------ | ------------------------------------------------------------- |
-| `deploy.yml`        | 推送 `main` 分支         | 构建 Web 版并部署到 GitHub Pages                              |
-| `build-desktop.yml` | 推送 `v*` 标签或手动触发 | 构建 macOS (aarch64) + Windows (x64) 桌面客户端并发布 Release |
+| 文件                | 触发条件                          | 用途                                                          |
+| ------------------- | --------------------------------- | ------------------------------------------------------------- |
+| `deploy.yml`        | 手动触发（`workflow_dispatch`）   | 构建 Web 版并部署到 GitHub Pages                              |
+| `build-desktop.yml` | 推送 `v*` 标签或手动触发          | 构建 macOS (aarch64) + Windows (x64) 桌面客户端并发布 Release |
 
 **重要配置说明**：
 
@@ -423,6 +508,7 @@ pnpm tauri:build
 - 发布时 `Cargo.toml` 中 `[lib] name` 必须为 snake_case（`r_markdown_lib`）
 - 桌面客户端无代码签名，macOS 安装后需执行 `sudo xattr -rd com.apple.quarantine /Applications/R-Markdown.app` 放行
 - 每次发布桌面客户端需同步更新 `tauri.conf.json` 的 `version` 字段与 git tag 一致
+- 百度统计 ID 支持环境变量覆盖（`BAIDU_CF_ID` / `BAIDU_GH_ID`），未设置时使用默认值
 
 ### 预览构建产物
 
@@ -432,16 +518,17 @@ pnpm preview
 
 ## 注意事项
 
-1. **不要手动编辑 `.vue.js` 文件**：这些是 Vue 编译器生成的临时文件，已在 `.gitignore` 中排除
-2. **不要提交 `src/**/\*.js`文件**：TypeScript 源码编译产物，已在`.gitignore` 中排除
+1. **不要手动编辑 `.vue.js` / `src/**.js` 文件**：这些是 IDE 或 vue-tsc 增量编译生成的临时产物，已在 `.gitignore` 中排除，并由 `pnpm clean` 在 dev/build 前自动清理
+2. **不要提交 `src/**/\*.js` 文件**：TypeScript / Vue 编译产物，已在 `.gitignore` 中排除
 3. **修改行内格式化语法后**：同步更新本文档的语法对照表
 4. **新增组件后**：同步更新本文档的目录结构和组件解析语法表
 5. **构建前确认**：确保 `pnpm check` 通过，无 ESLint/Prettier 错误
-6. **Tauri 开发**：
+6. **多语句内联 handler**：Vue 模板中 `@click="a = 1; b = 2"` 这类带分号的多行内联 handler 会被 Prettier（`"semi": false`）移除分号导致 rolldown 解析失败。多语句 handler 一律提取为具名函数（参考 `EditorPage.vue` 的 `onTagDialogClose` / `onSettingsClose`）
+7. **Tauri 开发**：
    - 前端代码中的 Tauri API 调用须通过 `import.meta.env.VITE_TAURI === 'true'` 守卫，确保 Web 版不受影响
    - 修改 `Cargo.toml` 中 `[lib] name` 后须同步修改 `src-tauri/src/main.rs` 中的 crate 引用
    - 首次构建桌面端需安装 Rust 工具链（[rustup.rs](https://rustup.rs)）
-7. **Node 版本**：项目要求 Node.js >= 24，使用 nvm 管理版本：
+8. **Node 版本**：项目要求 Node.js >= 24，使用 nvm 管理版本：
    ```bash
    nvm install 24
    nvm use 24
