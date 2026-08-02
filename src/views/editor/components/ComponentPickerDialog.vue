@@ -122,6 +122,11 @@ function selectComponent(id: string) {
   selectedId.value = id
 }
 
+function selectCategory(key: string) {
+  activeCategory.value = key
+  selectedId.value = null
+}
+
 function confirmInsert() {
   const comp = compItems.value.find((c) => c.id === selectedId.value)
   if (comp?.example) {
@@ -156,10 +161,7 @@ function handleClose() {
               ? 'bg-[var(--accent)] text-white'
               : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
           "
-          @click="
-            activeCategory = cat.key;
-            selectedId = null
-          "
+          @click="selectCategory(cat.key)"
         >
           {{ cat.label }}
         </button>

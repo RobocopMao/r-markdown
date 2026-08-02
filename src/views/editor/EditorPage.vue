@@ -645,6 +645,18 @@ const { onImportClick } = useImport(
   matchCloudArticle,
 )
 
+/** TagPropsForm 关闭：重置弹窗可见性与编辑中的标签信息 */
+function onTagDialogClose() {
+  showTagDialog.value = false
+  tagInfo.value = null
+}
+
+/** SettingsDialog 关闭：关闭弹窗并刷新 cloudConfigured 状态 */
+function onSettingsClose() {
+  settingsVisible.value = false
+  cloudConfigured.value = GitHubTreeService.getConfig() !== null
+}
+
 function onPasteText() {
   currentDraftId.value = null
   currentCloudArticleId.value = null
@@ -1529,10 +1541,7 @@ function loadDemo() {
             <TagPropsForm
               :visible="showTagDialog && !isMobile"
               :tag-info="tagInfo"
-              @close="
-                showTagDialog = false
-                tagInfo = null
-              "
+              @close="onTagDialogClose"
               @update="onTagDialogUpdate"
             />
           </div>
@@ -1623,10 +1632,7 @@ function loadDemo() {
   <SettingsDialog
     :visible="settingsVisible"
     :initialTab="settingsInitialTab"
-    @close="
-      settingsVisible = false
-      cloudConfigured = GitHubTreeService.getConfig() !== null
-    "
+    @close="onSettingsClose"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"

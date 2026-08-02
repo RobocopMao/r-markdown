@@ -91,6 +91,11 @@ function selectParent(id: string | null) {
   mode.value = 'new'
 }
 
+function selectUpdateMode() {
+  mode.value = 'update'
+  selectedParentId.value = null
+}
+
 function selectArticle(id: string) {
   selectedArticleId.value = id
   mode.value = 'update'
@@ -173,10 +178,7 @@ function close() {
                 border: '1px solid var(--border-color, #e0e0e0)',
               }
         "
-        @click="
-          mode = 'update';
-          selectedParentId = null
-        "
+        @click="selectUpdateMode"
       >
         更新已有文章
       </button>
