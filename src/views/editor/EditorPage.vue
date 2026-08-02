@@ -703,6 +703,8 @@ function onExampleAction(action: string) {
 function loadDemo() {
   clearBase64Store()
   currentDraftId.value = null
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
   markdown.value = DEMO_CONTENT
   localStorage.setItem(STORAGE_KEY, DEMO_CONTENT)
   const now = new Date()
