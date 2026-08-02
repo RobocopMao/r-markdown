@@ -1,10 +1,24 @@
 import { DEFAULT_SETTINGS, type SettingDef } from './defaults'
 import { writeDiskConfig, readDiskConfig } from '@/services/configPersistence'
+import { initCrypto, encrypt, decrypt, isPlaintextJSON } from '@/services/encryption'
 
 const PREFIX = 'r-markdown-'
 const isDesktop = import.meta.env.VITE_TAURI === 'true'
 type Platform = 'desktop' | 'web'
 const currentPlatform: Platform = isDesktop ? 'desktop' : 'web'
+
+/** 敏感字段解密后缓存在内存中，供 getSetting 同步读取 */
+const sensitiveCache = new Map<string, string>()
+
+const SENSITIVE_KEYS: Set<string> = new Set([
+  'cloudArticleToken',
+  'cloudArticleRepo',
+  'githubRepo',
+  'githubToken',
+  'letaToken',
+  'wechatAppId',
+  'wechatAppSecret',
+])
 
 /** 桌面端：setSetting 后异步同步到磁盘。写丢不管，下次存新值时覆盖。 */
 async function syncToDisk() {
@@ -56,9 +70,61 @@ export function initSettings(): void {
 }
 
 /**
- * 读取一个设置项的值。优先从 localStorage 取，无记录时回退到默认值。
+ * 初始化加密层并解密 localStorage 中已有的敏感字段到内存缓存。
+ * 应在 initSettings() 之后、任何 getSetting 读取敏感字段之前调用。
+ * 同时兼容旧版明文格式：检测到后自动加密迁移。
+ */
+export async function initEncryption(): Promise<void> {
+  await initCrypto()
+  for (const key of SENSITIVE_KEYS) {
+    const storageKey = PREFIX + key
+    const stored = localStorage.getItem(storageKey)
+    if (stored === null) continue
+
+    // 尝试解密（已是加密格式）
+    try {
+      const plaintext = await decrypt(stored)
+      sensitiveCache.set(key, plaintext)
+      continue
+    } catch {
+      // 解密失败，可能是旧明文或损坏数据
+    }
+
+    // 迁移：旧版明文 JSON 格式
+    if (isPlaintextJSON(stored)) {
+      sensitiveCache.set(key, stored)
+      try {
+        const encrypted = await encrypt(stored)
+        localStorage.setItem(storageKey, encrypted)
+      } catch {
+        // 加密失败不阻塞，下次 setSetting 会重试
+      }
+    } else {
+      // 无法识别的格式，清除
+      localStorage.removeItem(storageKey)
+    }
+  }
+}
+
+/**
+ * 读取一个设置项的值。
+ * 敏感字段从内存缓存读取（由 initEncryption 解密填充）。
+ * 普通字段从 localStorage 读取，无记录时回退默认值。
  */
 export function getSetting<T = unknown>(key: string): T {
+  if (SENSITIVE_KEYS.has(key)) {
+    const cached = sensitiveCache.get(key)
+    if (cached !== undefined) {
+      try {
+        return JSON.parse(cached) as T
+      } catch {
+        return cached as unknown as T
+      }
+    }
+    const def = (DEFAULT_SETTINGS as Record<string, SettingDef>)[key]
+    return def?.default as T
+  }
+
   const storageKey = PREFIX + key
   const raw = localStorage.getItem(storageKey)
   if (raw !== null) {
@@ -74,23 +140,29 @@ export function getSetting<T = unknown>(key: string): T {
 
 /**
  * 写入一个设置项到 localStorage。桌面端同时同步到磁盘 JSON。
+ * 敏感字段：先更新内存缓存，再异步加密写入 localStorage（不阻塞调用方）。
  */
 export function setSetting(key: string, value: unknown): void {
-  const storageKey = PREFIX + key
-  localStorage.setItem(storageKey, JSON.stringify(value))
-  window.dispatchEvent(new CustomEvent('setting-changed', { detail: { key, value } }))
-  syncToDisk()
-}
+  const serialized = JSON.stringify(value)
 
-const SENSITIVE_KEYS: Set<string> = new Set([
-  'cloudArticleToken',
-  'cloudArticleRepo',
-  'githubRepo',
-  'githubToken',
-  'letaToken',
-  'wechatAppId',
-  'wechatAppSecret',
-])
+  if (SENSITIVE_KEYS.has(key)) {
+    // 立即更新缓存，后续 getSetting 立即可用
+    sensitiveCache.set(key, serialized)
+    // 异步加密持久化
+    encrypt(serialized).then((encrypted) => {
+      localStorage.setItem(PREFIX + key, encrypted)
+    }).catch(() => {
+      // 加密失败兜底：明文存储（不应发生，但防崩溃）
+      localStorage.setItem(PREFIX + key, serialized)
+    })
+  } else {
+    const storageKey = PREFIX + key
+    localStorage.setItem(storageKey, serialized)
+    syncToDisk()
+  }
+
+  window.dispatchEvent(new CustomEvent('setting-changed', { detail: { key, value } }))
+}
 
 /** 导出当前所有设置（用于写入磁盘 JSON） */
 export function getAllSettings(): Record<string, unknown> {

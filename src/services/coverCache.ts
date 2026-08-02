@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'wechat_cover_cache'
+const STORAGE_KEY = 'r-markdown-wechatCoverCache'
 
 interface CoverCacheData {
   entries: Record<string, string>
