@@ -222,6 +222,55 @@ export function parseMarkdown(
   }
 
   /**
+   * 通用块级标签 body 收集器。
+   *
+   * 单行模式：开标签同行有闭标签 → 直接取中间内容。
+   * 多行模式：从 startIdx+1 开始收集，按 tagName 追踪嵌套深度，直到匹配的闭标签。
+   *
+   * @param lines       行数组
+   * @param startIdx    开标签所在行索引
+   * @param tagName     标签名（不含 < >），如 'row'、'column'
+   * @param openLineRest 开标签同行可能存在的剩余内容（单行模式用，多行模式下作为 body 第一行）
+   * @param allowSingle 是否支持单行模式（开标签同行闭标签）。false 表示开标签必须独占一行（如 <row>）
+   * @returns { bodyText, next } bodyText 已 trim，next 指向闭标签后的下一行
+   */
+  function collectBlockBody(
+    startIdx: number,
+    tagName: string,
+    openLineRest: string | null,
+    allowSingle: boolean,
+  ): { bodyText: string; next: number } {
+    // 单行模式：<tag ...>content</tag>
+    if (
+      allowSingle &&
+      openLineRest !== null &&
+      new RegExp(`</${tagName}>\\s*$`).test(openLineRest)
+    ) {
+      const bodyText = openLineRest.replace(new RegExp(`</${tagName}>\\s*$`), '').trim()
+      return { bodyText, next: startIdx + 1 }
+    }
+
+    // 多行模式：追踪嵌套深度
+    const openRe = new RegExp(`<\\s*${tagName}\\b`, 'g')
+    const closeRe = new RegExp(`</${tagName}>`, 'g')
+    let j = startIdx + 1
+    let body = openLineRest !== null ? openLineRest + '\n' : ''
+    let depth = 1
+    while (j < lines.length && depth > 0) {
+      const openCount = (lines[j].match(openRe) || []).length
+      const closeCount = (lines[j].match(closeRe) || []).length
+      if (openCount > 0 || closeCount > 0) {
+        depth += openCount - closeCount
+        if (depth > 0) body += lines[j] + '\n'
+      } else {
+        body += lines[j] + '\n'
+      }
+      j++
+    }
+    return { bodyText: body.trim(), next: j }
+  }
+
+  /**
    * 递归解析 <row> 标签及其内部的 <column> 子标签。
    * Column 的 body 通过递归调用 parseMarkdown 支持完整 Markdown 及嵌套 <row>。
    */
@@ -229,32 +278,12 @@ export function parseMarkdown(
     const openMatch = lines[startIdx].match(/^<row\b([^>]*)>/)
     const attrs = openMatch && openMatch[1] ? parseAttrs(openMatch[1]) : {}
 
-    let j = startIdx + 1
-    // 收集 row body 行直到匹配的 </row>（追踪嵌套深度）
-    const bodyLines: string[] = []
-    let rowDepth = 1
-    while (j < lines.length && rowDepth > 0) {
-      const openCount = (lines[j].match(/<\s*row\b/g) || []).length
-      const closeCount = (lines[j].match(/<\/row>/g) || []).length
-
-      if (openCount > 0 || closeCount > 0) {
-        rowDepth += openCount - closeCount
-        if (rowDepth > 0) {
-          bodyLines.push(lines[j])
-        }
-      } else {
-        bodyLines.push(lines[j])
-      }
-      j++
-    }
-
-    // body 通过 parseMarkdown 递归解析，自动处理纯文本、<column>、嵌套 <row> 等
-    const bodyText = bodyLines.join('\n').trim()
+    const { bodyText, next } = collectBlockBody(startIdx, 'row', null, false)
     const innerHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + 1 + lineOffset)
       : ''
 
-    return { html: Row_DA01.render(attrs, innerHtml, t), next: j }
+    return { html: Row_DA01.render(attrs, innerHtml, t), next }
   }
 
   /**
@@ -264,38 +293,13 @@ export function parseMarkdown(
   function parseColumnTag(startIdx: number): { html: string; next: number } {
     const openMatch = lines[startIdx].match(/^<column\b([^>]*)>(.*)$/)
     const attrs = openMatch && openMatch[1] ? parseAttrs(openMatch[1]) : {}
+    const rest = openMatch?.[2] ?? null
 
-    // 单行 column：<column ...>content</column>
-    if (openMatch && openMatch[2] && /<\/column>\s*$/.test(openMatch[2])) {
-      const bodyText = openMatch[2].replace(/<\/column>\s*$/, '').trim()
-      const bodyHtml = bodyText
-        ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
-        : ''
-      return { html: Column_DA01.render(attrs, bodyHtml, t), next: startIdx + 1 }
-    }
-
-    // 多行 column：收集直到匹配的 </column>（追踪嵌套深度）
-    let j = startIdx + 1
-    let bodyText = openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n'
-    let colDepth = 1
-    while (j < lines.length && colDepth > 0) {
-      const openCount = (lines[j].match(/<\s*column\b/g) || []).length
-      const closeCount = (lines[j].match(/<\/column>/g) || []).length
-
-      if (openCount > 0 || closeCount > 0) {
-        colDepth += openCount - closeCount
-        if (colDepth > 0) {
-          bodyText += lines[j] + '\n'
-        }
-      } else {
-        bodyText += lines[j] + '\n'
-      }
-      j++
-    }
+    const { bodyText, next } = collectBlockBody(startIdx, 'column', rest, true)
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
       : ''
-    return { html: Column_DA01.render(attrs, bodyHtml, t), next: j }
+    return { html: Column_DA01.render(attrs, bodyHtml, t), next }
   }
 
   /**
@@ -304,38 +308,13 @@ export function parseMarkdown(
   function parseContainerTag(startIdx: number): { html: string; next: number } {
     const openMatch = lines[startIdx].match(/^<container\b([^>]*)>(.*)$/)
     const attrs = openMatch && openMatch[1] ? parseAttrs(openMatch[1]) : {}
+    const rest = openMatch?.[2] ?? null
 
-    // 单行 container：<container ...>content</container>
-    if (openMatch && openMatch[2] && /<\/container>\s*$/.test(openMatch[2])) {
-      const bodyText = openMatch[2].replace(/<\/container>\s*$/, '').trim()
-      const bodyHtml = bodyText
-        ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth, startIdx + lineOffset)
-        : ''
-      return { html: Container_DA01.render(attrs, bodyHtml, t), next: startIdx + 1 }
-    }
-
-    // 多行 container：收集直到匹配的 </container>（追踪嵌套深度）
-    let j = startIdx + 1
-    let bodyText = openMatch && openMatch[2] ? openMatch[2] + '\n' : '\n'
-    let conDepth = 1
-    while (j < lines.length && conDepth > 0) {
-      const openCount = (lines[j].match(/<container\b/g) || []).length
-      const closeCount = (lines[j].match(/<\/container>/g) || []).length
-
-      if (openCount > 0 || closeCount > 0) {
-        conDepth += openCount - closeCount
-        if (conDepth > 0) {
-          bodyText += lines[j] + '\n'
-        }
-      } else {
-        bodyText += lines[j] + '\n'
-      }
-      j++
-    }
+    const { bodyText, next } = collectBlockBody(startIdx, 'container', rest, true)
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth, startIdx + lineOffset)
       : ''
-    return { html: Container_DA01.render(attrs, bodyHtml, t), next: j }
+    return { html: Container_DA01.render(attrs, bodyHtml, t), next }
   }
 
   /**
@@ -384,48 +363,16 @@ export function parseMarkdown(
    * 自身可嵌套（depth<4），内部 Positioned 表达式随后由主循环匹配
    */
   function parseStackTag(startIdx: number): { html: string; next: number } {
-    const line = lines[startIdx]
-    const re = /<stack\b([^>]*)>/
-    const m = line.match(re)
-    if (!m) return { html: line, next: startIdx + 1 }
+    const openMatch = lines[startIdx].match(/^<stack\b([^>]*)>(.*)$/)
+    if (!openMatch) return { html: lines[startIdx], next: startIdx + 1 }
+    const attrs = parseAttrs(openMatch[1])
+    const rest = openMatch[2] ?? null
 
-    const attrs = parseAttrs(m[1])
-
-    // 单行模式：<stack ...>content</stack>
-    if (/<\/stack>\s*$/.test(line)) {
-      const bodyText = line
-        .replace(re, '')
-        .replace(/<\/stack>\s*$/, '')
-        .trim()
-      const bodyHtml = bodyText
-        ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
-        : ''
-      return { html: Stack_DA01.render(attrs, bodyHtml, t), next: startIdx + 1 }
-    }
-
-    // 多行模式：收集直到 </stack>
-    let j = startIdx + 1
-    let bodyDepth = 1
-    const bodyLines: string[] = []
-    while (j < lines.length && bodyDepth > 0) {
-      if (/<stack\b/.test(lines[j])) bodyDepth++
-      if (/^<\/stack>/.test(lines[j])) {
-        bodyDepth--
-        if (bodyDepth === 0) {
-          j++
-          break
-        }
-      }
-      bodyLines.push(lines[j])
-      j++
-    }
-
-    // 递归解析 body 内的 Markdown + 扩展组件
-    const bodyText = bodyLines.join('\n').trim()
+    const { bodyText, next } = collectBlockBody(startIdx, 'stack', rest, true)
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + 1 + lineOffset)
       : ''
-    return { html: Stack_DA01.render(attrs, bodyHtml, t), next: j }
+    return { html: Stack_DA01.render(attrs, bodyHtml, t), next }
   }
 
   /**
@@ -433,48 +380,16 @@ export function parseMarkdown(
    * content 递归解析 Markdown
    */
   function parsePositionedTag(startIdx: number): { html: string; next: number } {
-    const line = lines[startIdx]
-    const re = /<positioned\b([^>]*)>/
-    const m = line.match(re)
-    if (!m) return { html: line, next: startIdx + 1 }
+    const openMatch = lines[startIdx].match(/^<positioned\b([^>]*)>(.*)$/)
+    if (!openMatch) return { html: lines[startIdx], next: startIdx + 1 }
+    const attrs = parseAttrs(openMatch[1])
+    const rest = openMatch[2] ?? null
 
-    const attrs = parseAttrs(m[1])
-
-    // 单行模式
-    if (/<\/positioned>\s*$/.test(line)) {
-      const bodyText = line
-        .replace(re, '')
-        .replace(/<\/positioned>\s*$/, '')
-        .trim()
-      const bodyHtml = bodyText
-        ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + lineOffset)
-        : ''
-      return { html: Positioned_DA01.render(attrs, bodyHtml, t), next: startIdx + 1 }
-    }
-
-    // 多行模式：收集直到 </positioned>
-    let j = startIdx + 1
-    let bodyDepth = 1
-    const bodyLines: string[] = []
-    while (j < lines.length && bodyDepth > 0) {
-      if (/<positioned\b/.test(lines[j])) bodyDepth++
-      if (/^<\/positioned>/.test(lines[j])) {
-        bodyDepth--
-        if (bodyDepth === 0) {
-          j++
-          break
-        }
-      }
-      bodyLines.push(lines[j])
-      j++
-    }
-
-    // 递归解析 body
-    const bodyText = bodyLines.join('\n').trim()
+    const { bodyText, next } = collectBlockBody(startIdx, 'positioned', rest, true)
     const bodyHtml = bodyText
       ? parseMarkdown(bodyText, t, formulaMap, paragraphStyle, depth + 1, startIdx + 1 + lineOffset)
       : ''
-    return { html: Positioned_DA01.render(attrs, bodyHtml, t), next: j }
+    return { html: Positioned_DA01.render(attrs, bodyHtml, t), next }
   }
 
   while (i < lines.length) {

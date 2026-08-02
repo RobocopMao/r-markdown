@@ -12,8 +12,8 @@
 | ------ | ----------------------- | ----- |
 | 框架   | Vue 3 (Composition API) | 3.6.x |
 | 语言   | TypeScript              | 6.x   |
-| 构建   | Vite                    | 5.x   |
-| 样式   | Tailwind CSS 4          | 4.2.x |
+| 构建   | Vite                    | 8.x   |
+| 样式   | Tailwind CSS 4          | 4.3.x |
 | 编辑器 | CodeMirror 6            | 6.x   |
 | 路由   | Vue Router              | 4.6.x |
 | 桌面   | Tauri 2                 | 2.x   |

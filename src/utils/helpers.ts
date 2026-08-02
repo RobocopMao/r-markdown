@@ -28,6 +28,17 @@ export function lightenHex(hex: string, factor: number): string {
   return '#' + ((1 << 24) + (lr << 16) + (lg << 8) + lb).toString(16).slice(1)
 }
 
+/** 加深 hex 颜色（factor 越大越深，0~1） */
+export function darkenHex(hex: string, factor: number): string {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  const dr = Math.round(r * (1 - factor))
+  const dg = Math.round(g * (1 - factor))
+  const db = Math.round(b * (1 - factor))
+  return '#' + ((1 << 24) + (dr << 16) + (dg << 8) + db).toString(16).slice(1)
+}
+
 /**
  * 将任意颜色值（hex / rgb / 命名色）转为带透明度的背景色。
  * @param color  原始颜色，如 "#e74c3c"、"rgb(231,76,60)"、"red"

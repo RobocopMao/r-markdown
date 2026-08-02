@@ -100,7 +100,7 @@ export async function downloadUpdateWithRid(
 
 function autoCheck() {
   setTimeout(async () => {
-    // 等待配置恢复弹窗处理完毕，避免两弹窗重叠
+    // 等待配置恢复弹窗处理完毕，避免两弹窗重叠；最多等 60s 后放弃本次检查
     if (!startupState.resolved) {
       await new Promise<void>((resolve) => {
         const stop = watch(
@@ -112,6 +112,11 @@ function autoCheck() {
             }
           },
         )
+        // 超时保护：避免用户始终不处理弹窗导致 watcher 永久泄漏 + Promise 永久 pending
+        setTimeout(() => {
+          stop()
+          resolve()
+        }, 60000)
       })
     }
     if (!autoUpdateEnabled.value) return

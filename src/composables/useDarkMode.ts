@@ -29,12 +29,11 @@ function applyTheme(dark: boolean) {
   document.documentElement.classList.toggle('dark', dark)
 }
 
+// 模块级副作用：只注册一次 watcher，避免 useDarkMode() 每次调用都重复注册
+initSystemListener()
+watch(isDark, (v) => applyTheme(v), { immediate: true })
+
 export function useDarkMode() {
-  initSystemListener()
-
-  // 监听 isDark 变化，自动应用
-  watch(isDark, (v) => applyTheme(v), { immediate: true })
-
   function setMode(m: DarkMode) {
     mode.value = m
     localStorage.setItem(STORAGE_KEY, m)

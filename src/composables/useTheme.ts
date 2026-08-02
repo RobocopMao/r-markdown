@@ -1,4 +1,5 @@
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { hexToRgb, lightenHex, darkenHex } from '@/utils/helpers'
 
 export interface ThemeColors {
   accent: string
@@ -27,23 +28,6 @@ const THEMES = [
 ]
 
 const STORAGE_KEY = 'r-markdown-theme'
-
-function hexToRgb(hex: string): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  return `${r},${g},${b}`
-}
-
-function lightenHex(hex: string, factor: number): string {
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const lr = Math.round(r + (255 - r) * factor)
-  const lg = Math.round(g + (255 - g) * factor)
-  const lb = Math.round(b + (255 - b) * factor)
-  return '#' + ((1 << 24) + (lr << 16) + (lg << 8) + lb).toString(16).slice(1)
-}
 
 // 模块级单例 ref，确保所有 useTheme() 调用方共享同一份响应式状态
 const saved = (() => {
@@ -80,45 +64,36 @@ const colors = computed<ThemeColors>(() => ({
   rgb: hexToRgb(accent.value),
 }))
 
+/** 把当前主题色应用到 :root CSS 变量 */
+function applyCssVars(a: string, d: string) {
+  const root = document.documentElement
+  root.style.setProperty('--accent', a)
+  root.style.setProperty('--accent-dark', d)
+  root.style.setProperty('--accent-light', a + '26')
+  root.style.setProperty('--accent-border', a + '33')
+  root.style.setProperty('--accent-rgb', hexToRgb(a))
+}
+
+// 模块级副作用：只注册一次 watcher，accent / accentDark 变化时自动同步 CSS 变量
+// 避免 useTheme() 每次被调用都重复注册 watcher + 重复 applyCssVars
+watch([accent, accentDark], ([a, d]) => applyCssVars(a, d), { immediate: true })
+
+function setTheme(a: string, d: string) {
+  accent.value = a
+  accentDark.value = d
+  isCustom.value = false
+  customColor.value = a
+  localStorage.setItem(STORAGE_KEY, JSON.stringify({ accent: a, dark: d }))
+}
+
+function setCustomTheme(hex: string) {
+  customColor.value = hex
+  const dark = darkenHex(hex, 0.15)
+  setTheme(hex, dark)
+  isCustom.value = true
+}
+
 export function useTheme() {
-  function setTheme(a: string, d: string) {
-    accent.value = a
-    accentDark.value = d
-    isCustom.value = false
-    customColor.value = a
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ accent: a, dark: d }))
-    applyCssVars(a, d)
-  }
-
-  function setCustomTheme(hex: string) {
-    customColor.value = hex
-    const dark = darkenHex(hex, 0.15)
-    setTheme(hex, dark)
-    isCustom.value = true
-  }
-
-  function darkenHex(hex: string, factor: number): string {
-    const r = parseInt(hex.slice(1, 3), 16)
-    const g = parseInt(hex.slice(3, 5), 16)
-    const b = parseInt(hex.slice(5, 7), 16)
-    const dr = Math.round(r * (1 - factor))
-    const dg = Math.round(g * (1 - factor))
-    const db = Math.round(b * (1 - factor))
-    return '#' + ((1 << 24) + (dr << 16) + (dg << 8) + db).toString(16).slice(1)
-  }
-
-  function applyCssVars(a: string, d: string) {
-    const root = document.documentElement
-    root.style.setProperty('--accent', a)
-    root.style.setProperty('--accent-dark', d)
-    root.style.setProperty('--accent-light', a + '26')
-    root.style.setProperty('--accent-border', a + '33')
-    root.style.setProperty('--accent-rgb', hexToRgb(a))
-  }
-
-  // 初始化 CSS 变量
-  applyCssVars(accent.value, accentDark.value)
-
   return {
     accent,
     accentDark,
