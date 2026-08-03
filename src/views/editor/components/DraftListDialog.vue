@@ -113,7 +113,7 @@ function formatDate(ts: number): string {
     title="草稿箱"
     width="min(95vw, 1100px)"
     :show-footer="false"
-    noBodyPadding
+    no-body-padding
     @close="emit('close')"
   >
     <template #header>

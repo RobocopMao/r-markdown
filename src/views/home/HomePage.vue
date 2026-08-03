@@ -386,7 +386,7 @@ function renderMdLine(line: string): Array<{ type: string; text: string }> {
     return segments
   }
   // bold **text**
-  let remaining = line
+  const remaining = line
   const boldRe = /\*\*(.+?)\*\*/g
   let lastIdx = 0
   let m: RegExpExecArray | null
@@ -511,6 +511,7 @@ const features = [
         />
         <MobileNavMenu
           :items="homeNavItems"
+          class="ml-auto sm:ml-0"
           @click="
             (key: string) => {
               if (key === 'features') scrollToFeatures()
@@ -518,9 +519,8 @@ const features = [
               else if (key === 'download') scrollToDownload()
             }
           "
-          class="ml-auto sm:ml-0"
         />
-        <DarkModeToggle :mode="darkMode" @select="setDarkMode" class="shrink-0" />
+        <DarkModeToggle :mode="darkMode" class="shrink-0" @select="setDarkMode" />
       </div>
     </header>
 
@@ -733,7 +733,7 @@ const features = [
     </section>
 
     <!-- Footer -->
-    <SiteFooter showExtra />
+    <SiteFooter show-extra />
   </div>
 </template>
 

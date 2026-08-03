@@ -185,15 +185,15 @@ function onCardLeave(e: MouseEvent) {
         <NavCapsule :items="showcaseNavItems" active-key="editor" class="ml-auto" />
         <MobileNavMenu
           :items="showcaseNavItems"
+          class="ml-auto sm:ml-0"
           @click="
             (key: string) => {
               if (key === 'home') $router.push('/')
               else if (key === 'editor') $router.push('/editor')
             }
           "
-          class="ml-auto sm:ml-0"
         />
-        <DarkModeToggle :mode="darkMode" @select="setDarkMode" class="shrink-0" />
+        <DarkModeToggle :mode="darkMode" class="shrink-0" @select="setDarkMode" />
       </div>
     </header>
 
@@ -240,7 +240,7 @@ function onCardLeave(e: MouseEvent) {
             <!-- 正面：渲染预览 -->
             <div class="card-front">
               <div class="p-6">
-                <div v-if="comp.rendered" v-html="comp.rendered" class="preview-content"></div>
+                <div v-if="comp.rendered" class="preview-content" v-html="comp.rendered"></div>
                 <div v-else class="text-[13px] text-[#ccc] italic py-8 text-center">暂无示例</div>
               </div>
             </div>
@@ -307,7 +307,7 @@ function onCardLeave(e: MouseEvent) {
     </main>
 
     <!-- Footer -->
-    <SiteFooter showExtra />
+    <SiteFooter show-extra />
 
     <!-- Toast -->
     <Toast :visible="showToast" :message="toastText" />

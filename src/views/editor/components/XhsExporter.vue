@@ -486,8 +486,8 @@ watch(
       <!-- 设置按钮 -->
       <button
         class="border-none bg-transparent text-[#8a8175] cursor-pointer p-1.5 rounded-md flex items-center justify-center transition-colors hover:bg-[#f3f0ea] hover:text-[var(--accent)] dark:text-[#999] dark:hover:bg-[#333]"
-        @click="openBrandSettings"
         title="设置品牌名"
+        @click="openBrandSettings"
       >
         <Bolt :size="16" />
       </button>
@@ -515,8 +515,8 @@ watch(
       <div v-for="(c, idx) in cards" :key="c.id" class="flex flex-col gap-2">
         <div
           v-if="c.kind === 'html'"
-          class="w-[360px] rounded-[10px] overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.12)] dark:shadow-none leading-none"
           :ref="(el) => setRef(el as Element | null, idx)"
+          class="w-[360px] rounded-[10px] overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.12)] dark:shadow-none leading-none"
           v-html="c.html"
         ></div>
         <img

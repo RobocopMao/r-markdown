@@ -278,8 +278,8 @@ watch(
             class="break-inside-avoid [-webkit-column-break-inside:avoid] inline-block w-full mb-2.5 relative"
           >
             <MaterialCard
-              :name="item.name"
               :id="item.officialId"
+              :name="item.name"
               :category="item.category"
               :sub-category="item.subCategory"
               :author="item.author"

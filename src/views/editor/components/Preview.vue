@@ -324,7 +324,6 @@ defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
       >
         <div
           ref="previewRef"
-          @click="onPreviewClick"
           style="
             padding: 18px;
             color: #333;
@@ -334,6 +333,7 @@ defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
             overflow-wrap: break-word;
             background-color: transparent;
           "
+          @click="onPreviewClick"
         ></div>
       </div>
     </div>

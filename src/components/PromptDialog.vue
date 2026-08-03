@@ -69,8 +69,8 @@ function cancel() {
           type="text"
           class="prompt-dialog-input w-full box-border px-3 py-2.5 border-[1.5px] border-[#e0dbd3] rounded-lg text-sm text-[#1f1a17] outline-none transition-colors focus:border-[var(--accent)]"
           :placeholder="placeholder"
-          @keyup.enter="save"
           autofocus
+          @keyup.enter="save"
         />
         <div class="flex gap-2 mt-4 justify-end">
           <button

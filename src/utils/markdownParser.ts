@@ -962,7 +962,7 @@ export function parseMarkdown(
       let headerLine = line.trim()
       if (headerLine.startsWith('|')) headerLine = headerLine.slice(1)
       if (headerLine.endsWith('|')) headerLine = headerLine.slice(0, -1)
-      let headers = headerLine.split('|').map((s) => s.trim())
+      const headers = headerLine.split('|').map((s) => s.trim())
 
       // 解析分隔行 → 提取列对齐
       let sepLine = lines[i + 1].trim()

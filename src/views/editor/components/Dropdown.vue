@@ -59,7 +59,7 @@ onBeforeUnmount(() => {
       class="dd-trigger inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
       @click.stop="toggle"
     >
-      <component v-if="iconTrigger" :is="iconTrigger" :size="14" />
+      <component :is="iconTrigger" v-if="iconTrigger" :size="14" />
       <svg
         v-else
         class="w-3.5 h-3.5 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round"
@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
           ]"
           @click="groupToggle(false)"
         >
-          <component v-if="item.icon" :is="item.icon" :size="14" />
+          <component :is="item.icon" v-if="item.icon" :size="14" />
           <svg
             v-else
             class="w-3.5 h-3.5 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round"
@@ -105,7 +105,7 @@ onBeforeUnmount(() => {
           ]"
           @click="onItemClick(item)"
         >
-          <component v-if="item.icon" :is="item.icon" :size="14" />
+          <component :is="item.icon" v-if="item.icon" :size="14" />
           <svg
             v-else
             class="w-3.5 h-3.5 fill-none stroke-current stroke-2 stroke-linecap-round stroke-linejoin-round"

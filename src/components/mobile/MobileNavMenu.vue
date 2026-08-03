@@ -70,7 +70,7 @@ onBeforeUnmount(() => {
           rel="noopener noreferrer"
           class="mobile-nav-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 no-underline transition-colors duration-150 hover:bg-black/5"
         >
-          <component v-if="item.icon" :is="item.icon" :size="14" />
+          <component :is="item.icon" v-if="item.icon" :size="14" />
           <svg
             v-else-if="item.iconPath"
             :viewBox="item.iconViewBox || '0 0 24 24'"
@@ -88,7 +88,7 @@ onBeforeUnmount(() => {
           class="mobile-nav-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleItemClick(item.key)"
         >
-          <component v-if="item.icon" :is="item.icon" :size="14" />
+          <component :is="item.icon" v-if="item.icon" :size="14" />
           <svg
             v-else-if="item.iconPath"
             :viewBox="item.iconViewBox || '0 0 24 24'"

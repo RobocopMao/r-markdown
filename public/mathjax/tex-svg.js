@@ -1,6 +1,6 @@
 ;(function () {
   'use strict'
-  var __webpack_modules__ = {
+  const __webpack_modules__ = {
       351: function (t, e, r) {
         var n,
           o =
@@ -14,7 +14,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -39,7 +39,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -49,9 +49,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -79,7 +79,7 @@
           s =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -97,7 +97,7 @@
             e.AssistiveMmlMathItemMixin =
             e.LimitedMmlVisitor =
               void 0))
-        var a = r(4474),
+        const a = r(4474),
           l = r(9259),
           c = r(7233),
           u = (function (t) {
@@ -122,7 +122,7 @@
               (e.prototype.assistiveMml = function (t, e) {
                 if ((void 0 === e && (e = !1), !(this.state() >= a.STATE.ASSISTIVEMML))) {
                   if (!this.isEscaped && (t.options.enableAssistiveMml || e)) {
-                    var r = t.adaptor,
+                    const r = t.adaptor,
                       n = t
                         .toMML(this.root)
                         .replace(/\n */g, '')
@@ -145,12 +145,12 @@
           })(t)
         }
         function h(t) {
-          var e
+          let e
           return (
             (e = (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, T([], Q(e), !1)) || this,
+                const n = t.apply(this, T([], Q(e), !1)) || this,
                   o = n.constructor,
                   i = o.ProcessBits
                 return (
@@ -167,7 +167,7 @@
                   return this.visitor.visitTree(t)
                 }),
                 (e.prototype.assistiveMml = function () {
-                  var t, e
+                  let t, e
                   if (!this.processed.isSet('assistive-mml')) {
                     try {
                       for (var r = s(this.math), n = r.next(); !n.done; n = r.next()) {
@@ -236,16 +236,16 @@
       },
       5282: function (t, e) {
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var r = new Map()
+        const r = new Map()
         e.default = r
       },
       5445: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -271,9 +271,9 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && n(e, t, r)
               return (o(e, t), e)
             },
@@ -296,7 +296,7 @@
                   }
                 }
                 function s(t) {
-                  var e
+                  let e
                   t.done
                     ? o(t.value)
                     : ((e = t.value),
@@ -312,7 +312,7 @@
           T =
             (this && this.__generator) ||
             function (t, e) {
-              var r,
+              let r,
                 n,
                 o,
                 i,
@@ -405,7 +405,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.sreReady = e.Sre = void 0))
-        var a,
+        let a,
           l = i(r(2998)),
           c = i(r(3362)),
           u = i(r(9552)),
@@ -431,7 +431,7 @@
             }),
             (t.preloadLocales = function (t) {
               return Q(this, void 0, void 0, function () {
-                var e
+                let e
                 return T(this, function (r) {
                   return [
                     2,
@@ -450,7 +450,7 @@
           (e.default = a))
       },
       444: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -462,7 +462,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -482,7 +482,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -495,9 +495,9 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLAdaptor = void 0))
-        var Q = (function (t) {
+        const Q = (function (t) {
           function e(e) {
-            var r = t.call(this, e.document) || this
+            const r = t.call(this, e.document) || this
             return ((r.window = e), (r.parser = new e.DOMParser()), r)
           }
           return (
@@ -525,16 +525,16 @@
             }),
             (e.prototype.tags = function (t, e, r) {
               void 0 === r && (r = null)
-              var n = r ? t.getElementsByTagNameNS(r, e) : t.getElementsByTagName(e)
+              const n = r ? t.getElementsByTagNameNS(r, e) : t.getElementsByTagName(e)
               return Array.from(n)
             }),
             (e.prototype.getElements = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = []
               try {
                 for (var Q = i(t), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   'string' == typeof s
                     ? (o = o.concat(Array.from(this.document.querySelectorAll(s))))
                     : Array.isArray(s) ||
@@ -597,7 +597,7 @@
               return t.childNodes[e]
             }),
             (e.prototype.kind = function (t) {
-              var e = t.nodeType
+              const e = t.nodeType
               return 1 === e || 3 === e || 8 === e ? t.nodeName.toLowerCase() : ''
             }),
             (e.prototype.value = function (t) {
@@ -664,10 +664,10 @@
               return t.style.cssText
             }),
             (e.prototype.insertRules = function (t, e) {
-              var r, n
+              let r, n
               try {
                 for (var o = i(e.reverse()), Q = o.next(); !Q.done; Q = o.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   try {
                     t.sheet.insertRule(T, 0)
                   } catch (t) {
@@ -687,7 +687,7 @@
               }
             }),
             (e.prototype.fontSize = function (t) {
-              var e = this.window.getComputedStyle(t)
+              const e = this.window.getComputedStyle(t)
               return parseFloat(e.fontSize)
             }),
             (e.prototype.fontFamily = function (t) {
@@ -695,13 +695,13 @@
             }),
             (e.prototype.nodeSize = function (t, e, r) {
               if ((void 0 === e && (e = 1), void 0 === r && (r = !1), r && t.getBBox)) {
-                var n = t.getBBox()
+                const n = t.getBBox()
                 return [n.width / e, n.height / e]
               }
               return [t.offsetWidth / e, t.offsetHeight / e]
             }),
             (e.prototype.nodeBBox = function (t) {
-              var e = t.getBoundingClientRect()
+              const e = t.getBoundingClientRect()
               return { left: e.left, right: e.right, top: e.top, bottom: e.bottom }
             }),
             e
@@ -711,16 +711,16 @@
       },
       6191: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.browserAdaptor = void 0))
-        var n = r(444)
+        const n = r(444)
         e.browserAdaptor = function () {
           return new n.HTMLAdaptor(window)
         }
       },
       9515: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -739,15 +739,15 @@
             e.combineConfig =
             e.isObject =
               void 0))
-        var o = r(3282)
+        const o = r(3282)
         function i(t) {
           return 'object' == typeof t && null !== t
         }
         function Q(t, e) {
-          var r, o
+          let r, o
           try {
             for (var T = n(Object.keys(e)), s = T.next(); !s.done; s = T.next()) {
-              var a = s.value
+              const a = s.value
               '__esModule' !== a &&
                 (!i(t[a]) || !i(e[a]) || e[a] instanceof Promise
                   ? null !== e[a] && void 0 !== e[a] && (t[a] = e[a])
@@ -767,11 +767,11 @@
         ;((e.isObject = i),
           (e.combineConfig = Q),
           (e.combineDefaults = function t(e, r, o) {
-            var Q, T
+            let Q, T
             ;(e[r] || (e[r] = {}), (e = e[r]))
             try {
               for (var s = n(Object.keys(o)), a = s.next(); !a.done; a = s.next()) {
-                var l = a.value
+                const l = a.value
                 i(e[l]) && i(o[l]) ? t(e, l, o[l]) : null == e[l] && null != o[l] && (e[l] = o[l])
               }
             } catch (t) {
@@ -793,12 +793,12 @@
           (e.MathJax = r.g.MathJax))
       },
       235: function (t, e, r) {
-        var n,
+        let n,
           o,
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -812,7 +812,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CONFIG = e.MathJax = e.Loader = e.PathFilters = e.PackageError = e.Package = void 0))
-        var Q = r(9515),
+        const Q = r(9515),
           T = r(265),
           s = r(265)
         ;(Object.defineProperty(e, 'Package', {
@@ -827,7 +827,7 @@
               return s.PackageError
             },
           }))
-        var a,
+        let a,
           l = r(7525)
         if (
           ((e.PathFilters = {
@@ -838,7 +838,7 @@
               )
             },
             normalize: function (t) {
-              var e = t.name
+              const e = t.name
               return (
                 e.match(/^(?:[a-z]+:\/)?\/|[a-z]:\\|\[/i) ||
                   (t.name = '[mathjax]/' + e.replace(/^\.\//, '')),
@@ -856,15 +856,15 @@
             },
           }),
           (function (t) {
-            var r = Q.MathJax.version
+            const r = Q.MathJax.version
             ;((t.versions = new Map()),
               (t.ready = function () {
                 for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
                 0 === r.length && (r = Array.from(T.Package.packages.keys()))
-                var o = []
+                const o = []
                 try {
                   for (var Q = i(r), s = Q.next(); !s.done; s = Q.next()) {
-                    var a = s.value,
+                    const a = s.value,
                       l = T.Package.packages.get(a) || new T.Package(a, !0)
                     o.push(l.promise)
                   }
@@ -882,9 +882,9 @@
               (t.load = function () {
                 for (var r, n, o = [], Q = 0; Q < arguments.length; Q++) o[Q] = arguments[Q]
                 if (0 === o.length) return Promise.resolve()
-                var s = [],
+                const s = [],
                   a = function (r) {
-                    var n = T.Package.packages.get(r)
+                    let n = T.Package.packages.get(r)
                     ;(n || (n = new T.Package(r)).provides(e.CONFIG.provides[r]),
                       n.checkNoLoad(),
                       s.push(
@@ -900,7 +900,7 @@
                   }
                 try {
                   for (var l = i(o), c = l.next(); !c.done; c = l.next()) {
-                    var u = c.value
+                    const u = c.value
                     a(u)
                   }
                 } catch (t) {
@@ -918,7 +918,7 @@
                 for (var t, r, n = [], o = 0; o < arguments.length; o++) n[o] = arguments[o]
                 try {
                   for (var Q = i(n), s = Q.next(); !s.done; s = Q.next()) {
-                    var a = s.value,
+                    let a = s.value,
                       l = T.Package.packages.get(a)
                     ;(l || (l = new T.Package(a, !0)).provides(e.CONFIG.provides[a]), l.loaded())
                   }
@@ -936,9 +936,9 @@
                 void 0 !== e.MathJax.startup && e.MathJax.config.startup.ready()
               }),
               (t.getRoot = function () {
-                var t = '//../../es5'
+                let t = '//../../es5'
                 if ('undefined' != typeof document) {
-                  var e = document.currentScript || document.getElementById('MathJax-script')
+                  const e = document.currentScript || document.getElementById('MathJax-script')
                   e && (t = e.src.replace(/\/[^\/]*$/, ''))
                 }
                 return t
@@ -985,7 +985,7 @@
               !u.done;
               u = c.next()
             ) {
-              var p = u.value
+              const p = u.value
               Array.isArray(p) ? a.pathFilters.add(p[0], p[1]) : a.pathFilters.add(p)
             }
           } catch (t) {
@@ -1001,7 +1001,7 @@
         e.CONFIG = e.MathJax.config.loader
       },
       265: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -1013,7 +1013,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -1033,7 +1033,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -1048,9 +1048,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -1077,16 +1077,16 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.Package = e.PackageError = void 0))
-        var s = r(235),
+        const s = r(235),
           a = (function (t) {
             function e(e, r) {
-              var n = t.call(this, e) || this
+              const n = t.call(this, e) || this
               return ((n.package = r), n)
             }
             return (o(e, t), e)
           })(Error)
         e.PackageError = a
-        var l = (function () {
+        const l = (function () {
           function t(e, r) {
             ;(void 0 === r && (r = !1),
               (this.isLoaded = !1),
@@ -1113,14 +1113,14 @@
             }),
             (t.resolvePath = function (t, e) {
               void 0 === e && (e = !0)
-              var r = { name: t, original: t, addExtension: e }
+              const r = { name: t, original: t, addExtension: e }
               return (s.Loader.pathFilters.execute(r), r.name)
             }),
             (t.loadAll = function () {
-              var t, e
+              let t, e
               try {
                 for (var r = i(this.packages.values()), n = r.next(); !n.done; n = r.next()) {
-                  var o = n.value
+                  const o = n.value
                   o.canLoad && o.load()
                 }
               } catch (e) {
@@ -1134,7 +1134,7 @@
               }
             }),
             (t.prototype.makeDependencies = function () {
-              var e,
+              let e,
                 r,
                 n = [],
                 o = t.packages,
@@ -1146,7 +1146,7 @@
                 : 'core' !== l && c.push('core')
               try {
                 for (var u = i(c), p = u.next(); !p.done; p = u.next()) {
-                  var h = p.value,
+                  const h = p.value,
                     d = o.get(h) || new t(h, a)
                   this.dependencies.indexOf(d) < 0 &&
                     (d.addDependent(this, a),
@@ -1165,7 +1165,7 @@
               return n
             }),
             (t.prototype.makePromise = function (t) {
-              var e = this,
+              let e = this,
                 r = new Promise(function (t, r) {
                   ;((e.resolve = t), (e.reject = r))
                 }),
@@ -1190,14 +1190,14 @@
             (t.prototype.load = function () {
               if (!this.isLoaded && !this.isLoading && !this.noLoad) {
                 this.isLoading = !0
-                var e = t.resolvePath(this.name)
+                const e = t.resolvePath(this.name)
                 s.CONFIG.require ? this.loadCustom(e) : this.loadScript(e)
               }
             }),
             (t.prototype.loadCustom = function (t) {
-              var e = this
+              const e = this
               try {
-                var r = s.CONFIG.require(t)
+                const r = s.CONFIG.require(t)
                 r instanceof Promise
                   ? r
                       .then(function () {
@@ -1212,7 +1212,7 @@
               }
             }),
             (t.prototype.loadScript = function (t) {
-              var e = this,
+              const e = this,
                 r = document.createElement('script')
               ;((r.src = t),
                 (r.charset = 'UTF-8'),
@@ -1225,7 +1225,7 @@
                 document.head.appendChild(r))
             }),
             (t.prototype.loaded = function () {
-              var t, e, r, n
+              let t, e, r, n
               ;((this.isLoaded = !0), (this.isLoading = !1))
               try {
                 for (var o = i(this.dependents), Q = o.next(); !Q.done; Q = o.next()) {
@@ -1259,7 +1259,7 @@
               ;((this.hasFailed = !0), (this.isLoading = !1), this.reject(new a(t, this.name)))
             }),
             (t.prototype.checkLoad = function () {
-              var t = this
+              const t = this
               ;(
                 (s.CONFIG[this.name] || {}).checkReady ||
                 function () {
@@ -1277,11 +1277,11 @@
               this.dependencyCount && (this.dependencyCount--, this.canLoad && this.load())
             }),
             (t.prototype.provides = function (e) {
-              var r, n
+              let r, n
               void 0 === e && (e = [])
               try {
                 for (var o = i(e), Q = o.next(); !Q.done; Q = o.next()) {
-                  var T = Q.value,
+                  let T = Q.value,
                     a = t.packages.get(T)
                   ;(a ||
                     (s.CONFIG.dependencies[T] || (s.CONFIG.dependencies[T] = []),
@@ -1303,7 +1303,7 @@
               ;(this.dependents.push(t), e || this.checkNoLoad())
             }),
             (t.prototype.checkNoLoad = function () {
-              var t, e
+              let t, e
               if (this.noLoad) {
                 this.noLoad = !1
                 try {
@@ -1336,7 +1336,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -1346,7 +1346,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -1361,9 +1361,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -1390,12 +1390,12 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CONFIG = e.MathJax = e.Startup = void 0))
-        var T,
+        let T,
           s = r(9515),
           a = r(8666),
           l = r(7233)
         ;(!(function (t) {
-          var T,
+          let T,
             s,
             l = new a.PrioritizedList()
           function u(e) {
@@ -1412,12 +1412,12 @@
               t.handler && (s.handlers.register(t.handler), (t.document = v())))
           }
           function h() {
-            var e, r
+            let e, r
             t.input && t.output && d()
-            var n = t.output ? t.output.name.toLowerCase() : ''
+            const n = t.output ? t.output.name.toLowerCase() : ''
             try {
               for (var i = o(t.input), Q = i.next(); !Q.done; Q = i.next()) {
-                var T = Q.value,
+                const T = Q.value,
                   s = T.name.toLowerCase()
                 ;(L(s, T), m(s, T), t.output && f(s, n, T))
               }
@@ -1454,7 +1454,7 @@
               }))
           }
           function f(r, n, o) {
-            var i = r + '2' + n
+            const i = r + '2' + n
             ;((e.MathJax[i] = function (e, r) {
               return (void 0 === r && (r = {}), (r.format = o.name), t.document.convert(e, r))
             }),
@@ -1476,7 +1476,7 @@
                 }))
           }
           function L(r, n) {
-            var o = e.MathJax._.core.MathItem.STATE
+            const o = e.MathJax._.core.MathItem.STATE
             ;((e.MathJax[r + '2mml'] = function (e, r) {
               return (
                 void 0 === r && (r = {}),
@@ -1503,12 +1503,12 @@
             }
           }
           function y() {
-            var r,
+            let r,
               n,
               i = []
             try {
               for (var Q = o(e.CONFIG.input), T = Q.next(); !T.done; T = Q.next()) {
-                var s = T.value,
+                const s = T.value,
                   a = t.constructors[s]
                 if (!a) throw Error('Input Jax "' + s + '" is not defined (has it been loaded?)')
                 i.push(new a(e.MathJax.config[s]))
@@ -1525,27 +1525,27 @@
             return i
           }
           function H() {
-            var r = e.CONFIG.output
+            const r = e.CONFIG.output
             if (!r) return null
-            var n = t.constructors[r]
+            const n = t.constructors[r]
             if (!n) throw Error('Output Jax "' + r + '" is not defined (has it been loaded?)')
             return new n(e.MathJax.config[r])
           }
           function g() {
-            var r = e.CONFIG.adaptor
+            const r = e.CONFIG.adaptor
             if (!r || 'none' === r) return null
-            var n = t.constructors[r]
+            const n = t.constructors[r]
             if (!n) throw Error('DOMAdaptor "' + r + '" is not defined (has it been loaded?)')
             return n(e.MathJax.config[r])
           }
           function b() {
-            var r,
+            let r,
               n,
               i = e.CONFIG.handler
             if (!i || 'none' === i || !t.adaptor) return null
-            var Q = t.constructors[i]
+            const Q = t.constructors[i]
             if (!Q) throw Error('Handler "' + i + '" is not defined (has it been loaded?)')
-            var T = new Q(t.adaptor, 5)
+            let T = new Q(t.adaptor, 5)
             try {
               for (var s = o(l), a = s.next(); !a.done; a = s.next()) {
                 T = a.value.item(T)
@@ -1581,14 +1581,14 @@
               ;((t.promiseResolve = e), (t.promiseReject = r))
             })),
             (t.pagePromise = new Promise(function (t, e) {
-              var n = r.g.document
+              const n = r.g.document
               if (
                 n &&
                 n.readyState &&
                 'complete' !== n.readyState &&
                 'interactive' !== n.readyState
               ) {
-                var o = function () {
+                const o = function () {
                   return t()
                 }
                 ;(n.defaultView.addEventListener('load', o, !0),
@@ -1672,10 +1672,10 @@
           (e.VERSION = '3.2.2'))
       },
       5009: function (t, e) {
-        var r =
+        const r =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -1688,19 +1688,19 @@
             throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractDOMAdaptor = void 0))
-        var n = (function () {
+        const n = (function () {
           function t(t) {
             ;(void 0 === t && (t = null), (this.document = t))
           }
           return (
             (t.prototype.node = function (t, e, n, o) {
-              var i, Q
+              let i, Q
               ;(void 0 === e && (e = {}), void 0 === n && (n = []))
-              var T = this.create(t, o)
+              const T = this.create(t, o)
               this.setAttributes(T, e)
               try {
                 for (var s = r(n), a = s.next(); !a.done; a = s.next()) {
-                  var l = a.value
+                  const l = a.value
                   this.append(T, l)
                 }
               } catch (t) {
@@ -1715,7 +1715,7 @@
               return T
             }),
             (t.prototype.setAttributes = function (t, e) {
-              var n, o, i, Q, T, s
+              let n, o, i, Q, T, s
               if (e.style && 'string' != typeof e.style)
                 try {
                   for (var a = r(Object.keys(e.style)), l = a.next(); !l.done; l = a.next()) {
@@ -1774,7 +1774,7 @@
               return this.childNodes(t)[e]
             }),
             (t.prototype.allClasses = function (t) {
-              var e = this.getAttribute(t, 'class')
+              const e = this.getAttribute(t, 'class')
               return e ? e.replace(/  +/g, ' ').replace(/^ /, '').replace(/ $/, '').split(/ /) : []
             }),
             t
@@ -1784,10 +1784,10 @@
       },
       3494: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractFindMath = void 0))
-        var n = r(7233),
+        const n = r(7233),
           o = (function () {
             function t(t) {
-              var e = this.constructor
+              const e = this.constructor
               this.options = (0, n.userOptions)((0, n.defaultOptions)({}, e.OPTIONS), t)
             }
             return ((t.OPTIONS = {}), t)
@@ -1795,7 +1795,7 @@
         e.AbstractFindMath = o
       },
       3670: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -1807,7 +1807,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -1825,7 +1825,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractHandler = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
             }
@@ -1859,7 +1859,7 @@
         e.AbstractHandler = Q
       },
       805: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -1871,7 +1871,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -1891,7 +1891,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -1904,7 +1904,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HandlerList = void 0))
-        var Q = (function (t) {
+        const Q = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -1917,10 +1917,10 @@
               this.remove(t)
             }),
             (e.prototype.handlesDocument = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var n = i(this), o = n.next(); !o.done; o = n.next()) {
-                  var Q = o.value.item
+                  const Q = o.value.item
                   if (Q.handlesDocument(t)) return Q
                 }
               } catch (t) {
@@ -1944,12 +1944,12 @@
       },
       9206: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractInputJax = void 0))
-        var n = r(7233),
+        const n = r(7233),
           o = r(7525),
           i = (function () {
             function t(t) {
               ;(void 0 === t && (t = {}), (this.adaptor = null), (this.mmlFactory = null))
-              var e = this.constructor
+              const e = this.constructor
               ;((this.options = (0, n.userOptions)((0, n.defaultOptions)({}, e.OPTIONS), t)),
                 (this.preFilters = new o.FunctionList()),
                 (this.postFilters = new o.FunctionList()))
@@ -1970,7 +1970,7 @@
               }),
               (t.prototype.initialize = function () {}),
               (t.prototype.reset = function () {
-                for (var t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
+                for (let t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
               }),
               Object.defineProperty(t.prototype, 'processStrings', {
                 get: function () {
@@ -1983,7 +1983,7 @@
                 return []
               }),
               (t.prototype.executeFilters = function (t, e, r, n) {
-                var o = { math: e, document: r, data: n }
+                const o = { math: e, document: r, data: n }
                 return (t.execute(o), o.data)
               }),
               (t.NAME = 'generic'),
@@ -1994,7 +1994,7 @@
         e.AbstractInputJax = i
       },
       5722: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -2006,7 +2006,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -2026,7 +2026,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -2041,9 +2041,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -2070,7 +2070,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.AbstractMathDocument = e.resetAllOptions = e.resetOptions = e.RenderList = void 0))
-        var s = r(7233),
+        const s = r(7233),
           a = r(9206),
           l = r(2975),
           c = r(9e3),
@@ -2084,12 +2084,12 @@
             return (
               o(e, t),
               (e.create = function (t) {
-                var e,
+                let e,
                   r,
                   n = new this()
                 try {
                   for (var o = i(Object.keys(t)), T = o.next(); !T.done; T = o.next()) {
-                    var s = T.value,
+                    const s = T.value,
                       a = Q(this.action(s, t[s]), 2),
                       l = a[0],
                       c = a[1]
@@ -2107,7 +2107,7 @@
                 return n
               }),
               (e.action = function (t, e) {
-                var r,
+                let r,
                   n,
                   o,
                   i,
@@ -2122,7 +2122,7 @@
                 else if ('string' == typeof e[1])
                   if ('string' == typeof e[2]) {
                     4 === e.length && (a = e[3])
-                    var c = Q(e.slice(1), 2),
+                    const c = Q(e.slice(1), 2),
                       u = c[0],
                       p = c[1]
                     ;((T = (n = Q(this.methodActions(u, p), 2))[0]), (s = n[1]))
@@ -2147,11 +2147,11 @@
                 )
               }),
               (e.prototype.renderDoc = function (t, e) {
-                var r, n
+                let r, n
                 void 0 === e && (e = u.STATE.UNPROCESSED)
                 try {
                   for (var o = i(this.items), Q = o.next(); !Q.done; Q = o.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     if (T.priority >= e && T.item.renderDoc(t)) return
                   }
                 } catch (t) {
@@ -2165,11 +2165,11 @@
                 }
               }),
               (e.prototype.renderMath = function (t, e, r) {
-                var n, o
+                let n, o
                 void 0 === r && (r = u.STATE.UNPROCESSED)
                 try {
                   for (var Q = i(this.items), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value
+                    const s = T.value
                     if (s.priority >= r && s.item.renderMath(t, e)) return
                   }
                 } catch (t) {
@@ -2183,11 +2183,11 @@
                 }
               }),
               (e.prototype.renderConvert = function (t, e, r) {
-                var n, o
+                let n, o
                 void 0 === r && (r = u.STATE.LAST)
                 try {
                   for (var Q = i(this.items), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value
+                    const s = T.value
                     if (s.priority > r) return
                     if (s.item.convert && s.item.renderMath(t, e)) return
                   }
@@ -2202,10 +2202,10 @@
                 }
               }),
               (e.prototype.findID = function (t) {
-                var e, r
+                let e, r
                 try {
                   for (var n = i(this.items), o = n.next(); !o.done; o = n.next()) {
-                    var Q = o.value
+                    const Q = o.value
                     if (Q.item.id === t) return Q.item
                   }
                 } catch (t) {
@@ -2225,7 +2225,7 @@
         ;((e.RenderList = d),
           (e.resetOptions = { all: !1, processed: !1, inputJax: null, outputJax: null }),
           (e.resetAllOptions = { all: !0, processed: !0, inputJax: [], outputJax: [] }))
-        var f = (function (t) {
+        const f = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
             }
@@ -2266,7 +2266,7 @@
           })(u.AbstractMathItem),
           H = (function () {
             function t(e, r, n) {
-              var o = this,
+              const o = this,
                 i = this.constructor
               ;((this.document = e),
                 (this.options = (0, s.userOptions)((0, s.defaultOptions)({}, i.OPTIONS), n)),
@@ -2274,7 +2274,7 @@
                 (this.renderActions = d.create(this.options.renderActions)),
                 (this.processed = new t.ProcessBits()),
                 (this.outputJax = this.options.OutputJax || new L()))
-              var Q = this.options.InputJax || [new f()]
+              let Q = this.options.InputJax || [new f()]
               ;(Array.isArray(Q) || (Q = [Q]),
                 (this.inputJax = Q),
                 (this.adaptor = r),
@@ -2301,13 +2301,13 @@
               }),
               (t.prototype.addRenderAction = function (t) {
                 for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
-                var n = Q(d.action(t, e), 2),
+                const n = Q(d.action(t, e), 2),
                   o = n[0],
                   i = n[1]
                 this.renderActions.add(o, i)
               }),
               (t.prototype.removeRenderAction = function (t) {
-                var e = this.renderActions.findID(t)
+                const e = this.renderActions.findID(t)
                 e && this.renderActions.remove(e)
               }),
               (t.prototype.render = function () {
@@ -2323,7 +2323,7 @@
               }),
               (t.prototype.convert = function (t, e) {
                 void 0 === e && (e = {})
-                var r = (0, s.userOptions)(
+                let r = (0, s.userOptions)(
                     {
                       format: this.inputJax[0].name,
                       display: !0,
@@ -2347,7 +2347,7 @@
                   c = r.scale,
                   p = r.family
                 null === a && (a = 80 * Q)
-                var h = this.inputJax.reduce(function (t, e) {
+                const h = this.inputJax.reduce(function (t, e) {
                     return e.name === n ? e : t
                   }, null),
                   d = new this.options.MathItem(t, h, o)
@@ -2364,9 +2364,9 @@
                 return (void 0 === t && (t = null), this.processed.set('findMath'), this)
               }),
               (t.prototype.compile = function () {
-                var t, e, r, n
+                let t, e, r, n
                 if (!this.processed.isSet('compile')) {
-                  var o = []
+                  const o = []
                   try {
                     for (var Q = i(this.math), T = Q.next(); !T.done; T = Q.next()) {
                       var s = T.value
@@ -2383,7 +2383,7 @@
                   }
                   try {
                     for (var a = i(o), l = a.next(); !l.done; l = a.next()) {
-                      var c = (s = l.value).inputData.recompile
+                      const c = (s = l.value).inputData.recompile
                       ;(s.state(c.state), (s.inputData.recompile = c), this.compileMath(s))
                     }
                   } catch (t) {
@@ -2423,11 +2423,11 @@
                   (t.inputData.error = e.message))
               }),
               (t.prototype.typeset = function () {
-                var t, e
+                let t, e
                 if (!this.processed.isSet('typeset')) {
                   try {
                     for (var r = i(this.math), n = r.next(); !n.done; n = r.next()) {
-                      var o = n.value
+                      const o = n.value
                       try {
                         o.typeset(this)
                       } catch (t) {
@@ -2482,7 +2482,7 @@
                 )
               }),
               (t.prototype.updateDocument = function () {
-                var t, e
+                let t, e
                 if (!this.processed.isSet('updateDocument')) {
                   try {
                     for (var r = i(this.math.reversed()), n = r.next(); !n.done; n = r.next()) {
@@ -2505,7 +2505,7 @@
                 return (void 0 === t && (t = !1), this)
               }),
               (t.prototype.state = function (t, e) {
-                var r, n
+                let r, n
                 void 0 === e && (e = !1)
                 try {
                   for (var o = i(this.math), Q = o.next(); !Q.done; Q = o.next()) {
@@ -2529,7 +2529,7 @@
                 )
               }),
               (t.prototype.reset = function (t) {
-                var r
+                let r
                 return (
                   void 0 === t && (t = { processed: !0 }),
                   (t = (0, s.userOptions)(Object.assign({}, e.resetOptions), t)).all &&
@@ -2550,22 +2550,22 @@
                 return (this.math.merge(t), this)
               }),
               (t.prototype.clearMathItemsWithin = function (t) {
-                var e,
+                let e,
                   r = this.getMathItemsWithin(t)
                 return ((e = this.math).remove.apply(e, T([], Q(r), !1)), r)
               }),
               (t.prototype.getMathItemsWithin = function (t) {
-                var e, r, n, o
+                let e, r, n, o
                 Array.isArray(t) || (t = [t])
-                var Q = this.adaptor,
+                const Q = this.adaptor,
                   T = [],
                   s = Q.getElements(t, this.document)
                 try {
                   t: for (var a = i(this.math), l = a.next(); !l.done; l = a.next()) {
-                    var c = l.value
+                    const c = l.value
                     try {
                       for (var u = ((n = void 0), i(s)), p = u.next(); !p.done; p = u.next()) {
-                        var h = p.value
+                        const h = p.value
                         if (c.start.node && Q.contains(h, c.start.node)) {
                           T.push(c)
                           continue t
@@ -2634,7 +2634,7 @@
               { open: t, math: e, close: r, n: n, start: { n: o }, end: { n: i }, display: Q }
             )
           }))
-        var r = (function () {
+        const r = (function () {
           function t(t, r, n, o, i) {
             ;(void 0 === n && (n = !0),
               void 0 === o && (o = { i: 0, n: 0, delim: '' }),
@@ -2729,7 +2729,7 @@
           }))
       },
       9e3: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -2741,7 +2741,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -2759,7 +2759,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractMathList = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -2774,10 +2774,10 @@
         e.AbstractMathList = i
       },
       91: function (t, e) {
-        var r =
+        const r =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -2792,7 +2792,7 @@
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.Attributes = e.INHERIT = void 0),
           (e.INHERIT = '_inherit_'))
-        var n = (function () {
+        const n = (function () {
           function t(t, e) {
             ;((this.global = e),
               (this.defaults = Object.create(e)),
@@ -2808,7 +2808,7 @@
               Object.assign(this.attributes, t)
             }),
             (t.prototype.get = function (t) {
-              var r = this.attributes[t]
+              let r = this.attributes[t]
               return (r === e.INHERIT && (r = this.global[t]), r)
             }),
             (t.prototype.getExplicit = function (t) {
@@ -2816,10 +2816,10 @@
             }),
             (t.prototype.getList = function () {
               for (var t, e, n = [], o = 0; o < arguments.length; o++) n[o] = arguments[o]
-              var i = {}
+              const i = {}
               try {
                 for (var Q = r(n), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   i[s] = this.get(s)
                 }
               } catch (e) {
@@ -2878,9 +2878,9 @@
         e.Attributes = n
       },
       6336: function (t, e, r) {
-        var n
+        let n
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MML = void 0))
-        var o = r(9007),
+        const o = r(9007),
           i = r(3233),
           Q = r(450),
           T = r(3050),
@@ -2957,7 +2957,7 @@
           n)
       },
       1759: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -2969,7 +2969,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -2989,7 +2989,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -3002,16 +3002,16 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MathMLVisitor = void 0))
-        var Q = (function (t) {
+        const Q = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.document = null), e)
           }
           return (
             o(e, t),
             (e.prototype.visitTree = function (t, e) {
               this.document = e
-              var r = e.createElement('top')
+              const r = e.createElement('top')
               return (this.visitNode(t, r), (this.document = null), r.firstChild)
             }),
             (e.prototype.visitTextNode = function (t, e) {
@@ -3021,10 +3021,10 @@
               e.appendChild(t.getXML().cloneNode(!0))
             }),
             (e.prototype.visitInferredMrowNode = function (t, e) {
-              var r, n
+              let r, n
               try {
                 for (var o = i(t.childNodes), Q = o.next(); !Q.done; Q = o.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   this.visitNode(T, e)
                 }
               } catch (t) {
@@ -3038,13 +3038,13 @@
               }
             }),
             (e.prototype.visitDefault = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = this.document.createElement(t.kind)
               this.addAttributes(t, o)
               try {
                 for (var Q = i(t.childNodes), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   this.visitNode(s, o)
                 }
               } catch (t) {
@@ -3059,13 +3059,13 @@
               e.appendChild(o)
             }),
             (e.prototype.addAttributes = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = t.attributes,
                 Q = o.getExplicitNames()
               try {
                 for (var T = i(Q), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   e.setAttribute(a, o.getExplicit(a).toString())
                 }
               } catch (t) {
@@ -3084,7 +3084,7 @@
         e.MathMLVisitor = Q
       },
       3909: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -3096,7 +3096,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -3114,7 +3114,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlFactory = void 0))
-        var i = r(7860),
+        const i = r(7860),
           Q = r(6336),
           T = (function (t) {
             function e() {
@@ -3148,7 +3148,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -3173,7 +3173,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -3183,7 +3183,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -3198,9 +3198,9 @@
           T =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -3229,7 +3229,7 @@
             e.TEXCLASSNAMES =
             e.TEXCLASS =
               void 0))
-        var s = r(91),
+        const s = r(91),
           a = r(4596)
         ;((e.TEXCLASS = {
           ORD: 0,
@@ -3254,7 +3254,7 @@
             'INNER',
             'VCENTER',
           ]))
-        var l = ['', 'thinmathspace', 'mediummathspace', 'thickmathspace'],
+        const l = ['', 'thinmathspace', 'mediummathspace', 'thickmathspace'],
           c = [
             [0, -1, 2, 3, 0, 0, 0, 1],
             [-1, -1, 0, 3, 0, 0, 0, 1],
@@ -3266,10 +3266,10 @@
             [1, -1, 2, 3, 1, 0, 1, 1],
           ]
         e.indentAttributes = ['indentalign', 'indentalignfirst', 'indentshift', 'indentshiftfirst']
-        var u = (function (t) {
+        const u = (function (t) {
           function r(e, r, n) {
             ;(void 0 === r && (r = {}), void 0 === n && (n = []))
-            var o = t.call(this, e) || this
+            const o = t.call(this, e) || this
             return (
               (o.prevClass = null),
               (o.prevLevel = null),
@@ -3288,14 +3288,14 @@
           return (
             o(r, t),
             (r.prototype.copy = function (t) {
-              var e, r, n, o
+              let e, r, n, o
               void 0 === t && (t = !1)
-              var T = this.factory.create(this.kind)
+              const T = this.factory.create(this.kind)
               if (((T.properties = i({}, this.properties)), this.attributes)) {
-                var s = this.attributes.getAllAttributes()
+                const s = this.attributes.getAllAttributes()
                 try {
                   for (var a = Q(Object.keys(s)), l = a.next(); !l.done; l = a.next()) {
-                    var c = l.value
+                    const c = l.value
                     ;('id' !== c || t) && T.attributes.set(c, s[c])
                   }
                 } catch (t) {
@@ -3309,11 +3309,11 @@
                 }
               }
               if (this.childNodes && this.childNodes.length) {
-                var u = this.childNodes
+                let u = this.childNodes
                 1 === u.length && u[0].isInferred && (u = u[0].childNodes)
                 try {
                   for (var p = Q(u), h = p.next(); !h.done; h = p.next()) {
-                    var d = h.value
+                    const d = h.value
                     d ? T.appendChild(d.copy()) : T.childNodes.push(null)
                   }
                 } catch (t) {
@@ -3408,7 +3408,7 @@
                 : t.prototype.setChildren.call(this, e)
             }),
             (r.prototype.appendChild = function (e) {
-              var r,
+              let r,
                 n,
                 o = this
               if (this.arity < 0) return (this.childNodes[0].appendChild(e), e)
@@ -3420,12 +3420,12 @@
                     }),
                     e
                   )
-                var i = e
+                const i = e
                 ;((e = this.factory.create('mrow')).setChildren(i.childNodes),
                   (e.attributes = i.attributes))
                 try {
                   for (var T = Q(i.getPropertyNames()), s = T.next(); !s.done; s = T.next()) {
-                    var a = s.value
+                    const a = s.value
                     e.setProperty(a, i.getProperty(a))
                   }
                 } catch (t) {
@@ -3457,7 +3457,7 @@
             (r.prototype.childPosition = function () {
               for (var t, e, r = this, n = r.parent; n && n.notParent; ) ((r = n), (n = n.parent))
               if (n) {
-                var o = 0
+                let o = 0
                 try {
                   for (var i = Q(n.childNodes), T = i.next(); !T.done; T = i.next()) {
                     if (T.value === r) return o
@@ -3490,12 +3490,12 @@
                 ((this.prevClass = t.texClass), (this.prevLevel = t.attributes.get('scriptlevel')))
             }),
             (r.prototype.texSpacing = function () {
-              var t = null != this.prevClass ? this.prevClass : e.TEXCLASS.NONE,
+              let t = null != this.prevClass ? this.prevClass : e.TEXCLASS.NONE,
                 r = this.texClass || e.TEXCLASS.ORD
               if (t === e.TEXCLASS.NONE || r === e.TEXCLASS.NONE) return ''
               ;(t === e.TEXCLASS.VCENTER && (t = e.TEXCLASS.ORD),
                 r === e.TEXCLASS.VCENTER && (r = e.TEXCLASS.ORD))
-              var n = c[t][r]
+              const n = c[t][r]
               return (this.prevLevel > 0 || this.attributes.get('scriptlevel') > 0) && n >= 0
                 ? ''
                 : l[Math.abs(n)]
@@ -3504,17 +3504,17 @@
               return this.isEmbellished && this.coreMO().hasSpacingAttributes()
             }),
             (r.prototype.setInheritedAttributes = function (t, e, n, o) {
-              var i, s
+              let i, s
               ;(void 0 === t && (t = {}),
                 void 0 === e && (e = !1),
                 void 0 === n && (n = 0),
                 void 0 === o && (o = !1))
-              var a = this.attributes.getAllDefaults()
+              const a = this.attributes.getAllDefaults()
               try {
                 for (var l = Q(Object.keys(t)), c = l.next(); !c.done; c = l.next()) {
-                  var u = c.value
+                  const u = c.value
                   if (a.hasOwnProperty(u) || r.alwaysInherit.hasOwnProperty(u)) {
-                    var p = T(t[u], 2),
+                    const p = T(t[u], 2),
                       h = p[0],
                       d = p[1]
                     ;((r.noInherit[h] || {})[this.kind] || {})[u] ||
@@ -3535,7 +3535,7 @@
                 void 0 === this.attributes.getExplicit('scriptlevel') &&
                   this.attributes.setInherited('scriptlevel', n),
                 o && this.setProperty('texprimestyle', o))
-              var f = this.arity
+              const f = this.arity
               if (
                 f >= 0 &&
                 f !== 1 / 0 &&
@@ -3548,7 +3548,7 @@
               this.setChildInheritedAttributes(t, e, n, o)
             }),
             (r.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-              var o, i
+              let o, i
               try {
                 for (var T = Q(this.childNodes), s = T.next(); !s.done; s = T.next()) {
                   s.value.setInheritedAttributes(t, e, r, n)
@@ -3564,12 +3564,12 @@
               }
             }),
             (r.prototype.addInheritedAttributes = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = i({}, t)
               try {
                 for (var T = Q(Object.keys(e)), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   'displaystyle' !== a &&
                     'scriptlevel' !== a &&
                     'style' !== a &&
@@ -3587,7 +3587,7 @@
               return o
             }),
             (r.prototype.inheritAttributesFrom = function (t) {
-              var e = t.attributes,
+              const e = t.attributes,
                 r = e.get('displaystyle'),
                 n = e.get('scriptlevel'),
                 o = e.isSet('mathsize') ? { mathsize: ['math', e.get('mathsize')] } : {},
@@ -3597,7 +3597,7 @@
             (r.prototype.verifyTree = function (t) {
               if ((void 0 === t && (t = null), null !== t)) {
                 this.verifyAttributes(t)
-                var e = this.arity
+                const e = this.arity
                 ;(t.checkArity &&
                   e >= 0 &&
                   e !== 1 / 0 &&
@@ -3608,13 +3608,13 @@
               }
             }),
             (r.prototype.verifyAttributes = function (t) {
-              var e, r
+              let e, r
               if (t.checkAttributes) {
-                var n = this.attributes,
+                const n = this.attributes,
                   o = []
                 try {
                   for (var i = Q(n.getExplicitNames()), T = i.next(); !T.done; T = i.next()) {
-                    var s = T.value
+                    const s = T.value
                     'data-' === s.substr(0, 5) ||
                       void 0 !== n.getDefault(s) ||
                       s.match(/^(?:class|style|id|(?:xlink:)?href)$/) ||
@@ -3634,7 +3634,7 @@
               }
             }),
             (r.prototype.verifyChildren = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
                   o.value.verifyTree(t)
@@ -3652,9 +3652,9 @@
             (r.prototype.mError = function (t, e, r) {
               if ((void 0 === r && (r = !1), this.parent && this.parent.isKind('merror')))
                 return null
-              var n = this.factory.create('merror')
+              const n = this.factory.create('merror')
               if ((n.attributes.set('data-mjx-message', t), e.fullErrors || r)) {
-                var o = this.factory.create('mtext'),
+                const o = this.factory.create('mtext'),
                   i = this.factory.create('text')
                 ;(i.setText(e.fullErrors ? t : this.kind),
                   o.appendChild(i),
@@ -3688,7 +3688,7 @@
           )
         })(a.AbstractNode)
         e.AbstractMmlNode = u
-        var p = (function (t) {
+        const p = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -3702,12 +3702,12 @@
               configurable: !0,
             }),
             (e.prototype.getText = function () {
-              var t,
+              let t,
                 e,
                 r = ''
               try {
                 for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
-                  var i = o.value
+                  const i = o.value
                   i instanceof L && (r += i.getText())
                 }
               } catch (e) {
@@ -3722,10 +3722,10 @@
               return r
             }),
             (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-              var o, i
+              let o, i
               try {
                 for (var T = Q(this.childNodes), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   a instanceof u && a.setInheritedAttributes(t, e, r, n)
                 }
               } catch (t) {
@@ -3739,11 +3739,11 @@
               }
             }),
             (e.prototype.walkTree = function (t, e) {
-              var r, n
+              let r, n
               t(this, e)
               try {
                 for (var o = Q(this.childNodes), i = o.next(); !i.done; i = o.next()) {
-                  var T = i.value
+                  const T = i.value
                   T instanceof u && T.walkTree(t, e)
                 }
               } catch (t) {
@@ -3762,7 +3762,7 @@
           )
         })(u)
         e.AbstractMmlTokenNode = p
-        var h = (function (t) {
+        const h = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -3807,7 +3807,7 @@
           )
         })(u)
         e.AbstractMmlLayoutNode = h
-        var d = (function (t) {
+        const d = (function (t) {
           function r() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -3827,9 +3827,9 @@
               return this.childNodes[0].coreMO()
             }),
             (r.prototype.setTeXclass = function (t) {
-              var r, n
+              let r, n
               ;(this.getPrevClass(t), (this.texClass = e.TEXCLASS.ORD))
-              var o = this.childNodes[0]
+              const o = this.childNodes[0]
               o
                 ? this.isEmbellished || o.isKind('mi')
                   ? ((t = o.setTeXclass(t)), this.updateTeXclass(this.core()))
@@ -3837,7 +3837,7 @@
                 : (t = this)
               try {
                 for (var i = Q(this.childNodes.slice(1)), T = i.next(); !T.done; T = i.next()) {
-                  var s = T.value
+                  const s = T.value
                   s && s.setTeXclass(null)
                 }
               } catch (t) {
@@ -3856,7 +3856,7 @@
           )
         })(u)
         e.AbstractMmlBaseNode = d
-        var f = (function (t) {
+        const f = (function (t) {
           function r() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -3986,7 +3986,7 @@
         e.AbstractMmlEmptyNode = f
         var L = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.text = ''), e)
           }
           return (
@@ -4014,9 +4014,9 @@
           )
         })(f)
         e.TextNode = L
-        var m = (function (t) {
+        const m = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.xml = null), (e.adaptor = null), e)
           }
           return (
@@ -4061,7 +4061,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4086,7 +4086,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4094,11 +4094,11 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.TeXAtom = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(2756),
           s = (function (t) {
             function e(e, r, n) {
-              var o = t.call(this, e, r, n) || this
+              const o = t.call(this, e, r, n) || this
               return ((o.texclass = Q.TEXCLASS.ORD), o.setProperty('texClass', o.texClass), o)
             }
             return (
@@ -4149,7 +4149,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4174,7 +4174,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4182,7 +4182,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMaction = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -4205,7 +4205,7 @@
               }),
               Object.defineProperty(e.prototype, 'selected', {
                 get: function () {
-                  var t = this.attributes.get('selection'),
+                  const t = this.attributes.get('selection'),
                     e = Math.max(1, Math.min(this.childNodes.length, t)) - 1
                   return this.childNodes[e] || this.factory.create('mrow')
                 },
@@ -4242,11 +4242,11 @@
                 'tooltip' === this.attributes.get('actiontype') &&
                   this.childNodes[1] &&
                   this.childNodes[1].setTeXclass(null)
-                var e = this.selected
+                const e = this.selected
                 return ((t = e.setTeXclass(t)), this.updateTeXclass(e), t)
               }),
               (e.prototype.nextToggleSelection = function () {
-                var t = Math.max(1, this.attributes.get('selection') + 1)
+                let t = Math.max(1, this.attributes.get('selection') + 1)
                 ;(t > this.childNodes.length && (t = 1), this.attributes.set('selection', t))
               }),
               (e.defaults = i(i({}, Q.AbstractMmlNode.defaults), {
@@ -4271,7 +4271,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4296,7 +4296,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4304,7 +4304,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMaligngroup = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(91),
           s = (function (t) {
             function e() {
@@ -4349,7 +4349,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4374,7 +4374,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4382,7 +4382,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMalignmark = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -4429,7 +4429,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4454,7 +4454,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4462,7 +4462,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMath = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -4543,7 +4543,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4568,7 +4568,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4576,7 +4576,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MathChoice = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -4605,7 +4605,7 @@
                 configurable: !0,
               }),
               (e.prototype.setInheritedAttributes = function (t, e, r, n) {
-                var o = e ? 0 : Math.max(0, Math.min(r, 2)) + 1,
+                const o = e ? 0 : Math.max(0, Math.min(r, 2)) + 1,
                   i = this.childNodes[o] || this.factory.create('mrow')
                 ;(this.parent.replaceChild(i, this), i.setInheritedAttributes(t, e, r, n))
               }),
@@ -4628,7 +4628,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4653,7 +4653,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4661,10 +4661,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMenclose = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -4716,7 +4716,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4741,7 +4741,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4749,10 +4749,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMerror = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -4797,7 +4797,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4822,7 +4822,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -4832,7 +4832,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -4845,10 +4845,10 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMfenced = void 0))
-        var T = r(9007),
+        const T = r(9007),
           s = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return (
                 (e.texclass = T.TEXCLASS.INNER),
                 (e.separators = []),
@@ -4870,7 +4870,7 @@
                 ;(this.getPrevClass(t),
                   this.open && (t = this.open.setTeXclass(t)),
                   this.childNodes[0] && (t = this.childNodes[0].setTeXclass(t)))
-                for (var e = 1, r = this.childNodes.length; e < r; e++)
+                for (let e = 1, r = this.childNodes.length; e < r; e++)
                   (this.separators[e - 1] && (t = this.separators[e - 1].setTeXclass(t)),
                     this.childNodes[e] && (t = this.childNodes[e].setTeXclass(t)))
                 return (
@@ -4880,7 +4880,7 @@
                 )
               }),
               (e.prototype.setChildInheritedAttributes = function (e, r, n, o) {
-                var i, T
+                let i, T
                 this.addFakeNodes()
                 try {
                   for (
@@ -4888,7 +4888,7 @@
                     !a.done;
                     a = s.next()
                   ) {
-                    var l = a.value
+                    const l = a.value
                     l && l.setInheritedAttributes(e, r, n, o)
                   }
                 } catch (t) {
@@ -4903,7 +4903,7 @@
                 t.prototype.setChildInheritedAttributes.call(this, e, r, n, o)
               }),
               (e.prototype.addFakeNodes = function () {
-                var t,
+                let t,
                   e,
                   r = this.attributes.getList('open', 'close', 'separators'),
                   n = r.open,
@@ -4918,7 +4918,7 @@
                   i)
                 ) {
                   for (; i.length < this.childNodes.length - 1; ) i += i.charAt(i.length - 1)
-                  var s = 0
+                  let s = 0
                   try {
                     for (var a = Q(this.childNodes.slice(1)), l = a.next(); !l.done; l = a.next()) {
                       l.value && this.separators.push(this.fakeNode(i.charAt(s++)))
@@ -4938,7 +4938,7 @@
               }),
               (e.prototype.fakeNode = function (t, e, r) {
                 ;(void 0 === e && (e = {}), void 0 === r && (r = null))
-                var n = this.factory.create('text').setText(t),
+                const n = this.factory.create('text').setText(t),
                   o = this.factory.create('mo', e, [n])
                 return ((o.texClass = r), (o.parent = this), o)
               }),
@@ -4965,7 +4965,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -4990,7 +4990,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5000,7 +5000,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -5013,7 +5013,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMfrac = void 0))
-        var T = r(9007),
+        const T = r(9007),
           s = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -5042,7 +5042,7 @@
                 configurable: !0,
               }),
               (e.prototype.setTeXclass = function (t) {
-                var e, r
+                let e, r
                 this.getPrevClass(t)
                 try {
                   for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
@@ -5088,7 +5088,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5113,7 +5113,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5121,10 +5121,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMglyph = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -5137,7 +5137,7 @@
                 configurable: !0,
               }),
               (e.prototype.verifyAttributes = function (e) {
-                var r = this.attributes.getList('src', 'fontfamily', 'index'),
+                const r = this.attributes.getList('src', 'fontfamily', 'index'),
                   n = r.src,
                   o = r.fontfamily,
                   i = r.index
@@ -5175,7 +5175,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5200,7 +5200,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5208,10 +5208,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMi = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -5235,7 +5235,7 @@
               }),
               (e.prototype.setTeXclass = function (t) {
                 this.getPrevClass(t)
-                var r = this.getText()
+                const r = this.getText()
                 return (
                   r.length > 1 &&
                     r.match(e.operatorName) &&
@@ -5268,7 +5268,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5293,7 +5293,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5302,7 +5302,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlNone = e.MmlMprescripts = e.MmlMmultiscripts = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(4461),
           s = (function (t) {
             function e() {
@@ -5327,14 +5327,14 @@
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
                 this.childNodes[0].setInheritedAttributes(t, e, r, n)
                 for (var o = !1, i = 1, Q = 0; i < this.childNodes.length; i++) {
-                  var T = this.childNodes[i]
+                  const T = this.childNodes[i]
                   if (T.isKind('mprescripts')) {
                     if (!o && ((o = !0), i % 2 == 0)) {
-                      var s = this.factory.create('mrow')
+                      const s = this.factory.create('mrow')
                       ;(this.childNodes.splice(i, 0, s), (s.parent = this), i++)
                     }
                   } else {
-                    var a = n || Q % 2 == 0
+                    const a = n || Q % 2 == 0
                     ;(T.setInheritedAttributes(t, !1, r + 1, a), Q++)
                   }
                 }
@@ -5349,7 +5349,7 @@
               }),
               (e.prototype.verifyChildren = function (e) {
                 for (var r = !1, n = e.fixMmultiscripts, o = 0; o < this.childNodes.length; o++) {
-                  var i = this.childNodes[o]
+                  const i = this.childNodes[o]
                   i.isKind('mprescripts') &&
                     (r
                       ? i.mError(i.kind + ' can only appear once in ' + this.kind, e, !0)
@@ -5371,7 +5371,7 @@
             )
           })(T.MmlMsubsup)
         e.MmlMmultiscripts = s
-        var a = (function (t) {
+        const a = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -5402,7 +5402,7 @@
           )
         })(Q.AbstractMmlNode)
         e.MmlMprescripts = a
-        var l = (function (t) {
+        const l = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -5447,7 +5447,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5472,7 +5472,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5480,10 +5480,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMn = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -5514,7 +5514,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5539,7 +5539,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5549,9 +5549,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -5571,7 +5571,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -5584,12 +5584,12 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMo = void 0))
-        var s = r(9007),
+        const s = r(9007),
           a = r(4082),
           l = r(505),
           c = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e._texClass = null), (e.lspace = 5 / 18), (e.rspace = 5 / 18), e)
             }
             return (
@@ -5597,7 +5597,7 @@
               Object.defineProperty(e.prototype, 'texClass', {
                 get: function () {
                   if (null === this._texClass) {
-                    var t = this.getText(),
+                    const t = this.getText(),
                       e = Q(this.handleExplicitForm(this.getForms()), 3),
                       r = e[0],
                       n = e[1],
@@ -5664,10 +5664,10 @@
               }),
               Object.defineProperty(e.prototype, 'isAccent', {
                 get: function () {
-                  var t = !1,
+                  let t = !1,
                     e = this.coreParent().parent
                   if (e) {
-                    var r = e.isKind('mover')
+                    const r = e.isKind('mover')
                       ? e.childNodes[e.over].coreMO()
                         ? 'accent'
                         : ''
@@ -5691,7 +5691,7 @@
                 configurable: !0,
               }),
               (e.prototype.setTeXclass = function (t) {
-                var e = this.attributes.getList('form', 'fence'),
+                const e = this.attributes.getList('form', 'fence'),
                   r = e.form,
                   n = e.fence
                 return void 0 === this.getProperty('texClass') &&
@@ -5704,7 +5704,7 @@
                     this.adjustTeXclass(t))
               }),
               (e.prototype.adjustTeXclass = function (t) {
-                var e = this.texClass,
+                let e = this.texClass,
                   r = this.prevClass
                 if (e === s.TEXCLASS.NONE) return t
                 if (
@@ -5749,27 +5749,27 @@
                   void 0 === n && (n = 0),
                   void 0 === o && (o = !1),
                   t.prototype.setInheritedAttributes.call(this, e, r, n, o))
-                var i = this.getText()
+                const i = this.getText()
                 ;(this.checkOperatorTable(i),
                   this.checkPseudoScripts(i),
                   this.checkPrimes(i),
                   this.checkMathAccent(i))
               }),
               (e.prototype.checkOperatorTable = function (t) {
-                var e,
+                let e,
                   r,
                   n = Q(this.handleExplicitForm(this.getForms()), 3),
                   o = n[0],
                   i = n[1],
                   s = n[2]
                 this.attributes.setInherited('form', o)
-                var l = this.constructor.OPTABLE,
+                const l = this.constructor.OPTABLE,
                   c = l[o][t] || l[i][t] || l[s][t]
                 if (c) {
                   void 0 === this.getProperty('texClass') && (this.texClass = c[2])
                   try {
                     for (var u = T(Object.keys(c[3] || {})), p = u.next(); !p.done; p = u.next()) {
-                      var h = p.value
+                      const h = p.value
                       this.attributes.setInherited(h, c[3][h])
                     }
                   } catch (t) {
@@ -5783,10 +5783,10 @@
                   }
                   ;((this.lspace = (c[0] + 1) / 18), (this.rspace = (c[1] + 1) / 18))
                 } else {
-                  var d = (0, a.getRange)(t)
+                  const d = (0, a.getRange)(t)
                   if (d) {
                     void 0 === this.getProperty('texClass') && (this.texClass = d[2])
-                    var f = this.constructor.MMLSPACING[d[2]]
+                    const f = this.constructor.MMLSPACING[d[2]]
                     ;((this.lspace = (f[0] + 1) / 18), (this.rspace = (f[1] + 1) / 18))
                   }
                 }
@@ -5802,7 +5802,7 @@
               }),
               (e.prototype.handleExplicitForm = function (t) {
                 if (this.attributes.isSet('form')) {
-                  var e = this.attributes.get('form')
+                  const e = this.attributes.get('form')
                   t = [e].concat(
                     t.filter(function (t) {
                       return t !== e
@@ -5812,9 +5812,9 @@
                 return t
               }),
               (e.prototype.checkPseudoScripts = function (t) {
-                var e = this.constructor.pseudoScripts
+                const e = this.constructor.pseudoScripts
                 if (t.match(e)) {
-                  var r = this.coreParent().Parent,
+                  const r = this.coreParent().Parent,
                     n = !r || !(r.isKind('msubsup') && !r.isKind('msub'))
                   ;(this.setProperty('pseudoscript', n),
                     n &&
@@ -5823,9 +5823,9 @@
                 }
               }),
               (e.prototype.checkPrimes = function (t) {
-                var e = this.constructor.primes
+                const e = this.constructor.primes
                 if (t.match(e)) {
-                  var r = this.constructor.remapPrimes,
+                  const r = this.constructor.remapPrimes,
                     n = (0, l.unicodeString)(
                       (0, l.unicodeChars)(t).map(function (t) {
                         return r[t]
@@ -5835,11 +5835,11 @@
                 }
               }),
               (e.prototype.checkMathAccent = function (t) {
-                var e = this.Parent
+                const e = this.Parent
                 if (void 0 === this.getProperty('mathaccent') && e && e.isKind('munderover')) {
-                  var r = e.childNodes[0]
+                  const r = e.childNodes[0]
                   if (!r.isEmbellished || r.coreMO() !== this) {
-                    var n = this.constructor.mathaccents
+                    const n = this.constructor.mathaccents
                     t.match(n) && this.setProperty('mathaccent', !0)
                   }
                 }
@@ -5937,7 +5937,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -5962,7 +5962,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -5970,7 +5970,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMpadded = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -6009,7 +6009,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6034,7 +6034,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6042,10 +6042,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMphantom = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -6076,7 +6076,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6101,7 +6101,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6109,10 +6109,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMroot = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -6162,7 +6162,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6187,7 +6187,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6197,7 +6197,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -6211,10 +6211,10 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlInferredMrow = e.MmlMrow = void 0))
-        var T = r(9007),
+        const T = r(9007),
           s = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e._core = null), e)
             }
             return (
@@ -6228,7 +6228,7 @@
               }),
               Object.defineProperty(e.prototype, 'isSpacelike', {
                 get: function () {
-                  var t, e
+                  let t, e
                   try {
                     for (var r = Q(this.childNodes), n = r.next(); !n.done; n = r.next()) {
                       if (!n.value.isSpacelike) return !1
@@ -6249,13 +6249,13 @@
               }),
               Object.defineProperty(e.prototype, 'isEmbellished', {
                 get: function () {
-                  var t,
+                  let t,
                     e,
                     r = !1,
                     n = 0
                   try {
                     for (var o = Q(this.childNodes), i = o.next(); !i.done; i = o.next()) {
-                      var T = i.value
+                      const T = i.value
                       if (T)
                         if (T.isEmbellished) {
                           if (r) return !1
@@ -6286,12 +6286,12 @@
                   : this
               }),
               (e.prototype.nonSpaceLength = function () {
-                var t,
+                let t,
                   e,
                   r = 0
                 try {
                   for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
-                    var i = o.value
+                    const i = o.value
                     i && !i.isSpacelike && r++
                   }
                 } catch (e) {
@@ -6306,10 +6306,10 @@
                 return r
               }),
               (e.prototype.firstNonSpace = function () {
-                var t, e
+                let t, e
                 try {
                   for (var r = Q(this.childNodes), n = r.next(); !n.done; n = r.next()) {
-                    var o = n.value
+                    const o = n.value
                     if (o && !o.isSpacelike) return o
                   }
                 } catch (e) {
@@ -6324,14 +6324,14 @@
                 return null
               }),
               (e.prototype.lastNonSpace = function () {
-                for (var t = this.childNodes.length; --t >= 0; ) {
-                  var e = this.childNodes[t]
+                for (let t = this.childNodes.length; --t >= 0; ) {
+                  const e = this.childNodes[t]
                   if (e && !e.isSpacelike) return e
                 }
                 return null
               }),
               (e.prototype.setTeXclass = function (t) {
-                var e, r, n, o
+                let e, r, n, o
                 if (null != this.getProperty('open') || null != this.getProperty('close')) {
                   ;(this.getPrevClass(t), (t = null))
                   try {
@@ -6371,7 +6371,7 @@
             )
           })(T.AbstractMmlNode)
         e.MmlMrow = s
-        var a = (function (t) {
+        const a = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -6420,7 +6420,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6445,7 +6445,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6453,10 +6453,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMs = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -6490,7 +6490,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6515,7 +6515,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6523,10 +6523,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMspace = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.NONE), e)
             }
             return (
@@ -6557,7 +6557,7 @@
               }),
               Object.defineProperty(e.prototype, 'hasNewline', {
                 get: function () {
-                  var t = this.attributes
+                  const t = this.attributes
                   return (
                     null == t.getExplicit('width') &&
                     null == t.getExplicit('height') &&
@@ -6592,7 +6592,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6617,7 +6617,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6625,10 +6625,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMsqrt = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -6679,7 +6679,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6704,7 +6704,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6712,7 +6712,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMstyle = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(91),
           s = (function (t) {
             function e() {
@@ -6735,13 +6735,13 @@
                 configurable: !0,
               }),
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-                var o = this.attributes.getExplicit('scriptlevel')
+                let o = this.attributes.getExplicit('scriptlevel')
                 null != o &&
                   ((o = o.toString()).match(/^\s*[-+]/) ? (r += parseInt(o)) : (r = parseInt(o)),
                   (n = !1))
-                var i = this.attributes.getExplicit('displaystyle')
+                const i = this.attributes.getExplicit('displaystyle')
                 null != i && ((e = !0 === i), (n = !1))
-                var Q = this.attributes.getExplicit('data-cramped')
+                const Q = this.attributes.getExplicit('data-cramped')
                 ;(null != Q && (n = Q),
                   (t = this.addInheritedAttributes(t, this.attributes.getAllAttributes())),
                   this.childNodes[0].setInheritedAttributes(t, e, r, n))
@@ -6774,7 +6774,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6799,7 +6799,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6808,7 +6808,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlMsup = e.MmlMsub = e.MmlMsubsup = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -6851,7 +6851,7 @@
                 configurable: !0,
               }),
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-                var o = this.childNodes
+                const o = this.childNodes
                 ;(o[0].setInheritedAttributes(t, e, r, n),
                   o[1].setInheritedAttributes(t, !1, r + 1, n || 1 === this.sub),
                   o[2] && o[2].setInheritedAttributes(t, !1, r + 1, n || 2 === this.sub))
@@ -6864,7 +6864,7 @@
             )
           })(Q.AbstractMmlBaseNode)
         e.MmlMsubsup = T
-        var s = (function (t) {
+        const s = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -6889,7 +6889,7 @@
           )
         })(T)
         e.MmlMsub = s
-        var a = (function (t) {
+        const a = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -6942,7 +6942,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -6967,7 +6967,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -6977,7 +6977,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -6990,11 +6990,11 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMtable = void 0))
-        var T = r(9007),
+        const T = r(9007),
           s = r(505),
           a = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.properties = { useHeight: !0 }), (e.texclass = T.TEXCLASS.ORD), e)
             }
             return (
@@ -7014,10 +7014,10 @@
                 configurable: !0,
               }),
               (e.prototype.setInheritedAttributes = function (e, r, n, o) {
-                var i, s
+                let i, s
                 try {
                   for (var a = Q(T.indentAttributes), l = a.next(); !l.done; l = a.next()) {
-                    var c = l.value
+                    const c = l.value
                     ;(e[c] && this.attributes.setInherited(c, e[c][1]),
                       void 0 !== this.attributes.getExplicit(c) &&
                         delete this.attributes.getAllAttributes()[c])
@@ -7034,7 +7034,7 @@
                 t.prototype.setInheritedAttributes.call(this, e, r, n, o)
               }),
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-                var o, i, T, a
+                let o, i, T, a
                 try {
                   for (var l = Q(this.childNodes), c = l.next(); !c.done; c = l.next()) {
                     ;(f = c.value).isKind('mtr') ||
@@ -7058,7 +7058,7 @@
                     columnalign: this.attributes.get('columnalign'),
                     rowalign: 'center',
                   })))
-                var u = this.attributes.getExplicit('data-cramped'),
+                const u = this.attributes.getExplicit('data-cramped'),
                   p = (0, s.split)(this.attributes.get('rowalign'))
                 try {
                   for (var h = Q(this.childNodes), d = h.next(); !d.done; d = h.next()) {
@@ -7077,11 +7077,11 @@
                 }
               }),
               (e.prototype.verifyChildren = function (e) {
-                for (var r = null, n = this.factory, o = 0; o < this.childNodes.length; o++) {
-                  var i = this.childNodes[o]
+                for (let r = null, n = this.factory, o = 0; o < this.childNodes.length; o++) {
+                  const i = this.childNodes[o]
                   if (i.isKind('mtr')) r = null
                   else {
-                    var Q = i.isKind('mtd')
+                    const Q = i.isKind('mtd')
                     if (
                       (r ? (this.removeChild(i), o--) : (r = this.replaceChild(n.create('mtr'), i)),
                       r.appendChild(Q ? i : n.create('mtd', {}, [i])),
@@ -7090,7 +7090,7 @@
                       ;(i.parent.removeChild(i),
                         (i.parent = this),
                         Q && r.appendChild(n.create('mtd')))
-                      var T = i.mError(
+                      const T = i.mError(
                         'Children of ' + this.kind + ' must be mtr or mlabeledtr',
                         e,
                         Q,
@@ -7102,7 +7102,7 @@
                 t.prototype.verifyChildren.call(this, e)
               }),
               (e.prototype.setTeXclass = function (t) {
-                var e, r
+                let e, r
                 this.getPrevClass(t)
                 try {
                   for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
@@ -7157,7 +7157,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7182,7 +7182,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -7190,7 +7190,7 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMtd = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(91),
           s = (function (t) {
             function e() {
@@ -7252,7 +7252,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7277,7 +7277,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -7285,10 +7285,10 @@
               )
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlMtext = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.texclass = Q.TEXCLASS.ORD), e)
             }
             return (
@@ -7326,7 +7326,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7351,7 +7351,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -7361,7 +7361,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -7375,7 +7375,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlMlabeledtr = e.MmlMtr = void 0))
-        var T = r(9007),
+        const T = r(9007),
           s = r(91),
           a = r(505),
           l = (function (t) {
@@ -7399,7 +7399,7 @@
                 configurable: !0,
               }),
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-                var o, i, T, s
+                let o, i, T, s
                 try {
                   for (var l = Q(this.childNodes), c = l.next(); !c.done; c = l.next()) {
                     ;(d = c.value).isKind('mtd') ||
@@ -7414,7 +7414,7 @@
                     if (o) throw o.error
                   }
                 }
-                var u = (0, a.split)(this.attributes.get('columnalign'))
+                const u = (0, a.split)(this.attributes.get('columnalign'))
                 ;(1 === this.arity && u.unshift(this.parent.attributes.get('side')),
                   (t = this.addInheritedAttributes(t, {
                     rowalign: this.attributes.get('rowalign'),
@@ -7437,11 +7437,11 @@
                 }
               }),
               (e.prototype.verifyChildren = function (e) {
-                var r, n
+                let r, n
                 if (!this.parent || this.parent.isKind('mtable')) {
                   try {
                     for (var o = Q(this.childNodes), i = o.next(); !i.done; i = o.next()) {
-                      var T = i.value
+                      const T = i.value
                       if (!T.isKind('mtd'))
                         (this.replaceChild(this.factory.create('mtd'), T).appendChild(T),
                           e.fixMtables || T.mError('Children of ' + this.kind + ' must be mtd', e))
@@ -7459,7 +7459,7 @@
                 } else this.mError(this.kind + ' can only be a child of an mtable', e, !0)
               }),
               (e.prototype.setTeXclass = function (t) {
-                var e, r
+                let e, r
                 this.getPrevClass(t)
                 try {
                   for (var n = Q(this.childNodes), o = n.next(); !o.done; o = n.next()) {
@@ -7485,7 +7485,7 @@
             )
           })(T.AbstractMmlNode)
         e.MmlMtr = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -7523,7 +7523,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7548,7 +7548,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -7557,7 +7557,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlMover = e.MmlMunder = e.MmlMunderover = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -7607,9 +7607,9 @@
                 configurable: !0,
               }),
               (e.prototype.setChildInheritedAttributes = function (t, e, r, n) {
-                var o = this.childNodes
+                const o = this.childNodes
                 o[0].setInheritedAttributes(t, e, r, n || !!o[this.over])
-                var i = !(e || !o[0].coreMO().attributes.get('movablelimits')),
+                const i = !(e || !o[0].coreMO().attributes.get('movablelimits')),
                   Q = this.constructor.ACCENTS
                 ;(o[1].setInheritedAttributes(
                   t,
@@ -7631,9 +7631,9 @@
                 return ((!e && this.attributes.get(t)) || r++, r)
               }),
               (e.prototype.setInheritedAccent = function (t, e, r, n, o, i) {
-                var Q = this.childNodes[t]
+                const Q = this.childNodes[t]
                 if (null == this.attributes.getExplicit(e) && Q.isEmbellished) {
-                  var T = Q.coreMO().attributes.get('accent')
+                  const T = Q.coreMO().attributes.get('accent')
                   ;(this.attributes.setInherited(e, T),
                     T !== this.attributes.getDefault(e) &&
                       Q.setInheritedAttributes({}, r, this.getScriptlevel(e, i, n), o))
@@ -7649,7 +7649,7 @@
             )
           })(Q.AbstractMmlBaseNode)
         e.MmlMunderover = T
-        var s = (function (t) {
+        const s = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -7674,7 +7674,7 @@
           )
         })(T)
         e.MmlMunder = s
-        var a = (function (t) {
+        const a = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -7728,7 +7728,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7753,7 +7753,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -7762,7 +7762,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MmlAnnotation = e.MmlAnnotationXML = e.MmlSemantics = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -7798,7 +7798,7 @@
             )
           })(Q.AbstractMmlBaseNode)
         e.MmlSemantics = T
-        var s = (function (t) {
+        const s = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -7823,9 +7823,9 @@
           )
         })(Q.AbstractMmlNode)
         e.MmlAnnotationXML = s
-        var a = (function (t) {
+        const a = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.properties = { isChars: !0 }), e)
           }
           return (
@@ -7844,7 +7844,7 @@
         e.MmlAnnotation = a
       },
       6325: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -7856,7 +7856,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -7874,7 +7874,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlVisitor = void 0))
-        var i = r(3909),
+        const i = r(3909),
           Q = (function (t) {
             function e(e) {
               return (
@@ -7886,10 +7886,10 @@
             return (
               o(e, t),
               (e.prototype.visitTextNode = function (t) {
-                for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
+                for (let e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
               }),
               (e.prototype.visitXMLNode = function (t) {
-                for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
+                for (let e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
               }),
               e
             )
@@ -7897,10 +7897,10 @@
         e.MmlVisitor = Q
       },
       4082: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -7914,7 +7914,7 @@
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.OPTABLE = e.MMLSPACING = e.getRange = e.RANGES = e.MO = e.OPDEF = void 0))
-        var o = r(9007)
+        const o = r(9007)
         function i(t, e, r, n) {
           return (void 0 === r && (r = o.TEXCLASS.BIN), void 0 === n && (n = null), [t, e, r, n])
         }
@@ -8002,12 +8002,12 @@
             [131072, 195103, o.TEXCLASS.ORD, 'mi', 'normnal'],
           ]),
           (e.getRange = function (t) {
-            var r,
+            let r,
               o,
               i = t.codePointAt(0)
             try {
               for (var Q = n(e.RANGES), T = Q.next(); !T.done; T = Q.next()) {
-                var s = T.value
+                const s = T.value
                 if (i <= s[1]) {
                   if (i >= s[0]) return s
                   break
@@ -9196,7 +9196,7 @@
           (e.OPTABLE.infix['\u2adc'] = e.MO.REL))
       },
       9259: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -9208,7 +9208,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -9228,7 +9228,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -9243,9 +9243,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -9264,14 +9264,14 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SerializedMmlVisitor = e.toEntity = e.DATAMJX = void 0))
-        var T = r(6325),
+        const T = r(6325),
           s = r(9007),
           a = r(450)
         e.DATAMJX = 'data-mjx-'
         e.toEntity = function (t) {
           return '&#x' + t.codePointAt(0).toString(16).toUpperCase() + ';'
         }
-        var l = (function (t) {
+        const l = (function (t) {
           function r() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -9287,12 +9287,12 @@
               return e + t.getSerializedXML()
             }),
             (r.prototype.visitInferredMrowNode = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = []
               try {
                 for (var Q = i(t.childNodes), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   o.push(this.visitNode(s, e))
                 }
               } catch (t) {
@@ -9307,7 +9307,7 @@
               return o.join('\n')
             }),
             (r.prototype.visitTeXAtomNode = function (t, e) {
-              var r = this.childNodeMml(t, e + '  ', '\n')
+              const r = this.childNodeMml(t, e + '  ', '\n')
               return (
                 e +
                 '<mrow' +
@@ -9328,7 +9328,7 @@
               )
             }),
             (r.prototype.visitDefault = function (t, e) {
-              var r = t.kind,
+              const r = t.kind,
                 n = Q(t.isToken || 0 === t.childNodes.length ? ['', ''] : ['\n', e], 2),
                 o = n[0],
                 i = n[1],
@@ -9346,12 +9346,12 @@
               )
             }),
             (r.prototype.childNodeMml = function (t, e, r) {
-              var n,
+              let n,
                 o,
                 Q = ''
               try {
                 for (var T = i(t.childNodes), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   Q += this.visitNode(a, e) + r
                 }
               } catch (t) {
@@ -9366,7 +9366,7 @@
               return Q
             }),
             (r.prototype.getAttributes = function (t) {
-              var e,
+              let e,
                 r,
                 n = [],
                 o = this.constructor.defaultAttributes[t.kind] || {},
@@ -9382,7 +9382,7 @@
                 (Q.mathvariant = T[Q.mathvariant])
               try {
                 for (var s = i(Object.keys(Q)), a = s.next(); !a.done; a = s.next()) {
-                  var l = a.value,
+                  const l = a.value,
                     c = String(Q[l])
                   void 0 !== c && n.push(l + '="' + this.quoteHTML(c) + '"')
                 }
@@ -9398,20 +9398,20 @@
               return n.length ? ' ' + n.join(' ') : ''
             }),
             (r.prototype.getDataAttributes = function (t) {
-              var e = {},
+              const e = {},
                 r = t.attributes.getExplicit('mathvariant'),
                 n = this.constructor.variants
               ;(r && n.hasOwnProperty(r) && this.setDataAttribute(e, 'variant', r),
                 t.getProperty('variantForm') && this.setDataAttribute(e, 'alternate', '1'),
                 t.getProperty('pseudoscript') && this.setDataAttribute(e, 'pseudoscript', 'true'),
                 !1 === t.getProperty('autoOP') && this.setDataAttribute(e, 'auto-op', 'false'))
-              var o = t.getProperty('scriptalign')
+              const o = t.getProperty('scriptalign')
               o && this.setDataAttribute(e, 'script-align', o)
-              var i = t.getProperty('texClass')
+              const i = t.getProperty('texClass')
               if (void 0 !== i) {
-                var Q = !0
+                let Q = !0
                 if (i === s.TEXCLASS.OP && t.isKind('mi')) {
-                  var T = t.getText()
+                  const T = t.getText()
                   Q = !(T.length > 1 && T.match(a.MmlMi.operatorName))
                 }
                 Q && this.setDataAttribute(e, 'texclass', i < 0 ? 'NONE' : s.TEXCLASSNAMES[i])
@@ -9450,12 +9450,12 @@
       },
       2975: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractOutputJax = void 0))
-        var n = r(7233),
+        const n = r(7233),
           o = r(7525),
           i = (function () {
             function t(t) {
               ;(void 0 === t && (t = {}), (this.adaptor = null))
-              var e = this.constructor
+              const e = this.constructor
               ;((this.options = (0, n.userOptions)((0, n.defaultOptions)({}, e.OPTIONS), t)),
                 (this.postFilters = new o.FunctionList()))
             }
@@ -9472,7 +9472,7 @@
               }),
               (t.prototype.initialize = function () {}),
               (t.prototype.reset = function () {
-                for (var t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
+                for (let t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
               }),
               (t.prototype.getMetrics = function (t) {}),
               (t.prototype.styleSheet = function (t) {
@@ -9482,7 +9482,7 @@
                 return null
               }),
               (t.prototype.executeFilters = function (t, e, r, n) {
-                var o = { math: e, document: r, data: n }
+                const o = { math: e, document: r, data: n }
                 return (t.execute(o), o.data)
               }),
               (t.NAME = 'generic'),
@@ -9493,10 +9493,10 @@
         e.AbstractOutputJax = i
       },
       4574: function (t, e) {
-        var r =
+        const r =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -9511,9 +9511,9 @@
           n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -9539,9 +9539,9 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractFactory = void 0))
-        var i = (function () {
+        const i = (function () {
           function t(t) {
-            var e, n
+            let e, n
             ;(void 0 === t && (t = null),
               (this.defaultKind = 'unknown'),
               (this.nodeMap = new Map()),
@@ -9549,7 +9549,7 @@
               null === t && (t = this.constructor.defaultNodes))
             try {
               for (var o = r(Object.keys(t)), i = o.next(); !i.done; i = o.next()) {
-                var Q = i.value
+                const Q = i.value
                 this.setNodeClass(Q, t[Q])
               }
             } catch (t) {
@@ -9569,7 +9569,7 @@
             }),
             (t.prototype.setNodeClass = function (t, e) {
               this.nodeMap.set(t, e)
-              var r = this,
+              const r = this,
                 i = this.nodeMap.get(t)
               this.node[t] = function () {
                 for (var t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
@@ -9607,7 +9607,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -9632,7 +9632,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -9642,7 +9642,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -9656,9 +9656,9 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.AbstractEmptyNode = e.AbstractNode = void 0))
-        var Q = (function () {
+        const Q = (function () {
           function t(t, e, r) {
-            var n, o
+            let n, o
             ;(void 0 === e && (e = {}),
               void 0 === r && (r = []),
               (this.factory = t),
@@ -9667,7 +9667,7 @@
               (this.childNodes = []))
             try {
               for (var Q = i(Object.keys(e)), T = Q.next(); !T.done; T = Q.next()) {
-                var s = T.value
+                const s = T.value
                 this.setProperty(s, e[s])
               }
             } catch (t) {
@@ -9705,7 +9705,7 @@
               for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
               try {
                 for (var o = i(r), Q = o.next(); !Q.done; Q = o.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   delete this.properties[T]
                 }
               } catch (e) {
@@ -9722,11 +9722,11 @@
               return this.factory.nodeIsKind(this, t)
             }),
             (t.prototype.setChildren = function (t) {
-              var e, r
+              let e, r
               this.childNodes = []
               try {
                 for (var n = i(t), o = n.next(); !o.done; o = n.next()) {
-                  var Q = o.value
+                  const Q = o.value
                   this.appendChild(Q)
                 }
               } catch (t) {
@@ -9743,28 +9743,28 @@
               return (this.childNodes.push(t), (t.parent = this), t)
             }),
             (t.prototype.replaceChild = function (t, e) {
-              var r = this.childIndex(e)
+              const r = this.childIndex(e)
               return (
                 null !== r && ((this.childNodes[r] = t), (t.parent = this), (e.parent = null)),
                 t
               )
             }),
             (t.prototype.removeChild = function (t) {
-              var e = this.childIndex(t)
+              const e = this.childIndex(t)
               return (null !== e && (this.childNodes.splice(e, 1), (t.parent = null)), t)
             }),
             (t.prototype.childIndex = function (t) {
-              var e = this.childNodes.indexOf(t)
+              const e = this.childNodes.indexOf(t)
               return -1 === e ? null : e
             }),
             (t.prototype.copy = function () {
-              var t,
+              let t,
                 e,
                 r = this.factory.create(this.kind)
               r.properties = o({}, this.properties)
               try {
                 for (var n = i(this.childNodes || []), Q = n.next(); !Q.done; Q = n.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   T && r.appendChild(T.copy())
                 }
               } catch (e) {
@@ -9779,7 +9779,7 @@
               return r
             }),
             (t.prototype.findNodes = function (t) {
-              var e = []
+              const e = []
               return (
                 this.walkTree(function (r) {
                   r.isKind(t) && e.push(r)
@@ -9788,11 +9788,11 @@
               )
             }),
             (t.prototype.walkTree = function (t, e) {
-              var r, n
+              let r, n
               t(this, e)
               try {
                 for (var o = i(this.childNodes), Q = o.next(); !Q.done; Q = o.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   T && T.walkTree(t, e)
                 }
               } catch (t) {
@@ -9813,7 +9813,7 @@
           )
         })()
         e.AbstractNode = Q
-        var T = (function (t) {
+        const T = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -9841,7 +9841,7 @@
         e.AbstractEmptyNode = T
       },
       7860: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -9853,7 +9853,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -9871,7 +9871,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractNodeFactory = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -9886,10 +9886,10 @@
         e.AbstractNodeFactory = i
       },
       8823: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -9904,9 +9904,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -9932,14 +9932,14 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractVisitor = void 0))
-        var Q = r(4596),
+        const Q = r(4596),
           T = (function () {
             function t(e) {
-              var r, o
+              let r, o
               this.nodeHandlers = new Map()
               try {
                 for (var i = n(e.getKinds()), Q = i.next(); !Q.done; Q = i.next()) {
-                  var T = Q.value,
+                  const T = Q.value,
                     s = this[t.methodName(T)]
                   s && this.nodeHandlers.set(T, s)
                 }
@@ -9967,7 +9967,7 @@
               }),
               (t.prototype.visitNode = function (t) {
                 for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
-                var n = this.nodeHandlers.get(t.kind) || this.visitDefault
+                const n = this.nodeHandlers.get(t.kind) || this.visitDefault
                 return n.call.apply(n, i([this, t], o(e), !1))
               }),
               (t.prototype.visitDefault = function (t) {
@@ -9975,7 +9975,7 @@
                 if (t instanceof Q.AbstractNode)
                   try {
                     for (var a = n(t.childNodes), l = a.next(); !l.done; l = a.next()) {
-                      var c = l.value
+                      const c = l.value
                       this.visitNode.apply(this, i([c], o(T), !1))
                     }
                   } catch (t) {
@@ -10001,7 +10001,7 @@
       },
       8912: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractWrapper = void 0))
-        var r = (function () {
+        const r = (function () {
           function t(t, e) {
             ;((this.factory = t), (this.node = e))
           }
@@ -10022,7 +10022,7 @@
         e.AbstractWrapper = r
       },
       3811: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -10034,7 +10034,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10054,9 +10054,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -10083,7 +10083,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.AbstractWrapperFactory = void 0))
-        var T = (function (t) {
+        const T = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -10100,10 +10100,10 @@
       },
       6272: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.RegisterHTMLHandler = void 0))
-        var n = r(5713),
+        const n = r(5713),
           o = r(3726)
         e.RegisterHTMLHandler = function (t) {
-          var e = new o.HTMLHandler(t)
+          const e = new o.HTMLHandler(t)
           return (n.mathjax.handlers.register(e), e)
         }
       },
@@ -10120,7 +10120,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10145,7 +10145,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -10155,9 +10155,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -10177,7 +10177,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -10190,7 +10190,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLDocument = void 0))
-        var s = r(5722),
+        const s = r(5722),
           a = r(7233),
           l = r(3363),
           c = r(3335),
@@ -10198,7 +10198,7 @@
           p = r(4474),
           h = (function (t) {
             function e(e, r, n) {
-              var o = this,
+              let o = this,
                 i = Q((0, a.separateOptions)(n, u.HTMLDomStrings.OPTIONS), 2),
                 T = i[0],
                 s = i[1]
@@ -10213,12 +10213,12 @@
             return (
               o(e, t),
               (e.prototype.findPosition = function (t, e, r, n) {
-                var o,
+                let o,
                   i,
                   s = this.adaptor
                 try {
                   for (var a = T(n[t]), l = a.next(); !l.done; l = a.next()) {
-                    var c = l.value,
+                    const c = l.value,
                       u = Q(c, 2),
                       p = u[0],
                       h = u[1]
@@ -10238,13 +10238,13 @@
                 return { node: null, n: 0, delim: r }
               }),
               (e.prototype.mathItem = function (t, e, r) {
-                var n = t.math,
+                const n = t.math,
                   o = this.findPosition(t.n, t.start.n, t.open, r),
                   i = this.findPosition(t.n, t.end.n, t.close, r)
                 return new this.options.MathItem(n, e, t.display, o, i)
               }),
               (e.prototype.findMath = function (t) {
-                var e, r, n, o, i, s, l, c, u
+                let e, r, n, o, i, s, l, c, u
                 if (!this.processed.isSet('findMath')) {
                   ;((this.adaptor.document = this.document),
                     (t = (0, a.userOptions)(
@@ -10257,7 +10257,7 @@
                       !h.done;
                       h = p.next()
                     ) {
-                      var d = h.value,
+                      let d = h.value,
                         f = Q([null, null], 2),
                         L = f[0],
                         m = f[1]
@@ -10267,7 +10267,7 @@
                           !H.done;
                           H = y.next()
                         ) {
-                          var g = H.value,
+                          const g = H.value,
                             b = new this.options.MathList()
                           if (g.processStrings) {
                             null === L && ((L = (i = Q(this.domStrings.find(d), 2))[0]), (m = i[1]))
@@ -10297,7 +10297,7 @@
                                 O = V.next()
                               ) {
                                 _ = O.value
-                                var S = new this.options.MathItem(
+                                const S = new this.options.MathItem(
                                   _.math,
                                   g,
                                   _.display,
@@ -10351,21 +10351,21 @@
                 )
               }),
               (e.prototype.addPageElements = function () {
-                var t = this.adaptor.body(this.document),
+                const t = this.adaptor.body(this.document),
                   e = this.documentPageElements()
                 e && this.adaptor.append(t, e)
               }),
               (e.prototype.addStyleSheet = function () {
-                var t = this.documentStyleSheet(),
+                const t = this.documentStyleSheet(),
                   e = this.adaptor
                 if (t && !e.parent(t)) {
-                  var r = e.head(this.document),
+                  const r = e.head(this.document),
                     n = this.findSheet(r, e.getAttribute(t, 'id'))
                   n ? e.replace(t, n) : e.append(r, t)
                 }
               }),
               (e.prototype.findSheet = function (t, e) {
-                var r, n
+                let r, n
                 if (e)
                   try {
                     for (
@@ -10373,7 +10373,7 @@
                       !i.done;
                       i = o.next()
                     ) {
-                      var Q = i.value
+                      const Q = i.value
                       if (this.adaptor.getAttribute(Q, 'id') === e) return Q
                     }
                   } catch (t) {
@@ -10388,11 +10388,11 @@
                 return null
               }),
               (e.prototype.removeFromDocument = function (t) {
-                var e, r
+                let e, r
                 if ((void 0 === t && (t = !1), this.processed.isSet('updateDocument')))
                   try {
                     for (var n = T(this.math), o = n.next(); !o.done; o = n.next()) {
-                      var i = o.value
+                      const i = o.value
                       i.state() >= p.STATE.INSERTED && i.state(p.STATE.TYPESET, t)
                     }
                   } catch (t) {
@@ -10435,12 +10435,12 @@
         e.HTMLDocument = h
       },
       5138: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__read) ||
           function (t, e) {
-            var r = 'function' == typeof Symbol && t[Symbol.iterator]
+            let r = 'function' == typeof Symbol && t[Symbol.iterator]
             if (!r) return t
-            var n,
+            let n,
               o,
               i = r.call(t),
               Q = []
@@ -10458,11 +10458,11 @@
             return Q
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLDomStrings = void 0))
-        var o = r(7233),
+        const o = r(7233),
           i = (function () {
             function t(t) {
               void 0 === t && (t = null)
-              var e = this.constructor
+              const e = this.constructor
               ;((this.options = (0, o.userOptions)((0, o.defaultOptions)({}, e.OPTIONS), t)),
                 this.init(),
                 this.getPatterns())
@@ -10476,7 +10476,7 @@
                   (this.stack = []))
               }),
               (t.prototype.getPatterns = function () {
-                var t = (0, o.makeArray)(this.options.skipHtmlTags),
+                const t = (0, o.makeArray)(this.options.skipHtmlTags),
                   e = (0, o.makeArray)(this.options.ignoreHtmlClass),
                   r = (0, o.makeArray)(this.options.processHtmlClass)
                 ;((this.skipHtmlTags = new RegExp('^(?:' + t.join('|') + ')$', 'i')),
@@ -10497,14 +10497,14 @@
               }),
               (t.prototype.handleTag = function (t, e) {
                 if (!e) {
-                  var r = this.options.includeHtmlTags[this.adaptor.kind(t)]
+                  const r = this.options.includeHtmlTags[this.adaptor.kind(t)]
                   this.extendString(t, r)
                 }
                 return this.adaptor.next(t)
               }),
               (t.prototype.handleContainer = function (t, e) {
                 this.pushString()
-                var r = this.adaptor.getAttribute(t, 'class') || '',
+                let r = this.adaptor.getAttribute(t, 'class') || '',
                   n = this.adaptor.kind(t) || '',
                   o = this.processHtmlClass.exec(r),
                   i = t
@@ -10523,13 +10523,13 @@
                 return (this.pushString(), this.adaptor.next(t))
               }),
               (t.prototype.find = function (t) {
-                var e, r
+                let e, r
                 this.init()
                 for (
-                  var o = this.adaptor.next(t), i = !1, Q = this.options.includeHtmlTags;
+                  let o = this.adaptor.next(t), i = !1, Q = this.options.includeHtmlTags;
                   t && t !== o;
                 ) {
-                  var T = this.adaptor.kind(t)
+                  const T = this.adaptor.kind(t)
                   ;('#text' === T
                     ? (t = this.handleText(t, i))
                     : Q.hasOwnProperty(T)
@@ -10542,7 +10542,7 @@
                       (this.pushString(), (t = (r = n(this.stack.pop(), 2))[0]), (i = r[1])))
                 }
                 this.pushString()
-                var s = [this.strings, this.nodes]
+                const s = [this.strings, this.nodes]
                 return (this.init(), s)
               }),
               (t.OPTIONS = {
@@ -10566,7 +10566,7 @@
         e.HTMLDomStrings = i
       },
       3726: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -10578,7 +10578,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10596,17 +10596,17 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLHandler = void 0))
-        var i = r(3670),
+        const i = r(3670),
           Q = r(3683),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.documentClass = Q.HTMLDocument), e)
             }
             return (
               o(e, t),
               (e.prototype.handlesDocument = function (t) {
-                var e = this.adaptor
+                const e = this.adaptor
                 if ('string' == typeof t)
                   try {
                     t = e.parse(t, 'text/html')
@@ -10618,13 +10618,13 @@
                 )
               }),
               (e.prototype.create = function (e, r) {
-                var n = this.adaptor
+                const n = this.adaptor
                 if ('string' == typeof e) e = n.parse(e, 'text/html')
                 else if (
                   e instanceof n.window.HTMLElement ||
                   e instanceof n.window.DocumentFragment
                 ) {
-                  var o = e
+                  const o = e
                   ;((e = n.parse('', 'text/html')), n.append(n.body(e), o))
                 }
                 return t.prototype.create.call(this, e, r)
@@ -10635,7 +10635,7 @@
         e.HTMLHandler = T
       },
       3363: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -10647,7 +10647,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10665,7 +10665,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLMathItem = void 0))
-        var i = r(4474),
+        const i = r(4474),
           Q = (function (t) {
             function e(e, r, n, o, i) {
               return (
@@ -10687,7 +10687,7 @@
               (e.prototype.updateDocument = function (t) {
                 if (this.state() < i.STATE.INSERTED) {
                   if (this.inputJax.processStrings) {
-                    var e = this.start.node
+                    let e = this.start.node
                     if (e === this.end.node)
                       (this.end.n &&
                         this.end.n < this.adaptor.value(this.end.node).length &&
@@ -10699,7 +10699,7 @@
                         this.start.n && (e = this.adaptor.split(e, this.start.n));
                         e !== this.end.node;
                       ) {
-                        var r = this.adaptor.next(e)
+                        const r = this.adaptor.next(e)
                         ;(this.adaptor.remove(e), (e = r))
                       }
                       ;(this.adaptor.insert(this.typesetRoot, e),
@@ -10718,14 +10718,14 @@
               }),
               (e.prototype.removeFromDocument = function (t) {
                 if ((void 0 === t && (t = !1), this.state() >= i.STATE.TYPESET)) {
-                  var e = this.adaptor,
+                  let e = this.adaptor,
                     r = this.start.node,
                     n = e.text('')
                   if (t) {
-                    var o = this.start.delim + this.math + this.end.delim
+                    const o = this.start.delim + this.math + this.end.delim
                     if (this.inputJax.processStrings) n = e.text(o)
                     else {
-                      var Q = e.parse(o, 'text/html')
+                      const Q = e.parse(o, 'text/html')
                       n = e.firstChild(e.body(Q))
                     }
                   }
@@ -10740,7 +10740,7 @@
         e.HTMLMathItem = Q
       },
       3335: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -10752,7 +10752,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10770,7 +10770,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.HTMLMathList = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -10791,7 +10791,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -10816,7 +10816,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -10826,9 +10826,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -10851,7 +10851,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.TeX = void 0))
-        var s = r(9206),
+        const s = r(9206),
           a = r(7233),
           l = r(7073),
           c = T(r(4676)),
@@ -10862,16 +10862,16 @@
           f = r(6521),
           L = r(9899)
         r(2942)
-        var m = (function (t) {
+        const m = (function (t) {
           function e(r) {
             void 0 === r && (r = {})
-            var n = this,
+            let n = this,
               o = Q((0, a.separateOptions)(r, e.OPTIONS, l.FindTeX.OPTIONS), 3),
               i = o[0],
               T = o[1],
               s = o[2]
             ;(n = t.call(this, T) || this).findTeX = n.options.FindTeX || new l.FindTeX(s)
-            var u = n.options.packages,
+            const u = n.options.packages,
               p = (n.configuration = e.configure(u)),
               h = (n._parseOptions = new d.default(p, [n.options, f.TagsFactory.OPTIONS]))
             return (
@@ -10890,7 +10890,7 @@
           return (
             o(e, t),
             (e.configure = function (t) {
-              var e = new L.ParserConfiguration(t, ['tex'])
+              const e = new L.ParserConfiguration(t, ['tex'])
               return (e.init(), e)
             }),
             (e.tags = function (t, e) {
@@ -10916,12 +10916,12 @@
             (e.prototype.compile = function (t, e) {
               ;(this.parseOptions.clear(),
                 this.executeFilters(this.preFilters, t, e, this.parseOptions))
-              var r,
+              let r,
                 n,
                 o = t.display
               ;((this.latex = t.math), this.parseOptions.tags.startEquation(t))
               try {
-                var i = new p.default(this.latex, { display: o, isInner: !1 }, this.parseOptions)
+                const i = new p.default(this.latex, { display: o, isInner: !1 }, this.parseOptions)
                 ;((r = i.mml()), (n = i.stack.global))
               } catch (t) {
                 if (!(t instanceof h.default)) throw t
@@ -10943,7 +10943,7 @@
               return this.findTeX.findMath(t)
             }),
             (e.prototype.formatError = function (t) {
-              var e = t.message.replace(/\n.*/, '')
+              const e = t.message.replace(/\n.*/, '')
               return this.parseOptions.nodeFactory.create('error', e, t.id, this.latex)
             }),
             (e.NAME = 'TeX'),
@@ -10962,10 +10962,10 @@
         e.TeX = m
       },
       9899: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -10980,9 +10980,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -11001,7 +11001,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.ParserConfiguration = e.ConfigurationHandler = e.Configuration = void 0))
-        var i,
+        let i,
           Q = r(7233),
           T = r(2947),
           s = r(7525),
@@ -11042,9 +11042,9 @@
                 return Array.isArray(t) ? t : [t, e]
               }),
               (t._create = function (e, r) {
-                var n = this
+                const n = this
                 void 0 === r && (r = {})
-                var o = r.priority || a.PrioritizedList.DEFAULTPRIORITY,
+                const o = r.priority || a.PrioritizedList.DEFAULTPRIORITY,
                   i = r.init ? this.makeProcessor(r.init, o) : null,
                   Q = r.config ? this.makeProcessor(r.config, o) : null,
                   T = (r.preprocessors || []).map(function (t) {
@@ -11072,7 +11072,7 @@
               }),
               (t.create = function (e, r) {
                 void 0 === r && (r = {})
-                var n = t._create(e, r)
+                const n = t._create(e, r)
                 return (i.set(e, n), n)
               }),
               (t.local = function (e) {
@@ -11097,7 +11097,7 @@
           })()
         ;((e.Configuration = c),
           (function (t) {
-            var e = new Map()
+            const e = new Map()
             ;((t.set = function (t, r) {
               e.set(t, r)
             }),
@@ -11108,9 +11108,9 @@
                 return e.keys()
               }))
           })((i = e.ConfigurationHandler || (e.ConfigurationHandler = {}))))
-        var u = (function () {
+        const u = (function () {
           function t(t, e) {
-            var r, o, i, Q
+            let r, o, i, Q
             ;(void 0 === e && (e = ['tex']),
               (this.initMethod = new s.FunctionList()),
               (this.configMethod = new s.FunctionList()),
@@ -11124,7 +11124,7 @@
               (this.parsers = e))
             try {
               for (var l = n(t.slice().reverse()), c = l.next(); !c.done; c = l.next()) {
-                var u = c.value
+                const u = c.value
                 this.addPackage(u)
               }
             } catch (t) {
@@ -11138,7 +11138,7 @@
             }
             try {
               for (var p = n(this.configurations), h = p.next(); !h.done; h = p.next()) {
-                var d = h.value,
+                const d = h.value,
                   f = d.item,
                   L = d.priority
                 this.append(f, L)
@@ -11158,11 +11158,11 @@
               this.initMethod.execute(this)
             }),
             (t.prototype.config = function (t) {
-              var e, r
+              let e, r
               this.configMethod.execute(this, t)
               try {
                 for (var o = n(this.configurations), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value
+                  const Q = i.value
                   this.addFilters(t, Q.item)
                 }
               } catch (t) {
@@ -11176,20 +11176,20 @@
               }
             }),
             (t.prototype.addPackage = function (t) {
-              var e = 'string' == typeof t ? t : t[0],
+              const e = 'string' == typeof t ? t : t[0],
                 r = this.getPackage(e)
               r && this.configurations.add(r, 'string' == typeof t ? r.priority : t[1])
             }),
             (t.prototype.add = function (t, e, r) {
-              var o, i
+              let o, i
               void 0 === r && (r = {})
-              var T = this.getPackage(t)
+              const T = this.getPackage(t)
               ;(this.append(T), this.configurations.add(T, T.priority), this.init())
-              var s = e.parseOptions
+              const s = e.parseOptions
               s.nodeFactory.setCreators(T.nodes)
               try {
                 for (var a = n(Object.keys(T.items)), c = a.next(); !c.done; c = a.next()) {
-                  var u = c.value
+                  const u = c.value
                   s.itemFactory.setNodeClass(u, T.items[u])
                 }
               } catch (t) {
@@ -11208,7 +11208,7 @@
                 T.config && T.config(this, e))
             }),
             (t.prototype.getPackage = function (t) {
-              var e = i.get(t)
+              const e = i.get(t)
               if (e && this.parsers.indexOf(e.parser) < 0)
                 throw Error('Package '.concat(t, " doesn't target the proper parser"))
               return e
@@ -11224,7 +11224,7 @@
                 Object.assign(this.nodes, t.nodes))
             }),
             (t.prototype.addFilters = function (t, e) {
-              var r, i, Q, T
+              let r, i, Q, T
               try {
                 for (var s = n(e.preprocessors), a = s.next(); !a.done; a = s.next()) {
                   var l = o(a.value, 2),
@@ -11243,7 +11243,7 @@
               }
               try {
                 for (var p = n(e.postprocessors), h = p.next(); !h.done; h = p.next()) {
-                  var d = o(h.value, 2),
+                  const d = o(h.value, 2),
                     f = d[0]
                   u = d[1]
                   t.postFilters.add(f, u)
@@ -11264,10 +11264,10 @@
         e.ParserConfiguration = u
       },
       4676: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -11285,23 +11285,23 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var i,
+        let i,
           Q = r(9007),
           T = o(r(1256))
         ;(!(function (t) {
           ;((t.cleanStretchy = function (t) {
-            var e,
+            let e,
               r,
               o = t.data
             try {
               for (var i = n(o.getList('fixStretchy')), Q = i.next(); !Q.done; Q = i.next()) {
-                var s = Q.value
+                const s = Q.value
                 if (T.default.getProperty(s, 'fixStretchy')) {
-                  var a = T.default.getForm(s)
+                  const a = T.default.getForm(s)
                   a && a[3] && a[3].stretchy && T.default.setAttribute(s, 'stretchy', !1)
-                  var l = s.parent
+                  const l = s.parent
                   if (!(T.default.getTexClass(s) || (a && a[2]))) {
-                    var c = o.nodeFactory.create('node', 'TeXAtom', [s])
+                    const c = o.nodeFactory.create('node', 'TeXAtom', [s])
                     ;(l.replaceChild(c, s), c.inheritAttributesFrom(s))
                   }
                   T.default.removeProperties(s, 'fixStretchy')
@@ -11319,15 +11319,15 @@
           }),
             (t.cleanAttributes = function (t) {
               t.data.root.walkTree(function (t, e) {
-                var r,
+                let r,
                   o,
                   i = t.attributes
                 if (i) {
-                  var Q = new Set((i.get('mjx-keep-attrs') || '').split(/ /))
+                  const Q = new Set((i.get('mjx-keep-attrs') || '').split(/ /))
                   delete i.getAllAttributes()['mjx-keep-attrs']
                   try {
                     for (var T = n(i.getExplicitNames()), s = T.next(); !s.done; s = T.next()) {
-                      var a = s.value
+                      const a = s.value
                       Q.has(a) ||
                         i.attributes[a] !== t.attributes.getInherited(a) ||
                         delete i.attributes[a]
@@ -11345,14 +11345,14 @@
               }, {})
             }),
             (t.combineRelations = function (t) {
-              var o,
+              let o,
                 i,
                 s,
                 a,
                 l = []
               try {
                 for (var c = n(t.data.getList('mo')), u = c.next(); !u.done; u = c.next()) {
-                  var p = u.value
+                  const p = u.value
                   if (
                     !p.getProperty('relationsCombined') &&
                     p.parent &&
@@ -11360,7 +11360,7 @@
                     T.default.getTexClass(p) === Q.TEXCLASS.REL
                   ) {
                     for (
-                      var h = p.parent,
+                      let h = p.parent,
                         d = void 0,
                         f = h.childNodes,
                         L = f.indexOf(p) + 1,
@@ -11385,7 +11385,7 @@
                           !H.done;
                           H = y.next()
                         ) {
-                          var g = H.value
+                          const g = H.value
                           p.setProperty(g, d.getProperty(g))
                         }
                       } catch (t) {
@@ -11417,15 +11417,15 @@
               t.data.removeFromList('mo', l)
             }))
           var e = function (t, e, r) {
-              var n = e.attributes,
+              const n = e.attributes,
                 o = r.attributes
               t.forEach(function (t) {
-                var e = o.getExplicit(t)
+                const e = o.getExplicit(t)
                 null != e && n.set(t, e)
               })
             },
             r = function (t, e) {
-              var r,
+              let r,
                 o,
                 i = function (t, e) {
                   return t.getExplicitNames().filter(function (r) {
@@ -11439,7 +11439,7 @@
               if (s.length !== a.length) return !1
               try {
                 for (var l = n(s), c = l.next(); !c.done; c = l.next()) {
-                  var u = c.value
+                  const u = c.value
                   if (Q.getExplicit(u) !== T.getExplicit(u)) return !1
                 }
               } catch (t) {
@@ -11454,15 +11454,15 @@
               return !0
             },
             o = function (t, e, r) {
-              var o,
+              let o,
                 i,
                 Q = []
               try {
                 for (var s = n(t.getList('m' + e + r)), a = s.next(); !a.done; a = s.next()) {
-                  var l = a.value,
+                  const l = a.value,
                     c = l.childNodes
                   if (!c[l[e]] || !c[l[r]]) {
-                    var u = l.parent,
+                    const u = l.parent,
                       p = c[l[e]]
                         ? t.nodeFactory.create('node', 'm' + e, [c[l.base], c[l[e]]])
                         : t.nodeFactory.create('node', 'm' + r, [c[l.base], c[l[r]]])
@@ -11483,24 +11483,24 @@
               t.removeFromList('m' + e + r, Q)
             }
           t.cleanSubSup = function (t) {
-            var e = t.data
+            const e = t.data
             e.error || (o(e, 'sub', 'sup'), o(e, 'under', 'over'))
           }
-          var i = function (t, e, r) {
-            var o,
+          const i = function (t, e, r) {
+            let o,
               i,
               Q = []
             try {
               for (var s = n(t.getList(e)), a = s.next(); !a.done; a = s.next()) {
-                var l = a.value
+                const l = a.value
                 if (!l.attributes.get('displaystyle')) {
-                  var c = l.childNodes[l.base],
+                  const c = l.childNodes[l.base],
                     u = c.coreMO()
                   if (
                     c.getProperty('movablelimits') &&
                     !u.attributes.getExplicit('movablelimits')
                   ) {
-                    var p = t.nodeFactory.create('node', r, l.childNodes)
+                    const p = t.nodeFactory.create('node', r, l.childNodes)
                     ;(T.default.copyAttributes(l, p),
                       l.parent ? l.parent.replaceChild(p, l) : (t.root = p),
                       Q.push(l))
@@ -11519,7 +11519,7 @@
             t.removeFromList(e, Q)
           }
           ;((t.moveLimits = function (t) {
-            var e = t.data
+            const e = t.data
             ;(i(e, 'munderover', 'msubsup'), i(e, 'munder', 'msub'), i(e, 'mover', 'msup'))
           }),
             (t.setInherited = function (t) {
@@ -11529,7 +11529,7 @@
           (e.default = i))
       },
       7073: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -11541,7 +11541,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -11561,9 +11561,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -11581,24 +11581,24 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.FindTeX = void 0))
-        var Q = r(3494),
+        const Q = r(3494),
           T = r(505),
           s = r(4474),
           a = (function (t) {
             function e(e) {
-              var r = t.call(this, e) || this
+              const r = t.call(this, e) || this
               return (r.getPatterns(), r)
             }
             return (
               o(e, t),
               (e.prototype.getPatterns = function () {
-                var t = this,
+                const t = this,
                   e = this.options,
                   r = [],
                   n = [],
                   o = []
                 ;((this.end = {}), (this.env = this.sub = 0))
-                var i = 1
+                let i = 1
                 ;(e.inlineMath.forEach(function (e) {
                   return t.addPattern(r, e, !1)
                 }),
@@ -11615,7 +11615,7 @@
                   (this.hasPatterns = n.length > 0))
               }),
               (e.prototype.addPattern = function (t, e, r) {
-                var n = i(e, 2),
+                const n = i(e, 2),
                   o = n[0],
                   Q = n[1]
                 ;(t.push((0, T.quotePattern)(o)), (this.end[o] = [Q, r, this.endPattern(Q)]))
@@ -11649,7 +11649,7 @@
                 return null
               }),
               (e.prototype.findMathInString = function (t, e, r) {
-                var n, o
+                let n, o
                 for (this.start.lastIndex = 0; (n = this.start.exec(r)); ) {
                   if (void 0 !== n[this.env] && this.env) {
                     var i = '\\\\end\\s*(\\{' + (0, T.quotePattern)(n[this.env]) + '\\})'
@@ -11659,7 +11659,7 @@
                       this.endPattern(null, i),
                     ])) && ((o.math = o.open + o.math + o.close), (o.open = o.close = ''))
                   } else if (void 0 !== n[this.sub] && this.sub) {
-                    var Q = n[this.sub]
+                    const Q = n[this.sub]
                     i = n.index + n[this.sub].length
                     o =
                       2 === Q.length
@@ -11670,9 +11670,9 @@
                 }
               }),
               (e.prototype.findMath = function (t) {
-                var e = []
+                const e = []
                 if (this.hasPatterns)
-                  for (var r = 0, n = t.length; r < n; r++) this.findMathInString(e, r, t[r])
+                  for (let r = 0, n = t.length; r < n; r++) this.findMathInString(e, r, t[r])
                 return e
               }),
               (e.OPTIONS = {
@@ -11691,10 +11691,10 @@
         e.FindTeX = a
       },
       2947: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -11709,9 +11709,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -11730,11 +11730,11 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SubHandlers = e.SubHandler = e.MapHandler = void 0))
-        var i,
+        let i,
           Q = r(8666),
           T = r(7525)
         !(function (t) {
-          var e = new Map()
+          const e = new Map()
           ;((t.register = function (t) {
             e.set(t.name, t)
           }),
@@ -11742,18 +11742,18 @@
               return e.get(t)
             }))
         })((i = e.MapHandler || (e.MapHandler = {})))
-        var s = (function () {
+        const s = (function () {
           function t() {
             ;((this._configuration = new Q.PrioritizedList()),
               (this._fallback = new T.FunctionList()))
           }
           return (
             (t.prototype.add = function (t, e, r) {
-              var o, T
+              let o, T
               void 0 === r && (r = Q.PrioritizedList.DEFAULTPRIORITY)
               try {
                 for (var s = n(t.slice().reverse()), a = s.next(); !a.done; a = s.next()) {
-                  var l = a.value,
+                  const l = a.value,
                     c = i.getMap(l)
                   if (!c) return void this.warn('Configuration ' + l + ' not found! Omitted.')
                   this._configuration.add(c, r)
@@ -11770,10 +11770,10 @@
               e && this._fallback.add(e, r)
             }),
             (t.prototype.parse = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var i = n(this._configuration), Q = i.next(); !Q.done; Q = i.next()) {
-                  var T = Q.value.item.parse(t)
+                  const T = Q.value.item.parse(t)
                   if (T) return T
                 }
               } catch (t) {
@@ -11785,25 +11785,25 @@
                   if (e) throw e.error
                 }
               }
-              var s = o(t, 2),
+              const s = o(t, 2),
                 a = s[0],
                 l = s[1]
               Array.from(this._fallback)[0].item(a, l)
             }),
             (t.prototype.lookup = function (t) {
-              var e = this.applicable(t)
+              const e = this.applicable(t)
               return e ? e.lookup(t) : null
             }),
             (t.prototype.contains = function (t) {
               return !!this.applicable(t)
             }),
             (t.prototype.toString = function () {
-              var t,
+              let t,
                 e,
                 r = []
               try {
                 for (var o = n(this._configuration), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value.item
+                  const Q = i.value.item
                   r.push(Q.name)
                 }
               } catch (e) {
@@ -11818,10 +11818,10 @@
               return r.join(', ')
             }),
             (t.prototype.applicable = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var o = n(this._configuration), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value.item
+                  const Q = i.value.item
                   if (Q.contains(t)) return Q
                 }
               } catch (t) {
@@ -11836,10 +11836,10 @@
               return null
             }),
             (t.prototype.retrieve = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var o = n(this._configuration), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value.item
+                  const Q = i.value.item
                   if (Q.name === t) return Q
                 }
               } catch (t) {
@@ -11860,17 +11860,17 @@
           )
         })()
         e.SubHandler = s
-        var a = (function () {
+        const a = (function () {
           function t() {
             this.map = new Map()
           }
           return (
             (t.prototype.add = function (t, e, r) {
-              var o, i
+              let o, i
               void 0 === r && (r = Q.PrioritizedList.DEFAULTPRIORITY)
               try {
                 for (var T = n(Object.keys(t)), a = T.next(); !a.done; a = T.next()) {
-                  var l = a.value,
+                  let l = a.value,
                     c = this.get(l)
                   ;(c || ((c = new s()), this.set(l, c)), c.add(t[l], e[l], r))
                 }
@@ -11891,10 +11891,10 @@
               return this.map.get(t)
             }),
             (t.prototype.retrieve = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var o = n(this.map.values()), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value.retrieve(t)
+                  const Q = i.value.retrieve(t)
                   if (Q) return Q
                 }
               } catch (t) {
@@ -11917,12 +11917,12 @@
         e.SubHandlers = a
       },
       8929: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -11953,7 +11953,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.NodeFactory = void 0))
-        var Q = i(r(1256)),
+        const Q = i(r(1256)),
           T = (function () {
             function t() {
               ;((this.mmlFactory = null),
@@ -11967,19 +11967,19 @@
             return (
               (t.createNode = function (t, e, r, n, o) {
                 ;(void 0 === r && (r = []), void 0 === n && (n = {}))
-                var i = t.mmlFactory.create(e)
+                const i = t.mmlFactory.create(e)
                 return (i.setChildren(r), o && i.appendChild(o), Q.default.setProperties(i, n), i)
               }),
               (t.createToken = function (t, e, r, n) {
                 ;(void 0 === r && (r = {}), void 0 === n && (n = ''))
-                var o = t.create('text', n)
+                const o = t.create('text', n)
                 return t.create('node', e, [], r, o)
               }),
               (t.createText = function (t, e) {
                 return null == e ? null : t.mmlFactory.create('text').setText(e)
               }),
               (t.createError = function (t, e) {
-                var r = t.create('text', e),
+                const r = t.create('text', e),
                   n = t.create('node', 'mtext', [], {}, r)
                 return t.create('node', 'merror', [n], { 'data-mjx-error': e })
               }),
@@ -11990,11 +11990,11 @@
                 this.factory[t] = e
               }),
               (t.prototype.setCreators = function (t) {
-                for (var e in t) this.set(e, t[e])
+                for (const e in t) this.set(e, t[e])
               }),
               (t.prototype.create = function (t) {
                 for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
-                var i = this.factory[t] || this.factory.node,
+                const i = this.factory[t] || this.factory.node,
                   Q = i.apply(void 0, o([this, e[0]], n(e.slice(1)), !1))
                 return ('node' === t && this.configuration.addNode(e[0], Q), Q)
               }),
@@ -12007,10 +12007,10 @@
         e.NodeFactory = T
       },
       1256: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -12025,9 +12025,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -12053,11 +12053,11 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var Q,
+        let Q,
           T = r(9007),
           s = r(2756)
         ;(!(function (t) {
-          var e = new Map([
+          const e = new Map([
             ['autoOP', !0],
             ['fnOP', !0],
             ['movesupsub', !0],
@@ -12071,10 +12071,10 @@
             ['close', !0],
           ])
           function r(t, r) {
-            var o, i
+            let o, i
             try {
               for (var Q = n(Object.keys(r)), T = Q.next(); !T.done; T = Q.next()) {
-                var s = T.value,
+                const s = T.value,
                   a = r[s]
                 'texClass' === s
                   ? ((t.texClass = a), t.setProperty(s, a))
@@ -12110,10 +12110,10 @@
               return t.getText()
             }),
             (t.appendChildren = function (t, e) {
-              var r, o
+              let r, o
               try {
                 for (var i = n(e), Q = i.next(); !Q.done; Q = i.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   t.appendChild(T)
                 }
               } catch (t) {
@@ -12148,7 +12148,7 @@
             }),
             (t.setChild = Q),
             (t.copyChildren = function (t, e) {
-              for (var r = t.childNodes, n = 0; n < r.length; n++) Q(e, n, r[n])
+              for (let r = t.childNodes, n = 0; n < r.length; n++) Q(e, n, r[n])
             }),
             (t.copyAttributes = function (t, e) {
               ;((e.attributes = t.attributes), r(e, t.getAllProperties()))
@@ -12170,13 +12170,13 @@
               return t.isInferred
             }),
             (t.getForm = function (t) {
-              var e, r
+              let e, r
               if (!a(t, 'mo')) return null
-              var o = t,
+              const o = t,
                 i = o.getForms()
               try {
                 for (var Q = n(i), T = Q.next(); !T.done; T = Q.next()) {
-                  var l = T.value,
+                  const l = T.value,
                     c = s.MmlMo.OPTABLE[l][o.getText()]
                   if (c) return c
                 }
@@ -12195,12 +12195,12 @@
           (e.default = Q))
       },
       5450: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -12231,13 +12231,13 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var Q,
+        let Q,
           T = i(r(1256)),
           s = r(8317),
           a = i(r(1130))
         ;(!(function (t) {
           ;((t.variable = function (t, e) {
-            var r = a.default.getFontDef(t),
+            const r = a.default.getFontDef(t),
               n = t.stack.env
             n.multiLetterIdentifiers &&
               '' !== n.font &&
@@ -12247,11 +12247,11 @@
                 n.noAutoOP &&
                 e.length > 1 &&
                 (r.autoOP = !1))
-            var o = t.create('token', 'mi', r, e)
+            const o = t.create('token', 'mi', r, e)
             t.Push(o)
           }),
             (t.digit = function (t, e) {
-              var r,
+              let r,
                 n = t.configuration.options.digits,
                 o = t.string.slice(t.i - 1).match(n),
                 i = a.default.getFontDef(t)
@@ -12262,36 +12262,36 @@
                 t.Push(r))
             }),
             (t.controlSequence = function (t, e) {
-              var r = t.GetCS()
+              const r = t.GetCS()
               t.parse('macro', [t, r])
             }),
             (t.mathchar0mi = function (t, e) {
-              var r = e.attributes || { mathvariant: s.TexConstant.Variant.ITALIC },
+              const r = e.attributes || { mathvariant: s.TexConstant.Variant.ITALIC },
                 n = t.create('token', 'mi', r, e.char)
               t.Push(n)
             }),
             (t.mathchar0mo = function (t, e) {
-              var r = e.attributes || {}
+              const r = e.attributes || {}
               r.stretchy = !1
-              var n = t.create('token', 'mo', r, e.char)
+              const n = t.create('token', 'mo', r, e.char)
               ;(T.default.setProperty(n, 'fixStretchy', !0),
                 t.configuration.addNode('fixStretchy', n),
                 t.Push(n))
             }),
             (t.mathchar7 = function (t, e) {
-              var r = e.attributes || { mathvariant: s.TexConstant.Variant.NORMAL }
+              const r = e.attributes || { mathvariant: s.TexConstant.Variant.NORMAL }
               t.stack.env.font && (r.mathvariant = t.stack.env.font)
-              var n = t.create('token', 'mi', r, e.char)
+              const n = t.create('token', 'mi', r, e.char)
               t.Push(n)
             }),
             (t.delimiter = function (t, e) {
-              var r = e.attributes || {}
+              let r = e.attributes || {}
               r = Object.assign({ fence: !1, stretchy: !1 }, r)
-              var n = t.create('token', 'mo', r, e.char)
+              const n = t.create('token', 'mo', r, e.char)
               t.Push(n)
             }),
             (t.environment = function (t, e, r, i) {
-              var Q = i[0],
+              let Q = i[0],
                 T = t.itemFactory.create('begin').setProperties({ name: e, end: Q })
               ;((T = r.apply(void 0, o([t, T], n(i.slice(1)), !1))), t.Push(T))
             }))
@@ -12299,12 +12299,12 @@
           (e.default = Q))
       },
       8562: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -12332,7 +12332,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -12350,7 +12350,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var T = Q(r(5453)),
+        const T = Q(r(5453)),
           s = r(8929),
           a = Q(r(1256)),
           l = r(7233),
@@ -12394,21 +12394,21 @@
                   this.tags.resetTag())
               }),
               (t.prototype.addNode = function (t, e) {
-                var r = this.nodeLists[t]
+                let r = this.nodeLists[t]
                 if ((r || (r = this.nodeLists[t] = []), r.push(e), e.kind !== t)) {
-                  var n = a.default.getProperty(e, 'in-lists') || '',
+                  const n = a.default.getProperty(e, 'in-lists') || '',
                     o = (n ? n.split(/,/) : []).concat(t).join(',')
                   a.default.setProperty(e, 'in-lists', o)
                 }
               }),
               (t.prototype.getList = function (t) {
-                var e,
+                let e,
                   r,
                   n = this.nodeLists[t] || [],
                   o = []
                 try {
                   for (var Q = i(n), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value
+                    const s = T.value
                     this.inTree(s) && o.push(s)
                   }
                 } catch (t) {
@@ -12423,12 +12423,12 @@
                 return ((this.nodeLists[t] = o), o)
               }),
               (t.prototype.removeFromList = function (t, e) {
-                var r,
+                let r,
                   n,
                   o = this.nodeLists[t] || []
                 try {
                   for (var Q = i(e), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value,
+                    const s = T.value,
                       a = o.indexOf(s)
                     a >= 0 && o.splice(a, 1)
                   }
@@ -12452,12 +12452,12 @@
         e.default = c
       },
       1130: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -12477,7 +12477,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -12495,14 +12495,14 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var Q,
+        let Q,
           T = r(9007),
           s = i(r(1256)),
           a = i(r(8417)),
           l = i(r(3971)),
           c = r(5368)
         ;(!(function (t) {
-          var e = 7.2,
+          const e = 7.2,
             r = {
               em: function (t) {
                 return t
@@ -12538,10 +12538,10 @@
             p = RegExp('^\\s*' + i + '\\s*' + Q + ' ?')
           function h(t, e) {
             void 0 === e && (e = !1)
-            var o = t.match(e ? p : u)
+            const o = t.match(e ? p : u)
             return o
               ? (function (t) {
-                  var e = n(t, 3),
+                  const e = n(t, 3),
                     o = e[0],
                     i = e[1],
                     Q = e[2]
@@ -12555,13 +12555,13 @@
           }
           function f(t, e, r) {
             ;('{' !== e && '}' !== e) || (e = '\\' + e)
-            var n = '{\\bigg' + r + ' ' + e + '}',
+            const n = '{\\bigg' + r + ' ' + e + '}',
               o = '{\\big' + r + ' ' + e + '}'
             return new a.default('\\mathchoice' + n + o + o + o, {}, t).mml()
           }
           function L(t, e, r) {
             e = e.replace(/^\s+/, c.entities.nbsp).replace(/\s+$/, c.entities.nbsp)
-            var n = t.create('text', e)
+            const n = t.create('text', e)
             return t.create('node', 'mtext', [], r, n)
           }
           function m(t, e, r) {
@@ -12581,7 +12581,7 @@
           }
           function H(t, e) {
             for (var r = t.length, n = 0, o = '', i = 0, Q = 0, T = !0, s = !1; i < r; ) {
-              var a = t[i++]
+              const a = t[i++]
               switch (a) {
                 case ' ':
                   break
@@ -12606,7 +12606,7 @@
           }
           ;((t.matchDimen = h),
             (t.dimen2em = function (t) {
-              var e = n(h(t), 2),
+              const e = n(h(t), 2),
                 o = e[0],
                 i = e[1],
                 Q = parseFloat(o || '1'),
@@ -12624,12 +12624,12 @@
             }),
             (t.fenced = function (t, e, r, n, o, i) {
               ;(void 0 === o && (o = ''), void 0 === i && (i = ''))
-              var Q,
+              let Q,
                 l = t.nodeFactory,
                 c = l.create('node', 'mrow', [], { open: e, close: n, texClass: T.TEXCLASS.INNER })
               if (o) Q = new a.default('\\' + o + 'l' + e, t.parser.stack.env, t).mml()
               else {
-                var u = l.create('text', e)
+                const u = l.create('text', e)
                 Q = l.create(
                   'node',
                   'mo',
@@ -12641,7 +12641,7 @@
               if ((s.default.appendChildren(c, [Q, r]), o))
                 Q = new a.default('\\' + o + 'r' + n, t.parser.stack.env, t).mml()
               else {
-                var p = l.create('text', n)
+                const p = l.create('text', n)
                 Q = l.create(
                   'node',
                   'mo',
@@ -12653,7 +12653,7 @@
               return (i && Q.attributes.set('mathcolor', i), s.default.appendChildren(c, [Q]), c)
             }),
             (t.fixedFence = function (t, e, r, n) {
-              var o = t.nodeFactory.create('node', 'mrow', [], {
+              const o = t.nodeFactory.create('node', 'mrow', [], {
                 open: e,
                 close: n,
                 texClass: T.TEXCLASS.ORD,
@@ -12669,8 +12669,8 @@
             }),
             (t.mathPalette = f),
             (t.fixInitialMO = function (t, e) {
-              for (var r = 0, n = e.length; r < n; r++) {
-                var o = e[r]
+              for (let r = 0, n = e.length; r < n; r++) {
+                const o = e[r]
                 if (
                   o &&
                   !s.default.isType(o, 'mspace') &&
@@ -12682,7 +12682,7 @@
                     s.default.isEmbellished(o) ||
                     (s.default.isType(o, 'TeXAtom') && s.default.getTexClass(o) === T.TEXCLASS.REL)
                   ) {
-                    var i = t.nodeFactory.create('node', 'mi')
+                    const i = t.nodeFactory.create('node', 'mi')
                     e.unshift(i)
                   }
                   break
@@ -12692,7 +12692,7 @@
             (t.internalMath = function (t, e, r, n) {
               if (t.configuration.options.internalMath)
                 return t.configuration.options.internalMath(t, e, r, n)
-              var o,
+              let o,
                 i,
                 Q = n || t.stack.env.font,
                 T = Q ? { mathvariant: Q } : {},
@@ -12716,12 +12716,12 @@
                   else if ('{' === o && '' !== p) h++
                   else if ('}' === o)
                     if ('}' === p && 0 === h) {
-                      var d = new a.default(e.slice(u, c), {}, t.configuration).mml()
+                      const d = new a.default(e.slice(u, c), {}, t.configuration).mml()
                       ;((i = t.create('node', 'TeXAtom', [d], T)), s.push(i), (p = ''), (u = c))
                     } else '' !== p && h && h--
                   else if ('\\' === o)
                     if ('' === p && e.substr(c).match(/^(eq)?ref\s*\{/)) {
-                      var f = RegExp['$&'].length
+                      const f = RegExp['$&'].length
                       ;(u < c - 1 && s.push(L(t, e.slice(u, c - 1), T)),
                         (p = '}'),
                         (u = c - 1),
@@ -12757,12 +12757,12 @@
                 s.default.isType(r, 'munderover') && s.default.isEmbellished(r))
               ) {
                 s.default.setProperties(s.default.getCoreMO(r), { lspace: 0, rspace: 0 })
-                var Q = e.create('node', 'mo', [], { rspace: 0 })
+                const Q = e.create('node', 'mo', [], { rspace: 0 })
                 r = e.create('node', 'mrow', [Q, r])
               }
-              var a = e.create('node', 'munderover', [r])
+              const a = e.create('node', 'munderover', [r])
               s.default.setChild(a, 'over' === o ? a.over : a.under, n)
-              var l = a
+              let l = a
               return (
                 i &&
                   (l = e.create('node', 'TeXAtom', [a], {
@@ -12774,13 +12774,13 @@
               )
             }),
             (t.checkMovableLimits = function (t) {
-              var e = s.default.isType(t, 'mo') ? s.default.getForm(t) : null
+              const e = s.default.isType(t, 'mo') ? s.default.getForm(t) : null
               ;(s.default.getProperty(t, 'movablelimits') || (e && e[3] && e[3].movablelimits)) &&
                 s.default.setProperties(t, { movablelimits: !1 })
             }),
             (t.trimSpaces = function (t) {
               if ('string' != typeof t) return t
-              var e = t.trim()
+              let e = t.trim()
               return (e.match(/\\$/) && t.match(/ $/) && (e += ' '), e)
             }),
             (t.setArrayAlign = function (e, r) {
@@ -12797,7 +12797,7 @@
             }),
             (t.substituteArgs = function (t, e, r) {
               for (var n = '', o = '', i = 0; i < r.length; ) {
-                var Q = r.charAt(i++)
+                let Q = r.charAt(i++)
                 if ('\\' === Q) n += Q + r.charAt(i++)
                 else if ('#' === Q)
                   if ('#' === (Q = r.charAt(i++))) n += Q
@@ -12834,16 +12834,16 @@
               t.stack.global.eqnenv = !0
             }),
             (t.copyNode = function (t, e) {
-              var r = t.copy(),
+              const r = t.copy(),
                 n = e.configuration
               return (
                 r.walkTree(function (t) {
-                  var e, r
+                  let e, r
                   n.addNode(t.kind, t)
-                  var i = (t.getProperty('in-lists') || '').split(/,/)
+                  const i = (t.getProperty('in-lists') || '').split(/,/)
                   try {
                     for (var Q = o(i), T = Q.next(); !T.done; T = Q.next()) {
-                      var s = T.value
+                      const s = T.value
                       s && n.addNode(s, t)
                     }
                   } catch (t) {
@@ -12863,14 +12863,14 @@
               return r
             }),
             (t.getFontDef = function (t) {
-              var e = t.stack.env.font
+              const e = t.stack.env.font
               return e ? { mathvariant: e } : {}
             }),
             (t.keyvalOptions = function (t, e, r) {
-              var i, Q
+              let i, Q
               ;(void 0 === e && (e = null), void 0 === r && (r = !1))
-              var T = (function (t) {
-                var e,
+              const T = (function (t) {
+                let e,
                   r,
                   o,
                   i,
@@ -12893,7 +12893,7 @@
               if (e)
                 try {
                   for (var s = o(Object.keys(T)), a = s.next(); !a.done; a = s.next()) {
-                    var c = a.value
+                    const c = a.value
                     if (!e.hasOwnProperty(c)) {
                       if (r) throw new l.default('InvalidOption', 'Invalid option: %1', c)
                       delete T[c]
@@ -12914,10 +12914,10 @@
           (e.default = Q))
       },
       9497: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -12932,9 +12932,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -12965,7 +12965,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var T = Q(r(1256)),
+        const T = Q(r(1256)),
           s = (function () {
             function t(t, e, r) {
               ;((this._factory = t),
@@ -12992,11 +12992,11 @@
                 for (var t, e, r = [], Q = 0; Q < arguments.length; Q++) r[Q] = arguments[Q]
                 try {
                   for (var s = n(r), a = s.next(); !a.done; a = s.next()) {
-                    var l = a.value
+                    const l = a.value
                     if (l) {
-                      var c = T.default.isNode(l) ? this._factory.create('mml', l) : l
+                      const c = T.default.isNode(l) ? this._factory.create('mml', l) : l
                       c.global = this.global
-                      var u = o(this.stack.length ? this.Top().checkItem(c) : [null, !0], 2),
+                      const u = o(this.stack.length ? this.Top().checkItem(c) : [null, !0], 2),
                         p = u[0],
                         h = u[1]
                       h &&
@@ -13019,7 +13019,7 @@
                 }
               }),
               (t.prototype.Pop = function () {
-                var t = this.stack.pop()
+                const t = this.stack.pop()
                 return (
                   t.isOpen || delete t.env,
                   (this.env = this.stack.length ? this.Top().env : {}),
@@ -13033,7 +13033,7 @@
                 )
               }),
               (t.prototype.Prev = function (t) {
-                var e = this.Top()
+                const e = this.Top()
                 return t ? e.First : e.Pop()
               }),
               (t.prototype.toString = function () {
@@ -13045,7 +13045,7 @@
         e.default = s
       },
       8292: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -13057,7 +13057,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -13077,9 +13077,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -13107,7 +13107,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -13125,7 +13125,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.BaseItem = e.MmlStack = void 0))
-        var a = s(r(3971)),
+        const a = s(r(3971)),
           l = (function () {
             function t(t) {
               this._nodes = t
@@ -13193,10 +13193,10 @@
             )
           })()
         e.MmlStack = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e(e) {
             for (var r = [], n = 1; n < arguments.length; n++) r[n - 1] = arguments[n]
-            var o = t.call(this, r) || this
+            const o = t.call(this, r) || this
             return (
               (o.factory = e),
               (o.global = {}),
@@ -13272,7 +13272,7 @@
                 throw new a.default('Misplaced', 'Misplaced %1', t.getName())
               }
               if (t.isClose && this.getErrors(t.kind)) {
-                var r = i(this.getErrors(t.kind), 2),
+                const r = i(this.getErrors(t.kind), 2),
                   n = r[0],
                   o = r[1]
                 throw new a.default(n, o, t.getName())
@@ -13280,10 +13280,10 @@
               return t.isFinal ? (this.Push(t.First), e.fail) : e.success
             }),
             (e.prototype.clearEnv = function () {
-              var t, e
+              let t, e
               try {
                 for (var r = T(Object.keys(this.env)), n = r.next(); !n.done; n = r.next()) {
-                  var o = n.value
+                  const o = n.value
                   delete this.env[o]
                 }
               } catch (e) {
@@ -13322,7 +13322,7 @@
         e.BaseItem = c
       },
       5453: function (t, e, r) {
-        var n,
+        let n,
           o,
           i =
             (this && this.__extends) ||
@@ -13335,7 +13335,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -13353,7 +13353,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var Q = r(8292),
+        const Q = r(8292),
           T = r(4574),
           s = (function (t) {
             function e() {
@@ -13363,7 +13363,7 @@
           })(Q.BaseItem),
           a = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.defaultKind = 'dummy'), (e.configuration = null), e)
             }
             return (i(e, t), (e.DefaultStackItems = (((o = {})[s.prototype.kind] = s), o)), e)
@@ -13372,7 +13372,7 @@
       },
       8803: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Macro = e.Symbol = void 0))
-        var r = (function () {
+        const r = (function () {
           function t(t, e, r) {
             ;((this._symbol = t), (this._char = e), (this._attributes = r))
           }
@@ -13402,7 +13402,7 @@
           )
         })()
         e.Symbol = r
-        var n = (function () {
+        const n = (function () {
           function t(t, e, r) {
             ;(void 0 === r && (r = []), (this._symbol = t), (this._func = e), (this._args = r))
           }
@@ -13434,7 +13434,7 @@
         e.Macro = n
       },
       9140: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -13446,7 +13446,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -13466,9 +13466,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -13488,7 +13488,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -13519,13 +13519,13 @@
             e.AbstractSymbolMap =
             e.parseResult =
               void 0))
-        var s = r(8803),
+        const s = r(8803),
           a = r(2947)
         function l(t) {
           return void 0 === t || t
         }
         e.parseResult = l
-        var c = (function () {
+        const c = (function () {
           function t(t, e) {
             ;((this._name = t), (this._parser = e), a.MapHandler.register(this))
           }
@@ -13541,7 +13541,7 @@
               return this.contains(t) ? this.parser : null
             }),
             (t.prototype.parse = function (t) {
-              var e = i(t, 2),
+              const e = i(t, 2),
                 r = e[0],
                 n = e[1],
                 o = this.parserFor(n),
@@ -13562,9 +13562,9 @@
           )
         })()
         e.AbstractSymbolMap = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e(e, r, n) {
-            var o = t.call(this, e, r) || this
+            const o = t.call(this, e, r) || this
             return ((o._regExp = n), o)
           }
           return (
@@ -13579,9 +13579,9 @@
           )
         })(c)
         e.RegExpMap = u
-        var p = (function (t) {
+        const p = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.map = new Map()), e)
           }
           return (
@@ -13602,14 +13602,14 @@
           )
         })(c)
         e.AbstractParseMap = p
-        var h = (function (t) {
+        const h = (function (t) {
           function e(e, r, n) {
-            var o,
+            let o,
               T,
               a = t.call(this, e, r) || this
             try {
               for (var l = Q(Object.keys(n)), c = l.next(); !c.done; c = l.next()) {
-                var u = c.value,
+                const u = c.value,
                   p = n[u],
                   h = i('string' == typeof p ? [p, null] : p, 2),
                   d = h[0],
@@ -13631,14 +13631,14 @@
           return (o(e, t), e)
         })(p)
         e.CharacterMap = h
-        var d = (function (t) {
+        const d = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.parse = function (e) {
-              var r = i(e, 2),
+              const r = i(e, 2),
                 n = r[0],
                 o = r[1]
               return t.prototype.parse.call(this, [n, '\\' + o])
@@ -13647,14 +13647,14 @@
           )
         })(h)
         e.DelimiterMap = d
-        var f = (function (t) {
+        const f = (function (t) {
           function e(e, r, n) {
-            var o,
+            let o,
               T,
               a = t.call(this, e, null) || this
             try {
               for (var l = Q(Object.keys(r)), c = l.next(); !c.done; c = l.next()) {
-                var u = c.value,
+                const u = c.value,
                   p = r[u],
                   h = i('string' == typeof p ? [p] : p),
                   d = h[0],
@@ -13676,11 +13676,11 @@
           return (
             o(e, t),
             (e.prototype.parserFor = function (t) {
-              var e = this.lookup(t)
+              const e = this.lookup(t)
               return e ? e.func : null
             }),
             (e.prototype.parse = function (t) {
-              var e = i(t, 2),
+              const e = i(t, 2),
                 r = e[0],
                 n = e[1],
                 o = this.lookup(n),
@@ -13691,37 +13691,37 @@
           )
         })(p)
         e.MacroMap = f
-        var L = (function (t) {
+        const L = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.parse = function (t) {
-              var e = i(t, 2),
+              const e = i(t, 2),
                 r = e[0],
                 n = e[1],
                 o = this.lookup(n),
                 Q = this.parserFor(n)
               if (!o || !Q) return null
-              var s = r.currentCS
+              const s = r.currentCS
               r.currentCS = '\\' + n
-              var a = Q.apply(void 0, T([r, '\\' + o.symbol], i(o.args), !1))
+              const a = Q.apply(void 0, T([r, '\\' + o.symbol], i(o.args), !1))
               return ((r.currentCS = s), l(a))
             }),
             e
           )
         })(f)
         e.CommandMap = L
-        var m = (function (t) {
+        const m = (function (t) {
           function e(e, r, n, o) {
-            var i = t.call(this, e, n, o) || this
+            const i = t.call(this, e, n, o) || this
             return ((i.parser = r), i)
           }
           return (
             o(e, t),
             (e.prototype.parse = function (t) {
-              var e = i(t, 2),
+              const e = i(t, 2),
                 r = e[0],
                 n = e[1],
                 o = this.lookup(n),
@@ -13734,7 +13734,7 @@
         e.EnvironmentMap = m
       },
       6521: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -13746,7 +13746,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -13766,7 +13766,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -13785,12 +13785,12 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.TagsFactory = e.AllTags = e.NoTags = e.AbstractTags = e.TagInfo = e.Label = void 0))
-        var T = Q(r(8417)),
+        const T = Q(r(8417)),
           s = function (t, e) {
             ;(void 0 === t && (t = '???'), void 0 === e && (e = ''), (this.tag = t), (this.id = e))
           }
         e.Label = s
-        var a = function (t, e, r, n, o, i, Q, T) {
+        const a = function (t, e, r, n, o, i, Q, T) {
           ;(void 0 === t && (t = ''),
             void 0 === e && (e = !1),
             void 0 === r && (r = !1),
@@ -13809,7 +13809,7 @@
             (this.labelId = T))
         }
         e.TagInfo = a
-        var l = (function () {
+        const l = (function () {
           function t() {
             ;((this.counter = 0),
               (this.allCounter = 0),
@@ -13824,7 +13824,7 @@
               (this.history = []),
               (this.stack = []),
               (this.enTag = function (t, e) {
-                var r = this.configuration.nodeFactory,
+                const r = this.configuration.nodeFactory,
                   n = r.create('node', 'mtd', [t]),
                   o = r.create('node', 'mlabeledtr', [e, n])
                 return r.create('node', 'mtable', [o], {
@@ -13895,7 +13895,7 @@
             }),
             (t.prototype.getTag = function (t) {
               if ((void 0 === t && (t = !1), t)) return (this.autoTag(), this.makeTag())
-              var e = this.currentTag
+              const e = this.currentTag
               return e.taggable && !e.noTag && (e.defaultTags && this.autoTag(), e.tag)
                 ? this.makeTag()
                 : null
@@ -13919,7 +13919,7 @@
                 (this.ids = {}),
                 (this.counter = this.allCounter),
                 (this.redo = !1))
-              var e = t.inputData.recompile
+              const e = t.inputData.recompile
               e && ((this.refUpdate = !0), (this.counter = e.counter))
             }),
             (t.prototype.finishEquation = function (t) {
@@ -13931,7 +13931,7 @@
             }),
             (t.prototype.finalize = function (t, e) {
               if (!e.display || this.currentTag.env || null == this.currentTag.tag) return t
-              var r = this.makeTag()
+              const r = this.makeTag()
               return this.enTag(t, r)
             }),
             (t.prototype.makeId = function () {
@@ -13943,7 +13943,7 @@
               ;(this.makeId(),
                 this.label &&
                   (this.labels[this.label] = new s(this.currentTag.tag, this.currentTag.tagId)))
-              var t = new T.default(
+              const t = new T.default(
                 '\\text{' + this.currentTag.tagFormat + '}',
                 {},
                 this.configuration,
@@ -13956,7 +13956,7 @@
           )
         })()
         e.AbstractTags = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -13970,7 +13970,7 @@
           )
         })(l)
         e.NoTags = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -13984,7 +13984,7 @@
                 })
               )
                 return t
-              var r = this.getTag(!0)
+              const r = this.getTag(!0)
               return this.enTag(t, r)
             }),
             e
@@ -13992,7 +13992,7 @@
         })(l)
         ;((e.AllTags = u),
           (function (t) {
-            var e = new Map([
+            let e = new Map([
                 ['none', c],
                 ['all', u],
               ]),
@@ -14008,10 +14008,10 @@
                 e.set(t, r)
               }),
               (t.addTags = function (e) {
-                var r, n
+                let r, n
                 try {
                   for (var o = i(Object.keys(e)), Q = o.next(); !Q.done; Q = o.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     t.add(T, e[T])
                   }
                 } catch (t) {
@@ -14025,7 +14025,7 @@
                 }
               }),
               (t.create = function (t) {
-                var n = e.get(t) || e.get(r)
+                const n = e.get(t) || e.get(r)
                 if (!n) throw Error('Unknown tags class')
                 return new n()
               }),
@@ -14154,7 +14154,7 @@
       },
       3971: function (t, e) {
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var r = (function () {
+        const r = (function () {
           function t(e, r) {
             for (var n = [], o = 2; o < arguments.length; o++) n[o - 2] = arguments[o]
             ;((this.id = e), (this.message = t.processString(r, n)))
@@ -14162,7 +14162,7 @@
           return (
             (t.processString = function (e, r) {
               for (var n = e.split(t.pattern), o = 1, i = n.length; o < i; o += 2) {
-                var Q = n[o].charAt(0)
+                let Q = n[o].charAt(0)
                 if (Q >= '0' && Q <= '9')
                   ((n[o] = r[parseInt(n[o], 10) - 1]),
                     'number' == typeof n[o] && (n[o] = n[o].toString()))
@@ -14183,10 +14183,10 @@
         e.default = r
       },
       8417: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -14201,9 +14201,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -14234,26 +14234,26 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var T = Q(r(1130)),
+        const T = Q(r(1130)),
           s = Q(r(9497)),
           a = Q(r(3971)),
           l = r(9007),
           c = (function () {
             function t(t, e, r) {
-              var o, i
+              let o, i
               ;((this._string = t),
                 (this.configuration = r),
                 (this.macroCount = 0),
                 (this.i = 0),
                 (this.currentCS = ''))
-              var Q,
+              let Q,
                 T = e.hasOwnProperty('isInner'),
                 a = e.isInner
               if ((delete e.isInner, e)) {
                 Q = {}
                 try {
                   for (var l = n(Object.keys(e)), c = l.next(); !c.done; c = l.next()) {
-                    var u = c.value
+                    const u = c.value
                     Q[u] = e[u]
                   }
                 } catch (t) {
@@ -14313,7 +14313,7 @@
                 return this.configuration.handlers.get(t).contains(e)
               }),
               (t.prototype.toString = function () {
-                var t,
+                let t,
                   e,
                   r = ''
                 try {
@@ -14322,7 +14322,7 @@
                     !i.done;
                     i = o.next()
                   ) {
-                    var Q = i.value
+                    const Q = i.value
                     r += Q + ': ' + this.configuration.handlers.get(Q) + '\n'
                   }
                 } catch (e) {
@@ -14348,10 +14348,10 @@
                   : this.stack.Push(t)
               }),
               (t.prototype.PushAll = function (t) {
-                var e, r
+                let e, r
                 try {
                   for (var o = n(t), i = o.next(); !i.done; i = o.next()) {
-                    var Q = i.value
+                    const Q = i.value
                     this.stack.Push(Q)
                   }
                 } catch (t) {
@@ -14366,15 +14366,15 @@
               }),
               (t.prototype.mml = function () {
                 if (!this.stack.Top().isKind('mml')) return null
-                var t = this.stack.Top().First
+                const t = this.stack.Top().First
                 return (this.configuration.popParser(), t)
               }),
               (t.prototype.convertDelimiter = function (t) {
-                var e = this.lookup('delimiter', t)
+                const e = this.lookup('delimiter', t)
                 return e ? e.char : null
               }),
               (t.prototype.getCodePoint = function () {
-                var t = this.string.codePointAt(this.i)
+                const t = this.string.codePointAt(this.i)
                 return void 0 === t ? '' : String.fromCodePoint(t)
               }),
               (t.prototype.nextIsSpace = function () {
@@ -14385,7 +14385,7 @@
                 return this.getCodePoint()
               }),
               (t.prototype.GetCS = function () {
-                var t = this.string.slice(this.i).match(/^(([a-z]+) ?|[\uD800-\uDBFF].|.)/i)
+                const t = this.string.slice(this.i).match(/^(([a-z]+) ?|[\uD800-\uDBFF].|.)/i)
                 return t ? ((this.i += t[0].length), t[2] || t[1]) : (this.i++, ' ')
               }),
               (t.prototype.GetArgument = function (t, e) {
@@ -14408,7 +14408,7 @@
                   case '\\':
                     return (this.i++, '\\' + this.GetCS())
                   case '{':
-                    for (var r = ++this.i, n = 1; this.i < this.string.length; )
+                    for (let r = ++this.i, n = 1; this.i < this.string.length; )
                       switch (this.string.charAt(this.i++)) {
                         case '\\':
                           this.i++
@@ -14421,12 +14421,12 @@
                       }
                     throw new a.default('MissingCloseBrace', 'Missing close brace')
                 }
-                var o = this.getCodePoint()
+                const o = this.getCodePoint()
                 return ((this.i += o.length), o)
               }),
               (t.prototype.GetBrackets = function (t, e) {
                 if ('[' !== this.GetNext()) return e
-                for (var r = ++this.i, n = 0; this.i < this.string.length; )
+                for (let r = ++this.i, n = 0; this.i < this.string.length; )
                   switch (this.string.charAt(this.i++)) {
                     case '{':
                       n++
@@ -14452,7 +14452,7 @@
                 )
               }),
               (t.prototype.GetDelimiter = function (t, e) {
-                var r = this.GetNext()
+                let r = this.GetNext()
                 if (
                   ((this.i += r.length),
                   this.i <= this.string.length &&
@@ -14477,7 +14477,7 @@
                   if (n) return n + i
                 } else {
                   e = this.string.slice(this.i)
-                  var Q = o(T.default.matchDimen(e, !0), 3),
+                  const Q = o(T.default.matchDimen(e, !0), 3),
                     s = ((n = Q[0]), (i = Q[1]), Q[2])
                   if (n) return ((this.i += s), n + i)
                 }
@@ -14489,8 +14489,8 @@
               }),
               (t.prototype.GetUpTo = function (t, e) {
                 for (; this.nextIsSpace(); ) this.i++
-                for (var r = this.i, n = 0; this.i < this.string.length; ) {
-                  var o = this.i,
+                for (let r = this.i, n = 0; this.i < this.string.length; ) {
+                  let o = this.i,
                     i = this.GetNext()
                   switch (((this.i += i.length), i)) {
                     case '\\':
@@ -14524,7 +14524,7 @@
                 return new t(this.GetUpTo(e, r), this.stack.env, this.configuration).mml()
               }),
               (t.prototype.GetDelimiterArg = function (t) {
-                var e = T.default.trimSpaces(this.GetArgument(t))
+                const e = T.default.trimSpaces(this.GetArgument(t))
                 if ('' === e) return null
                 if (this.contains('delimiter', e)) return e
                 throw new a.default(
@@ -14534,7 +14534,7 @@
                 )
               }),
               (t.prototype.GetStar = function () {
-                var t = '*' === this.GetNext()
+                const t = '*' === this.GetNext()
                 return (t && this.i++, t)
               }),
               (t.prototype.create = function (t) {
@@ -14547,7 +14547,7 @@
         e.default = c
       },
       8021: function (t, e, r) {
-        var n,
+        let n,
           o,
           i =
             (this && this.__extends) ||
@@ -14560,7 +14560,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -14579,12 +14579,12 @@
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.AmsConfiguration = e.AmsTags = void 0))
-        var Q = r(9899),
+        const Q = r(9899),
           T = r(2790),
           s = r(6521),
           a = r(4387)
         r(7379)
-        var l = r(9140),
+        const l = r(9140),
           c = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -14638,7 +14638,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -14663,7 +14663,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -14677,7 +14677,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.FlalignItem = e.MultlineItem = void 0))
-        var T = r(1181),
+        const T = r(1181),
           s = Q(r(1130)),
           a = Q(r(1256)),
           l = Q(r(3971)),
@@ -14685,7 +14685,7 @@
           u = (function (t) {
             function e(e) {
               for (var r = [], n = 1; n < arguments.length; n++) r[n - 1] = arguments[n]
-              var o = t.call(this, e) || this
+              const o = t.call(this, e) || this
               return (o.factory.configuration.tags.start('multline', !0, r[0]), o)
             }
             return (
@@ -14699,7 +14699,7 @@
               }),
               (e.prototype.EndEntry = function () {
                 this.table.length && s.default.fixInitialMO(this.factory.configuration, this.nodes)
-                var t = this.getProperty('shove'),
+                const t = this.getProperty('shove'),
                   e = this.create('node', 'mtd', this.nodes, t ? { columnalign: t } : {})
                 ;(this.setProperty('shove', null), this.row.push(e), this.Clear())
               }),
@@ -14710,12 +14710,12 @@
                     'The rows within the %1 environment must have exactly one column',
                     'multline',
                   )
-                var t = this.create('node', 'mtr', this.row)
+                const t = this.create('node', 'mtr', this.row)
                 ;(this.table.push(t), (this.row = []))
               }),
               (e.prototype.EndTable = function () {
                 if ((t.prototype.EndTable.call(this), this.table.length)) {
-                  var e = this.table.length - 1,
+                  let e = this.table.length - 1,
                     r = -1
                   ;(a.default.getAttribute(
                     a.default.getChildren(this.table[0])[0],
@@ -14735,10 +14735,10 @@
                         'columnalign',
                         c.TexConstant.Align.RIGHT,
                       ))
-                  var n = this.factory.configuration.tags.getTag()
+                  const n = this.factory.configuration.tags.getTag()
                   if (n) {
                     r = this.arraydef.side === c.TexConstant.Align.LEFT ? 0 : this.table.length - 1
-                    var o = this.table[r],
+                    const o = this.table[r],
                       i = this.create('node', 'mlabeledtr', [n].concat(a.default.getChildren(o)))
                     ;(a.default.copyAttributes(o, i), (this.table[r] = i))
                   }
@@ -14749,9 +14749,9 @@
             )
           })(T.ArrayItem)
         e.MultlineItem = u
-        var p = (function (t) {
+        const p = (function (t) {
           function e(e, r, n, o, i) {
-            var Q = t.call(this, e) || this
+            const Q = t.call(this, e) || this
             return (
               (Q.name = r),
               (Q.numbered = n),
@@ -14772,7 +14772,7 @@
             }),
             (e.prototype.EndEntry = function () {
               t.prototype.EndEntry.call(this)
-              var e = this.getProperty('xalignat')
+              const e = this.getProperty('xalignat')
               if (e && this.row.length > e)
                 throw new l.default('XalignOverflow', 'Extra %1 in row of %2', '&', this.name)
             }),
@@ -14788,9 +14788,9 @@
                   (r.length || this.padded) && this.row.push(this.create('node', 'mtd')))
               ;(this.row.length > this.maxrow && (this.maxrow = this.row.length),
                 t.prototype.EndRow.call(this))
-              var o = this.table[this.table.length - 1]
+              const o = this.table[this.table.length - 1]
               if (this.getProperty('zeroWidthLabel') && o.isKind('mlabeledtr')) {
-                var Q = a.default.getChildren(o)[0],
+                const Q = a.default.getChildren(o)[0],
                   T = this.factory.configuration.options.tagSide,
                   s = i({ width: 0 }, 'right' === T ? { lspace: '-1width' } : {}),
                   l = this.create('node', 'mpadded', a.default.getChildren(Q), s)
@@ -14808,12 +14808,12 @@
         e.FlalignItem = p
       },
       7379: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -14839,9 +14839,9 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && n(e, t, r)
               return (o(e, t), e)
             },
@@ -14851,7 +14851,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var T = r(4387),
+        const T = r(4387),
           s = i(r(9140)),
           a = r(8317),
           l = Q(r(5450)),
@@ -15217,7 +15217,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -15227,9 +15227,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -15253,7 +15253,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.NEW_OPS = e.AmsMethods = void 0))
-        var Q = i(r(1130)),
+        const Q = i(r(1130)),
           T = i(r(5450)),
           s = i(r(1256)),
           a = r(8317),
@@ -15265,21 +15265,21 @@
         function d(t) {
           if (!t || (t.isInferred && 0 === t.childNodes.length)) return [null, null]
           if (t.isKind('msubsup') && f(t)) return [t, null]
-          var e = s.default.getChildAt(t, 0)
+          const e = s.default.getChildAt(t, 0)
           return t.isInferred && e && f(e) ? (t.childNodes.splice(0, 1), [e, t]) : [null, t]
         }
         function f(t) {
-          var e = t.childNodes[0]
+          const e = t.childNodes[0]
           return e && e.isKind('mi') && '' === e.getText()
         }
         ;((e.AmsMethods = {}),
           (e.AmsMethods.AmsEqnArray = function (t, e, r, n, o, i, T) {
-            var s = t.GetBrackets('\\begin{' + e.getName() + '}'),
+            const s = t.GetBrackets('\\begin{' + e.getName() + '}'),
               a = p.default.EqnArray(t, e, r, n, o, i, T)
             return Q.default.setArrayAlign(a, s)
           }),
           (e.AmsMethods.AlignAt = function (t, r, n, o) {
-            var i,
+            let i,
               T,
               s = r.getName(),
               a = '',
@@ -15293,15 +15293,15 @@
                 'Argument to %1 must me a positive integer',
                 '\\begin{' + s + '}',
               )
-            for (var u = parseInt(i, 10); u > 0; ) ((a += 'rl'), l.push('0em 0em'), u--)
-            var p = l.join(' ')
+            for (let u = parseInt(i, 10); u > 0; ) ((a += 'rl'), l.push('0em 0em'), u--)
+            const p = l.join(' ')
             if (o) return e.AmsMethods.EqnArray(t, r, n, o, a, p)
-            var h = e.AmsMethods.EqnArray(t, r, n, o, a, p)
+            const h = e.AmsMethods.EqnArray(t, r, n, o, a, p)
             return Q.default.setArrayAlign(h, T)
           }),
           (e.AmsMethods.Multline = function (t, e, r) {
             ;(t.Push(e), Q.default.checkEqnEnv(t))
-            var n = t.itemFactory.create('multline', r, t.stack)
+            const n = t.itemFactory.create('multline', r, t.stack)
             return (
               (n.arraydef = {
                 displaystyle: !0,
@@ -15318,14 +15318,14 @@
             )
           }),
           (e.AmsMethods.XalignAt = function (t, r, n, o) {
-            var i = t.GetArgument('\\begin{' + r.getName() + '}')
+            const i = t.GetArgument('\\begin{' + r.getName() + '}')
             if (i.match(/[^0-9]/))
               throw new c.default(
                 'PositiveIntegerArg',
                 'Argument to %1 must me a positive integer',
                 '\\begin{' + r.getName() + '}',
               )
-            var Q = o ? 'crl' : 'rlc',
+            const Q = o ? 'crl' : 'rlc',
               T = o ? 'fit auto auto' : 'auto auto fit',
               s = e.AmsMethods.FlalignArray(t, r, n, o, !1, Q, T, !0)
             return (s.setProperty('xalignat', 2 * parseInt(i)), s)
@@ -15340,7 +15340,7 @@
                 .replace(/r/g, 'right')
                 .replace(/l/g, 'left')
                 .replace(/c/g, 'center')))
-            var a = t.itemFactory.create('flalign', e.getName(), r, n, o, t.stack)
+            const a = t.itemFactory.create('flalign', e.getName(), r, n, o, t.stack)
             return (
               (a.arraydef = {
                 width: '100%',
@@ -15359,10 +15359,10 @@
           }),
           (e.NEW_OPS = 'ams-declare-ops'),
           (e.AmsMethods.HandleDeclareOp = function (t, r) {
-            var n = t.GetStar() ? '*' : '',
+            let n = t.GetStar() ? '*' : '',
               o = Q.default.trimSpaces(t.GetArgument(r))
             '\\' === o.charAt(0) && (o = o.substr(1))
-            var i = t.GetArgument(r)
+            const i = t.GetArgument(r)
             t.configuration.handlers
               .retrieve(e.NEW_OPS)
               .add(
@@ -15373,7 +15373,7 @@
               )
           }),
           (e.AmsMethods.HandleOperatorName = function (t, e) {
-            var r = t.GetStar(),
+            let r = t.GetStar(),
               o = Q.default.trimSpaces(t.GetArgument(e)),
               i = new l.default(
                 o,
@@ -15393,14 +15393,14 @@
               }),
               !r)
             ) {
-              var T = t.GetNext(),
+              const T = t.GetNext(),
                 c = t.i
               '\\' === T && ++t.i && 'limits' !== t.GetCS() && (t.i = c)
             }
             t.Push(i)
           }),
           (e.AmsMethods.SideSet = function (t, e) {
-            var r = o(d(t.ParseArg(e)), 2),
+            let r = o(d(t.ParseArg(e)), 2),
               n = r[0],
               i = r[1],
               T = o(d(t.ParseArg(e)), 2),
@@ -15429,7 +15429,7 @@
                     s.default.getChildAt(n, 2) || t.create('node', 'none'),
                   ]))),
               a && u === c && (a.replaceChild(c, s.default.getChildAt(a, 0)), (u = a)))
-            var p = t.create('node', 'TeXAtom', [], {
+            const p = t.create('node', 'TeXAtom', [], {
               texClass: h.TEXCLASS.OP,
               movesupsub: !0,
               movablelimits: !0,
@@ -15443,9 +15443,9 @@
             return !!t.stack.env.operatorLetters && T.default.variable(t, e)
           }),
           (e.AmsMethods.MultiIntegral = function (t, e, r) {
-            var n = t.GetNext()
+            let n = t.GetNext()
             if ('\\' === n) {
-              var o = t.i
+              const o = t.i
               ;((n = t.GetArgument(e)),
                 (t.i = o),
                 '\\limits' === n &&
@@ -15457,7 +15457,7 @@
             ;((t.string = r + ' ' + t.string.slice(t.i)), (t.i = 0))
           }),
           (e.AmsMethods.xArrow = function (t, e, r, n, o) {
-            var i = { width: '+' + Q.default.Em((n + o) / 18), lspace: Q.default.Em(n / 18) },
+            let i = { width: '+' + Q.default.Em((n + o) / 18), lspace: Q.default.Em(n / 18) },
               T = t.GetBrackets(e),
               a = t.ParseArg(e),
               c = t.create('node', 'mspace', [], { depth: '.25em' }),
@@ -15468,7 +15468,7 @@
                 String.fromCodePoint(r),
               )
             u = t.create('node', 'mstyle', [u], { scriptlevel: 0 })
-            var p = t.create('node', 'munderover', [u]),
+            let p = t.create('node', 'munderover', [u]),
               d = t.create('node', 'mpadded', [a, c], i)
             if (
               (s.default.setAttribute(d, 'voffset', '-.2em'),
@@ -15476,7 +15476,7 @@
               s.default.setChild(p, p.over, d),
               T)
             ) {
-              var f = new l.default(T, t.stack.env, t.configuration).mml(),
+              const f = new l.default(T, t.stack.env, t.configuration).mml(),
                 L = t.create('node', 'mspace', [], { height: '.75em' })
               ;((d = t.create('node', 'mpadded', [f, L], i)),
                 s.default.setAttribute(d, 'voffset', '.15em'),
@@ -15486,7 +15486,7 @@
             ;(s.default.setProperty(p, 'subsupOK', !0), t.Push(p))
           }),
           (e.AmsMethods.HandleShove = function (t, e, r) {
-            var n = t.stack.Top()
+            const n = t.stack.Top()
             if ('multline' !== n.kind)
               throw new c.default(
                 'CommandOnlyAllowedInEnv',
@@ -15503,7 +15503,7 @@
             n.setProperty('shove', r)
           }),
           (e.AmsMethods.CFrac = function (t, e) {
-            var r = Q.default.trimSpaces(t.GetBrackets(e, '')),
+            let r = Q.default.trimSpaces(t.GetBrackets(e, '')),
               n = t.GetArgument(e),
               o = t.GetArgument(e),
               i = { l: a.TexConstant.Align.LEFT, r: a.TexConstant.Align.RIGHT, '': '' },
@@ -15527,7 +15527,7 @@
               null == n && (n = t.GetDelimiterArg(e)),
               null == o && (o = t.GetArgument(e)),
               null == i && (i = Q.default.trimSpaces(t.GetArgument(e))))
-            var T = t.ParseArg(e),
+            let T = t.ParseArg(e),
               a = t.ParseArg(e),
               l = t.create('node', 'mfrac', [T, a])
             if (
@@ -15537,7 +15537,7 @@
                 (l = Q.default.fixedFence(t.configuration, r, l, n))),
               '' !== i)
             ) {
-              var u = parseInt(i, 10),
+              const u = parseInt(i, 10),
                 p = ['D', 'T', 'S', 'SS'][u]
               if (null == p)
                 throw new c.default('BadMathStyleFor', 'Bad math style for %1', t.currentCS)
@@ -15558,7 +15558,7 @@
               )
             if (t.tags.currentTag.tag)
               throw new c.default('MultipleCommand', 'Multiple %1', t.currentCS)
-            var r = t.GetStar(),
+            const r = t.GetStar(),
               n = Q.default.trimSpaces(t.GetArgument(e))
             t.tags.tag(n, r)
           }),
@@ -15574,12 +15574,12 @@
           (e.AmsMethods.Equation = p.default.Equation))
       },
       1275: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -15599,7 +15599,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -15612,22 +15612,22 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AutoloadConfiguration = void 0))
-        var i = r(9899),
+        const i = r(9899),
           Q = r(9140),
           T = r(8803),
           s = r(7741),
           a = r(265),
           l = r(7233)
         function c(t, e, r, i) {
-          var Q, T, l, c
+          let Q, T, l, c
           if (a.Package.packages.has(t.options.require.prefix + r)) {
-            var h = t.options.autoload[r],
+            const h = t.options.autoload[r],
               d = n(2 === h.length && Array.isArray(h[0]) ? h : [h, []], 2),
               f = d[0],
               L = d[1]
             try {
               for (var m = o(f), y = m.next(); !y.done; y = m.next()) {
-                var H = y.value
+                const H = y.value
                 u.remove(H)
               }
             } catch (t) {
@@ -15641,7 +15641,7 @@
             }
             try {
               for (var g = o(L), b = g.next(); !b.done; b = g.next()) {
-                var v = b.value
+                const v = b.value
                 p.remove(v)
               }
             } catch (t) {
@@ -15707,7 +15707,7 @@
             }),
           },
           config: function (t, e) {
-            var r,
+            let r,
               i,
               Q,
               a,
@@ -15720,14 +15720,14 @@
             d.packageData.set('autoload', { Autoload: c })
             try {
               for (var y = o(Object.keys(m)), H = y.next(); !H.done; H = y.next()) {
-                var g = H.value,
+                const g = H.value,
                   b = m[g],
                   v = n(2 === b.length && Array.isArray(b[0]) ? b : [b, []], 2),
                   M = v[0],
                   _ = v[1]
                 try {
                   for (var V = ((Q = void 0), o(M)), O = V.next(); !O.done; O = V.next()) {
-                    var S = O.value
+                    const S = O.value
                     ;(f.lookup(S) && 'color' !== S) || u.add(S, new T.Macro(S, c, [g, !0]))
                   }
                 } catch (t) {
@@ -15741,7 +15741,7 @@
                 }
                 try {
                   for (var E = ((l = void 0), o(_)), x = E.next(); !x.done; x = E.next()) {
-                    var A = x.value
+                    const A = x.value
                     L.lookup(A) || p.add(A, new T.Macro(A, c, [g, !1]))
                   }
                 } catch (t) {
@@ -15772,7 +15772,7 @@
         })
       },
       2942: function (t, e, r) {
-        var n,
+        let n,
           o,
           i =
             (this && this.__extends) ||
@@ -15785,7 +15785,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -15807,7 +15807,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -15833,16 +15833,16 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && Q(e, t, r)
               return (T(e, t), e)
             },
           a =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -15861,7 +15861,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.BaseConfiguration = e.BaseTags = e.Other = void 0))
-        var c = r(9899),
+        const c = r(9899),
           u = r(2947),
           p = l(r(3971)),
           h = l(r(1256)),
@@ -15869,9 +15869,9 @@
           f = s(r(1181)),
           L = r(6521)
         r(1267)
-        var m = r(4082)
+        const m = r(4082)
         function y(t, e) {
-          var r = t.stack.env.font ? { mathvariant: t.stack.env.font } : {},
+          const r = t.stack.env.font ? { mathvariant: t.stack.env.font } : {},
             n = u.MapHandler.getMap('remap').lookup(e),
             o = (0, m.getRange)(e),
             i = o ? o[3] : 'mo',
@@ -15884,7 +15884,7 @@
         }
         ;(new d.CharacterMap('remap', null, { '-': '\u2212', '*': '\u2217', '`': '\u2018' }),
           (e.Other = y))
-        var H = (function (t) {
+        const H = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -15948,20 +15948,20 @@
             postprocessors: [
               [
                 function (t) {
-                  var e,
+                  let e,
                     r,
                     n = t.data
                   try {
                     for (var o = a(n.getList('nonscript')), i = o.next(); !i.done; i = o.next()) {
-                      var Q = i.value
+                      const Q = i.value
                       if (Q.attributes.get('scriptlevel') > 0) {
-                        var T = Q.parent
+                        const T = Q.parent
                         if (
                           (T.childNodes.splice(T.childIndex(Q), 1),
                           n.removeFromList(Q.kind, [Q]),
                           Q.isKind('mrow'))
                         ) {
-                          var s = Q.childNodes[0]
+                          const s = Q.childNodes[0]
                           ;(n.removeFromList('mstyle', [s]),
                             n.removeFromList('mspace', s.childNodes[0].childNodes))
                         }
@@ -15985,7 +15985,7 @@
           })))
       },
       1181: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -15997,7 +15997,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -16017,9 +16017,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -16074,7 +16074,7 @@
             e.StopItem =
             e.StartItem =
               void 0))
-        var s = r(2947),
+        const s = r(2947),
           a = r(5368),
           l = r(9007),
           c = T(r(3971)),
@@ -16083,7 +16083,7 @@
           h = r(8292),
           d = (function (t) {
             function e(e, r) {
-              var n = t.call(this, e) || this
+              const n = t.call(this, e) || this
               return ((n.global = r), n)
             }
             return (
@@ -16104,7 +16104,7 @@
               }),
               (e.prototype.checkItem = function (e) {
                 if (e.isKind('stop')) {
-                  var r = this.toMml()
+                  let r = this.toMml()
                   return (
                     this.global.isInner ||
                       (r = this.factory.configuration.tags.finalize(r, this.env)),
@@ -16117,7 +16117,7 @@
             )
           })(h.BaseItem)
         e.StartItem = d
-        var f = (function (t) {
+        const f = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16141,7 +16141,7 @@
           )
         })(h.BaseItem)
         e.StopItem = f
-        var L = (function (t) {
+        const L = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16163,7 +16163,7 @@
             }),
             (e.prototype.checkItem = function (e) {
               if (e.isKind('close')) {
-                var r = this.toMml(),
+                const r = this.toMml(),
                   n = this.create('node', 'TeXAtom', [r])
                 return [[this.factory.create('mml', n)], !0]
               }
@@ -16176,7 +16176,7 @@
           )
         })(h.BaseItem)
         e.OpenItem = L
-        var m = (function (t) {
+        const m = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16200,7 +16200,7 @@
           )
         })(h.BaseItem)
         e.CloseItem = m
-        var y = (function (t) {
+        const y = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16214,7 +16214,7 @@
               configurable: !0,
             }),
             (e.prototype.checkItem = function (t) {
-              var e = i(this.Peek(2), 2),
+              const e = i(this.Peek(2), 2),
                 r = e[0],
                 n = e[1]
               return !p.default.isType(r, 'msubsup') || p.default.isType(r, 'msup')
@@ -16225,7 +16225,7 @@
           )
         })(h.BaseItem)
         e.PrimeItem = y
-        var H = (function (t) {
+        const H = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16240,14 +16240,14 @@
             }),
             (e.prototype.checkItem = function (e) {
               if (e.isKind('open') || e.isKind('left')) return h.BaseItem.success
-              var r = this.First,
+              const r = this.First,
                 n = this.getProperty('position')
               if (e.isKind('mml')) {
                 if (this.getProperty('primes'))
                   if (2 !== n) p.default.setChild(r, 2, this.getProperty('primes'))
                   else {
                     p.default.setProperty(this.getProperty('primes'), 'variantForm', !0)
-                    var o = this.create('node', 'mrow', [this.getProperty('primes'), e.First])
+                    const o = this.create('node', 'mrow', [this.getProperty('primes'), e.First])
                     e.First = o
                   }
                 return (
@@ -16258,7 +16258,7 @@
                 )
               }
               if (t.prototype.checkItem.call(this, e)[1]) {
-                var T = this.getErrors(['', 'sub', 'sup'][n])
+                const T = this.getErrors(['', 'sub', 'sup'][n])
                 throw new (c.default.bind.apply(
                   c.default,
                   Q([void 0, T[0], T[1]], i(T.splice(2)), !1),
@@ -16275,9 +16275,9 @@
           )
         })(h.BaseItem)
         e.SubsupItem = H
-        var g = (function (t) {
+        const g = (function (t) {
           function e(e) {
-            var r = t.call(this, e) || this
+            const r = t.call(this, e) || this
             return (r.setProperty('name', '\\over'), r)
           }
           return (
@@ -16300,7 +16300,7 @@
               if (e.isKind('over'))
                 throw new c.default('AmbiguousUseOf', 'Ambiguous use of %1', e.getName())
               if (e.isClose) {
-                var r = this.create('node', 'mfrac', [this.getProperty('num'), this.toMml(!1)])
+                let r = this.create('node', 'mfrac', [this.getProperty('num'), this.toMml(!1)])
                 return (
                   null != this.getProperty('thickness') &&
                     p.default.setAttribute(r, 'linethickness', this.getProperty('thickness')),
@@ -16324,9 +16324,9 @@
           )
         })(h.BaseItem)
         e.OverItem = g
-        var b = (function (t) {
+        const b = (function (t) {
           function e(e, r) {
-            var n = t.call(this, e) || this
+            const n = t.call(this, e) || this
             return (n.setProperty('delim', r), n)
           }
           return (
@@ -16364,7 +16364,7 @@
                   !0,
                 ]
               if (e.isKind('middle')) {
-                var r = { stretchy: !0 }
+                const r = { stretchy: !0 }
                 return (
                   e.getProperty('color') && (r.mathcolor = e.getProperty('color')),
                   this.Push(
@@ -16385,9 +16385,9 @@
           )
         })(h.BaseItem)
         e.LeftItem = b
-        var v = (function (t) {
+        const v = (function (t) {
           function e(e, r, n) {
-            var o = t.call(this, e) || this
+            const o = t.call(this, e) || this
             return (o.setProperty('delim', r), n && o.setProperty('color', n), o)
           }
           return (
@@ -16410,9 +16410,9 @@
           )
         })(h.BaseItem)
         e.Middle = v
-        var M = (function (t) {
+        const M = (function (t) {
           function e(e, r, n) {
-            var o = t.call(this, e) || this
+            const o = t.call(this, e) || this
             return (o.setProperty('delim', r), n && o.setProperty('color', n), o)
           }
           return (
@@ -16435,7 +16435,7 @@
           )
         })(h.BaseItem)
         e.RightItem = M
-        var _ = (function (t) {
+        const _ = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16476,7 +16476,7 @@
           )
         })(h.BaseItem)
         e.BeginItem = _
-        var V = (function (t) {
+        const V = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16500,7 +16500,7 @@
           )
         })(h.BaseItem)
         e.EndItem = V
-        var O = (function (t) {
+        const O = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16515,14 +16515,14 @@
             }),
             (e.prototype.checkItem = function (e) {
               if (!e.isClose) return t.prototype.checkItem.call(this, e)
-              var r = this.create('node', 'mstyle', this.nodes, this.getProperty('styles'))
+              const r = this.create('node', 'mstyle', this.nodes, this.getProperty('styles'))
               return [[this.factory.create('mml', r), e], !0]
             }),
             e
           )
         })(h.BaseItem)
         e.StyleItem = O
-        var S = (function (t) {
+        const S = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16539,7 +16539,7 @@
               if (e.isClose)
                 throw new c.default('MissingBoxFor', 'Missing box for %1', this.getName())
               if (e.isFinal) {
-                var r = e.toMml()
+                let r = e.toMml()
                 switch (this.getProperty('move')) {
                   case 'vertical':
                     return (
@@ -16567,7 +16567,7 @@
           )
         })(h.BaseItem)
         e.PositionItem = S
-        var E = (function (t) {
+        const E = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16591,7 +16591,7 @@
           )
         })(h.BaseItem)
         e.CellItem = E
-        var x = (function (t) {
+        const x = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16615,7 +16615,7 @@
           )
         })(h.BaseItem)
         e.MmlItem = x
-        var A = (function (t) {
+        const A = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16629,11 +16629,11 @@
               configurable: !0,
             }),
             (e.prototype.checkItem = function (e) {
-              var r = this.First
+              const r = this.First
               if (r) {
                 if (e.isOpen) return h.BaseItem.success
                 if (!e.isKind('fn')) {
-                  var n = e.First
+                  let n = e.First
                   if (!e.isKind('mml') || !n) return [[r, e], !0]
                   if (
                     (p.default.isType(n, 'mstyle') &&
@@ -16643,10 +16643,10 @@
                   )
                     return [[r, e], !0]
                   p.default.isEmbellished(n) && (n = p.default.getCoreMO(n))
-                  var o = p.default.getForm(n)
+                  const o = p.default.getForm(n)
                   if (null != o && [0, 0, 1, 1, 0, 1, 1, 0, 0, 0][o[2]]) return [[r, e], !0]
                 }
-                var i = this.create(
+                const i = this.create(
                   'token',
                   'mo',
                   { texClass: l.TEXCLASS.NONE },
@@ -16660,9 +16660,9 @@
           )
         })(h.BaseItem)
         e.FnItem = A
-        var C = (function (t) {
+        const C = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.remap = s.MapHandler.getMap('not_remap')), e)
           }
           return (
@@ -16675,7 +16675,7 @@
               configurable: !0,
             }),
             (e.prototype.checkItem = function (t) {
-              var e, r, n
+              let e, r, n
               if (t.isKind('open') || t.isKind('left')) return h.BaseItem.success
               if (
                 t.isKind('mml') &&
@@ -16695,7 +16695,7 @@
                   [[t], !0]
                 )
               n = this.create('text', '\u29f8')
-              var o = this.create('node', 'mtext', [], {}, n),
+              const o = this.create('node', 'mtext', [], {}, n),
                 i = this.create('node', 'mpadded', [o], { width: 0 })
               return [
                 [(e = this.create('node', 'TeXAtom', [i], { texClass: l.TEXCLASS.REL })), t],
@@ -16706,7 +16706,7 @@
           )
         })(h.BaseItem)
         e.NotItem = C
-        var N = (function (t) {
+        const N = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16721,7 +16721,7 @@
             }),
             (e.prototype.checkItem = function (t) {
               if (t.isKind('mml') && 1 === t.Size()) {
-                var e = t.First
+                let e = t.First
                 if (
                   (e.isKind('mstyle') &&
                     e.notParent &&
@@ -16729,7 +16729,7 @@
                   e.isKind('mspace'))
                 ) {
                   if (e !== t.First) {
-                    var r = this.create('node', 'mrow', [t.Pop()])
+                    const r = this.create('node', 'mrow', [t.Pop()])
                     t.Push(r)
                   }
                   this.factory.configuration.addNode('nonscript', t.First)
@@ -16741,7 +16741,7 @@
           )
         })(h.BaseItem)
         e.NonscriptItem = N
-        var w = (function (t) {
+        const w = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -16756,10 +16756,10 @@
             }),
             (e.prototype.checkItem = function (t) {
               if (t.isKind('open') || t.isKind('left')) return h.BaseItem.success
-              var e = this.getProperty('ldots'),
+              let e = this.getProperty('ldots'),
                 r = t.First
               if (t.isKind('mml') && p.default.isEmbellished(r)) {
-                var n = p.default.getTexClass(p.default.getCoreMO(r))
+                const n = p.default.getTexClass(p.default.getCoreMO(r))
                 ;(n !== l.TEXCLASS.BIN && n !== l.TEXCLASS.REL) || (e = this.getProperty('cdots'))
               }
               return [[e, t], !0]
@@ -16768,9 +16768,9 @@
           )
         })(h.BaseItem)
         e.DotsItem = w
-        var P = (function (t) {
+        const P = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return (
               (e.table = []),
               (e.row = []),
@@ -16811,7 +16811,7 @@
                 if (e.getProperty('isCR'))
                   return (this.EndEntry(), this.EndRow(), this.clearEnv(), h.BaseItem.fail)
                 ;(this.EndTable(), this.clearEnv())
-                var r = this.factory.create('mml', this.createMml())
+                const r = this.factory.create('mml', this.createMml())
                 if (this.getProperty('requireClose')) {
                   if (e.isKind('close')) return [[r], !0]
                   throw new c.default('MissingCloseBrace', 'Missing close brace')
@@ -16821,9 +16821,9 @@
               return t.prototype.checkItem.call(this, e)
             }),
             (e.prototype.createMml = function () {
-              var t = this.arraydef.scriptlevel
+              const t = this.arraydef.scriptlevel
               delete this.arraydef.scriptlevel
-              var e = this.create('node', 'mtable', this.table, this.arraydef)
+              let e = this.create('node', 'mtable', this.table, this.arraydef)
               return (
                 t && e.setProperty('scriptlevel', t),
                 4 === this.frame.length
@@ -16850,7 +16850,7 @@
               )
             }),
             (e.prototype.EndEntry = function () {
-              var t = this.create('node', 'mtd', this.nodes)
+              const t = this.create('node', 'mtd', this.nodes)
               ;(this.hfill.length &&
                 (0 === this.hfill[0] && p.default.setAttribute(t, 'columnalign', 'right'),
                 this.hfill[this.hfill.length - 1] === this.Size() &&
@@ -16864,7 +16864,7 @@
                 (this.hfill = []))
             }),
             (e.prototype.EndRow = function () {
-              var t
+              let t
               ;(this.getProperty('isNumbered') && 3 === this.row.length
                 ? (this.row.unshift(this.row.pop()),
                   (t = this.create('node', 'mlabeledtr', this.row)))
@@ -16878,7 +16878,7 @@
             }),
             (e.prototype.checkLines = function () {
               if (this.arraydef.rowlines) {
-                var t = this.arraydef.rowlines.split(/ /)
+                const t = this.arraydef.rowlines.split(/ /)
                 t.length === this.table.length
                   ? (this.frame.push('bottom'), t.pop(), (this.arraydef.rowlines = t.join(' ')))
                   : t.length < this.table.length - 1 && (this.arraydef.rowlines += ' none')
@@ -16891,9 +16891,9 @@
             }),
             (e.prototype.addRowSpacing = function (t) {
               if (this.arraydef.rowspacing) {
-                var e = this.arraydef.rowspacing.split(/ /)
+                const e = this.arraydef.rowspacing.split(/ /)
                 if (!this.getProperty('rowspacing')) {
-                  var r = u.default.dimen2em(e[0])
+                  const r = u.default.dimen2em(e[0])
                   this.setProperty('rowspacing', r)
                 }
                 for (var n = this.getProperty('rowspacing'); e.length < this.table.length; )
@@ -16906,10 +16906,10 @@
           )
         })(h.BaseItem)
         e.ArrayItem = P
-        var I = (function (t) {
+        const I = (function (t) {
           function e(e) {
             for (var r = [], n = 1; n < arguments.length; n++) r[n - 1] = arguments[n]
-            var o = t.call(this, e) || this
+            const o = t.call(this, e) || this
             return ((o.maxrow = 0), o.factory.configuration.tags.start(r[0], r[2], r[1]), o)
           }
           return (
@@ -16923,16 +16923,16 @@
             }),
             (e.prototype.EndEntry = function () {
               this.row.length && u.default.fixInitialMO(this.factory.configuration, this.nodes)
-              var t = this.create('node', 'mtd', this.nodes)
+              const t = this.create('node', 'mtd', this.nodes)
               ;(this.row.push(t), this.Clear())
             }),
             (e.prototype.EndRow = function () {
               this.row.length > this.maxrow && (this.maxrow = this.row.length)
-              var t = 'mtr',
+              let t = 'mtr',
                 e = this.factory.configuration.tags.getTag()
               ;(e && ((this.row = [e].concat(this.row)), (t = 'mlabeledtr')),
                 this.factory.configuration.tags.clearTag())
-              var r = this.create('node', t, this.row)
+              const r = this.create('node', t, this.row)
               ;(this.table.push(r), (this.row = []))
             }),
             (e.prototype.EndTable = function () {
@@ -16944,7 +16944,7 @@
             }),
             (e.prototype.extendArray = function (t, e) {
               if (this.arraydef[t]) {
-                var r = this.arraydef[t].split(/ /),
+                const r = this.arraydef[t].split(/ /),
                   n = Q([], i(r), !1)
                 if (n.length > 1) {
                   for (; n.length < e; ) n.push.apply(n, Q([], i(r), !1))
@@ -16956,10 +16956,10 @@
           )
         })(P)
         e.EqnArrayItem = I
-        var k = (function (t) {
+        const k = (function (t) {
           function e(e) {
             for (var r = [], n = 1; n < arguments.length; n++) r[n - 1] = arguments[n]
-            var o = t.call(this, e) || this
+            const o = t.call(this, e) || this
             return (o.factory.configuration.tags.start('equation', !0, r[0]), o)
           }
           return (
@@ -16980,7 +16980,7 @@
             }),
             (e.prototype.checkItem = function (e) {
               if (e.isKind('end')) {
-                var r = this.toMml(),
+                const r = this.toMml(),
                   n = this.factory.configuration.tags.getTag()
                 return (
                   this.factory.configuration.tags.end(),
@@ -16997,12 +16997,12 @@
         e.EquationItem = k
       },
       1267: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -17028,9 +17028,9 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && n(e, t, r)
               return (o(e, t), e)
             },
@@ -17040,7 +17040,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var T = i(r(9140)),
+        const T = i(r(9140)),
           s = r(8317),
           a = Q(r(7693)),
           l = Q(r(5450)),
@@ -17704,7 +17704,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -17716,7 +17716,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -17742,18 +17742,18 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && o(e, t, r)
               return (i(e, t), e)
             },
           T =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -17776,7 +17776,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var a = Q(r(1181)),
+        const a = Q(r(1181)),
           l = s(r(1256)),
           c = s(r(3971)),
           u = s(r(8417)),
@@ -17801,14 +17801,14 @@
             style: 1,
           }
         function b(t, e) {
-          var r = t.stack.env,
+          const r = t.stack.env,
             n = r.inRoot
           r.inRoot = !0
-          var o = new u.default(e, r, t.configuration),
+          let o = new u.default(e, r, t.configuration),
             i = o.mml(),
             Q = o.stack.global
           if (Q.leftRoot || Q.upRoot) {
-            var T = {}
+            const T = {}
             ;(Q.leftRoot && (T.width = Q.leftRoot),
               Q.upRoot && ((T.voffset = Q.upRoot), (T.height = Q.upRoot)),
               (i = t.create('node', 'mpadded', [i], T)))
@@ -17826,14 +17826,14 @@
           }),
           (H.Space = function (t, e) {}),
           (H.Superscript = function (t, e) {
-            var r, n, o
+            let r, n, o
             t.GetNext().match(/\d/) &&
               (t.string = t.string.substr(0, t.i + 1) + ' ' + t.string.substr(t.i + 1))
-            var i = t.stack.Top()
+            const i = t.stack.Top()
             i.isKind('prime')
               ? ((o = (r = T(i.Peek(2), 2))[0]), (n = r[1]), t.stack.Pop())
               : (o = t.stack.Prev()) || (o = t.create('token', 'mi', {}, ''))
-            var Q = l.default.getProperty(o, 'movesupsub'),
+            let Q = l.default.getProperty(o, 'movesupsub'),
               s = l.default.isType(o, 'msubsup') ? o.sup : o.over
             if (
               (l.default.isType(o, 'msubsup') &&
@@ -17860,14 +17860,14 @@
               ))
           }),
           (H.Subscript = function (t, e) {
-            var r, n, o
+            let r, n, o
             t.GetNext().match(/\d/) &&
               (t.string = t.string.substr(0, t.i + 1) + ' ' + t.string.substr(t.i + 1))
-            var i = t.stack.Top()
+            const i = t.stack.Top()
             i.isKind('prime')
               ? ((o = (r = T(i.Peek(2), 2))[0]), (n = r[1]), t.stack.Pop())
               : (o = t.stack.Prev()) || (o = t.create('token', 'mi', {}, ''))
-            var Q = l.default.getProperty(o, 'movesupsub'),
+            let Q = l.default.getProperty(o, 'movesupsub'),
               s = l.default.isType(o, 'msubsup') ? o.sub : o.under
             if (
               (l.default.isType(o, 'msubsup') &&
@@ -17894,7 +17894,7 @@
               ))
           }),
           (H.Prime = function (t, e) {
-            var r = t.stack.Prev()
+            let r = t.stack.Prev()
             if (
               (r || (r = t.create('node', 'mi')),
               l.default.isType(r, 'msubsup') &&
@@ -17905,13 +17905,13 @@
                 'DoubleExponentPrime',
                 'Prime causes double exponent: use braces to clarify',
               )
-            var n = ''
+            let n = ''
             t.i--
             do {
               ;((n += m.entities.prime), t.i++, (e = t.GetNext()))
             } while ("'" === e || e === m.entities.rsquo)
             n = ['', '\u2032', '\u2033', '\u2034', '\u2057'][n.length] || n
-            var o = t.create('token', 'mo', { variantForm: !0 }, n)
+            const o = t.create('token', 'mo', { variantForm: !0 }, n)
             t.Push(t.itemFactory.create('prime', r, o))
           }),
           (H.Comment = function (t, e) {
@@ -17924,7 +17924,7 @@
             )
           }),
           (H.MathFont = function (t, e, r) {
-            var o = t.GetArgument(e),
+            const o = t.GetArgument(e),
               i = new u.default(
                 o,
                 n(n({}, t.stack.env), {
@@ -17955,22 +17955,22 @@
               ))
           }),
           (H.Spacer = function (t, e, r) {
-            var n = t.create('node', 'mspace', [], { width: (0, L.em)(r) }),
+            const n = t.create('node', 'mspace', [], { width: (0, L.em)(r) }),
               o = t.create('node', 'mstyle', [n], { scriptlevel: 0 })
             t.Push(o)
           }),
           (H.LeftRight = function (t, e) {
-            var r = e.substr(1)
+            const r = e.substr(1)
             t.Push(t.itemFactory.create(r, t.GetDelimiter(e), t.stack.env.color))
           }),
           (H.NamedFn = function (t, e, r) {
             r || (r = e.substr(1))
-            var n = t.create('token', 'mi', { texClass: d.TEXCLASS.OP }, r)
+            const n = t.create('token', 'mi', { texClass: d.TEXCLASS.OP }, r)
             t.Push(t.itemFactory.create('fn', n))
           }),
           (H.NamedOp = function (t, e, r) {
             ;(r || (r = e.substr(1)), (r = r.replace(/&thinsp;/, '\u2006')))
-            var n = t.create(
+            const n = t.create(
               'token',
               'mo',
               {
@@ -17984,14 +17984,14 @@
             t.Push(n)
           }),
           (H.Limits = function (t, e, r) {
-            var n = t.stack.Prev(!0)
+            let n = t.stack.Prev(!0)
             if (
               !n ||
               (l.default.getTexClass(l.default.getCoreMO(n)) !== d.TEXCLASS.OP &&
                 null == l.default.getProperty(n, 'movesupsub'))
             )
               throw new c.default('MisplacedLimits', '%1 is allowed only on operators', t.currentCS)
-            var o,
+            let o,
               i = t.stack.Top()
             ;(l.default.isType(n, 'munderover') && !r
               ? ((o = t.create('node', 'msubsup')), l.default.copyChildren(n, o), (n = i.Last = o))
@@ -18007,7 +18007,7 @@
                 l.default.setProperties(n, { movablelimits: !1 }))
           }),
           (H.Over = function (t, e, r, n) {
-            var o = t.itemFactory.create('over').setProperty('name', t.currentCS)
+            const o = t.itemFactory.create('over').setProperty('name', t.currentCS)
             ;(r || n
               ? (o.setProperty('open', r), o.setProperty('close', n))
               : e.match(/withdelims$/) &&
@@ -18019,21 +18019,21 @@
               t.Push(o))
           }),
           (H.Frac = function (t, e) {
-            var r = t.ParseArg(e),
+            const r = t.ParseArg(e),
               n = t.ParseArg(e),
               o = t.create('node', 'mfrac', [r, n])
             t.Push(o)
           }),
           (H.Sqrt = function (t, e) {
-            var r = t.GetBrackets(e),
+            let r = t.GetBrackets(e),
               n = t.GetArgument(e)
             '\\frac' === n && (n += '{' + t.GetArgument(n) + '}{' + t.GetArgument(n) + '}')
-            var o = new u.default(n, t.stack.env, t.configuration).mml()
+            let o = new u.default(n, t.stack.env, t.configuration).mml()
             ;((o = r ? t.create('node', 'mroot', [o, b(t, r)]) : t.create('node', 'msqrt', [o])),
               t.Push(o))
           }),
           (H.Root = function (t, e) {
-            var r = t.GetUpTo(e, '\\of'),
+            const r = t.GetUpTo(e, '\\of'),
               n = t.ParseArg(e),
               o = t.create('node', 'mroot', [n, b(t, r)])
             t.Push(o)
@@ -18047,7 +18047,7 @@
               )
             if (t.stack.global[r])
               throw new c.default('MultipleMoveRoot', 'Multiple use of %1', t.currentCS)
-            var n = t.GetArgument(e)
+            let n = t.GetArgument(e)
             if (!n.match(/-?[0-9]+/))
               throw new c.default(
                 'IntegerArg',
@@ -18058,62 +18058,62 @@
               (t.stack.global[r] = n))
           }),
           (H.Accent = function (t, e, r, o) {
-            var i = t.ParseArg(e),
+            const i = t.ParseArg(e),
               Q = n(n({}, h.default.getFontDef(t)), { accent: !0, mathaccent: !0 }),
               T = l.default.createEntity(r),
               s = t.create('token', 'mo', Q, T)
             l.default.setAttribute(s, 'stretchy', !!o)
-            var a = l.default.isEmbellished(i) ? l.default.getCoreMO(i) : i
+            const a = l.default.isEmbellished(i) ? l.default.getCoreMO(i) : i
             ;(l.default.isType(a, 'mo') || l.default.getProperty(a, 'movablelimits')) &&
               l.default.setProperties(a, { movablelimits: !1 })
-            var c = t.create('node', 'munderover')
+            const c = t.create('node', 'munderover')
             ;(l.default.setChild(c, 0, i),
               l.default.setChild(c, 1, null),
               l.default.setChild(c, 2, s))
-            var u = t.create('node', 'TeXAtom', [c])
+            const u = t.create('node', 'TeXAtom', [c])
             t.Push(u)
           }),
           (H.UnderOver = function (t, e, r, n) {
-            var o = l.default.createEntity(r),
+            const o = l.default.createEntity(r),
               i = t.create('token', 'mo', { stretchy: !0, accent: !0 }, o),
               Q = 'o' === e.charAt(1) ? 'over' : 'under',
               T = t.ParseArg(e)
             t.Push(h.default.underOver(t, T, i, Q, n))
           }),
           (H.Overset = function (t, e) {
-            var r = t.ParseArg(e),
+            const r = t.ParseArg(e),
               n = t.ParseArg(e)
             ;(h.default.checkMovableLimits(n),
               r.isKind('mo') && l.default.setAttribute(r, 'accent', !1))
-            var o = t.create('node', 'mover', [n, r])
+            const o = t.create('node', 'mover', [n, r])
             t.Push(o)
           }),
           (H.Underset = function (t, e) {
-            var r = t.ParseArg(e),
+            const r = t.ParseArg(e),
               n = t.ParseArg(e)
             ;(h.default.checkMovableLimits(n),
               r.isKind('mo') && l.default.setAttribute(r, 'accent', !1))
-            var o = t.create('node', 'munder', [n, r], { accentunder: !1 })
+            const o = t.create('node', 'munder', [n, r], { accentunder: !1 })
             t.Push(o)
           }),
           (H.Overunderset = function (t, e) {
-            var r = t.ParseArg(e),
+            const r = t.ParseArg(e),
               n = t.ParseArg(e),
               o = t.ParseArg(e)
             ;(h.default.checkMovableLimits(o),
               r.isKind('mo') && l.default.setAttribute(r, 'accent', !1),
               n.isKind('mo') && l.default.setAttribute(n, 'accent', !1))
-            var i = t.create('node', 'munderover', [o, n, r], { accent: !1, accentunder: !1 })
+            const i = t.create('node', 'munderover', [o, n, r], { accent: !1, accentunder: !1 })
             t.Push(i)
           }),
           (H.TeXAtom = function (t, e, r) {
-            var n,
+            let n,
               o,
               i,
               Q = { texClass: r }
             if (r === d.TEXCLASS.OP) {
               Q.movesupsub = Q.movablelimits = !0
-              var T = t.GetArgument(e),
+              const T = t.GetArgument(e),
                 s = T.match(/^\s*\\rm\s+([a-zA-Z0-9 ]+)$/)
               ;(s
                 ? ((Q.mathvariant = p.TexConstant.Variant.NORMAL),
@@ -18125,7 +18125,7 @@
             t.Push(n)
           }),
           (H.MmlToken = function (t, e) {
-            var r,
+            let r,
               n = t.GetArgument(e),
               o = t.GetBrackets(e, '').replace(/^\s+/, ''),
               i = t.GetArgument(e),
@@ -18139,7 +18139,7 @@
             if (!r || !r.isToken)
               throw new c.default('NotMathMLToken', '%1 is not a token element', n)
             for (; '' !== o; ) {
-              var s = o.match(/^([a-z]+)\s*=\s*('[^']*'|"[^"]*"|[^ ,]*)\s*,?\s*/i)
+              const s = o.match(/^([a-z]+)\s*=\s*('[^']*'|"[^"]*"|[^ ,]*)\s*,?\s*/i)
               if (!s) throw new c.default('InvalidMathMLAttr', 'Invalid MathML attribute: %1', o)
               if (!r.attributes.hasDefault(s[1]) && !g[s[1]])
                 throw new c.default(
@@ -18148,7 +18148,7 @@
                   s[1],
                   n,
                 )
-              var a = h.default.MmlFilterAttribute(t, s[1], s[2].replace(/^(['"])(.*)\1$/, '$2'))
+              let a = h.default.MmlFilterAttribute(t, s[1], s[2].replace(/^(['"])(.*)\1$/, '$2'))
               ;(a &&
                 ('true' === a.toLowerCase() ? (a = !0) : 'false' === a.toLowerCase() && (a = !1),
                 (Q[s[1]] = a),
@@ -18156,25 +18156,25 @@
                 (o = o.substr(s[0].length)))
             }
             T.length && (Q['mjx-keep-attrs'] = T.join(' '))
-            var u = t.create('text', i)
+            const u = t.create('text', i)
             ;(r.appendChild(u), l.default.setProperties(r, Q), t.Push(r))
           }),
           (H.Strut = function (t, e) {
-            var r = t.create('node', 'mrow'),
+            const r = t.create('node', 'mrow'),
               n = t.create('node', 'mpadded', [r], { height: '8.6pt', depth: '3pt', width: 0 })
             t.Push(n)
           }),
           (H.Phantom = function (t, e, r, n) {
-            var o = t.create('node', 'mphantom', [t.ParseArg(e)])
+            let o = t.create('node', 'mphantom', [t.ParseArg(e)])
             ;(r || n) &&
               ((o = t.create('node', 'mpadded', [o])),
               n && (l.default.setAttribute(o, 'height', 0), l.default.setAttribute(o, 'depth', 0)),
               r && l.default.setAttribute(o, 'width', 0))
-            var i = t.create('node', 'TeXAtom', [o])
+            const i = t.create('node', 'TeXAtom', [o])
             t.Push(i)
           }),
           (H.Smash = function (t, e) {
-            var r = h.default.trimSpaces(t.GetBrackets(e, '')),
+            const r = h.default.trimSpaces(t.GetBrackets(e, '')),
               n = t.create('node', 'mpadded', [t.ParseArg(e)])
             switch (r) {
               case 'b':
@@ -18186,17 +18186,17 @@
               default:
                 ;(l.default.setAttribute(n, 'height', 0), l.default.setAttribute(n, 'depth', 0))
             }
-            var o = t.create('node', 'TeXAtom', [n])
+            const o = t.create('node', 'TeXAtom', [n])
             t.Push(o)
           }),
           (H.Lap = function (t, e) {
-            var r = t.create('node', 'mpadded', [t.ParseArg(e)], { width: 0 })
+            const r = t.create('node', 'mpadded', [t.ParseArg(e)], { width: 0 })
             '\\llap' === e && l.default.setAttribute(r, 'lspace', '-1width')
-            var n = t.create('node', 'TeXAtom', [r])
+            const n = t.create('node', 'TeXAtom', [r])
             t.Push(n)
           }),
           (H.RaiseLower = function (t, e) {
-            var r = t.GetDimen(e),
+            let r = t.GetDimen(e),
               n = t.itemFactory
                 .create('position')
                 .setProperties({ name: t.currentCS, move: 'vertical' })
@@ -18208,10 +18208,10 @@
               t.Push(n))
           }),
           (H.MoveLeftRight = function (t, e) {
-            var r = t.GetDimen(e),
+            let r = t.GetDimen(e),
               n = '-' === r.charAt(0) ? r.slice(1) : '-' + r
             if ('\\moveleft' === e) {
-              var o = r
+              const o = r
               ;((r = n), (n = o))
             }
             t.Push(
@@ -18226,20 +18226,20 @@
             )
           }),
           (H.Hskip = function (t, e) {
-            var r = t.create('node', 'mspace', [], { width: t.GetDimen(e) })
+            const r = t.create('node', 'mspace', [], { width: t.GetDimen(e) })
             t.Push(r)
           }),
           (H.Nonscript = function (t, e) {
             t.Push(t.itemFactory.create('nonscript'))
           }),
           (H.Rule = function (t, e, r) {
-            var n = { width: t.GetDimen(e), height: t.GetDimen(e), depth: t.GetDimen(e) }
+            const n = { width: t.GetDimen(e), height: t.GetDimen(e), depth: t.GetDimen(e) }
             'blank' !== r && (n.mathbackground = t.stack.env.color || 'black')
-            var o = t.create('node', 'mspace', [], n)
+            const o = t.create('node', 'mspace', [], n)
             t.Push(o)
           }),
           (H.rule = function (t, e) {
-            var r = t.GetBrackets(e),
+            let r = t.GetBrackets(e),
               n = t.GetDimen(e),
               o = t.GetDimen(e),
               i = t.create('node', 'mspace', [], {
@@ -18256,7 +18256,7 @@
               t.Push(i))
           }),
           (H.MakeBig = function (t, e, r, n) {
-            var o = String((n *= 1.411764705882353)).replace(/(\.\d\d\d).+/, '$1') + 'em',
+            const o = String((n *= 1.411764705882353)).replace(/(\.\d\d\d).+/, '$1') + 'em',
               i = t.GetDelimiter(e, !0),
               Q = t.create(
                 'token',
@@ -18268,25 +18268,25 @@
             t.Push(T)
           }),
           (H.BuildRel = function (t, e) {
-            var r = t.ParseUpTo(e, '\\over'),
+            const r = t.ParseUpTo(e, '\\over'),
               n = t.ParseArg(e),
               o = t.create('node', 'munderover')
             ;(l.default.setChild(o, 0, n),
               l.default.setChild(o, 1, null),
               l.default.setChild(o, 2, r))
-            var i = t.create('node', 'TeXAtom', [o], { texClass: d.TEXCLASS.REL })
+            const i = t.create('node', 'TeXAtom', [o], { texClass: d.TEXCLASS.REL })
             t.Push(i)
           }),
           (H.HBox = function (t, e, r, n) {
             t.PushAll(h.default.internalMath(t, t.GetArgument(e), r, n))
           }),
           (H.FBox = function (t, e) {
-            var r = h.default.internalMath(t, t.GetArgument(e)),
+            const r = h.default.internalMath(t, t.GetArgument(e)),
               n = t.create('node', 'menclose', r, { notation: 'box' })
             t.Push(n)
           }),
           (H.FrameBox = function (t, e) {
-            var r = t.GetBrackets(e),
+            let r = t.GetBrackets(e),
               n = t.GetBrackets(e) || 'c',
               o = h.default.internalMath(t, t.GetArgument(e))
             r &&
@@ -18296,7 +18296,7 @@
                   'data-align': (0, y.lookup)(n, { l: 'left', r: 'right' }, 'center'),
                 }),
               ])
-            var i = t.create(
+            const i = t.create(
               'node',
               'TeXAtom',
               [t.create('node', 'menclose', o, { notation: 'box' })],
@@ -18308,18 +18308,18 @@
             t.Push(t.itemFactory.create('not'))
           }),
           (H.Dots = function (t, e) {
-            var r = l.default.createEntity('2026'),
+            const r = l.default.createEntity('2026'),
               n = l.default.createEntity('22EF'),
               o = t.create('token', 'mo', { stretchy: !1 }, r),
               i = t.create('token', 'mo', { stretchy: !1 }, n)
             t.Push(t.itemFactory.create('dots').setProperties({ ldots: o, cdots: i }))
           }),
           (H.Matrix = function (t, e, r, n, o, i, Q, T, s, a) {
-            var l = t.GetNext()
+            const l = t.GetNext()
             if ('' === l)
               throw new c.default('MissingArgFor', 'Missing argument for %1', t.currentCS)
             '{' === l ? t.i++ : ((t.string = l + '}' + t.string.slice(t.i + 1)), (t.i = 0))
-            var u = t.itemFactory.create('array').setProperty('requireClose', !0)
+            const u = t.itemFactory.create('array').setProperty('requireClose', !0)
             ;((u.arraydef = { rowspacing: Q || '4pt', columnspacing: i || '1em' }),
               s && u.setProperty('isCases', !0),
               a && (u.setProperty('isNumbered', !0), (u.arraydef.side = a)),
@@ -18330,7 +18330,7 @@
           }),
           (H.Entry = function (t, e) {
             t.Push(t.itemFactory.create('cell').setProperties({ isEntry: !0, name: e }))
-            var r = t.stack.Top(),
+            const r = t.stack.Top(),
               n = r.getProperty('casesEnv')
             if (r.getProperty('isCases') || n) {
               for (
@@ -18344,21 +18344,21 @@
                     : null;
                 T < s;
               ) {
-                var l = o.charAt(T)
+                const l = o.charAt(T)
                 if ('{' === l) (i++, T++)
                 else if ('}' === l) 0 === i ? (s = 0) : (0 === --i && Q < 0 && (Q = T - t.i), T++)
                 else {
                   if ('&' === l && 0 === i)
                     throw new c.default('ExtraAlignTab', 'Extra alignment tab in \\cases text')
                   if ('\\' === l) {
-                    var u = o.substr(T)
+                    const u = o.substr(T)
                     u.match(/^((\\cr)[^a-zA-Z]|\\\\)/) || (a && u.match(a)) ? (s = 0) : (T += 2)
                   } else T++
                 }
               }
-              var p = o.substr(t.i, T - t.i)
+              const p = o.substr(t.i, T - t.i)
               if (!p.match(/^\s*\\text[^a-zA-Z]/) || Q !== p.replace(/\s+$/, '').length - 1) {
-                var d = h.default.internalMath(t, h.default.trimSpaces(p), 0)
+                const d = h.default.internalMath(t, h.default.trimSpaces(p), 0)
                 ;(t.PushAll(d), (t.i = T))
               }
             }
@@ -18367,12 +18367,12 @@
             t.Push(t.itemFactory.create('cell').setProperties({ isCR: !0, name: e }))
           }),
           (H.CrLaTeX = function (t, e, r) {
-            var n
+            let n
             if (
               (void 0 === r && (r = !1),
               !r && ('*' === t.string.charAt(t.i) && t.i++, '[' === t.string.charAt(t.i)))
             ) {
-              var o = t.GetBrackets(e, ''),
+              const o = t.GetBrackets(e, ''),
                 i = T(h.default.matchDimen(o), 2),
                 Q = i[0],
                 s = i[1]
@@ -18385,7 +18385,7 @@
               n = Q + s
             }
             t.Push(t.itemFactory.create('cell').setProperties({ isCR: !0, name: e, linebreak: !0 }))
-            var l,
+            let l,
               u = t.stack.Top()
             u instanceof a.ArrayItem
               ? n && u.addRowSpacing(n)
@@ -18397,7 +18397,7 @@
           }),
           (H.HLine = function (t, e, r) {
             null == r && (r = 'solid')
-            var n = t.stack.Top()
+            const n = t.stack.Top()
             if (!(n instanceof a.ArrayItem) || n.Size())
               throw new c.default('Misplaced', 'Misplaced %1', t.currentCS)
             if (n.table.length) {
@@ -18410,19 +18410,19 @@
             } else n.frame.push('top')
           }),
           (H.HFill = function (t, e) {
-            var r = t.stack.Top()
+            const r = t.stack.Top()
             if (!(r instanceof a.ArrayItem))
               throw new c.default('UnsupportedHFill', 'Unsupported use of %1', t.currentCS)
             r.hfill.push(r.Size())
           }),
           (H.BeginEnd = function (t, e) {
-            var r = t.GetArgument(e)
+            const r = t.GetArgument(e)
             if (r.match(/\\/i))
               throw new c.default('InvalidEnv', "Invalid environment name '%1'", r)
-            var n = t.configuration.handlers.get('environment').lookup(r)
+            const n = t.configuration.handlers.get('environment').lookup(r)
             if (n && '\\end' === e) {
               if (!n.args[0]) {
-                var o = t.itemFactory.create('end').setProperty('name', r)
+                const o = t.itemFactory.create('end').setProperty('name', r)
                 return void t.Push(o)
               }
               t.stack.env.closing = r
@@ -18431,7 +18431,7 @@
           }),
           (H.Array = function (t, e, r, n, o, i, Q, T, s) {
             o || (o = t.GetArgument('\\begin{' + e.getName() + '}'))
-            var a = ('c' + o).replace(/[^clr|:]/g, '').replace(/[^|:]([|:])+/g, '$1')
+            let a = ('c' + o).replace(/[^clr|:]/g, '').replace(/[^|:]([|:])+/g, '$1')
             o = (o = o
               .replace(/[^clr]/g, '')
               .split('')
@@ -18439,7 +18439,7 @@
               .replace(/l/g, 'left')
               .replace(/r/g, 'right')
               .replace(/c/g, 'center')
-            var l = t.itemFactory.create('array')
+            const l = t.itemFactory.create('array')
             return (
               (l.arraydef = { columnalign: o, columnspacing: i || '1em', rowspacing: Q || '4pt' }),
               a.match(/[|:]/) &&
@@ -18464,7 +18464,7 @@
             )
           }),
           (H.AlignedArray = function (t, e) {
-            var r = t.GetBrackets('\\begin{' + e.getName() + '}'),
+            const r = t.GetBrackets('\\begin{' + e.getName() + '}'),
               n = H.Array(t, e)
             return h.default.setArrayAlign(n, r)
           }),
@@ -18485,7 +18485,7 @@
                 .replace(/l/g, 'left')
                 .replace(/r/g, 'right')
                 .replace(/c/g, 'center')))
-            var Q = t.itemFactory.create('eqnarray', e.getName(), r, n, t.stack.global)
+            const Q = t.itemFactory.create('eqnarray', e.getName(), r, n, t.stack.global)
             return (
               (Q.arraydef = {
                 displaystyle: !0,
@@ -18502,7 +18502,7 @@
             t.tags.notag()
           }),
           (H.HandleLabel = function (t, e) {
-            var r = t.GetArgument(e)
+            const r = t.GetArgument(e)
             if ('' !== r && !t.tags.refUpdate) {
               if (t.tags.label) throw new c.default('MultipleCommand', 'Multiple %1', t.currentCS)
               if (
@@ -18514,12 +18514,12 @@
             }
           }),
           (H.HandleRef = function (t, e, r) {
-            var n = t.GetArgument(e),
+            let n = t.GetArgument(e),
               o = t.tags.allLabels[n] || t.tags.labels[n]
             o || (t.tags.refUpdate || (t.tags.redo = !0), (o = new f.Label()))
-            var i = o.tag
+            let i = o.tag
             r && (i = t.tags.formatTag(i))
-            var Q = t.create('node', 'mrow', h.default.internalMath(t, i), {
+            const Q = t.create('node', 'mrow', h.default.internalMath(t, i), {
               href: t.tags.formatUrl(o.id, t.options.baseURL),
               class: 'MathJax_ref',
             })
@@ -18527,12 +18527,12 @@
           }),
           (H.Macro = function (t, e, r, n, o) {
             if (n) {
-              var i = []
+              const i = []
               if (null != o) {
-                var Q = t.GetBrackets(e)
+                const Q = t.GetBrackets(e)
                 i.push(null == Q ? o : Q)
               }
-              for (var T = i.length; T < n; T++) i.push(t.GetArgument(e))
+              for (let T = i.length; T < n; T++) i.push(t.GetArgument(e))
               r = h.default.substituteArgs(t, i, r)
             }
             ;((t.string = h.default.addArgs(t, r, t.string.slice(t.i))),
@@ -18540,7 +18540,7 @@
               h.default.checkMaxMacros(t))
           }),
           (H.MathChoice = function (t, e) {
-            var r = t.ParseArg(e),
+            const r = t.ParseArg(e),
               n = t.ParseArg(e),
               o = t.ParseArg(e),
               i = t.ParseArg(e)
@@ -18549,11 +18549,11 @@
           (e.default = H))
       },
       8458: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -18572,7 +18572,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.ConfigMacrosConfiguration = void 0))
-        var Q = r(9899),
+        const Q = r(9899),
           T = r(7233),
           s = r(9140),
           a = i(r(5450)),
@@ -18591,13 +18591,13 @@
           },
           config: function (t, e) {
             ;(!(function (t) {
-              var e,
+              let e,
                 r,
                 n = t.parseOptions.handlers.retrieve(p),
                 i = t.parseOptions.options.macros
               try {
                 for (var Q = o(Object.keys(i)), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value,
+                  const s = T.value,
                     a = 'string' == typeof i[s] ? [i[s]] : i[s],
                     u = Array.isArray(a[2])
                       ? new l.Macro(s, c.default.MacroWithTemplate, a.slice(0, 2).concat(a[2]))
@@ -18615,13 +18615,13 @@
               }
             })(e),
               (function (t) {
-                var e,
+                let e,
                   r,
                   n = t.parseOptions.handlers.retrieve(h),
                   i = t.parseOptions.options.environments
                 try {
                   for (var Q = o(Object.keys(i)), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value
+                    const s = T.value
                     n.add(s, new l.Macro(s, c.default.BeginEnv, [!0].concat(i[s])))
                   }
                 } catch (t) {
@@ -18640,13 +18640,13 @@
         })
       },
       1496: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -18672,9 +18672,9 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && o(e, t, r)
               return (i(e, t), e)
             },
@@ -18685,11 +18685,11 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.NewcommandConfiguration = void 0))
-        var s = r(9899),
+        const s = r(9899),
           a = r(6793),
           l = T(r(5579))
         r(5117)
-        var c = T(r(5450)),
+        const c = T(r(5450)),
           u = Q(r(9140))
         e.NewcommandConfiguration = s.Configuration.create('newcommand', {
           handler: { macro: ['Newcommand-macros'] },
@@ -18714,7 +18714,7 @@
         })
       },
       6793: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -18726,7 +18726,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -18749,7 +18749,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.BeginEnvItem = void 0))
-        var Q = i(r(3971)),
+        const Q = i(r(3971)),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -18791,13 +18791,13 @@
         e.BeginEnvItem = T
       },
       5117: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__importDefault) ||
           function (t) {
             return t && t.__esModule ? t : { default: t }
           }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var o = n(r(1110))
+        const o = n(r(1110))
         new (r(9140).CommandMap)(
           'Newcommand-macros',
           {
@@ -18812,12 +18812,12 @@
         )
       },
       1110: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -18843,9 +18843,9 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && n(e, t, r)
               return (o(e, t), e)
             },
@@ -18862,14 +18862,14 @@
           c = Q(r(5579)),
           u = {
             NewCommand: function (t, e) {
-              var r = c.default.GetCsNameArgument(t, e),
+              const r = c.default.GetCsNameArgument(t, e),
                 n = c.default.GetArgCount(t, e),
                 o = t.GetBrackets(e),
                 i = t.GetArgument(e)
               c.default.addMacro(t, r, u.Macro, [i, n, o])
             },
             NewEnvironment: function (t, e) {
-              var r = l.default.trimSpaces(t.GetArgument(e)),
+              const r = l.default.trimSpaces(t.GetArgument(e)),
                 n = c.default.GetArgCount(t, e),
                 o = t.GetBrackets(e),
                 i = t.GetArgument(e),
@@ -18877,7 +18877,7 @@
               c.default.addEnvironment(t, r, u.BeginEnv, [!0, i, Q, n, o])
             },
             MacroDef: function (t, e) {
-              var r = c.default.GetCSname(t, e),
+              const r = c.default.GetCSname(t, e),
                 n = c.default.GetTemplate(t, e, '\\' + r),
                 o = t.GetArgument(e)
               n instanceof Array
@@ -18885,34 +18885,34 @@
                 : c.default.addMacro(t, r, u.Macro, [o, n])
             },
             Let: function (t, e) {
-              var r = c.default.GetCSname(t, e),
+              let r = c.default.GetCSname(t, e),
                 n = t.GetNext()
               '=' === n && (t.i++, (n = t.GetNext()))
-              var o = t.configuration.handlers
+              const o = t.configuration.handlers
               if ('\\' !== n) {
                 t.i++
-                var i = o.get('delimiter').lookup(n)
+                const i = o.get('delimiter').lookup(n)
                 i
                   ? c.default.addDelimiter(t, '\\' + r, i.char, i.attributes)
                   : c.default.addMacro(t, r, u.Macro, [n])
               } else {
                 e = c.default.GetCSname(t, e)
-                var Q = o.get('delimiter').lookup('\\' + e)
+                let Q = o.get('delimiter').lookup('\\' + e)
                 if (Q) return void c.default.addDelimiter(t, '\\' + r, Q.char, Q.attributes)
-                var T = o.get('macro').applicable(e)
+                const T = o.get('macro').applicable(e)
                 if (!T) return
                 if (T instanceof s.MacroMap) {
-                  var a = T.lookup(e)
+                  const a = T.lookup(e)
                   return void c.default.addMacro(t, r, a.func, a.args, a.symbol)
                 }
                 Q = T.lookup(e)
-                var l = c.default.disassembleSymbol(r, Q)
+                const l = c.default.disassembleSymbol(r, Q)
                 c.default.addMacro(
                   t,
                   r,
                   function (t, e) {
                     for (var r = [], n = 2; n < arguments.length; n++) r[n - 2] = arguments[n]
-                    var o = c.default.assembleSymbol(r)
+                    const o = c.default.assembleSymbol(r)
                     return T.parser(t, o)
                   },
                   l,
@@ -18921,12 +18921,12 @@
             },
             MacroWithTemplate: function (t, e, r, n) {
               for (var o = [], i = 4; i < arguments.length; i++) o[i - 4] = arguments[i]
-              var Q = parseInt(n, 10)
+              const Q = parseInt(n, 10)
               if (Q) {
-                var s = []
+                const s = []
                 if ((t.GetNext(), o[0] && !c.default.MatchParam(t, o[0])))
                   throw new T.default('MismatchUseDef', "Use of %1 doesn't match its definition", e)
-                for (var a = 0; a < Q; a++) s.push(c.default.GetParameter(t, e, o[a + 1]))
+                for (let a = 0; a < Q; a++) s.push(c.default.GetParameter(t, e, o[a + 1]))
                 r = l.default.substituteArgs(t, s, r)
               }
               ;((t.string = l.default.addArgs(t, r, t.string.slice(t.i))),
@@ -18936,7 +18936,7 @@
             BeginEnv: function (t, e, r, n, o, i) {
               if (e.getProperty('end') && t.stack.env.closing === e.getName()) {
                 delete t.stack.env.closing
-                var Q = t.string.slice(t.i)
+                const Q = t.string.slice(t.i)
                 return (
                   (t.string = n),
                   (t.i = 0),
@@ -18947,12 +18947,12 @@
                 )
               }
               if (o) {
-                var T = []
+                const T = []
                 if (null != i) {
-                  var s = t.GetBrackets('\\begin{' + e.getName() + '}')
+                  const s = t.GetBrackets('\\begin{' + e.getName() + '}')
                   T.push(null == s ? i : s)
                 }
-                for (var a = T.length; a < o; a++)
+                for (let a = T.length; a < o; a++)
                   T.push(t.GetArgument('\\begin{' + e.getName() + '}'))
                 ;((r = l.default.substituteArgs(t, T, r)), (n = l.default.substituteArgs(t, [], n)))
               }
@@ -18966,13 +18966,13 @@
         ;((u.Macro = a.default.Macro), (e.default = u))
       },
       5579: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__importDefault) ||
           function (t) {
             return t && t.__esModule ? t : { default: t }
           }
         Object.defineProperty(e, '__esModule', { value: !0 })
-        var o,
+        let o,
           i = n(r(1130)),
           Q = n(r(3971)),
           T = r(8803)
@@ -18984,8 +18984,8 @@
               : ((t.i += e.length), 1)
           }
           ;((t.disassembleSymbol = function (t, e) {
-            var r = [t, e.char]
-            if (e.attributes) for (var n in e.attributes) (r.push(n), r.push(e.attributes[n]))
+            const r = [t, e.char]
+            if (e.attributes) for (const n in e.attributes) (r.push(n), r.push(e.attributes[n]))
             return r
           }),
             (t.assembleSymbol = function (t) {
@@ -18998,7 +18998,7 @@
               return i.default.trimSpaces(t.GetArgument(e)).substr(1)
             }),
             (t.GetCsNameArgument = function (t, e) {
-              var r = i.default.trimSpaces(t.GetArgument(e))
+              let r = i.default.trimSpaces(t.GetArgument(e))
               if (('\\' === r.charAt(0) && (r = r.substr(1)), !r.match(/^(.|[a-z]+)$/i)))
                 throw new Q.default(
                   'IllegalControlSequenceName',
@@ -19008,7 +19008,7 @@
               return r
             }),
             (t.GetArgCount = function (t, e) {
-              var r = t.GetBrackets(e)
+              let r = t.GetBrackets(e)
               if (r && !(r = i.default.trimSpaces(r)).match(/^[0-9]+$/))
                 throw new Q.default(
                   'IllegalParamNumber',
@@ -19018,7 +19018,7 @@
               return r
             }),
             (t.GetTemplate = function (t, e, r) {
-              for (var n = t.GetNext(), o = [], i = 0, T = t.i; t.i < t.string.length; ) {
+              for (let n = t.GetNext(), o = [], i = 0, T = t.i; t.i < t.string.length; ) {
                 if ('#' === (n = t.GetNext())) {
                   if (
                     (T !== t.i && (o[i] = t.string.substr(T, t.i - T)),
@@ -19047,14 +19047,14 @@
             }),
             (t.GetParameter = function (t, r, n) {
               if (null == n) return t.GetArgument(r)
-              for (var o = t.i, i = 0, T = 0; t.i < t.string.length; ) {
-                var s = t.string.charAt(t.i)
+              for (let o = t.i, i = 0, T = 0; t.i < t.string.length; ) {
+                const s = t.string.charAt(t.i)
                 if ('{' === s) (t.i === o && (T = 1), t.GetArgument(r), (i = t.i - o))
                 else {
                   if (e(t, n)) return (T && (o++, (i -= 2)), t.string.substr(o, i))
                   if ('\\' === s) {
                     ;(t.i++, i++, (T = 0))
-                    var a = t.string.substr(t.i).match(/[a-z]+|./i)
+                    const a = t.string.substr(t.i).match(/[a-z]+|./i)
                     a && ((t.i += a[0].length), (i = t.i - o))
                   } else (t.i++, i++, (T = 0))
                 }
@@ -19079,10 +19079,10 @@
           (e.default = o))
       },
       4898: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -19096,11 +19096,11 @@
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.NoUndefinedConfiguration = void 0))
-        var o = r(9899)
+        const o = r(9899)
         e.NoUndefinedConfiguration = o.Configuration.create('noundefined', {
           fallback: {
             macro: function (t, e) {
-              var r,
+              let r,
                 o,
                 i = t.create('text', '\\' + e),
                 Q = t.options.noundefined || {},
@@ -19111,7 +19111,7 @@
                   !a.done;
                   a = s.next()
                 ) {
-                  var l = a.value
+                  const l = a.value
                   Q[l] && (T['math' + l] = Q[l])
                 }
               } catch (t) {
@@ -19131,10 +19131,10 @@
         })
       },
       7741: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -19149,9 +19149,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -19183,7 +19183,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.RequireConfiguration = e.options = e.RequireMethods = e.RequireLoad = void 0))
-        var T = r(9899),
+        const T = r(9899),
           s = r(9140),
           a = Q(r(3971)),
           l = r(9515),
@@ -19193,19 +19193,19 @@
           h = r(7233),
           d = l.MathJax.config
         function f(t, e) {
-          var r,
+          let r,
             o = t.parseOptions.options.require,
             i = t.parseOptions.packageData.get('require').required,
             Q = e.substr(o.prefix.length)
           if (i.indexOf(Q) < 0) {
             ;(i.push(Q),
               (function (t, e) {
-                var r, o
+                let r, o
                 void 0 === e && (e = [])
-                var i = t.parseOptions.options.require.prefix
+                const i = t.parseOptions.options.require.prefix
                 try {
                   for (var Q = n(e), T = Q.next(); !T.done; T = Q.next()) {
-                    var s = T.value
+                    const s = T.value
                     s.substr(0, i.length) === i && f(t, s)
                   }
                 } catch (t) {
@@ -19218,15 +19218,15 @@
                   }
                 }
               })(t, u.CONFIG.dependencies[e]))
-            var s = T.ConfigurationHandler.get(Q)
+            const s = T.ConfigurationHandler.get(Q)
             if (s) {
-              var a = d[e] || {}
+              let a = d[e] || {}
               ;(s.options &&
                 1 === Object.keys(s.options).length &&
                 s.options[Q] &&
                 (((r = {})[Q] = a), (a = r)),
                 t.configuration.add(Q, t, a))
-              var l = t.parseOptions.packageData.get('require').configured
+              const l = t.parseOptions.packageData.get('require').configured
               s.preprocessors.length &&
                 !l.has(Q) &&
                 (l.set(Q, !0), p.mathjax.retryAfter(Promise.resolve()))
@@ -19234,7 +19234,7 @@
           }
         }
         function L(t, e) {
-          var r = t.options.require,
+          const r = t.options.require,
             n = r.allow,
             o = ('[' === e.substr(0, 1) ? '' : r.prefix) + e
           if (!(n.hasOwnProperty(o) ? n[o] : n.hasOwnProperty(e) ? n[e] : r.defaultAllow))
@@ -19246,7 +19246,7 @@
         ;((e.RequireLoad = L),
           (e.RequireMethods = {
             Require: function (t, e) {
-              var r = t.GetArgument(e)
+              const r = t.GetArgument(e)
               if (r.match(/[^_a-zA-Z0-9]/) || '' === r)
                 throw new a.default(
                   'BadPackageName',
@@ -19279,7 +19279,7 @@
                 required: i([], o(e.options.packages), !1),
                 configured: new Map(),
               })
-              var r = e.parseOptions.options.require,
+              const r = e.parseOptions.options.require,
                 n = r.prefix
               if (n.match(/[^_a-zA-Z0-9]/))
                 throw Error('Illegal characters used in \\require prefix')
@@ -19291,7 +19291,7 @@
       },
       5713: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.mathjax = void 0))
-        var n = r(3282),
+        const n = r(3282),
           o = r(805),
           i = r(4542)
         e.mathjax = {
@@ -19314,7 +19314,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -19324,9 +19324,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -19354,7 +19354,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -19368,18 +19368,18 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.FontData = e.NOSTRETCH = e.H = e.V = void 0))
-        var T = r(7233)
+        const T = r(7233)
         ;((e.V = 1), (e.H = 2), (e.NOSTRETCH = { dir: 0 }))
-        var s = (function () {
+        const s = (function () {
           function t(t) {
-            var e, r, s, a
+            let e, r, s, a
             ;(void 0 === t && (t = null),
               (this.variant = {}),
               (this.delimiters = {}),
               (this.cssFontMap = {}),
               (this.remapChars = {}),
               (this.skewIcFactor = 0.75))
-            var l = this.constructor
+            const l = this.constructor
             ;((this.options = (0, T.userOptions)((0, T.defaultOptions)({}, l.OPTIONS), t)),
               (this.params = n({}, l.defaultParams)),
               (this.sizeVariants = i([], o(l.defaultSizeVariants), !1)),
@@ -19387,7 +19387,7 @@
               (this.cssFontMap = n({}, l.defaultCssFonts)))
             try {
               for (var c = Q(Object.keys(this.cssFontMap)), u = c.next(); !u.done; u = c.next()) {
-                var p = u.value
+                const p = u.value
                 'unknown' === this.cssFontMap[p][0] &&
                   (this.cssFontMap[p][0] = this.options.unknownFamily)
               }
@@ -19405,7 +19405,7 @@
               this.defineDelimiters(l.defaultDelimiters))
             try {
               for (var h = Q(Object.keys(l.defaultChars)), d = h.next(); !d.done; d = h.next()) {
-                var f = d.value
+                const f = d.value
                 this.defineChars(f, l.defaultChars[f])
               }
             } catch (t) {
@@ -19423,7 +19423,7 @@
           }
           return (
             (t.charOptions = function (t, e) {
-              var r = t[e]
+              const r = t[e]
               return (3 === r.length && (r[3] = {}), r[3])
             }),
             Object.defineProperty(t.prototype, 'styles', {
@@ -19438,7 +19438,7 @@
             }),
             (t.prototype.createVariant = function (t, e, r) {
               ;(void 0 === e && (e = null), void 0 === r && (r = null))
-              var n = { linked: [], chars: e ? Object.create(this.variant[e].chars) : {} }
+              const n = { linked: [], chars: e ? Object.create(this.variant[e].chars) : {} }
               ;(r &&
                 this.variant[r] &&
                 (Object.assign(n.chars, this.variant[r].chars),
@@ -19448,17 +19448,17 @@
                 (this.variant[t] = n))
             }),
             (t.prototype.remapSmpChars = function (t, e) {
-              var r,
+              let r,
                 n,
                 i,
                 T,
                 s = this.constructor
               if (s.VariantSmp[e]) {
-                var a = s.SmpRemap,
+                const a = s.SmpRemap,
                   l = [null, null, s.SmpRemapGreekU, s.SmpRemapGreekL]
                 try {
                   for (var c = Q(s.SmpRanges), u = c.next(); !u.done; u = c.next()) {
-                    var p = o(u.value, 3),
+                    const p = o(u.value, 3),
                       h = p[0],
                       d = p[1],
                       f = p[2],
@@ -19466,7 +19466,7 @@
                     if (L) {
                       for (var m = d; m <= f; m++)
                         if (930 !== m) {
-                          var y = L + m - d
+                          const y = L + m - d
                           t[m] = this.smpChar(a[y] || y)
                         }
                       if (l[h])
@@ -19512,10 +19512,10 @@
               return [, , , { smp: t }]
             }),
             (t.prototype.createVariants = function (t) {
-              var e, r
+              let e, r
               try {
                 for (var n = Q(t), o = n.next(); !o.done; o = n.next()) {
-                  var i = o.value
+                  const i = o.value
                   this.createVariant(i[0], i[1], i[2])
                 }
               } catch (t) {
@@ -19529,13 +19529,13 @@
               }
             }),
             (t.prototype.defineChars = function (t, e) {
-              var r,
+              let r,
                 n,
                 o = this.variant[t]
               Object.assign(o.chars, e)
               try {
                 for (var i = Q(o.linked), T = i.next(); !T.done; T = i.next()) {
-                  var s = T.value
+                  const s = T.value
                   Object.assign(s, e)
                 }
               } catch (t) {
@@ -19754,12 +19754,12 @@
         e.FontData = s
       },
       5552: function (t, e) {
-        var r =
+        const r =
           (this && this.__read) ||
           function (t, e) {
-            var r = 'function' == typeof Symbol && t[Symbol.iterator]
+            let r = 'function' == typeof Symbol && t[Symbol.iterator]
             if (!r) return t
-            var n,
+            let n,
               o,
               i = r.call(t),
               Q = []
@@ -19822,7 +19822,7 @@
         }
         e.arrowBBoxHD = function (t, e) {
           if (t.childNodes[0]) {
-            var r = t.childNodes[0].getBBox(),
+            const r = t.childNodes[0].getBBox(),
               n = r.h,
               o = r.d
             e[0] = e[2] = Math.max(0, t.thickness * t.arrowhead.y - (n + o) / 2)
@@ -19831,7 +19831,7 @@
         }
         ;((e.arrowBBoxW = function (t, e) {
           if (t.childNodes[0]) {
-            var r = t.childNodes[0].getBBox().w
+            const r = t.childNodes[0].getBBox().w
             e[1] = e[3] = Math.max(0, t.thickness * t.arrowhead.y - r / 2)
           }
           return e
@@ -19880,17 +19880,17 @@
           }))
         e.CommonBorder = function (t) {
           return function (r) {
-            var n = e.sideIndex[r]
+            const n = e.sideIndex[r]
             return [
               r,
               {
                 renderer: t,
                 bbox: function (t) {
-                  var e = [0, 0, 0, 0]
+                  const e = [0, 0, 0, 0]
                   return ((e[n] = t.thickness + t.padding), e)
                 },
                 border: function (t) {
-                  var e = [0, 0, 0, 0]
+                  const e = [0, 0, 0, 0]
                   return ((e[n] = t.thickness), e)
                 },
               },
@@ -19899,19 +19899,19 @@
         }
         e.CommonBorder2 = function (t) {
           return function (r, n, o) {
-            var i = e.sideIndex[n],
+            const i = e.sideIndex[n],
               Q = e.sideIndex[o]
             return [
               r,
               {
                 renderer: t,
                 bbox: function (t) {
-                  var e = t.thickness + t.padding,
+                  const e = t.thickness + t.padding,
                     r = [0, 0, 0, 0]
                   return ((r[i] = r[Q] = e), r)
                 },
                 border: function (t) {
-                  var e = [0, 0, 0, 0]
+                  const e = [0, 0, 0, 0]
                   return ((e[i] = e[Q] = t.thickness), e)
                 },
                 remove: n + ' ' + o,
@@ -19921,13 +19921,13 @@
         }
         e.CommonDiagonalStrike = function (t) {
           return function (r) {
-            var n = 'mjx-' + r.charAt(0) + 'strike'
+            const n = 'mjx-' + r.charAt(0) + 'strike'
             return [r + 'diagonalstrike', { renderer: t(n), bbox: e.fullBBox }]
           }
         }
         e.CommonDiagonalArrow = function (t) {
           return function (n) {
-            var o = r(e.diagonalArrowDef[n], 4),
+            const o = r(e.diagonalArrowDef[n], 4),
               i = o[0],
               Q = o[1],
               T = o[2]
@@ -19935,14 +19935,14 @@
               n + 'arrow',
               {
                 renderer: function (e, n) {
-                  var o = r(e.arrowAW(), 2),
+                  const o = r(e.arrowAW(), 2),
                     s = o[0],
                     a = o[1],
                     l = e.arrow(a, i * (s - Q), T)
                   t(e, l)
                 },
                 bbox: function (t) {
-                  var e = t.arrowData(),
+                  const e = t.arrowData(),
                     n = e.a,
                     o = e.x,
                     i = e.y,
@@ -19966,7 +19966,7 @@
         }
         e.CommonArrow = function (t) {
           return function (n) {
-            var o = r(e.arrowDef[n], 4),
+            const o = r(e.arrowDef[n], 4),
               i = o[0],
               Q = o[1],
               T = o[2],
@@ -19975,7 +19975,7 @@
               n + 'arrow',
               {
                 renderer: function (e, n) {
-                  var o = e.getBBox(),
+                  const o = e.getBBox(),
                     s = o.w,
                     a = o.h,
                     l = o.d,
@@ -20006,7 +20006,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -20031,7 +20031,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -20041,9 +20041,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -20063,7 +20063,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -20076,7 +20076,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonOutputJax = void 0))
-        var s = r(2975),
+        const s = r(2975),
           a = r(4474),
           l = r(7233),
           c = r(6010),
@@ -20085,7 +20085,7 @@
           h = (function (t) {
             function e(e, r, n) {
               ;(void 0 === e && (e = null), void 0 === r && (r = null), void 0 === n && (n = null))
-              var o = this,
+              let o = this,
                 i = Q((0, l.separateOptions)(e, n.OPTIONS), 2),
                 T = i[0],
                 s = i[1]
@@ -20102,15 +20102,15 @@
               o(e, t),
               (e.prototype.typeset = function (t, e) {
                 this.setDocument(e)
-                var r = this.createNode()
+                const r = this.createNode()
                 return (this.toDOM(t, r, e), r)
               }),
               (e.prototype.createNode = function () {
-                var t = this.constructor.NAME
+                const t = this.constructor.NAME
                 return this.html('mjx-container', { class: 'MathJax', jax: t })
               }),
               (e.prototype.setScale = function (t) {
-                var e = this.math.metrics.scale * this.options.scale
+                const e = this.math.metrics.scale * this.options.scale
                 1 !== e && this.adaptor.setStyle(t, 'fontSize', (0, c.percent)(e))
               }),
               (e.prototype.toDOM = function (t, e, r) {
@@ -20131,20 +20131,20 @@
                   (this.math = t),
                   t.root.setTeXclass(null),
                   (this.nodeMap = new Map()))
-                var r = this.factory.wrap(t.root).getOuterBBox()
+                const r = this.factory.wrap(t.root).getOuterBBox()
                 return ((this.nodeMap = null), r)
               }),
               (e.prototype.getMetrics = function (t) {
-                var e, r
+                let e, r
                 this.setDocument(t)
-                var n = this.adaptor,
+                const n = this.adaptor,
                   o = this.getMetricMaps(t)
                 try {
                   for (var i = T(t.math), Q = i.next(); !Q.done; Q = i.next()) {
-                    var s = Q.value,
+                    const s = Q.value,
                       l = n.parent(s.start.node)
                     if (s.state() < a.STATE.METRICS && l) {
-                      var c = o[s.display ? 1 : 0].get(l),
+                      const c = o[s.display ? 1 : 0].get(l),
                         u = c.em,
                         p = c.ex,
                         h = c.containerWidth,
@@ -20168,13 +20168,13 @@
                 }
               }),
               (e.prototype.getMetricsFor = function (t, e) {
-                var r = this.options.mtextInheritFont || this.options.merrorInheritFont,
+                const r = this.options.mtextInheritFont || this.options.merrorInheritFont,
                   n = this.getTestElement(t, e),
                   o = this.measureMetrics(n, r)
                 return (this.adaptor.remove(n), o)
               }),
               (e.prototype.getMetricMaps = function (t) {
-                var e,
+                let e,
                   r,
                   n,
                   o,
@@ -20188,9 +20188,9 @@
                   h = [new Map(), new Map()]
                 try {
                   for (var d = T(t.math), f = d.next(); !f.done; f = d.next()) {
-                    var L = f.value
+                    const L = f.value
                     if ((V = p.parent(L.start.node)) && L.state() < a.STATE.METRICS) {
-                      var m = h[L.display ? 1 : 0]
+                      const m = h[L.display ? 1 : 0]
                       m.has(V) || m.set(V, this.getTestElement(V, L.display))
                     }
                   }
@@ -20203,7 +20203,7 @@
                     if (e) throw e.error
                   }
                 }
-                var y = this.options.mtextInheritFont || this.options.merrorInheritFont,
+                const y = this.options.mtextInheritFont || this.options.merrorInheritFont,
                   H = [new Map(), new Map()]
                 try {
                   for (var g = T(H.keys()), b = g.next(); !b.done; b = g.next()) {
@@ -20270,7 +20270,7 @@
                 return H
               }),
               (e.prototype.getTestElement = function (t, e) {
-                var r = this.adaptor
+                const r = this.adaptor
                 if (!this.testInline) {
                   ;((this.testInline = this.html(
                     'mjx-test',
@@ -20312,7 +20312,7 @@
                     r.setStyle(this.testDisplay, 'display', 'table'),
                     r.setStyle(this.testDisplay, 'margin-right', ''),
                     r.setStyle(r.firstChild(this.testDisplay), 'display', 'none'))
-                  var n = r.lastChild(this.testDisplay)
+                  const n = r.lastChild(this.testDisplay)
                   ;(r.setStyle(n, 'display', 'table-cell'),
                     r.setStyle(n, 'width', '10000em'),
                     r.setStyle(n, 'float', ''))
@@ -20320,7 +20320,7 @@
                 return r.append(t, r.clone(e ? this.testDisplay : this.testInline))
               }),
               (e.prototype.measureMetrics = function (t, e) {
-                var r = this.adaptor,
+                const r = this.adaptor,
                   n = e ? r.fontFamily(t) : '',
                   o = r.fontSize(t),
                   i = Q(r.nodeSize(r.childNode(t, 1)), 2),
@@ -20344,7 +20344,7 @@
                 }
               }),
               (e.prototype.styleSheet = function (t) {
-                var e, r
+                let e, r
                 if (
                   (this.setDocument(t),
                   this.cssStyles.clear(),
@@ -20353,7 +20353,7 @@
                 )
                   try {
                     for (var n = T(t.getStyles()), o = n.next(); !o.done; o = n.next()) {
-                      var i = o.value
+                      const i = o.value
                       this.cssStyles.addStyles(i)
                     }
                   } catch (t) {
@@ -20377,10 +20377,10 @@
                 t.addStyles(this.font.styles)
               }),
               (e.prototype.addWrapperStyles = function (t) {
-                var e, r
+                let e, r
                 try {
                   for (var n = T(this.factory.getKinds()), o = n.next(); !o.done; o = n.next()) {
-                    var i = o.value
+                    const i = o.value
                     this.addClassStyles(this.factory.getNodeClass(i), t)
                   }
                 } catch (t) {
@@ -20417,9 +20417,9 @@
               }),
               (e.prototype.measureText = function (t, e, r) {
                 void 0 === r && (r = ['', !1, !1])
-                var n = this.unknownText(t, e)
+                const n = this.unknownText(t, e)
                 if ('-explicitFont' === e) {
-                  var o = this.cssFontStyles(r)
+                  const o = this.cssFontStyles(r)
                   this.adaptor.setAttributes(n, { style: o })
                 }
                 return this.measureTextNodeWithCache(n, t, e, r)
@@ -20429,14 +20429,14 @@
                   '-explicitFont' === r &&
                     (r = [n[0], n[1] ? 'T' : 'F', n[2] ? 'T' : 'F', ''].join('-')),
                   this.unknownCache.has(r) || this.unknownCache.set(r, new Map()))
-                var o = this.unknownCache.get(r),
+                const o = this.unknownCache.get(r),
                   i = o.get(e)
                 if (i) return i
-                var Q = this.measureTextNode(t)
+                const Q = this.measureTextNode(t)
                 return (o.set(e, Q), Q)
               }),
               (e.prototype.measureXMLnode = function (t) {
-                var e = this.adaptor,
+                const e = this.adaptor,
                   r = this.html('mjx-xml-block', { style: { display: 'inline-block' } }, [
                     e.clone(t),
                   ]),
@@ -20457,7 +20457,7 @@
                   )
                 ;(e.append(e.parent(this.math.start.node), this.container),
                   e.append(this.container, o))
-                var i = this.math.metrics.em * this.math.metrics.scale,
+                const i = this.math.metrics.em * this.math.metrics.scale,
                   Q = e.nodeBBox(r),
                   T = Q.left,
                   s = Q.right,
@@ -20470,7 +20470,7 @@
               }),
               (e.prototype.cssFontStyles = function (t, e) {
                 void 0 === e && (e = {})
-                var r = Q(t, 3),
+                const r = Q(t, 3),
                   n = r[0],
                   o = r[1],
                   i = r[2]
@@ -20515,7 +20515,7 @@
         e.CommonOutputJax = h
       },
       7519: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -20527,7 +20527,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -20549,7 +20549,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -20575,16 +20575,16 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && i(e, t, r)
               return (Q(e, t), e)
             },
           s =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -20599,9 +20599,9 @@
           a =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -20627,7 +20627,7 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonWrapper = void 0))
-        var c = r(8912),
+        const c = r(8912),
           u = r(9007),
           p = r(505),
           h = T(r(6010)),
@@ -20638,10 +20638,10 @@
         function y(t, e) {
           return t ? (e < m ? 0 : m) : e
         }
-        var H = (function (t) {
+        const H = (function (t) {
           function e(e, r, n) {
             void 0 === n && (n = null)
-            var o = t.call(this, e, r) || this
+            const o = t.call(this, e, r) || this
             return (
               (o.parent = null),
               (o.removedStyles = null),
@@ -20658,7 +20658,7 @@
               o.getScale(),
               o.getSpace(),
               (o.childNodes = r.childNodes.map(function (t) {
-                var e = o.wrap(t)
+                const e = o.wrap(t)
                 return (
                   e.bbox.pwidth &&
                     (r.notParent || r.isKind('math')) &&
@@ -20701,24 +20701,24 @@
             }),
             (e.prototype.wrap = function (t, e) {
               void 0 === e && (e = null)
-              var r = this.factory.wrap(t, e || this)
+              const r = this.factory.wrap(t, e || this)
               return (e && e.childNodes.push(r), this.jax.nodeMap.set(t, r), r)
             }),
             (e.prototype.getBBox = function (t) {
               if ((void 0 === t && (t = !0), this.bboxComputed)) return this.bbox
-              var e = t ? this.bbox : f.BBox.zero()
+              const e = t ? this.bbox : f.BBox.zero()
               return (this.computeBBox(e), (this.bboxComputed = t), e)
             }),
             (e.prototype.getOuterBBox = function (t) {
-              var e, r
+              let e, r
               void 0 === t && (t = !0)
-              var n = this.getBBox(t)
+              const n = this.getBBox(t)
               if (!this.styles) return n
-              var o = new f.BBox()
+              const o = new f.BBox()
               Object.assign(o, n)
               try {
                 for (var i = s(f.BBox.StyleAdjust), Q = i.next(); !Q.done; Q = i.next()) {
-                  var T = a(Q.value, 2),
+                  const T = a(Q.value, 2),
                     l = T[0],
                     c = T[1],
                     u = this.styles.get(l)
@@ -20736,11 +20736,11 @@
               return o
             }),
             (e.prototype.computeBBox = function (t, e) {
-              var r, n
+              let r, n
               ;(void 0 === e && (e = !1), t.empty())
               try {
                 for (var o = s(this.childNodes), i = o.next(); !i.done; i = o.next()) {
-                  var Q = i.value
+                  const Q = i.value
                   t.append(Q.getOuterBBox())
                 }
               } catch (t) {
@@ -20755,13 +20755,13 @@
               ;(t.clean(), this.fixesPWidth && this.setChildPWidths(e) && this.computeBBox(t, !0))
             }),
             (e.prototype.setChildPWidths = function (t, e, r) {
-              var n, o
+              let n, o
               if ((void 0 === e && (e = null), void 0 === r && (r = !0), t)) return !1
               r && (this.bbox.pwidth = '')
-              var i = !1
+              let i = !1
               try {
                 for (var Q = s(this.childNodes), T = Q.next(); !T.done; T = Q.next()) {
-                  var a = T.value,
+                  const a = T.value,
                     l = a.getOuterBBox()
                   l.pwidth && a.setChildPWidths(t, null === e ? l.w : e, r) && (i = !0)
                 }
@@ -20781,21 +20781,21 @@
                 ((this.bboxComputed = !1), this.parent && this.parent.invalidateBBox())
             }),
             (e.prototype.copySkewIC = function (t) {
-              var e = this.childNodes[0]
+              const e = this.childNodes[0]
               ;((null == e ? void 0 : e.bbox.sk) && (t.sk = e.bbox.sk),
                 (null == e ? void 0 : e.bbox.dx) && (t.dx = e.bbox.dx))
-              var r = this.childNodes[this.childNodes.length - 1]
+              const r = this.childNodes[this.childNodes.length - 1]
               ;(null == r ? void 0 : r.bbox.ic) && ((t.ic = r.bbox.ic), (t.w += t.ic))
             }),
             (e.prototype.getStyles = function () {
-              var t = this.node.attributes.getExplicit('style')
+              const t = this.node.attributes.getExplicit('style')
               if (t)
                 for (
-                  var r = (this.styles = new d.Styles(t)), n = 0, o = e.removeStyles.length;
+                  let r = (this.styles = new d.Styles(t)), n = 0, o = e.removeStyles.length;
                   n < o;
                   n++
                 ) {
-                  var i = e.removeStyles[n]
+                  const i = e.removeStyles[n]
                   r.get(i) &&
                     (this.removedStyles || (this.removedStyles = {}),
                     (this.removedStyles[i] = r.get(i)),
@@ -20804,12 +20804,12 @@
             }),
             (e.prototype.getVariant = function () {
               if (this.node.isToken) {
-                var t = this.node.attributes,
+                let t = this.node.attributes,
                   r = t.get('mathvariant')
                 if (!t.getExplicit('mathvariant')) {
-                  var n = t.getList('fontfamily', 'fontweight', 'fontstyle')
+                  const n = t.getList('fontfamily', 'fontweight', 'fontstyle')
                   if (this.removedStyles) {
-                    var o = this.removedStyles
+                    const o = this.removedStyles
                     ;(o.fontFamily && (n.family = o.fontFamily),
                       o.fontWeight && (n.weight = o.fontWeight),
                       o.fontStyle && (n.style = o.fontStyle))
@@ -20830,7 +20830,7 @@
               }
             }),
             (e.prototype.explicitVariant = function (t, e, r) {
-              var n = this.styles
+              let n = this.styles
               return (
                 n || (n = this.styles = new d.Styles()),
                 n.set('fontFamily', t),
@@ -20840,7 +20840,7 @@
               )
             }),
             (e.prototype.getScale = function () {
-              var t = 1,
+              let t = 1,
                 e = this.parent,
                 r = e ? e.bbox.scale : 1,
                 n = this.node.attributes,
@@ -20852,7 +20852,7 @@
                     : n.getInherited('mathsize')
               if (0 !== o) {
                 t = Math.pow(n.get('scriptsizemultiplier'), o)
-                var T = this.length2em(n.get('scriptminsize'), 0.8, 1)
+                const T = this.length2em(n.get('scriptminsize'), 0.8, 1)
                 t < T && (t = T)
               }
               ;(this.removedStyles &&
@@ -20865,18 +20865,18 @@
                 (this.bbox.rscale = t / r))
             }),
             (e.prototype.getSpace = function () {
-              var t = this.isTopEmbellished(),
+              const t = this.isTopEmbellished(),
                 e = this.node.hasSpacingAttributes()
               this.jax.options.mathmlSpacing || e
                 ? t && this.getMathMLSpacing()
                 : this.getTeXSpacing(t, e)
             }),
             (e.prototype.getMathMLSpacing = function () {
-              var t = this.node.coreMO(),
+              const t = this.node.coreMO(),
                 e = t.coreParent(),
                 r = e.parent
               if (r && r.isKind('mrow') && 1 !== r.childNodes.length) {
-                var n = t.attributes,
+                const n = t.attributes,
                   o = n.get('scriptlevel') > 0
                 ;((this.bbox.L = n.isSet('lspace')
                   ? Math.max(0, this.length2em(n.get('lspace')))
@@ -20884,11 +20884,11 @@
                   (this.bbox.R = n.isSet('rspace')
                     ? Math.max(0, this.length2em(n.get('rspace')))
                     : y(o, t.rspace)))
-                var i = r.childIndex(e)
+                const i = r.childIndex(e)
                 if (0 !== i) {
-                  var Q = r.childNodes[i - 1]
+                  const Q = r.childNodes[i - 1]
                   if (Q.isEmbellished) {
-                    var T = this.jax.nodeMap.get(Q).getBBox()
+                    const T = this.jax.nodeMap.get(Q).getBBox()
                     T.R && (this.bbox.L = Math.max(0, this.bbox.L - T.R))
                   }
                 }
@@ -20896,11 +20896,11 @@
             }),
             (e.prototype.getTeXSpacing = function (t, e) {
               if (!e) {
-                var r = this.node.texSpacing()
+                const r = this.node.texSpacing()
                 r && (this.bbox.L = this.length2em(r))
               }
               if (t || e) {
-                var n = this.node.coreMO().attributes
+                const n = this.node.coreMO().attributes
                 ;(n.isSet('lspace') && (this.bbox.L = Math.max(0, this.length2em(n.get('lspace')))),
                   n.isSet('rspace') && (this.bbox.R = Math.max(0, this.length2em(n.get('rspace')))))
               }
@@ -20917,13 +20917,13 @@
               return this.jax.nodeMap.get(this.node.coreMO())
             }),
             (e.prototype.getText = function () {
-              var t,
+              let t,
                 e,
                 r = ''
               if (this.node.isToken)
                 try {
                   for (var n = s(this.node.childNodes), o = n.next(); !o.done; o = n.next()) {
-                    var i = o.value
+                    const i = o.value
                     i instanceof u.TextNode && (r += i.getText())
                   }
                 } catch (e) {
@@ -20939,13 +20939,13 @@
             }),
             (e.prototype.canStretch = function (t) {
               if (((this.stretch = L.NOSTRETCH), this.node.isEmbellished)) {
-                var e = this.core()
+                const e = this.core()
                 e && e.node !== this.node && e.canStretch(t) && (this.stretch = e.stretch)
               }
               return 0 !== this.stretch.dir
             }),
             (e.prototype.getAlignShift = function () {
-              var t,
+              let t,
                 e = (t = this.node.attributes).getList.apply(t, l([], a(u.indentAttributes), !1)),
                 r = e.indentalign,
                 n = e.indentshift,
@@ -21004,10 +21004,10 @@
             }),
             (e.prototype.unicodeChars = function (t, e) {
               void 0 === e && (e = this.variant)
-              var r = (0, p.unicodeChars)(t),
+              let r = (0, p.unicodeChars)(t),
                 n = this.font.getVariant(e)
               if (n && n.chars) {
-                var o = n.chars
+                const o = n.chars
                 r = r.map(function (t) {
                   return ((o[t] || [])[3] || {}).smp || t
                 })
@@ -21028,15 +21028,15 @@
               )
             }),
             (e.prototype.createMo = function (t) {
-              var e = this.node.factory,
+              const e = this.node.factory,
                 r = e.create('text').setText(t),
                 n = e.create('mo', { stretchy: !0 }, [r])
               n.inheritAttributesFrom(this.node)
-              var o = this.wrap(n)
+              const o = this.wrap(n)
               return ((o.parent = this), o)
             }),
             (e.prototype.getVariantChar = function (t, e) {
-              var r = this.font.getChar(t, e) || [0, 0, 0, { unknown: !0 }]
+              const r = this.font.getChar(t, e) || [0, 0, 0, { unknown: !0 }]
               return (3 === r.length && (r[3] = {}), r)
             }),
             (e.kind = 'unknown'),
@@ -21099,7 +21099,7 @@
         e.CommonWrapper = H
       },
       4420: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -21111,7 +21111,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -21129,9 +21129,9 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonWrapperFactory = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.jax = null), e)
           }
           return (
@@ -21150,7 +21150,7 @@
         e.CommonWrapperFactory = i
       },
       9800: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -21162,7 +21162,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -21180,7 +21180,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonTeXAtomMixin = void 0))
-        var i = r(9007)
+        const i = r(9007)
         e.CommonTeXAtomMixin = function (t) {
           return (function (t) {
             function e() {
@@ -21197,7 +21197,7 @@
                     (e.ic = this.childNodes[0].bbox.ic),
                   this.node.texClass === i.TEXCLASS.VCENTER)
                 ) {
-                  var n = e.h,
+                  const n = e.h,
                     o = (n + e.d) / 2 + this.font.params.axis_height - n
                   ;((e.h += o), (e.d -= o))
                 }
@@ -21208,7 +21208,7 @@
         }
       },
       1160: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -21220,7 +21220,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -21240,7 +21240,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -21255,9 +21255,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -21284,9 +21284,9 @@
               return (
                 n(e, t),
                 (e.prototype.computeBBox = function (t, e) {
-                  var r, n
+                  let r, n
                   void 0 === e && (e = !1)
-                  var Q = this.parent.variant,
+                  const Q = this.parent.variant,
                     T = this.node.getText()
                   if ('-explicitFont' === Q) {
                     var s = this.jax.getFontData(this.parent.styles),
@@ -21296,15 +21296,15 @@
                       u = a.d
                     ;((t.h = c), (t.d = u), (t.w = l))
                   } else {
-                    var p = this.remappedText(T, Q)
+                    const p = this.remappedText(T, Q)
                     t.empty()
                     try {
                       for (var h = o(p), d = h.next(); !d.done; d = h.next()) {
-                        var f = d.value,
+                        const f = d.value,
                           L = i(this.getVariantChar(Q, f), 4),
                           m = ((c = L[0]), (u = L[1]), (l = L[2]), L[3])
                         if (m.unknown) {
-                          var y = this.jax.measureText(String.fromCodePoint(f), Q)
+                          const y = this.jax.measureText(String.fromCodePoint(f), Q)
                           ;((l = y.w), (c = y.h), (u = y.d))
                         }
                         ;((t.w += l),
@@ -21327,7 +21327,7 @@
                   }
                 }),
                 (e.prototype.remappedText = function (t, e) {
-                  var r = this.parent.stretch.c
+                  const r = this.parent.stretch.c
                   return r ? [r] : this.parent.remapChars(this.unicodeChars(t, e))
                 }),
                 (e.prototype.getStyles = function () {}),
@@ -21340,7 +21340,7 @@
           }))
       },
       1956: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -21352,7 +21352,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -21372,9 +21372,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -21401,7 +21401,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonMactionMixin = e.TooltipData = void 0))
-        var T = r(505)
+        const T = r(505)
         ;((e.TooltipData = {
           dx: '.2em',
           dy: '.1em',
@@ -21418,7 +21418,7 @@
             return (function (t) {
               function r() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, Q([], i(e), !1)) || this,
+                const n = t.apply(this, Q([], i(e), !1)) || this,
                   o = n.constructor.actions,
                   T = n.node.attributes.get('actiontype'),
                   s = i(o.get(T) || [function (t, e) {}, {}], 2),
@@ -21430,7 +21430,7 @@
                 o(r, t),
                 Object.defineProperty(r.prototype, 'selected', {
                   get: function () {
-                    var t = this.node.attributes.get('selection'),
+                    const t = this.node.attributes.get('selection'),
                       e = Math.max(1, Math.min(this.childNodes.length, t)) - 1
                     return this.childNodes[e] || this.wrap(this.node.selected)
                   },
@@ -21438,7 +21438,7 @@
                   configurable: !0,
                 }),
                 (r.prototype.getParameters = function () {
-                  var t = this.node.attributes.get('data-offsets'),
+                  const t = this.node.attributes.get('data-offsets'),
                     r = i((0, T.split)(t || ''), 2),
                     n = r[0],
                     o = r[1]
@@ -21456,7 +21456,7 @@
           }))
       },
       7490: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -21468,7 +21468,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -21505,7 +21505,7 @@
           }))
       },
       7313: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -21517,7 +21517,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -21539,7 +21539,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -21565,18 +21565,18 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && i(e, t, r)
               return (Q(e, t), e)
             },
           s =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -21604,7 +21604,7 @@
           l =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -21617,13 +21617,13 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonMencloseMixin = void 0))
-        var c = T(r(5552)),
+        const c = T(r(5552)),
           u = r(505)
         e.CommonMencloseMixin = function (t) {
           return (function (t) {
             function e() {
               for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-              var n = t.apply(this, a([], s(e), !1)) || this
+              const n = t.apply(this, a([], s(e), !1)) || this
               return (
                 (n.notations = {}),
                 (n.renderChild = null),
@@ -21643,14 +21643,14 @@
             return (
               o(e, t),
               (e.prototype.getParameters = function () {
-                var t = this.node.attributes,
+                const t = this.node.attributes,
                   e = t.get('data-padding')
                 void 0 !== e && (this.padding = this.length2em(e, c.PADDING))
-                var r = t.get('data-thickness')
+                const r = t.get('data-thickness')
                 void 0 !== r && (this.thickness = this.length2em(r, c.THICKNESS))
-                var n = t.get('data-arrowhead')
+                const n = t.get('data-arrowhead')
                 if (void 0 !== n) {
-                  var o = s((0, u.split)(n), 3),
+                  const o = s((0, u.split)(n), 3),
                     i = o[0],
                     Q = o[1],
                     T = o[2]
@@ -21662,7 +21662,7 @@
                 }
               }),
               (e.prototype.getNotations = function () {
-                var t,
+                let t,
                   e,
                   r = this.constructor.notations
                 try {
@@ -21671,7 +21671,7 @@
                     !o.done;
                     o = n.next()
                   ) {
-                    var i = o.value,
+                    const i = o.value,
                       Q = r.get(i)
                     Q && ((this.notations[i] = Q), Q.renderChild && (this.renderChild = Q.renderer))
                   }
@@ -21686,23 +21686,23 @@
                 }
               }),
               (e.prototype.removeRedundantNotations = function () {
-                var t, e, r, n
+                let t, e, r, n
                 try {
                   for (
                     var o = l(Object.keys(this.notations)), i = o.next();
                     !i.done;
                     i = o.next()
                   ) {
-                    var Q = i.value
+                    const Q = i.value
                     if (this.notations[Q]) {
-                      var T = this.notations[Q].remove || ''
+                      const T = this.notations[Q].remove || ''
                       try {
                         for (
                           var s = ((r = void 0), l(T.split(/ /))), a = s.next();
                           !a.done;
                           a = s.next()
                         ) {
-                          var c = a.value
+                          const c = a.value
                           delete this.notations[c]
                         }
                       } catch (t) {
@@ -21727,14 +21727,14 @@
                 }
               }),
               (e.prototype.initializeNotations = function () {
-                var t, e
+                let t, e
                 try {
                   for (
                     var r = l(Object.keys(this.notations)), n = r.next();
                     !n.done;
                     n = r.next()
                   ) {
-                    var o = n.value,
+                    const o = n.value,
                       i = this.notations[o].init
                     i && i(this)
                   }
@@ -21750,7 +21750,7 @@
               }),
               (e.prototype.computeBBox = function (t, e) {
                 void 0 === e && (e = !1)
-                var r = s(this.TRBL, 4),
+                const r = s(this.TRBL, 4),
                   n = r[0],
                   o = r[1],
                   i = r[2],
@@ -21759,7 +21759,7 @@
                 ;(t.combine(T, Q, 0), (t.h += n), (t.d += i), (t.w += o), this.setChildPWidths(e))
               }),
               (e.prototype.getBBoxExtenders = function () {
-                var t,
+                let t,
                   e,
                   r = [0, 0, 0, 0]
                 try {
@@ -21768,7 +21768,7 @@
                     !o.done;
                     o = n.next()
                   ) {
-                    var i = o.value
+                    const i = o.value
                     this.maximizeEntries(r, this.notations[i].bbox(this))
                   }
                 } catch (e) {
@@ -21783,7 +21783,7 @@
                 return r
               }),
               (e.prototype.getPadding = function () {
-                var t,
+                let t,
                   e,
                   r = this,
                   n = [0, 0, 0, 0]
@@ -21793,7 +21793,7 @@
                     !i.done;
                     i = o.next()
                   ) {
-                    var Q = i.value,
+                    const Q = i.value,
                       T = this.notations[Q].border
                     T && this.maximizeEntries(n, T(this))
                   }
@@ -21811,10 +21811,10 @@
                 })
               }),
               (e.prototype.maximizeEntries = function (t, e) {
-                for (var r = 0; r < t.length; r++) t[r] < e[r] && (t[r] = e[r])
+                for (let r = 0; r < t.length; r++) t[r] < e[r] && (t[r] = e[r])
               }),
               (e.prototype.getOffset = function (t) {
-                var e = s(this.TRBL, 4),
+                const e = s(this.TRBL, 4),
                   r = e[0],
                   n = e[1],
                   o = e[2],
@@ -21829,7 +21829,7 @@
                 return (void 0 === n && (n = ''), void 0 === o && (o = 0), null)
               }),
               (e.prototype.arrowData = function () {
-                var t = s([this.padding, this.thickness], 2),
+                const t = s([this.padding, this.thickness], 2),
                   e = t[0],
                   r = t[1] * (this.arrowhead.x + Math.max(1, this.arrowhead.dx)),
                   n = this.childNodes[0].getBBox(),
@@ -21844,7 +21844,7 @@
                 return { a: u[0], W: u[1], x: l, y: c }
               }),
               (e.prototype.arrowAW = function () {
-                var t = this.childNodes[0].getBBox(),
+                const t = this.childNodes[0].getBBox(),
                   e = t.h,
                   r = t.d,
                   n = t.w,
@@ -21856,13 +21856,13 @@
                 return this.getArgMod(a + n + Q, i + e + r + T)
               }),
               (e.prototype.createMsqrt = function (t) {
-                var e = this.node.factory.create('msqrt')
+                const e = this.node.factory.create('msqrt')
                 ;(e.inheritAttributesFrom(this.node), (e.childNodes[0] = t.node))
-                var r = this.wrap(e)
+                const r = this.wrap(e)
                 return ((r.parent = this), r)
               }),
               (e.prototype.sqrtTRBL = function () {
-                var t = this.msqrt.getBBox(),
+                const t = this.msqrt.getBBox(),
                   e = this.msqrt.childNodes[0].getBBox()
                 return [t.h - e.h, 0, t.d - e.d, t.w - e.w]
               }),
@@ -21872,7 +21872,7 @@
         }
       },
       7555: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -21884,7 +21884,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -21904,9 +21904,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -21934,7 +21934,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -21952,28 +21952,28 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 return ((n.mrow = null), n.createMrow(), n.addMrowChildren(), n)
               }
               return (
                 n(e, t),
                 (e.prototype.createMrow = function () {
-                  var t = this.node.factory.create('inferredMrow')
+                  const t = this.node.factory.create('inferredMrow')
                   ;(t.inheritAttributesFrom(this.node),
                     (this.mrow = this.wrap(t)),
                     (this.mrow.parent = this))
                 }),
                 (e.prototype.addMrowChildren = function () {
-                  var t,
+                  let t,
                     e,
                     r = this.node,
                     n = this.mrow
                   ;(this.addMo(r.open),
                     this.childNodes.length && n.childNodes.push(this.childNodes[0]))
-                  var o = 0
+                  let o = 0
                   try {
                     for (var i = Q(this.childNodes.slice(1)), T = i.next(); !T.done; T = i.next()) {
-                      var s = T.value
+                      const s = T.value
                       ;(this.addMo(r.separators[o++]), n.childNodes.push(s))
                     }
                   } catch (e) {
@@ -21989,7 +21989,7 @@
                 }),
                 (e.prototype.addMo = function (t) {
                   if (t) {
-                    var e = this.wrap(t)
+                    const e = this.wrap(t)
                     ;(this.mrow.childNodes.push(e), (e.parent = this.mrow))
                   }
                 }),
@@ -22004,7 +22004,7 @@
           }))
       },
       2688: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -22016,7 +22016,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -22036,9 +22036,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -22069,13 +22069,13 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 if (
                   ((n.bevel = null),
                   (n.pad = n.node.getProperty('withDelims') ? 0 : n.font.params.nulldelimiterspace),
                   n.node.attributes.get('bevelled'))
                 ) {
-                  var Q = n.getBevelData(n.isDisplay()).H,
+                  const Q = n.getBevelData(n.isDisplay()).H,
                     T = (n.bevel = n.createMo('/'))
                   ;(T.node.attributes.set('symmetric', !0),
                     T.canStretch(1),
@@ -22087,14 +22087,14 @@
                 n(e, t),
                 (e.prototype.computeBBox = function (t, e) {
                   ;(void 0 === e && (e = !1), t.empty())
-                  var r = this.node.attributes.getList('linethickness', 'bevelled'),
+                  let r = this.node.attributes.getList('linethickness', 'bevelled'),
                     n = r.linethickness,
                     o = r.bevelled,
                     i = this.isDisplay(),
                     Q = null
                   if (o) this.getBevelledBBox(t, i)
                   else {
-                    var T = this.length2em(String(n), 0.06)
+                    const T = this.length2em(String(n), 0.06)
                     ;((Q = -2 * this.pad),
                       0 === T
                         ? this.getAtopBBox(t, i)
@@ -22104,7 +22104,7 @@
                   ;(t.clean(), this.setChildPWidths(e, Q))
                 }),
                 (e.prototype.getFractionBBox = function (t, e, r) {
-                  var n = this.childNodes[0].getOuterBBox(),
+                  const n = this.childNodes[0].getOuterBBox(),
                     o = this.childNodes[1].getOuterBBox(),
                     i = this.font.params.axis_height,
                     Q = this.getTUV(e, r),
@@ -22116,7 +22116,7 @@
                     (t.w += 2 * this.pad + 0.2))
                 }),
                 (e.prototype.getTUV = function (t, e) {
-                  var r = this.font.params,
+                  const r = this.font.params,
                     n = r.axis_height,
                     o = (t ? 3.5 : 1.5) * e
                   return {
@@ -22126,7 +22126,7 @@
                   }
                 }),
                 (e.prototype.getAtopBBox = function (t, e) {
-                  var r = this.getUVQ(e),
+                  const r = this.getUVQ(e),
                     n = r.u,
                     o = r.v,
                     i = r.nbox,
@@ -22134,7 +22134,7 @@
                   ;(t.combine(i, 0, n), t.combine(Q, 0, -o), (t.w += 2 * this.pad))
                 }),
                 (e.prototype.getUVQ = function (t) {
-                  var e = this.childNodes[0].getOuterBBox(),
+                  let e = this.childNodes[0].getOuterBBox(),
                     r = this.childNodes[1].getOuterBBox(),
                     n = this.font.params,
                     i = o(t ? [n.num1, n.denom1] : [n.num3, n.denom2], 2),
@@ -22148,7 +22148,7 @@
                   )
                 }),
                 (e.prototype.getBevelledBBox = function (t, e) {
-                  var r = this.getBevelData(e),
+                  const r = this.getBevelData(e),
                     n = r.u,
                     o = r.v,
                     i = r.delta,
@@ -22158,7 +22158,7 @@
                   ;(t.combine(Q, 0, n), t.combine(s, t.w - i / 2, 0), t.combine(T, t.w - i / 2, o))
                 }),
                 (e.prototype.getBevelData = function (t) {
-                  var e = this.childNodes[0].getOuterBBox(),
+                  const e = this.childNodes[0].getOuterBBox(),
                     r = this.childNodes[1].getOuterBBox(),
                     n = t ? 0.4 : 0.15,
                     o = Math.max(e.scale * (e.h + e.d), r.scale * (r.h + r.d)) + 2 * n,
@@ -22176,13 +22176,13 @@
                   return !1
                 }),
                 (e.prototype.isDisplay = function () {
-                  var t = this.node.attributes.getList('displaystyle', 'scriptlevel'),
+                  const t = this.node.attributes.getList('displaystyle', 'scriptlevel'),
                     e = t.displaystyle,
                     r = t.scriptlevel
                   return e && 0 === r
                 }),
                 (e.prototype.getWrapWidth = function (t) {
-                  var e = this.node.attributes
+                  const e = this.node.attributes
                   return e.get('bevelled')
                     ? this.childNodes[t].getOuterBBox().w
                     : this.getBBox().w -
@@ -22190,7 +22190,7 @@
                         2 * this.pad
                 }),
                 (e.prototype.getChildAlign = function (t) {
-                  var e = this.node.attributes
+                  const e = this.node.attributes
                   return e.get('bevelled') ? 'left' : e.get(['numalign', 'denomalign'][t])
                 }),
                 e
@@ -22199,7 +22199,7 @@
           }))
       },
       5636: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -22211,7 +22211,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -22231,9 +22231,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -22264,13 +22264,13 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 return (n.getParameters(), n)
               }
               return (
                 n(e, t),
                 (e.prototype.getParameters = function () {
-                  var t = this.node.attributes.getList('width', 'height', 'valign', 'src', 'index'),
+                  const t = this.node.attributes.getList('width', 'height', 'valign', 'src', 'index'),
                     e = t.width,
                     r = t.height,
                     n = t.valign,
@@ -22281,7 +22281,7 @@
                       (this.height = 'auto' === r ? 1 : this.length2em(r)),
                       (this.valign = this.length2em(n || '0')))
                   else {
-                    var Q = String.fromCodePoint(parseInt(i)),
+                    const Q = String.fromCodePoint(parseInt(i)),
                       T = this.node.factory
                     ;((this.charWrapper = this.wrap(T.create('text').setText(Q))),
                       (this.charWrapper.parent = this))
@@ -22301,7 +22301,7 @@
           }))
       },
       5723: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -22313,7 +22313,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -22350,7 +22350,7 @@
           }))
       },
       8009: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -22362,7 +22362,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -22382,9 +22382,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -22412,7 +22412,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -22426,7 +22426,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonMmultiscriptsMixin = e.ScriptNames = e.NextScript = void 0))
-        var s = r(6469)
+        const s = r(6469)
         ;((e.NextScript = {
           base: 'subList',
           subList: 'supList',
@@ -22439,18 +22439,18 @@
             return (function (t) {
               function r() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, Q([], i(e), !1)) || this
+                const n = t.apply(this, Q([], i(e), !1)) || this
                 return ((n.scriptData = null), (n.firstPrescript = 0), n.getScriptData(), n)
               }
               return (
                 o(r, t),
                 (r.prototype.combinePrePost = function (t, e) {
-                  var r = new s.BBox(t)
+                  const r = new s.BBox(t)
                   return (r.combine(e, 0, 0), r)
                 }),
                 (r.prototype.computeBBox = function (t, e) {
                   void 0 === e && (e = !1)
-                  var r = this.font.params.scriptspace,
+                  const r = this.font.params.scriptspace,
                     n = this.scriptData,
                     o = this.combinePrePost(n.sub, n.psub),
                     Q = this.combinePrePost(n.sup, n.psup),
@@ -22463,13 +22463,13 @@
                     t.append(n.base),
                     n.numScripts)
                   ) {
-                    var l = t.w
+                    const l = t.w
                     ;(t.combine(n.sup, l, s), t.combine(n.sub, l, a), (t.w += r))
                   }
                   ;(t.clean(), this.setChildPWidths(e))
                 }),
                 (r.prototype.getScriptData = function () {
-                  var t = (this.scriptData = {
+                  const t = (this.scriptData = {
                       base: null,
                       sub: s.BBox.empty(),
                       sup: s.BBox.empty(),
@@ -22486,13 +22486,13 @@
                     (t.numScripts = e.subList.length))
                 }),
                 (r.prototype.getScriptBBoxLists = function () {
-                  var t,
+                  let t,
                     r,
                     n = { base: [], subList: [], supList: [], psubList: [], psupList: [] },
                     o = 'base'
                   try {
                     for (var i = T(this.childNodes), Q = i.next(); !Q.done; Q = i.next()) {
-                      var s = Q.value
+                      const s = Q.value
                       s.node.isKind('mprescripts')
                         ? (o = 'psubList')
                         : (n[o].push(s.getOuterBBox()), (o = e.NextScript[o]))
@@ -22517,8 +22517,8 @@
                   t.length > e.length && e.push(s.BBox.empty())
                 }),
                 (r.prototype.combineBBoxLists = function (t, e, r, n) {
-                  for (var o = 0; o < r.length; o++) {
-                    var Q = i(this.getScaledWHD(r[o]), 3),
+                  for (let o = 0; o < r.length; o++) {
+                    const Q = i(this.getScaledWHD(r[o]), 3),
                       T = Q[0],
                       s = Q[1],
                       a = Q[2],
@@ -22536,16 +22536,16 @@
                   }
                 }),
                 (r.prototype.getScaledWHD = function (t) {
-                  var e = t.w,
+                  const e = t.w,
                     r = t.h,
                     n = t.d,
                     o = t.rscale
                   return [e * o, r * o, n * o]
                 }),
                 (r.prototype.getUVQ = function (e, r) {
-                  var n
+                  let n
                   if (!this.UVQ) {
-                    var o = i([0, 0, 0], 3),
+                    let o = i([0, 0, 0], 3),
                       Q = o[0],
                       T = o[1],
                       s = o[2]
@@ -22566,7 +22566,7 @@
           }))
       },
       5023: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -22578,7 +22578,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -22606,9 +22606,9 @@
                 n(e, t),
                 (e.prototype.remapChars = function (t) {
                   if (t.length) {
-                    var e = this.font.getRemappedChar('mn', t[0])
+                    const e = this.font.getRemappedChar('mn', t[0])
                     if (e) {
-                      var r = this.unicodeChars(e, this.variant)
+                      const r = this.unicodeChars(e, this.variant)
                       1 === r.length ? (t[0] = r[0]) : (t = r.concat(t.slice(1)))
                     }
                   }
@@ -22633,7 +22633,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -22658,7 +22658,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -22668,9 +22668,9 @@
           T =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -22698,7 +22698,7 @@
           a =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -22712,7 +22712,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonMoMixin = e.DirectionVH = void 0))
-        var l = r(6469),
+        const l = r(6469),
           c = r(505),
           u = r(5884)
         ;((e.DirectionVH = (((o = {})[1] = 'v'), (o[2] = 'h'), o)),
@@ -22720,7 +22720,7 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, s([], T(e), !1)) || this
+                const n = t.apply(this, s([], T(e), !1)) || this
                 return ((n.size = null), (n.isAccent = n.node.isAccent), n)
               }
               return (
@@ -22731,7 +22731,7 @@
                     this.protoBBox(t),
                     this.node.attributes.get('symmetric') && 2 !== this.stretch.dir)
                   ) {
-                    var r = this.getCenterOffset(t)
+                    const r = this.getCenterOffset(t)
                     ;((t.h += r), (t.d -= r))
                   }
                   this.node.getProperty('mathaccent') &&
@@ -22739,13 +22739,13 @@
                     (t.w = 0)
                 }),
                 (e.prototype.protoBBox = function (e) {
-                  var r = 0 !== this.stretch.dir
+                  const r = 0 !== this.stretch.dir
                   ;(r && null === this.size && this.getStretchedVariant([0]),
                     (r && this.size < 0) ||
                       (t.prototype.computeBBox.call(this, e), this.copySkewIC(e)))
                 }),
                 (e.prototype.getAccentOffset = function () {
-                  var t = l.BBox.empty()
+                  const t = l.BBox.empty()
                   return (this.protoBBox(t), -t.w / 2)
                 }),
                 (e.prototype.getCenterOffset = function (e) {
@@ -22768,23 +22768,23 @@
                 (e.prototype.canStretch = function (t) {
                   if (0 !== this.stretch.dir) return this.stretch.dir === t
                   if (!this.node.attributes.get('stretchy')) return !1
-                  var e = this.getText()
+                  const e = this.getText()
                   if (1 !== Array.from(e).length) return !1
-                  var r = this.font.getDelimiter(e.codePointAt(0))
+                  const r = this.font.getDelimiter(e.codePointAt(0))
                   return (
                     (this.stretch = r && r.dir === t ? r : u.NOSTRETCH),
                     0 !== this.stretch.dir
                   )
                 }),
                 (e.prototype.getStretchedVariant = function (t, e) {
-                  var r, n
+                  let r, n
                   if ((void 0 === e && (e = !1), 0 !== this.stretch.dir)) {
-                    var o = this.getWH(t),
+                    let o = this.getWH(t),
                       i = this.getSize('minsize', 0),
                       T = this.getSize('maxsize', 1 / 0),
                       s = this.node.getProperty('mathaccent')
                     o = Math.max(i, Math.min(T, o))
-                    var l = this.font.params.delimiterfactor / 1e3,
+                    let l = this.font.params.delimiterfactor / 1e3,
                       c = this.font.params.delimitershortfall,
                       u = i || e ? o : s ? Math.min(o / l, o + c) : Math.max(o * l, o - c),
                       p = this.stretch,
@@ -22823,22 +22823,22 @@
                   }
                 }),
                 (e.prototype.getSize = function (t, e) {
-                  var r = this.node.attributes
+                  const r = this.node.attributes
                   return (r.isSet(t) && (e = this.length2em(r.get(t), 1, 1)), e)
                 }),
                 (e.prototype.getWH = function (t) {
                   if (0 === t.length) return 0
                   if (1 === t.length) return t[0]
-                  var e = T(t, 2),
+                  const e = T(t, 2),
                     r = e[0],
                     n = e[1],
                     o = this.font.params.axis_height
                   return this.node.attributes.get('symmetric') ? 2 * Math.max(r - o, n + o) : r + n
                 }),
                 (e.prototype.getStretchBBox = function (t, e, r) {
-                  var n
+                  let n
                   r.hasOwnProperty('min') && r.min > e && (e = r.min)
-                  var o = T(r.HDW, 3),
+                  let o = T(r.HDW, 3),
                     i = o[0],
                     Q = o[1],
                     s = o[2]
@@ -22850,7 +22850,7 @@
                     (this.bbox.w = s))
                 }),
                 (e.prototype.getBaseline = function (t, e, r) {
-                  var n = 2 === t.length && t[0] + t[1] === e,
+                  let n = 2 === t.length && t[0] + t[1] === e,
                     o = this.node.attributes.get('symmetric'),
                     i = T(n ? t : [e, 0], 2),
                     Q = i[0],
@@ -22859,11 +22859,11 @@
                     l = a[0],
                     c = a[1]
                   if (o) {
-                    var u = this.font.params.axis_height
+                    const u = this.font.params.axis_height
                     ;(n && (l = 2 * Math.max(Q - u, s + u)), (c = l / 2 - u))
                   } else if (n) c = s
                   else {
-                    var p = T(r.HDW || [0.75, 0.25], 2),
+                    const p = T(r.HDW || [0.75, 0.25], 2),
                       h = p[0],
                       d = p[1]
                     c = d * (l / (h + d))
@@ -22872,7 +22872,7 @@
                 }),
                 (e.prototype.checkExtendedHeight = function (t, e) {
                   if (e.fullExt) {
-                    var r = T(e.fullExt, 2),
+                    const r = T(e.fullExt, 2),
                       n = r[0],
                       o = r[1]
                     t = o + Math.ceil(Math.max(0, t - o) / n) * n
@@ -22880,10 +22880,10 @@
                   return t
                 }),
                 (e.prototype.remapChars = function (t) {
-                  var e = this.node.getProperty('primes')
+                  const e = this.node.getProperty('primes')
                   if (e) return (0, c.unicodeChars)(e)
                   if (1 === t.length) {
-                    var r = this.node.coreParent().parent,
+                    const r = this.node.coreParent().parent,
                       n = this.isAccent && !r.isKind('mrow') ? 'accent' : 'mo',
                       o = this.font.getRemappedChar(n, t[0])
                     o && (t = this.unicodeChars(o, this.variant))
@@ -22896,7 +22896,7 @@
           }))
       },
       6898: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -22908,7 +22908,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -22928,9 +22928,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -22957,7 +22957,7 @@
               return (
                 n(e, t),
                 (e.prototype.getDimens = function () {
-                  var t = this.node.attributes.getList(
+                  let t = this.node.attributes.getList(
                       'width',
                       'height',
                       'depth',
@@ -22979,7 +22979,7 @@
                     '' !== t.depth && (o = this.dimen(t.depth, e, 'd', 0)),
                     '' !== t.voffset && (a = this.dimen(t.voffset, e)),
                     '' !== t.lspace && (s = this.dimen(t.lspace, e)))
-                  var c = this.node.attributes.get('data-align')
+                  const c = this.node.attributes.get('data-align')
                   return (
                     c && (l = this.getAlignX(r, e, c)),
                     [Q, T, i, n - Q, o - T, r - i, s, a, l]
@@ -22987,14 +22987,14 @@
                 }),
                 (e.prototype.dimen = function (t, e, r, n) {
                   ;(void 0 === r && (r = ''), void 0 === n && (n = null))
-                  var o = (t = String(t)).match(/width|height|depth/),
+                  let o = (t = String(t)).match(/width|height|depth/),
                     i = o ? e[o[0].charAt(0)] : r ? e[r] : 0,
                     Q = this.length2em(t, i) || 0
                   return (t.match(/^[-+]/) && r && (Q += i), null != n && (Q = Math.max(n, Q)), Q)
                 }),
                 (e.prototype.computeBBox = function (t, e) {
                   void 0 === e && (e = !1)
-                  var r = o(this.getDimens(), 6),
+                  const r = o(this.getDimens(), 6),
                     n = r[0],
                     i = r[1],
                     Q = r[2],
@@ -23015,7 +23015,7 @@
           }))
       },
       9086: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -23027,7 +23027,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -23068,12 +23068,12 @@
                   configurable: !0,
                 }),
                 (e.prototype.combineRootBBox = function (t, e, r) {
-                  var n = this.childNodes[this.root].getOuterBBox(),
+                  const n = this.childNodes[this.root].getOuterBBox(),
                     o = this.getRootDimens(e, r)[1]
                   t.combine(n, 0, o)
                 }),
                 (e.prototype.getRootDimens = function (t, e) {
-                  var r = this.childNodes[this.surd],
+                  const r = this.childNodes[this.surd],
                     n = this.childNodes[this.root].getOuterBBox(),
                     o = (r.size < 0 ? 0.5 : 0.6) * t.w,
                     i = n.w,
@@ -23083,7 +23083,7 @@
                   return [T * Q - o, this.rootHeight(n, t, r.size, e), s]
                 }),
                 (e.prototype.rootHeight = function (t, e, r, n) {
-                  var o = e.h + e.d
+                  const o = e.h + e.d
                   return (r < 0 ? 1.9 : 0.55 * o) - (o - n) + Math.max(0, t.d * t.rscale)
                 }),
                 e
@@ -23092,7 +23092,7 @@
           }))
       },
       8411: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -23104,7 +23104,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -23124,9 +23124,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -23154,7 +23154,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -23168,16 +23168,16 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonInferredMrowMixin = e.CommonMrowMixin = void 0))
-        var s = r(6469)
+        const s = r(6469)
         ;((e.CommonMrowMixin = function (t) {
           return (function (t) {
             function e() {
               for (var e, r, n = [], o = 0; o < arguments.length; o++) n[o] = arguments[o]
-              var a = t.apply(this, Q([], i(n), !1)) || this
+              const a = t.apply(this, Q([], i(n), !1)) || this
               a.stretchChildren()
               try {
                 for (var l = T(a.childNodes), c = l.next(); !c.done; c = l.next()) {
-                  var u = c.value
+                  const u = c.value
                   if (u.bbox.pwidth) {
                     a.bbox.pwidth = s.BBox.fullWidth
                     break
@@ -23204,7 +23204,7 @@
                 configurable: !0,
               }),
               (e.prototype.stretchChildren = function () {
-                var t,
+                let t,
                   e,
                   r,
                   n,
@@ -23224,17 +23224,17 @@
                     if (t) throw t.error
                   }
                 }
-                var l = Q.length,
+                const l = Q.length,
                   c = this.childNodes.length
                 if (l && c > 1) {
-                  var u = 0,
+                  let u = 0,
                     p = 0,
                     h = l > 1 && l === c
                   try {
                     for (var d = T(this.childNodes), f = d.next(); !f.done; f = d.next()) {
-                      var L = 0 === (M = f.value).stretch.dir
+                      const L = 0 === (M = f.value).stretch.dir
                       if (h || L) {
-                        var m = M.getOuterBBox(L),
+                        let m = M.getOuterBBox(L),
                           y = m.h,
                           H = m.d,
                           g = m.rscale
@@ -23286,7 +23286,7 @@
           }))
       },
       4126: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -23298,7 +23298,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -23318,9 +23318,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -23351,7 +23351,7 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this,
+                const n = t.apply(this, i([], o(e), !1)) || this,
                   Q = n.node.attributes,
                   T = Q.getList('lquote', 'rquote')
                 return (
@@ -23366,7 +23366,7 @@
               return (
                 n(e, t),
                 (e.prototype.createText = function (t) {
-                  var e = this.wrap(this.mmlText(t))
+                  const e = this.wrap(this.mmlText(t))
                   return ((e.parent = this), e)
                 }),
                 e
@@ -23375,7 +23375,7 @@
           }))
       },
       258: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -23387,7 +23387,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -23415,7 +23415,7 @@
                 n(e, t),
                 (e.prototype.computeBBox = function (t, e) {
                   void 0 === e && (e = !1)
-                  var r = this.node.attributes
+                  const r = this.node.attributes
                   ;((t.w = this.length2em(r.get('width'), 0)),
                     (t.h = this.length2em(r.get('height'), 0)),
                     (t.d = this.length2em(r.get('depth'), 0)))
@@ -23427,7 +23427,7 @@
           }))
       },
       4093: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -23439,7 +23439,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -23459,9 +23459,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -23487,15 +23487,15 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonMsqrtMixin = void 0))
-        var T = r(6469)
+        const T = r(6469)
         e.CommonMsqrtMixin = function (t) {
           return (function (t) {
             function e() {
               for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-              var n = t.apply(this, Q([], i(e), !1)) || this,
+              const n = t.apply(this, Q([], i(e), !1)) || this,
                 o = n.createMo('\u221a')
               o.canStretch(1)
-              var T = n.childNodes[n.base].getOuterBBox(),
+              const T = n.childNodes[n.base].getOuterBBox(),
                 s = T.h,
                 a = T.d,
                 l = n.font.params.rule_thickness,
@@ -23530,12 +23530,12 @@
                 configurable: !0,
               }),
               (e.prototype.createMo = function (e) {
-                var r = t.prototype.createMo.call(this, e)
+                const r = t.prototype.createMo.call(this, e)
                 return (this.childNodes.push(r), r)
               }),
               (e.prototype.computeBBox = function (t, e) {
                 void 0 === e && (e = !1)
-                var r = this.childNodes[this.surd].getBBox(),
+                const r = this.childNodes[this.surd].getBBox(),
                   n = new T.BBox(this.childNodes[this.base].getOuterBBox()),
                   o = this.getPQ(r)[1],
                   Q = this.font.params.rule_thickness,
@@ -23550,7 +23550,7 @@
               }),
               (e.prototype.combineRootBBox = function (t, e, r) {}),
               (e.prototype.getPQ = function (t) {
-                var e = this.font.params.rule_thickness,
+                const e = this.font.params.rule_thickness,
                   r = this.node.attributes.get('displaystyle') ? this.font.params.x_height : e
                 return [
                   r,
@@ -23568,7 +23568,7 @@
         }
       },
       905: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -23580,7 +23580,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -23600,9 +23600,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -23622,7 +23622,7 @@
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonMsubsupMixin = e.CommonMsupMixin = e.CommonMsubMixin = void 0),
           (e.CommonMsubMixin = function (t) {
-            var e
+            let e
             return (
               (e = (function (t) {
                 function e() {
@@ -23669,11 +23669,11 @@
             })(t)
           }),
           (e.CommonMsubsupMixin = function (t) {
-            var e
+            let e
             return (
               (e = (function (t) {
                 function e() {
-                  var e = (null !== t && t.apply(this, arguments)) || this
+                  const e = (null !== t && t.apply(this, arguments)) || this
                   return ((e.UVQ = null), e)
                 }
                 return (
@@ -23694,12 +23694,12 @@
                   }),
                   (e.prototype.computeBBox = function (t, e) {
                     void 0 === e && (e = !1)
-                    var r = this.baseChild.getOuterBBox(),
+                    const r = this.baseChild.getOuterBBox(),
                       n = o([this.subChild.getOuterBBox(), this.supChild.getOuterBBox()], 2),
                       i = n[0],
                       Q = n[1]
                     ;(t.empty(), t.append(r))
-                    var T = this.getBaseWidth(),
+                    const T = this.getBaseWidth(),
                       s = this.getAdjustedIc(),
                       a = o(this.getUVQ(), 2),
                       l = a[0],
@@ -23713,9 +23713,9 @@
                   (e.prototype.getUVQ = function (t, e) {
                     ;(void 0 === t && (t = this.subChild.getOuterBBox()),
                       void 0 === e && (e = this.supChild.getOuterBBox()))
-                    var r = this.baseCore.getOuterBBox()
+                    const r = this.baseCore.getOuterBBox()
                     if (this.UVQ) return this.UVQ
-                    var n = this.font.params,
+                    let n = this.font.params,
                       i = 3 * n.rule_thickness,
                       Q = this.length2em(this.node.attributes.get('subscriptshift'), n.sub2),
                       T = this.baseCharZero(r.d * this.baseScale + n.sub_drop * t.rscale),
@@ -23725,7 +23725,7 @@
                       c = a - e.d * e.rscale - (t.h * t.rscale - l)
                     if (c < i) {
                       l += i - c
-                      var u = 0.8 * n.x_height - (a - e.d * e.rscale)
+                      const u = 0.8 * n.x_height - (a - e.d * e.rscale)
                       u > 0 && ((a += u), (l -= u))
                     }
                     return (
@@ -23751,7 +23751,7 @@
           }))
       },
       6237: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -23763,7 +23763,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -23783,9 +23783,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -23813,7 +23813,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -23826,14 +23826,14 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonMtableMixin = void 0))
-        var s = r(6469),
+        const s = r(6469),
           a = r(505),
           l = r(7875)
         e.CommonMtableMixin = function (t) {
           return (function (t) {
             function e() {
               for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-              var n = t.apply(this, Q([], i(e), !1)) || this
+              const n = t.apply(this, Q([], i(e), !1)) || this
               ;((n.numCols = 0),
                 (n.numRows = 0),
                 (n.data = null),
@@ -23853,7 +23853,7 @@
                   !n.container || (n.container.node.isKind('math') && !n.container.parent)),
                 n.isTop && (n.jax.table = n),
                 n.getPercentageWidth())
-              var o = n.node.attributes
+              const o = n.node.attributes
               return (
                 (n.frame = 'none' !== o.get('frame')),
                 (n.fLine = n.frame && o.get('frame') ? 0.07 : 0),
@@ -23891,13 +23891,13 @@
               (e.prototype.getPercentageWidth = function () {
                 if (this.hasLabels) this.bbox.pwidth = s.BBox.fullWidth
                 else {
-                  var t = this.node.attributes.get('width')
+                  const t = this.node.attributes.get('width')
                   ;(0, a.isPercent)(t) && (this.bbox.pwidth = t)
                 }
               }),
               (e.prototype.stretchRows = function () {
                 for (
-                  var t = this.node.attributes.get('equalrows'),
+                  let t = this.node.attributes.get('equalrows'),
                     e = t ? this.getEqualRowHeight() : 0,
                     r = t ? this.getTableData() : { H: [0], D: [0] },
                     n = r.H,
@@ -23907,18 +23907,18 @@
                   Q < this.numRows;
                   Q++
                 ) {
-                  var T = t ? [(e + n[Q] - o[Q]) / 2, (e - n[Q] + o[Q]) / 2] : null
+                  const T = t ? [(e + n[Q] - o[Q]) / 2, (e - n[Q] + o[Q]) / 2] : null
                   i[Q].stretchChildren(T)
                 }
               }),
               (e.prototype.stretchColumns = function () {
-                for (var t = 0; t < this.numCols; t++) {
-                  var e = 'number' == typeof this.cWidths[t] ? this.cWidths[t] : null
+                for (let t = 0; t < this.numCols; t++) {
+                  const e = 'number' == typeof this.cWidths[t] ? this.cWidths[t] : null
                   this.stretchColumn(t, e)
                 }
               }),
               (e.prototype.stretchColumn = function (t, e) {
-                var r,
+                let r,
                   n,
                   o,
                   i,
@@ -23939,19 +23939,19 @@
                     if (r) throw r.error
                   }
                 }
-                var u = a.length,
+                const u = a.length,
                   p = this.childNodes.length
                 if (u && p > 1) {
                   if (null === e) {
                     e = 0
-                    var h = u > 1 && u === p
+                    const h = u > 1 && u === p
                     try {
                       for (var d = T(this.tableRows), f = d.next(); !f.done; f = d.next()) {
                         var L
                         if ((L = f.value.getChild(t))) {
-                          var m = 0 === (b = L.childNodes[0]).stretch.dir
+                          const m = 0 === (b = L.childNodes[0]).stretch.dir
                           if (h || m) {
-                            var y = b.getBBox(m).w
+                            const y = b.getBBox(m).w
                             y > e && (e = y)
                           }
                         }
@@ -24001,7 +24001,7 @@
                     c < a.numCells;
                     c++
                   ) {
-                    var u = a.getChild(c)
+                    const u = a.getChild(c)
                     ;((s = this.updateHDW(u, c, T, l, t, e, r, s)), this.recordPWidthCell(u, c))
                   }
                   ;((n[T] = t[T]),
@@ -24010,11 +24010,11 @@
                     this.extendHD(T, t, e, s),
                     this.extendHD(T, n, o, s))
                 }
-                var p = i[0]
+                const p = i[0]
                 return ((this.data = { H: t, D: e, W: r, NH: n, ND: o, L: p }), this.data)
               }),
               (e.prototype.updateHDW = function (t, e, r, n, o, i, Q, T) {
-                var s = t.getBBox(),
+                let s = t.getBBox(),
                   a = s.h,
                   l = s.d,
                   c = s.w,
@@ -24022,7 +24022,7 @@
                 ;(1 !== t.parent.bbox.rscale && ((a *= u), (l *= u), (c *= u)),
                   this.node.getProperty('useHeight') &&
                     (a < 0.75 && (a = 0.75), l < 0.25 && (l = 0.25)))
-                var p = 0
+                let p = 0
                 return (
                   'baseline' !== (n = t.node.attributes.get('rowalign') || n) &&
                     'axis' !== n &&
@@ -24035,7 +24035,7 @@
                 )
               }),
               (e.prototype.extendHD = function (t, e, r, n) {
-                var o = (n - (e[t] + r[t])) / 2
+                const o = (n - (e[t] + r[t])) / 2
                 o < 1e-5 || ((e[t] += o), (r[t] += o))
               }),
               (e.prototype.recordPWidthCell = function (t, e) {
@@ -24043,35 +24043,35 @@
               }),
               (e.prototype.computeBBox = function (t, e) {
                 void 0 === e && (e = !1)
-                var r,
+                let r,
                   n,
                   o = this.getTableData(),
                   Q = o.H,
                   T = o.D
                 if (this.node.attributes.get('equalrows')) {
-                  var s = this.getEqualRowHeight()
+                  const s = this.getEqualRowHeight()
                   r = (0, l.sum)([].concat(this.rLines, this.rSpace)) + s * this.numRows
                 } else r = (0, l.sum)(Q.concat(T, this.rLines, this.rSpace))
                 r += 2 * (this.fLine + this.fSpace[1])
-                var c = this.getComputedWidths()
+                const c = this.getComputedWidths()
                 n =
                   (0, l.sum)(c.concat(this.cLines, this.cSpace)) + 2 * (this.fLine + this.fSpace[0])
-                var u = this.node.attributes.get('width')
+                const u = this.node.attributes.get('width')
                 'auto' !== u && (n = Math.max(this.length2em(u, 0) + 2 * this.fLine, n))
-                var p = i(this.getBBoxHD(r), 2),
+                const p = i(this.getBBoxHD(r), 2),
                   h = p[0],
                   d = p[1]
                 ;((t.h = h), (t.d = d), (t.w = n))
-                var f = i(this.getBBoxLR(), 2),
+                const f = i(this.getBBoxLR(), 2),
                   L = f[0],
                   m = f[1]
                 ;((t.L = L), (t.R = m), (0, a.isPercent)(u) || this.setColumnPWidths())
               }),
               (e.prototype.setChildPWidths = function (t, e, r) {
-                var n = this.node.attributes.get('width')
+                const n = this.node.attributes.get('width')
                 if (!(0, a.isPercent)(n)) return !1
                 this.hasLabels || ((this.bbox.pwidth = ''), (this.container.bbox.pwidth = ''))
-                var o = this.bbox,
+                const o = this.bbox,
                   i = o.w,
                   Q = o.L,
                   T = o.R,
@@ -24081,7 +24081,7 @@
                     ? Array(this.numCols).fill(this.percent(1 / Math.max(1, this.numCols)))
                     : this.getColumnAttributes('columnwidth', 0)
                 this.cWidths = this.getColumnWidthsFixed(u, c)
-                var p = this.getComputedWidths()
+                const p = this.getComputedWidths()
                 return (
                   (this.pWidth =
                     (0, l.sum)(p.concat(this.cLines, this.cSpace)) +
@@ -24093,12 +24093,12 @@
                 )
               }),
               (e.prototype.setColumnPWidths = function () {
-                var t,
+                let t,
                   e,
                   r = this.cWidths
                 try {
                   for (var n = T(this.pwidthCells), o = n.next(); !o.done; o = n.next()) {
-                    var Q = i(o.value, 2),
+                    const Q = i(o.value, 2),
                       s = Q[0],
                       a = Q[1]
                     s.setChildPWidths(!1, r[a]) && (s.invalidateBBox(), s.getBBox())
@@ -24114,11 +24114,11 @@
                 }
               }),
               (e.prototype.getBBoxHD = function (t) {
-                var e = i(this.getAlignmentRow(), 2),
+                const e = i(this.getAlignmentRow(), 2),
                   r = e[0],
                   n = e[1]
                 if (null === n) {
-                  var o = this.font.params.axis_height,
+                  const o = this.font.params.axis_height,
                     Q = t / 2
                   return (
                     {
@@ -24130,12 +24130,12 @@
                     }[r] || [Q, Q]
                   )
                 }
-                var T = this.getVerticalPosition(n, r)
+                const T = this.getVerticalPosition(n, r)
                 return [T, t - T]
               }),
               (e.prototype.getBBoxLR = function () {
                 if (this.hasLabels) {
-                  var t = this.node.attributes,
+                  let t = this.node.attributes,
                     e = t.get('side'),
                     r = i(this.getPadAlignShift(e), 2),
                     n = r[0],
@@ -24149,7 +24149,7 @@
                 return [0, 0]
               }),
               (e.prototype.getPadAlignShift = function (t) {
-                var e =
+                let e =
                     this.getTableData().L +
                     this.length2em(this.node.attributes.get('minlabelspacing')),
                   r = i(
@@ -24161,7 +24161,7 @@
                   n = r[0],
                   o = r[1]
                 ;(n || o) && (e = Math.max(e, this.length2em(n || '0'), this.length2em(o || '0')))
-                var Q = i(this.getAlignShift(), 2),
+                let Q = i(this.getAlignShift(), 2),
                   T = Q[0],
                   s = Q[1]
                 return (
@@ -24178,7 +24178,7 @@
                 return this.pWidth || this.getBBox().w
               }),
               (e.prototype.getEqualRowHeight = function () {
-                var t = this.getTableData(),
+                const t = this.getTableData(),
                   e = t.H,
                   r = t.D,
                   n = Array.from(e.keys()).map(function (t) {
@@ -24187,7 +24187,7 @@
                 return Math.max.apply(Math, n)
               }),
               (e.prototype.getComputedWidths = function () {
-                var t = this,
+                let t = this,
                   e = this.getTableData().W,
                   r = Array.from(e.keys()).map(function (r) {
                     return 'number' == typeof t.cWidths[r] ? t.cWidths[r] : e[r]
@@ -24199,9 +24199,9 @@
                 )
               }),
               (e.prototype.getColumnWidths = function () {
-                var t = this.node.attributes.get('width')
+                const t = this.node.attributes.get('width')
                 if (this.node.attributes.get('equalcolumns')) return this.getEqualColumns(t)
-                var e = this.getColumnAttributes('columnwidth', 0)
+                const e = this.getColumnAttributes('columnwidth', 0)
                 return 'auto' === t
                   ? this.getColumnWidthsAuto(e)
                   : (0, a.isPercent)(t)
@@ -24209,20 +24209,20 @@
                     : this.getColumnWidthsFixed(e, this.length2em(t))
               }),
               (e.prototype.getEqualColumns = function (t) {
-                var e,
+                let e,
                   r = Math.max(1, this.numCols)
                 if ('auto' === t) {
-                  var n = this.getTableData().W
+                  const n = this.getTableData().W
                   e = (0, l.max)(n)
                 } else if ((0, a.isPercent)(t)) e = this.percent(1 / r)
                 else {
-                  var o = (0, l.sum)([].concat(this.cLines, this.cSpace)) + 2 * this.fSpace[0]
+                  const o = (0, l.sum)([].concat(this.cLines, this.cSpace)) + 2 * this.fSpace[0]
                   e = Math.max(0, this.length2em(t) - o) / r
                 }
                 return Array(this.numCols).fill(e)
               }),
               (e.prototype.getColumnWidthsAuto = function (t) {
-                var e = this
+                const e = this
                 return t.map(function (t) {
                   return 'auto' === t || 'fit' === t
                     ? null
@@ -24232,11 +24232,11 @@
                 })
               }),
               (e.prototype.getColumnWidthsPercent = function (t) {
-                var e = this,
+                const e = this,
                   r = t.indexOf('fit') >= 0,
                   n = (r ? this.getTableData() : { W: null }).W
                 return Array.from(t.keys()).map(function (o) {
-                  var i = t[o]
+                  const i = t[o]
                   return 'fit' === i
                     ? null
                     : 'auto' === i
@@ -24249,7 +24249,7 @@
                 })
               }),
               (e.prototype.getColumnWidthsFixed = function (t, e) {
-                var r = this,
+                let r = this,
                   n = Array.from(t.keys()),
                   o = n.filter(function (e) {
                     return 'fit' === t[e]
@@ -24262,12 +24262,12 @@
                   s = e - (0, l.sum)([].concat(this.cLines, this.cSpace)) - 2 * this.fSpace[0],
                   a = s
                 n.forEach(function (e) {
-                  var n = t[e]
+                  const n = t[e]
                   a -= 'fit' === n || 'auto' === n ? T[e] : r.length2em(n, s)
                 })
-                var c = Q && a > 0 ? a / Q : 0
+                const c = Q && a > 0 ? a / Q : 0
                 return n.map(function (e) {
-                  var n = t[e]
+                  const n = t[e]
                   return 'fit' === n
                     ? T[e] + c
                     : 'auto' === n
@@ -24289,7 +24289,7 @@
                   l++
                 )
                   a += s[l] + (r ? T : o[l] + Q[l]) + s[l + 1] + this.rLines[l]
-                var c = i(r ? [(T + o[t] - Q[t]) / 2, (T - o[t] + Q[t]) / 2] : [o[t], Q[t]], 2),
+                const c = i(r ? [(T + o[t] - Q[t]) / 2, (T - o[t] + Q[t]) / 2] : [o[t], Q[t]], 2),
                   u = c[0],
                   p = c[1]
                 return (a +=
@@ -24303,28 +24303,28 @@
               }),
               (e.prototype.getEmHalfSpacing = function (t, e, r) {
                 void 0 === r && (r = 1)
-                var n = this.em(t * r),
+                const n = this.em(t * r),
                   o = this.addEm(e, 2 / r)
                 return (o.unshift(n), o.push(n), o)
               }),
               (e.prototype.getRowHalfSpacing = function () {
-                var t = this.rSpace.map(function (t) {
+                const t = this.rSpace.map(function (t) {
                   return t / 2
                 })
                 return (t.unshift(this.fSpace[1]), t.push(this.fSpace[1]), t)
               }),
               (e.prototype.getColumnHalfSpacing = function () {
-                var t = this.cSpace.map(function (t) {
+                const t = this.cSpace.map(function (t) {
                   return t / 2
                 })
                 return (t.unshift(this.fSpace[0]), t.push(this.fSpace[0]), t)
               }),
               (e.prototype.getAlignmentRow = function () {
-                var t = i((0, a.split)(this.node.attributes.get('align')), 2),
+                const t = i((0, a.split)(this.node.attributes.get('align')), 2),
                   e = t[0],
                   r = t[1]
                 if (null == r) return [e, null]
-                var n = parseInt(r)
+                let n = parseInt(r)
                 return (
                   n < 0 && (n += this.numRows + 1),
                   [e, n < 1 || n > this.numRows ? null : n - 1]
@@ -24332,7 +24332,7 @@
               }),
               (e.prototype.getColumnAttributes = function (t, e) {
                 void 0 === e && (e = 1)
-                var r = this.numCols - e,
+                const r = this.numCols - e,
                   n = this.getAttributeArray(t)
                 if (0 === n.length) return null
                 for (; n.length < r; ) n.push(n[n.length - 1])
@@ -24340,18 +24340,18 @@
               }),
               (e.prototype.getRowAttributes = function (t, e) {
                 void 0 === e && (e = 1)
-                var r = this.numRows - e,
+                const r = this.numRows - e,
                   n = this.getAttributeArray(t)
                 if (0 === n.length) return null
                 for (; n.length < r; ) n.push(n[n.length - 1])
                 return (n.length > r && n.splice(r), n)
               }),
               (e.prototype.getAttributeArray = function (t) {
-                var e = this.node.attributes.get(t)
+                const e = this.node.attributes.get(t)
                 return e ? (0, a.split)(e) : [this.node.attributes.getDefault(t)]
               }),
               (e.prototype.addEm = function (t, e) {
-                var r = this
+                const r = this
                 return (
                   void 0 === e && (e = 1),
                   t
@@ -24362,7 +24362,7 @@
                 )
               }),
               (e.prototype.convertLengths = function (t) {
-                var e = this
+                const e = this
                 return t
                   ? t.map(function (t) {
                       return e.length2em(t)
@@ -24375,7 +24375,7 @@
         }
       },
       5164: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -24387,7 +24387,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -24424,7 +24424,7 @@
                   this.bboxComputed = !1
                 }),
                 (e.prototype.getWrapWidth = function (t) {
-                  var e = this.parent.parent,
+                  const e = this.parent.parent,
                     r = this.parent,
                     n = this.node.childPosition() - (r.labeled ? 1 : 0)
                   return 'number' == typeof e.cWidths[n] ? e.cWidths[n] : e.getTableData().W[n]
@@ -24438,7 +24438,7 @@
           }))
       },
       6319: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -24450,7 +24450,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -24470,7 +24470,7 @@
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonMtextMixin = void 0),
           (e.CommonMtextMixin = function (t) {
-            var e
+            let e
             return (
               (e = (function (t) {
                 function e() {
@@ -24479,11 +24479,11 @@
                 return (
                   n(e, t),
                   (e.prototype.getVariant = function () {
-                    var e = this.jax.options,
+                    const e = this.jax.options,
                       r = this.jax.math.outputData,
                       n = (!!r.merrorFamily || !!e.merrorFont) && this.node.Parent.isKind('merror')
                     if (r.mtextFamily || e.mtextFont || n) {
-                      var o = this.node.attributes.get('mathvariant'),
+                      const o = this.node.attributes.get('mathvariant'),
                         i = this.constructor.INHERITFONTS[o] || this.jax.font.getCssFont(o),
                         Q =
                           i[0] ||
@@ -24509,7 +24509,7 @@
           }))
       },
       5766: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -24521,7 +24521,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -24541,7 +24541,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -24599,9 +24599,9 @@
                   })
                 }),
                 (e.prototype.stretchChildren = function (t) {
-                  var e, r, n, i, Q, T
+                  let e, r, n, i, Q, T
                   void 0 === t && (t = null)
-                  var s = [],
+                  const s = [],
                     a = this.labeled ? this.childNodes.slice(1) : this.childNodes
                   try {
                     for (var l = o(a), c = l.next(); !c.done; c = l.next()) {
@@ -24616,18 +24616,18 @@
                       if (e) throw e.error
                     }
                   }
-                  var u = s.length,
+                  const u = s.length,
                     p = this.childNodes.length
                   if (u && p > 1) {
                     if (null === t) {
-                      var h = 0,
+                      let h = 0,
                         d = 0,
                         f = u > 1 && u === p
                       try {
                         for (var L = o(a), m = L.next(); !m.done; m = L.next()) {
-                          var y = 0 === (_ = m.value.childNodes[0]).stretch.dir
+                          const y = 0 === (_ = m.value.childNodes[0]).stretch.dir
                           if (f || y) {
-                            var H = _.getBBox(y),
+                            const H = _.getBBox(y),
                               g = H.h,
                               b = H.d
                             ;(g > h && (h = g), b > d && (d = b))
@@ -24706,7 +24706,7 @@
           }))
       },
       1971: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -24718,7 +24718,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -24738,9 +24738,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -24771,7 +24771,7 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 return (n.stretchChildren(), n)
               }
               return (
@@ -24788,7 +24788,7 @@
                     t.prototype.computeBBox.call(this, e, r)
                   else {
                     e.empty()
-                    var n = this.baseChild.getOuterBBox(),
+                    const n = this.baseChild.getOuterBBox(),
                       i = this.scriptChild.getOuterBBox(),
                       Q = this.getUnderKV(n, i)[1],
                       T = this.isLineBelow ? 0 : this.getDelta(!0),
@@ -24810,7 +24810,7 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 return (n.stretchChildren(), n)
               }
               return (
@@ -24826,11 +24826,11 @@
                   if (this.hasMovableLimits()) t.prototype.computeBBox.call(this, e)
                   else {
                     e.empty()
-                    var r = this.baseChild.getOuterBBox(),
+                    const r = this.baseChild.getOuterBBox(),
                       n = this.scriptChild.getOuterBBox()
                     this.node.attributes.get('accent') &&
                       (r.h = Math.max(r.h, this.font.params.x_height * r.scale))
-                    var i = this.getOverKU(r, n)[1],
+                    const i = this.getOverKU(r, n)[1],
                       Q = this.isLineAbove ? 0 : this.getDelta(),
                       T = o(this.getDeltaW([r, n], [0, Q]), 2),
                       s = T[0],
@@ -24849,7 +24849,7 @@
             return (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, i([], o(e), !1)) || this
+                const n = t.apply(this, i([], o(e), !1)) || this
                 return (n.stretchChildren(), n)
               }
               return (
@@ -24886,12 +24886,12 @@
                   if (this.hasMovableLimits()) t.prototype.computeBBox.call(this, e)
                   else {
                     e.empty()
-                    var r = this.overChild.getOuterBBox(),
+                    const r = this.overChild.getOuterBBox(),
                       n = this.baseChild.getOuterBBox(),
                       i = this.underChild.getOuterBBox()
                     this.node.attributes.get('accent') &&
                       (n.h = Math.max(n.h, this.font.params.x_height * n.scale))
-                    var Q = this.getOverKU(n, r)[1],
+                    const Q = this.getOverKU(n, r)[1],
                       T = this.getUnderKV(n, i)[1],
                       s = this.getDelta(),
                       a = o(
@@ -24905,7 +24905,7 @@
                       c = a[1],
                       u = a[2]
                     ;(e.combine(n, l, 0), e.combine(r, u, Q), e.combine(i, c, T))
-                    var p = this.font.params.big_op_spacing5
+                    const p = this.font.params.big_op_spacing5
                     ;((e.h += p), (e.d += p), e.clean())
                   }
                 }),
@@ -24915,7 +24915,7 @@
           }))
       },
       167: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -24927,7 +24927,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -24947,9 +24947,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -24977,7 +24977,7 @@
           T =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -24990,14 +24990,14 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CommonScriptbaseMixin = void 0))
-        var s = r(9007)
+        const s = r(9007)
         e.CommonScriptbaseMixin = function (t) {
-          var e
+          let e
           return (
             (e = (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, Q([], i(e), !1)) || this
+                const n = t.apply(this, Q([], i(e), !1)) || this
                 ;((n.baseScale = 1),
                   (n.baseIc = 0),
                   (n.baseRemoveIc = !1),
@@ -25007,7 +25007,7 @@
                   (n.isLineAbove = !1),
                   (n.isLineBelow = !1),
                   (n.isMathAccent = !1))
-                var o = (n.baseCore = n.getBaseCore())
+                const o = (n.baseCore = n.getBaseCore())
                 return o
                   ? (n.setBaseAccentsFor(o),
                     (n.baseScale = n.getBaseScale()),
@@ -25066,16 +25066,16 @@
                       (this.baseHasAccentUnder = !!t.node.attributes.get('accentunder')))
                 }),
                 (e.prototype.getSemanticBase = function () {
-                  var t = this.node.attributes.getExplicit('data-semantic-fencepointer')
+                  const t = this.node.attributes.getExplicit('data-semantic-fencepointer')
                   return this.getBaseFence(this.baseChild, t)
                 }),
                 (e.prototype.getBaseFence = function (t, e) {
-                  var r, n
+                  let r, n
                   if (!t || !t.node.attributes || !e) return null
                   if (t.node.attributes.getExplicit('data-semantic-id') === e) return t
                   try {
                     for (var o = T(t.childNodes), i = o.next(); !i.done; i = o.next()) {
-                      var Q = i.value,
+                      const Q = i.value,
                         s = this.getBaseFence(Q, e)
                       if (s) return s
                     }
@@ -25100,11 +25100,11 @@
                   return this.baseCore.getOuterBBox().ic * this.baseScale
                 }),
                 (e.prototype.getAdjustedIc = function () {
-                  var t = this.baseCore.getOuterBBox()
+                  const t = this.baseCore.getOuterBBox()
                   return (t.ic ? 1.05 * t.ic + 0.05 : 0) * this.baseScale
                 }),
                 (e.prototype.isCharBase = function () {
-                  var t = this.baseCore
+                  const t = this.baseCore
                   return (
                     ((t.node.isKind('mo') && null === t.size) ||
                       t.node.isKind('mi') ||
@@ -25125,11 +25125,11 @@
                     }
                 }),
                 (e.prototype.isLineAccent = function (t) {
-                  var e = t.coreMO().node
+                  const e = t.coreMO().node
                   return e.isToken && '\u2015' === e.getText()
                 }),
                 (e.prototype.getBaseWidth = function () {
-                  var t = this.baseChild.getOuterBBox()
+                  const t = this.baseChild.getOuterBBox()
                   return (
                     t.w * t.rscale -
                     (this.baseRemoveIc ? this.baseIc : 0) +
@@ -25138,7 +25138,7 @@
                 }),
                 (e.prototype.computeBBox = function (t, e) {
                   void 0 === e && (e = !1)
-                  var r = this.getBaseWidth(),
+                  const r = this.getBaseWidth(),
                     n = i(this.getOffset(), 2),
                     o = n[0],
                     Q = n[1]
@@ -25152,12 +25152,12 @@
                   return [0, 0]
                 }),
                 (e.prototype.baseCharZero = function (t) {
-                  var e = !!this.baseCore.node.attributes.get('largeop'),
+                  const e = !!this.baseCore.node.attributes.get('largeop'),
                     r = this.baseScale
                   return this.baseIsChar && !e && 1 === r ? 0 : t
                 }),
                 (e.prototype.getV = function () {
-                  var t = this.baseCore.getOuterBBox(),
+                  const t = this.baseCore.getOuterBBox(),
                     e = this.scriptChild.getOuterBBox(),
                     r = this.font.params,
                     n = this.length2em(this.node.attributes.get('subscriptshift'), r.sub1)
@@ -25168,7 +25168,7 @@
                   )
                 }),
                 (e.prototype.getU = function () {
-                  var t = this.baseCore.getOuterBBox(),
+                  const t = this.baseCore.getOuterBBox(),
                     e = this.scriptChild.getOuterBBox(),
                     r = this.font.params,
                     n = this.node.attributes.getList('displaystyle', 'superscriptshift'),
@@ -25185,12 +25185,12 @@
                   )
                 }),
                 (e.prototype.hasMovableLimits = function () {
-                  var t = this.node.attributes.get('displaystyle'),
+                  const t = this.node.attributes.get('displaystyle'),
                     e = this.baseChild.coreMO().node
                   return !t && !!e.attributes.get('movablelimits')
                 }),
                 (e.prototype.getOverKU = function (t, e) {
-                  var r = this.node.attributes.get('accent'),
+                  const r = this.node.attributes.get('accent'),
                     n = this.font.params,
                     o = e.d * e.rscale,
                     i = n.rule_thickness * n.separation_factor,
@@ -25201,7 +25201,7 @@
                   return [s, t.h * t.rscale + s + o]
                 }),
                 (e.prototype.getUnderKV = function (t, e) {
-                  var r = this.node.attributes.get('accentunder'),
+                  const r = this.node.attributes.get('accentunder'),
                     n = this.font.params,
                     o = e.h * e.rscale,
                     i = n.rule_thickness * n.separation_factor,
@@ -25211,9 +25211,9 @@
                   return [s, -(t.d * t.rscale + s + o)]
                 }),
                 (e.prototype.getDeltaW = function (t, e) {
-                  var r, n, o, s
+                  let r, n, o, s
                   void 0 === e && (e = [0, 0, 0])
-                  var a = this.node.attributes.get('align'),
+                  const a = this.node.attributes.get('align'),
                     l = t.map(function (t) {
                       return t.w * t.rscale
                     })
@@ -25221,7 +25221,7 @@
                     this.baseRemoveIc && !this.baseCore.node.attributes.get('largeop')
                       ? this.baseIc
                       : 0
-                  var c = Math.max.apply(Math, Q([], i(l), !1)),
+                  let c = Math.max.apply(Math, Q([], i(l), !1)),
                     u = [],
                     p = 0
                   try {
@@ -25264,14 +25264,14 @@
                 }),
                 (e.prototype.getDelta = function (t) {
                   void 0 === t && (t = !1)
-                  var e = this.node.attributes.get('accent'),
+                  const e = this.node.attributes.get('accent'),
                     r = this.baseCore.getOuterBBox(),
                     n = r.sk,
                     o = r.ic
                   return ((e && !t ? n : 0) + this.font.skewIcFactor * o) * this.baseScale
                 }),
                 (e.prototype.stretchChildren = function () {
-                  var t,
+                  let t,
                     e,
                     r,
                     n,
@@ -25291,16 +25291,16 @@
                       if (t) throw t.error
                     }
                   }
-                  var l = Q.length,
+                  const l = Q.length,
                     c = this.childNodes.length
                   if (l && c > 1) {
-                    var u = 0,
+                    let u = 0,
                       p = l > 1 && l === c
                     try {
                       for (var h = T(this.childNodes), d = h.next(); !d.done; d = h.next()) {
-                        var f = 0 === (b = d.value).stretch.dir
+                        const f = 0 === (b = d.value).stretch.dir
                         if (p || f) {
-                          var L = b.getOuterBBox(f),
+                          const L = b.getOuterBBox(f),
                             m = L.w,
                             y = L.rscale
                           m * y > u && (u = m * y)
@@ -25340,7 +25340,7 @@
         }
       },
       5806: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -25352,7 +25352,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -25380,7 +25380,7 @@
                 n(e, t),
                 (e.prototype.computeBBox = function (t, e) {
                   if ((void 0 === e && (e = !1), this.childNodes.length)) {
-                    var r = this.childNodes[0].getBBox(),
+                    const r = this.childNodes[0].getBBox(),
                       n = r.w,
                       o = r.h,
                       i = r.d
@@ -25405,7 +25405,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -25430,7 +25430,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -25440,9 +25440,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -25470,7 +25470,7 @@
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.CommonTeXFontMixin = void 0),
           (e.CommonTeXFontMixin = function (t) {
-            var e
+            let e
             return (
               (e = (function (t) {
                 function e() {
@@ -25801,12 +25801,12 @@
       9124: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.delimiters = e.VSIZES = e.HDW3 = e.HDW2 = e.HDW1 = void 0))
-        var n = r(5884)
+        const n = r(5884)
         ;((e.HDW1 = [0.75, 0.25, 0.875]),
           (e.HDW2 = [0.85, 0.349, 0.667]),
           (e.HDW3 = [0.583, 0.082, 0.5]),
           (e.VSIZES = [1, 1.2, 1.8, 2.4, 3]))
-        var o = { c: 47, dir: n.V, sizes: e.VSIZES },
+        const o = { c: 47, dir: n.V, sizes: e.VSIZES },
           i = { c: 175, dir: n.H, sizes: [0.5], stretch: [0, 175], HDW: [0.59, -0.544, 0.5] },
           Q = { c: 710, dir: n.H, sizes: [0.5, 0.556, 1, 1.444, 1.889] },
           T = { c: 732, dir: n.H, sizes: [0.5, 0.556, 1, 1.444, 1.889] },
@@ -28270,7 +28270,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -28295,7 +28295,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -28305,9 +28305,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -28326,17 +28326,17 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVG = e.XLINKNS = e.SVGNS = void 0))
-        var T = r(3055),
+        const T = r(3055),
           s = r(7826),
           a = r(42),
           l = r(2597),
           c = r(505),
           u = r(6010)
         ;((e.SVGNS = 'http://www.w3.org/2000/svg'), (e.XLINKNS = 'http://www.w3.org/1999/xlink'))
-        var p = (function (t) {
+        const p = (function (t) {
           function r(e) {
             void 0 === e && (e = null)
-            var r = t.call(this, e, s.SVGWrapperFactory, a.TeXFont) || this
+            const r = t.call(this, e, s.SVGWrapperFactory, a.TeXFont) || this
             return (
               (r.minwidth = 0),
               (r.shift = 0),
@@ -28366,7 +28366,7 @@
             }),
             (r.prototype.styleSheet = function (e) {
               if (this.svgStyles) return this.svgStyles
-              var n = (this.svgStyles = t.prototype.styleSheet.call(this, e))
+              const n = (this.svgStyles = t.prototype.styleSheet.call(this, e))
               return (this.adaptor.setAttribute(n, 'id', r.STYLESHEETID), n)
             }),
             (r.prototype.pageElements = function (t) {
@@ -28378,7 +28378,7 @@
             }),
             (r.prototype.findCache = function (t) {
               for (
-                var e = this.adaptor, n = e.tags(e.body(t.document), 'svg'), o = n.length - 1;
+                let e = this.adaptor, n = e.tags(e.body(t.document), 'svg'), o = n.length - 1;
                 o >= 0;
                 o--
               )
@@ -28386,16 +28386,16 @@
               return !1
             }),
             (r.prototype.processMath = function (t, e) {
-              var r = this.container
+              const r = this.container
               this.container = e
-              var n = this.factory.wrap(t),
+              const n = this.factory.wrap(t),
                 o = Q(this.createRoot(n), 2),
                 i = o[0],
                 T = o[1]
               ;(this.typesetSVG(n, i, T), (this.container = r))
             }),
             (r.prototype.createRoot = function (t) {
-              var r = t.getOuterBBox(),
+              const r = t.getOuterBBox(),
                 n = r.w,
                 o = r.h,
                 i = r.d,
@@ -28440,7 +28440,7 @@
                 ;(c.setStyle(u, 'min-width', this.ex(s)),
                   c.setAttribute(u, 'width', Q),
                   c.removeAttribute(u, 'viewBox'))
-                var p = this.fixed(t.metrics.ex / (1e3 * this.font.params.x_height), 6)
+                const p = this.fixed(t.metrics.ex / (1e3 * this.font.params.x_height), 6)
                 c.setAttribute(
                   l,
                   'transform',
@@ -28456,7 +28456,7 @@
               )
             }),
             (r.prototype.typesetSVG = function (t, e, r) {
-              var n = this.adaptor
+              const n = this.adaptor
               if (
                 ((this.minwidth = this.shift = 0),
                 'local' === this.options.fontCache &&
@@ -28470,7 +28470,7 @@
                 (n.setStyle(e, 'minWidth', this.ex(this.minwidth)),
                   n.setStyle(this.container, 'minWidth', this.ex(this.minwidth)))
               else if (this.shift) {
-                var o = n.getAttribute(this.container, 'justify') || 'center'
+                const o = n.getAttribute(this.container, 'justify') || 'center'
                 this.setIndent(e, o, this.shift)
               }
             }),
@@ -28494,7 +28494,7 @@
               )
             }),
             (r.prototype.unknownText = function (t, e) {
-              var r = this.math.metrics,
+              const r = this.math.metrics,
                 n = (this.font.params.x_height / r.ex) * r.em * 1e3,
                 o = this.svg(
                   'text',
@@ -28507,9 +28507,9 @@
                 ),
                 i = this.adaptor
               if ('-explicitFont' !== e) {
-                var T = (0, c.unicodeChars)(t)
+                const T = (0, c.unicodeChars)(t)
                 if (1 !== T.length || T[0] < 119808 || T[0] > 120831) {
-                  var s = Q(this.font.getCssFont(e), 3),
+                  const s = Q(this.font.getCssFont(e), 3),
                     a = s[0],
                     l = s[1],
                     u = s[2]
@@ -28521,9 +28521,9 @@
               return o
             }),
             (r.prototype.measureTextNode = function (t) {
-              var e = this.adaptor
+              const e = this.adaptor
               ;((t = e.clone(t)), e.removeAttribute(t, 'transform'))
-              var r = this.fixed(1e3 * this.font.params.x_height, 1),
+              const r = this.fixed(1e3 * this.font.params.x_height, 1),
                 n = this.svg(
                   'svg',
                   {
@@ -28536,7 +28536,7 @@
                   [t],
                 )
               e.append(e.body(e.document), n)
-              var o = e.nodeSize(t, 1e3, !0)[0]
+              const o = e.nodeSize(t, 1e3, !0)[0]
               return (e.remove(n), { w: o, h: 0.75, d: 0.2 })
             }),
             (r.NAME = 'SVG'),
@@ -28564,7 +28564,7 @@
       },
       2597: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.FontCache = void 0))
-        var r = (function () {
+        const r = (function () {
           function t(t) {
             ;((this.cache = new Map()),
               (this.defs = null),
@@ -28574,7 +28574,7 @@
           }
           return (
             (t.prototype.cachePath = function (t, e, r) {
-              var n = 'MJX-' + this.localID + (this.jax.font.getVariant(t).cacheID || '') + '-' + e
+              const n = 'MJX-' + this.localID + (this.jax.font.getVariant(t).cacheID || '') + '-' + e
               return (
                 this.cache.has(n) ||
                   (this.cache.set(n, r),
@@ -28613,7 +28613,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -28638,7 +28638,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -28650,7 +28650,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -28666,13 +28666,13 @@
           T =
             (this && this.__exportStar) ||
             function (t, e) {
-              for (var r in t)
+              for (const r in t)
                 'default' === r || Object.prototype.hasOwnProperty.call(e, r) || Q(e, t, r)
             },
           s =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -28686,9 +28686,9 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.AddPaths = e.SVGFontData = void 0))
-        var a = r(5884)
+        const a = r(5884)
         T(r(5884), e)
-        var l = (function (t) {
+        const l = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -28704,7 +28704,7 @@
         })(a.FontData)
         ;((e.SVGFontData = l),
           (e.AddPaths = function (t, e, r) {
-            var n, o, i, Q
+            let n, o, i, Q
             try {
               for (var T = s(Object.keys(e)), a = T.next(); !a.done; a = T.next()) {
                 var c = a.value,
@@ -28738,12 +28738,12 @@
           }))
       },
       7620: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__createBinding) ||
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -28769,16 +28769,16 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && n(e, t, r)
               return (o(e, t), e)
             },
           Q =
             (this && this.__exportStar) ||
             function (t, e) {
-              for (var r in t)
+              for (const r in t)
                 'default' === r || Object.prototype.hasOwnProperty.call(e, r) || n(e, t, r)
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
@@ -28792,7 +28792,7 @@
             e.lineData =
             e.computeLineData =
               void 0))
-        var T = i(r(5552))
+        const T = i(r(5552))
         ;(Q(r(5552), e),
           (e.computeLineData = {
             top: function (t, e, r, n) {
@@ -28822,7 +28822,7 @@
           }))
         e.lineData = function (t, r, n) {
           void 0 === n && (n = '')
-          var o = t.getBBox(),
+          const o = t.getBBox(),
             i = o.h,
             Q = o.d,
             T = o.w,
@@ -28831,7 +28831,7 @@
         }
         e.lineOffset = function (t, e, r) {
           if (r) {
-            var n = e.getOffset(r)
+            const n = e.getOffset(r)
             n && ('X' === r ? ((t[0] -= n), (t[2] -= n)) : ((t[1] -= n), (t[3] -= n)))
           }
           return t
@@ -28840,7 +28840,7 @@
           return (
             void 0 === r && (r = ''),
             function (n, o) {
-              var i = n.line((0, e.lineData)(n, t, r))
+              const i = n.line((0, e.lineData)(n, t, r))
               n.adaptor.append(n.element, i)
             }
           )
@@ -28875,7 +28875,7 @@
         }
       },
       7079: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -28887,7 +28887,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -28907,7 +28907,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -28922,9 +28922,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -28942,12 +28942,12 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGWrapper = void 0))
-        var T = r(6469),
+        const T = r(6469),
           s = r(7519),
           a = r(4097),
           l = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.element = null), (e.dx = 0), e)
             }
             return (
@@ -28956,14 +28956,14 @@
                 this.addChildren(this.standardSVGnode(t))
               }),
               (e.prototype.addChildren = function (t) {
-                var e,
+                let e,
                   r,
                   n = 0
                 try {
                   for (var o = i(this.childNodes), Q = o.next(); !Q.done; Q = o.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     T.toSVG(t)
-                    var s = T.getOuterBBox()
+                    const s = T.getOuterBBox()
                     ;(T.element && T.place(n + s.L * s.rscale, 0),
                       (n += (s.L + s.w + s.R) * s.rscale))
                   }
@@ -28978,7 +28978,7 @@
                 }
               }),
               (e.prototype.standardSVGnode = function (t) {
-                var e = this.createSVGnode(t)
+                const e = this.createSVGnode(t)
                 return (
                   this.handleStyles(),
                   this.handleScale(),
@@ -28990,10 +28990,10 @@
               }),
               (e.prototype.createSVGnode = function (t) {
                 this.element = this.svg('g', { 'data-mml-node': this.node.kind })
-                var e = this.node.attributes.get('href')
+                const e = this.node.attributes.get('href')
                 if (e) {
                   t = this.adaptor.append(t, this.svg('a', { href: e }))
-                  var r = this.getOuterBBox(),
+                  const r = this.getOuterBBox(),
                     n = r.h,
                     o = r.d,
                     i = r.w
@@ -29013,15 +29013,15 @@
                 return (this.adaptor.append(t, this.element), this.element)
               }),
               (e.prototype.handleStyles = function () {
-                var t = this
+                const t = this
                 if (this.styles) {
-                  var e = this.styles.cssText
+                  const e = this.styles.cssText
                   ;(e && this.adaptor.setAttribute(this.element, 'style', e),
                     T.BBox.StyleAdjust.forEach(function (e) {
-                      var r = Q(e, 3),
+                      const r = Q(e, 3),
                         n = r[0]
                       if (0 === r[2]) {
-                        var o = t.styles.get(n)
+                        const o = t.styles.get(n)
                         o && (t.dx += t.length2em(o, 1, t.bbox.rscale))
                       }
                     }))
@@ -29029,12 +29029,12 @@
               }),
               (e.prototype.handleScale = function () {
                 if (1 !== this.bbox.rscale) {
-                  var t = 'scale(' + this.fixed(this.bbox.rscale / 1e3, 3) + ')'
+                  const t = 'scale(' + this.fixed(this.bbox.rscale / 1e3, 3) + ')'
                   this.adaptor.setAttribute(this.element, 'transform', t)
                 }
               }),
               (e.prototype.handleColor = function () {
-                var t,
+                let t,
                   e = this.adaptor,
                   r = this.node.attributes,
                   n = r.getExplicit('mathcolor'),
@@ -29051,7 +29051,7 @@
                     e.setAttribute(this.element, 'stroke', n || o)),
                   i || Q || T)
                 ) {
-                  var s = this.getOuterBBox(),
+                  const s = this.getOuterBBox(),
                     a = s.h,
                     l = s.d,
                     c = s.w,
@@ -29068,9 +29068,9 @@
                 }
               }),
               (e.prototype.handleBorder = function () {
-                var t, r, n, o
+                let t, r, n, o
                 if (this.styles) {
-                  var T = Array(4).fill(0),
+                  const T = Array(4).fill(0),
                     s = Array(4),
                     a = Array(4)
                   try {
@@ -29104,7 +29104,7 @@
                       if (t) throw t.error
                     }
                   }
-                  var L = e.borderFuzz,
+                  const L = e.borderFuzz,
                     m = this.getOuterBBox(),
                     y = Q([m.h + L, m.d + L, m.w + L], 3),
                     H = y[0],
@@ -29128,7 +29128,7 @@
                   try {
                     for (var N = i([0, 1, 2, 3]), w = N.next(); !w.done; w = N.next()) {
                       if (T[(h = w.value)]) {
-                        var P = A[h]
+                        const P = A[h]
                         'dashed' === s[h] || 'dotted' === s[h]
                           ? this.addBorderBroken(P, a[h], s[h], T[h], h)
                           : this.addBorderSolid(P, a[h], C)
@@ -29146,11 +29146,11 @@
                 }
               }),
               (e.prototype.addBorderSolid = function (t, e, r) {
-                var n = this,
+                const n = this,
                   o = this.svg('polygon', {
                     points: t
                       .map(function (t) {
-                        var e = Q(t, 2),
+                        const e = Q(t, 2),
                           r = e[0],
                           o = e[1]
                         return ''.concat(n.fixed(r - n.dx), ',').concat(n.fixed(o))
@@ -29162,7 +29162,7 @@
                 r ? this.adaptor.insert(o, r) : this.adaptor.append(this.element, o)
               }),
               (e.prototype.addBorderBroken = function (t, e, r, n, o) {
-                var i = 'dotted' === r,
+                const i = 'dotted' === r,
                   T = n / 2,
                   s = Q(
                     [
@@ -29204,7 +29204,7 @@
                 _ ? M.insert(v, _) : M.append(this.element, v)
               }),
               (e.prototype.handleAttributes = function () {
-                var t,
+                let t,
                   r,
                   n,
                   o,
@@ -29213,7 +29213,7 @@
                   s = e.skipAttributes
                 try {
                   for (var a = i(Q.getExplicitNames()), l = a.next(); !l.done; l = a.next()) {
-                    var c = l.value
+                    const c = l.value
                     ;(!1 !== s[c] &&
                       (c in T || s[c] || this.adaptor.hasAttribute(this.element, c))) ||
                       this.adaptor.setAttribute(this.element, c, Q.getExplicit(c))
@@ -29228,10 +29228,10 @@
                   }
                 }
                 if (Q.get('class')) {
-                  var u = Q.get('class').trim().split(/ +/)
+                  const u = Q.get('class').trim().split(/ +/)
                   try {
                     for (var p = i(u), h = p.next(); !h.done; h = p.next()) {
-                      var d = h.value
+                      const d = h.value
                       this.adaptor.addClass(this.element, d)
                     }
                   } catch (t) {
@@ -29248,20 +29248,20 @@
               (e.prototype.place = function (t, e, r) {
                 if ((void 0 === r && (r = null), (t += this.dx) || e)) {
                   r || ((r = this.element), (e = this.handleId(e)))
-                  var n = 'translate('.concat(this.fixed(t), ',').concat(this.fixed(e), ')'),
+                  const n = 'translate('.concat(this.fixed(t), ',').concat(this.fixed(e), ')'),
                     o = this.adaptor.getAttribute(r, 'transform') || ''
                   this.adaptor.setAttribute(r, 'transform', n + (o ? ' ' + o : ''))
                 }
               }),
               (e.prototype.handleId = function (t) {
                 if (!this.node.attributes || !this.node.attributes.get('id')) return t
-                var e = this.adaptor,
+                const e = this.adaptor,
                   r = this.getBBox().h,
                   n = e.childNodes(this.element)
                 n.forEach(function (t) {
                   return e.remove(t)
                 })
-                var o = this.svg(
+                const o = this.svg(
                   'g',
                   { 'data-idbox': !0, transform: 'translate(0,'.concat(this.fixed(-r), ')') },
                   n,
@@ -29276,7 +29276,7 @@
                 )
               }),
               (e.prototype.firstChild = function () {
-                var t = this.adaptor,
+                let t = this.adaptor,
                   e = t.firstChild(this.element)
                 return (
                   e &&
@@ -29288,17 +29288,17 @@
                 )
               }),
               (e.prototype.placeChar = function (t, e, r, n, o) {
-                var T, s
+                let T, s
                 ;(void 0 === o && (o = null), null === o && (o = this.variant))
-                var a = t.toString(16).toUpperCase(),
+                const a = t.toString(16).toUpperCase(),
                   l = Q(this.getVariantChar(o, t), 4),
                   c = l[2],
                   u = l[3]
                 if ('p' in u) {
-                  var p = u.p ? 'M' + u.p + 'Z' : ''
+                  const p = u.p ? 'M' + u.p + 'Z' : ''
                   this.place(e, r, this.adaptor.append(n, this.charNode(o, a, p)))
                 } else if ('c' in u) {
-                  var h = this.adaptor.append(n, this.svg('g', { 'data-c': a }))
+                  const h = this.adaptor.append(n, this.svg('g', { 'data-c': a }))
                   ;(this.place(e, r, h), (e = 0))
                   try {
                     for (
@@ -29306,7 +29306,7 @@
                       !f.done;
                       f = d.next()
                     ) {
-                      var L = f.value
+                      const L = f.value
                       e += this.placeChar(L, e, r, h, o)
                     }
                   } catch (t) {
@@ -29319,7 +29319,7 @@
                     }
                   }
                 } else if (u.unknown) {
-                  var m = String.fromCodePoint(t),
+                  const m = String.fromCodePoint(t),
                     y = this.adaptor.append(n, this.jax.unknownText(m, o))
                   return (this.place(e, r, y), this.jax.measureTextNodeWithCache(y, m, o).w)
                 }
@@ -29334,12 +29334,12 @@
                 return this.svg('path', { 'data-c': t, d: e })
               }),
               (e.prototype.useNode = function (t, e, r) {
-                var n = this.svg('use', { 'data-c': e }),
+                const n = this.svg('use', { 'data-c': e }),
                   o = '#' + this.jax.fontCache.cachePath(t, e, r)
                 return (this.adaptor.setAttribute(n, 'href', o, a.XLINKNS), n)
               }),
               (e.prototype.drawBBox = function () {
-                var t = this.getBBox(),
+                const t = this.getBBox(),
                   e = t.w,
                   r = t.h,
                   n = t.d,
@@ -29375,7 +29375,7 @@
         e.SVGWrapper = l
       },
       7826: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -29387,7 +29387,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -29405,11 +29405,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGWrapperFactory = void 0))
-        var i = r(4420),
+        const i = r(4420),
           Q = r(6368),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.jax = null), e)
             }
             return (o(e, t), (e.defaultNodes = Q.SVGWrappers), e)
@@ -29417,9 +29417,9 @@
         e.SVGWrapperFactory = T
       },
       6368: function (t, e, r) {
-        var n
+        let n
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGWrappers = void 0))
-        var o = r(7079),
+        const o = r(7079),
           i = r(2438),
           Q = r(3289),
           T = r(1618),
@@ -29488,7 +29488,7 @@
           n)
       },
       131: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -29500,7 +29500,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -29518,7 +29518,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGTeXAtom = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(9800),
           T = r(3948),
           s = r(9007),
@@ -29538,7 +29538,7 @@
                   ),
                   this.node.texClass === s.TEXCLASS.VCENTER)
                 ) {
-                  var r = this.childNodes[0].getBBox(),
+                  const r = this.childNodes[0].getBBox(),
                     n = r.h,
                     o = (n + r.d) / 2 + this.font.params.axis_height - n,
                     i = 'translate(0 ' + this.fixed(o) + ')'
@@ -29552,7 +29552,7 @@
         e.SVGTeXAtom = a
       },
       640: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -29564,7 +29564,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -29584,7 +29584,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -29597,7 +29597,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGTextNode = void 0))
-        var Q = r(9007),
+        const Q = r(9007),
           T = r(7079),
           s = (function (t) {
             function e() {
@@ -29606,7 +29606,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e,
+                let e,
                   r,
                   n = this.node.getText(),
                   o = this.parent.variant
@@ -29614,14 +29614,14 @@
                   if ('-explicitFont' === o)
                     this.element = this.adaptor.append(t, this.jax.unknownText(n, o))
                   else {
-                    var Q = this.remappedText(n, o)
+                    const Q = this.remappedText(n, o)
                     this.parent.childNodes.length > 1 &&
                       (t = this.element =
                         this.adaptor.append(t, this.svg('g', { 'data-mml-node': 'text' })))
-                    var T = 0
+                    let T = 0
                     try {
                       for (var s = i(Q), a = s.next(); !a.done; a = s.next()) {
-                        var l = a.value
+                        const l = a.value
                         T += this.placeChar(l, T, 0, t, o)
                       }
                     } catch (t) {
@@ -29647,7 +29647,7 @@
         e.SVGTextNode = s
       },
       988: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -29659,7 +29659,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -29677,7 +29677,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmaction = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(1956),
           T = r(1956),
           s = r(9145),
@@ -29688,7 +29688,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t),
+                const e = this.standardSVGnode(t),
                   r = this.selected,
                   n = r.getOuterBBox(),
                   o = n.h,
@@ -29705,7 +29705,7 @@
                   }),
                 ),
                   r.toSVG(e))
-                var T = r.getOuterBBox()
+                const T = r.getOuterBBox()
                 ;(r.element && r.place(T.L * T.rscale, 0), this.action(this, this.data))
               }),
               (e.prototype.setEventHandler = function (t, e) {
@@ -29753,7 +29753,7 @@
                         'data-toggle',
                         t.node.attributes.get('selection'),
                       )
-                      var r = t.factory.jax.math,
+                      const r = t.factory.jax.math,
                         n = t.factory.jax.document,
                         o = t.node
                       t.setEventHandler('click', function (t) {
@@ -29771,14 +29771,14 @@
                   'tooltip',
                   [
                     function (t, e) {
-                      var r = t.childNodes[1]
+                      const r = t.childNodes[1]
                       if (r) {
-                        var n = t.firstChild()
+                        const n = t.firstChild()
                         if (r.node.isKind('mtext')) {
-                          var o = r.node.getText()
+                          const o = r.node.getText()
                           t.adaptor.insert(t.svg('title', {}, [t.text(o)]), n)
                         } else {
-                          var i = t.adaptor,
+                          const i = t.adaptor,
                             Q = t.jax.container,
                             T = t.node.factory.create('math', {}, [t.childNodes[1].node]),
                             s = t.html('mjx-tool', {}, [t.html('mjx-tip')]),
@@ -29796,7 +29796,7 @@
                                     ;(i.setStyle(s, 'left', '0'),
                                       i.setStyle(s, 'top', '0'),
                                       i.append(Q, s))
-                                    var e = i.nodeBBox(s),
+                                    const e = i.nodeBBox(s),
                                       r = i.nodeBBox(t.element),
                                       n = (r.right - e.left) / t.metrics.em + t.dx,
                                       o = (r.bottom - e.bottom) / t.metrics.em + t.dy
@@ -29807,7 +29807,7 @@
                             }),
                             t.setEventHandler('mouseout', function (r) {
                               e.stopTimers(t, e)
-                              var n = setTimeout(function () {
+                              const n = setTimeout(function () {
                                 return i.append(a, s)
                               }, e.clearDelay)
                               ;(e.clearTimer.set(t, n), r.stopPropagation())
@@ -29822,14 +29822,14 @@
                   'statusline',
                   [
                     function (t, e) {
-                      var r = t.childNodes[1]
+                      const r = t.childNodes[1]
                       if (r && r.node.isKind('mtext')) {
-                        var n = t.adaptor,
+                        const n = t.adaptor,
                           o = r.node.getText()
                         ;(n.setAttribute(t.element, 'data-statusline', o),
                           t.setEventHandler('mouseover', function (r) {
                             if (null === e.status) {
-                              var i = n.body(n.document)
+                              const i = n.body(n.document)
                               e.status = n.append(i, t.html('mjx-status', {}, [t.text(o)]))
                             }
                             r.stopPropagation()
@@ -29850,7 +29850,7 @@
         e.SVGmaction = a
       },
       2438: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -29862,7 +29862,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -29882,9 +29882,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -29904,7 +29904,7 @@
           Q =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -29917,7 +29917,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmath = void 0))
-        var T = r(7079),
+        const T = r(7079),
           s = r(7490),
           a = r(3233),
           l = r(6469),
@@ -29929,13 +29929,13 @@
               o(e, t),
               (e.prototype.toSVG = function (e) {
                 t.prototype.toSVG.call(this, e)
-                var r = this.adaptor
+                const r = this.adaptor
                 ;('block' === this.node.attributes.get('display') &&
                   (r.setAttribute(this.jax.container, 'display', 'true'), this.handleDisplay()),
                   this.jax.document.options.internalSpeechTitles && this.handleSpeech())
               }),
               (e.prototype.handleDisplay = function () {
-                var t = i(this.getAlignShift(), 2),
+                const t = i(this.getAlignShift(), 2),
                   e = t[0],
                   r = t[1]
                 if (
@@ -29945,7 +29945,7 @@
                   if (
                     (this.adaptor.setAttribute(this.jax.container, 'width', 'full'), this.jax.table)
                   ) {
-                    var n = this.jax.table.getOuterBBox(),
+                    let n = this.jax.table.getOuterBBox(),
                       o = n.L,
                       Q = n.w,
                       T = n.R
@@ -29959,13 +29959,13 @@
                 } else this.jax.shift = r
               }),
               (e.prototype.handleSpeech = function () {
-                var t,
+                let t,
                   e,
                   r = this.adaptor,
                   n = this.node.attributes,
                   o = n.get('aria-label') || n.get('data-semantic-speech')
                 if (o) {
-                  var i = this.getTitleID(),
+                  const i = this.getTitleID(),
                     T = this.svg('title', { id: i }, [this.text(o)])
                   ;(r.insert(T, r.firstChild(this.element)),
                     r.setAttribute(this.element, 'aria-labeledby', i),
@@ -29976,7 +29976,7 @@
                       !a.done;
                       a = s.next()
                     ) {
-                      var l = a.value
+                      const l = a.value
                       r.setAttribute(l.element, 'aria-hidden', 'true')
                     }
                   } catch (e) {
@@ -30022,7 +30022,7 @@
         e.SVGmath = c
       },
       6614: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30034,7 +30034,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30056,7 +30056,7 @@
             (Object.create
               ? function (t, e, r, n) {
                   void 0 === n && (n = r)
-                  var o = Object.getOwnPropertyDescriptor(e, r)
+                  let o = Object.getOwnPropertyDescriptor(e, r)
                   ;((o && !('get' in o ? !e.__esModule : o.writable || o.configurable)) ||
                     (o = {
                       enumerable: !0,
@@ -30082,16 +30082,16 @@
             (this && this.__importStar) ||
             function (t) {
               if (t && t.__esModule) return t
-              var e = {}
+              const e = {}
               if (null != t)
-                for (var r in t)
+                for (const r in t)
                   'default' !== r && Object.prototype.hasOwnProperty.call(t, r) && i(e, t, r)
               return (Q(e, t), e)
             },
           s =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -30106,9 +30106,9 @@
           a =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -30126,7 +30126,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmenclose = void 0))
-        var l = r(7079),
+        const l = r(7079),
           c = r(7313),
           u = T(r(7620)),
           p = r(6661),
@@ -30137,13 +30137,13 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e,
+                let e,
                   r,
                   n = this.standardSVGnode(t),
                   o = this.getBBoxExtenders()[3],
                   i = {}
                 o > 0 && (i.transform = 'translate(' + this.fixed(o) + ', 0)')
-                var Q = this.adaptor.append(n, this.svg('g', i))
+                const Q = this.adaptor.append(n, this.svg('g', i))
                 this.renderChild ? this.renderChild(this, Q) : this.childNodes[0].toSVG(Q)
                 try {
                   for (
@@ -30151,7 +30151,7 @@
                     !a.done;
                     a = T.next()
                   ) {
-                    var l = a.value,
+                    const l = a.value,
                       c = this.notations[l]
                     !c.renderChild && c.renderer(this, n)
                   }
@@ -30167,7 +30167,7 @@
               }),
               (e.prototype.arrow = function (t, e, r, n, o) {
                 ;(void 0 === n && (n = ''), void 0 === o && (o = 0))
-                var i = this.getBBox(),
+                const i = this.getBBox(),
                   Q = i.w,
                   T = (t - Q) / 2,
                   s = (i.h - i.d) / 2,
@@ -30245,7 +30245,7 @@
                     ),
                   e)
                 ) {
-                  var m = this.jax.fixed((180 * -e) / Math.PI)
+                  const m = this.jax.fixed((180 * -e) / Math.PI)
                   L.push(
                     'rotate('
                       .concat(m, ' ')
@@ -30256,7 +30256,7 @@
                 return (L.length && this.adaptor.setAttribute(f, 'transform', L.join(' ')), f)
               }),
               (e.prototype.line = function (t) {
-                var e = a(t, 4),
+                const e = a(t, 4),
                   r = e[0],
                   n = e[1],
                   o = e[2],
@@ -30271,7 +30271,7 @@
               }),
               (e.prototype.box = function (t, e, r, n) {
                 void 0 === n && (n = 0)
-                var o = this.thickness,
+                const o = this.thickness,
                   i = {
                     x: this.fixed(o / 2),
                     y: this.fixed(o / 2 - r),
@@ -30283,7 +30283,7 @@
                 return (n && (i.rx = this.fixed(n)), this.svg('rect', i))
               }),
               (e.prototype.ellipse = function (t, e, r) {
-                var n = this.thickness
+                const n = this.thickness
                 return this.svg('ellipse', {
                   rx: this.fixed((t - n) / 2),
                   ry: this.fixed((e + r - n) / 2),
@@ -30349,7 +30349,7 @@
                   'box',
                   {
                     renderer: function (t, e) {
-                      var r = t.getBBox(),
+                      const r = t.getBBox(),
                         n = r.w,
                         o = r.h,
                         i = r.d
@@ -30364,7 +30364,7 @@
                   'roundedbox',
                   {
                     renderer: function (t, e) {
-                      var r = t.getBBox(),
+                      const r = t.getBBox(),
                         n = r.w,
                         o = r.h,
                         i = r.d,
@@ -30378,7 +30378,7 @@
                   'circle',
                   {
                     renderer: function (t, e) {
-                      var r = t.getBBox(),
+                      const r = t.getBBox(),
                         n = r.w,
                         o = r.h,
                         i = r.d
@@ -30391,7 +30391,7 @@
                   'phasorangle',
                   {
                     renderer: function (t, e) {
-                      var r = t.getBBox(),
+                      const r = t.getBBox(),
                         n = r.w,
                         o = r.h,
                         i = r.d,
@@ -30416,7 +30416,7 @@
                       )
                     },
                     bbox: function (t) {
-                      var e = t.padding / 2,
+                      const e = t.padding / 2,
                         r = t.thickness
                       return [2 * e, e, e + r, 3 * e + r]
                     },
@@ -30443,7 +30443,7 @@
                   'longdiv',
                   {
                     renderer: function (t, e) {
-                      var r = t.getBBox(),
+                      const r = t.getBBox(),
                         n = r.w,
                         o = r.h,
                         i = r.d,
@@ -30470,7 +30470,7 @@
                       )
                     },
                     bbox: function (t) {
-                      var e = t.padding,
+                      const e = t.padding,
                         r = t.thickness
                       return [e + r, e, e, 2 * e + r / 2]
                     },
@@ -30481,7 +30481,7 @@
                   {
                     renderer: function (t, e) {
                       t.msqrt.toSVG(e)
-                      var r = t.sqrtTRBL()[3]
+                      const r = t.sqrtTRBL()[3]
                       t.place(-r, 0, e)
                     },
                     init: function (t) {
@@ -30500,7 +30500,7 @@
         e.SVGmenclose = h
       },
       9375: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30512,7 +30512,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30530,7 +30530,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmerror = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(1581),
           T = (function (t) {
             function e() {
@@ -30539,7 +30539,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t),
+                const e = this.standardSVGnode(t),
                   r = this.getBBox(),
                   n = r.h,
                   o = r.d,
@@ -30553,7 +30553,7 @@
                     y: this.fixed(-o),
                   }),
                 )
-                var Q = this.node.attributes.get('title')
+                const Q = this.node.attributes.get('title')
                 ;(Q &&
                   this.adaptor.append(this.element, this.svg('title', {}, [this.adaptor.text(Q)])),
                   this.addChildren(e))
@@ -30572,7 +30572,7 @@
         e.SVGmerror = T
       },
       6670: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30584,7 +30584,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30604,7 +30604,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -30617,7 +30617,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmfenced = void 0))
-        var Q = r(7079),
+        const Q = r(7079),
           T = r(7555),
           s = r(5410),
           a = (function (t) {
@@ -30627,13 +30627,13 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t)
+                const e = this.standardSVGnode(t)
                 ;(this.setChildrenParent(this.mrow),
                   this.mrow.toSVG(e),
                   this.setChildrenParent(this))
               }),
               (e.prototype.setChildrenParent = function (t) {
-                var e, r
+                let e, r
                 try {
                   for (var n = i(this.childNodes), o = n.next(); !o.done; o = n.next()) {
                     o.value.parent = t
@@ -30655,7 +30655,7 @@
         e.SVGmfenced = a
       },
       5535: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30667,7 +30667,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30687,9 +30687,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -30707,7 +30707,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmfrac = void 0))
-        var Q = r(7079),
+        const Q = r(7079),
           T = r(2688),
           s = r(6850),
           a = (function (t) {
@@ -30718,18 +30718,18 @@
               o(e, t),
               (e.prototype.toSVG = function (t) {
                 this.standardSVGnode(t)
-                var e = this.node.attributes.getList('linethickness', 'bevelled'),
+                const e = this.node.attributes.getList('linethickness', 'bevelled'),
                   r = e.linethickness,
                   n = e.bevelled,
                   o = this.isDisplay()
                 if (n) this.makeBevelled(o)
                 else {
-                  var i = this.length2em(String(r), 0.06)
+                  const i = this.length2em(String(r), 0.06)
                   0 === i ? this.makeAtop(o) : this.makeFraction(o, i)
                 }
               }),
               (e.prototype.makeFraction = function (t, e) {
-                var r = this.element,
+                const r = this.element,
                   n = this.node.attributes.getList('numalign', 'denomalign'),
                   o = n.numalign,
                   Q = n.denomalign,
@@ -30763,7 +30763,7 @@
                   ))
               }),
               (e.prototype.makeAtop = function (t) {
-                var e = this.element,
+                const e = this.element,
                   r = this.node.attributes.getList('numalign', 'denomalign'),
                   n = r.numalign,
                   o = r.denomalign,
@@ -30783,7 +30783,7 @@
                 ;(T.toSVG(e), T.place(h, L), s.toSVG(e), s.place(d, -m))
               }),
               (e.prototype.makeBevelled = function (t) {
-                var e = this.element,
+                const e = this.element,
                   r = i(this.childNodes, 2),
                   n = r[0],
                   o = r[1],
@@ -30808,7 +30808,7 @@
         e.SVGmfrac = a
       },
       9645: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30820,7 +30820,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30838,7 +30838,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmglyph = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5636),
           T = r(3985),
           s = (function (t) {
@@ -30848,10 +30848,10 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t)
+                const e = this.standardSVGnode(t)
                 if (this.charWrapper) this.charWrapper.toSVG(e)
                 else {
-                  var r = this.node.attributes.getList('src', 'alt'),
+                  const r = this.node.attributes.getList('src', 'alt'),
                     n = r.src,
                     o = r.alt,
                     i = this.fixed(this.height),
@@ -30877,7 +30877,7 @@
         e.SVGmglyph = s
       },
       1618: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30889,7 +30889,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30907,7 +30907,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmi = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5723),
           T = r(450),
           s = (function (t) {
@@ -30919,7 +30919,7 @@
         e.SVGmi = s
       },
       9950: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -30931,7 +30931,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -30951,9 +30951,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -30972,7 +30972,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGmmultiscripts = e.AlignX = void 0))
-        var Q = r(4445),
+        const Q = r(4445),
           T = r(8009),
           s = r(6405),
           a = r(505)
@@ -30995,14 +30995,14 @@
           )
         }
         e.AlignX = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.toSVG = function (t) {
-              var e = this.standardSVGnode(t),
+              let e = this.standardSVGnode(t),
                 r = this.scriptData,
                 n = this.node.getProperty('scriptalign') || 'right left',
                 o = i((0, a.split)(n + ' ' + n), 2),
@@ -31016,20 +31016,20 @@
                 h = 0
               r.numPrescripts &&
                 (h = this.addScripts(0.05, u, p, this.firstPrescript, r.numPrescripts, Q))
-              var d = this.baseChild
+              const d = this.baseChild
               ;(d.toSVG(e),
                 d.place(h, 0),
                 (h += d.getOuterBBox().w),
                 r.numScripts && this.addScripts(h, u, p, 1, r.numScripts, T))
             }),
             (e.prototype.addScripts = function (t, e, r, n, o, Q) {
-              var T = this.adaptor,
+              const T = this.adaptor,
                 s = l(Q),
                 a = T.append(this.element, this.svg('g')),
                 c = T.append(this.element, this.svg('g'))
               ;(this.place(t, e, a), this.place(t, r, c))
               for (var u = n + 2 * o, p = 0; n < u; ) {
-                var h = i([this.childNodes[n++], this.childNodes[n++]], 2),
+                const h = i([this.childNodes[n++], this.childNodes[n++]], 2),
                   d = h[0],
                   f = h[1],
                   L = i([d.getOuterBBox(), f.getOuterBBox()], 2),
@@ -31054,7 +31054,7 @@
         e.SVGmmultiscripts = c
       },
       5710: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31066,7 +31066,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31084,7 +31084,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmn = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5023),
           T = r(3050),
           s = (function (t) {
@@ -31096,7 +31096,7 @@
         e.SVGmn = s
       },
       5896: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31108,7 +31108,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31128,7 +31128,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -31143,9 +31143,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -31163,7 +31163,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmo = void 0))
-        var T = r(7079),
+        const T = r(7079),
           s = r(7096),
           a = r(2756),
           l = 0.1,
@@ -31174,14 +31174,14 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.node.attributes,
+                const e = this.node.attributes,
                   r = e.get('symmetric') && 2 !== this.stretch.dir,
                   n = 0 !== this.stretch.dir
                 n && null === this.size && this.getStretchedVariant([])
-                var o = this.standardSVGnode(t)
+                const o = this.standardSVGnode(t)
                 if (n && this.size < 0) this.stretchSVG()
                 else {
-                  var i = r || e.get('largeop') ? this.fixed(this.getCenterOffset()) : '0',
+                  const i = r || e.get('largeop') ? this.fixed(this.getCenterOffset()) : '0',
                     Q = this.node.getProperty('mathaccent')
                       ? this.fixed(this.getAccentOffset())
                       : '0'
@@ -31195,7 +31195,7 @@
                 }
               }),
               (e.prototype.stretchSVG = function () {
-                var t = this.stretch.stretch,
+                const t = this.stretch.stretch,
                   e = this.getStretchVariants(),
                   r = this.getBBox()
                 1 === this.stretch.dir
@@ -31203,7 +31203,7 @@
                   : this.stretchHorizontal(t, e, r)
               }),
               (e.prototype.getStretchVariants = function () {
-                var t,
+                let t,
                   e,
                   r = this.stretch.c || this.getText().codePointAt(0),
                   n = []
@@ -31213,7 +31213,7 @@
                     !Q.done;
                     Q = o.next()
                   ) {
-                    var T = Q.value
+                    const T = Q.value
                     n[T] = this.font.getStretchVariant(r, T)
                   }
                 } catch (e) {
@@ -31228,13 +31228,13 @@
                 return n
               }),
               (e.prototype.stretchVertical = function (t, e, r) {
-                var n = r.h,
+                const n = r.h,
                   o = r.d,
                   i = r.w,
                   T = this.addTop(t[0], e[0], n, i),
                   s = this.addBot(t[2], e[2], o, i)
                 if (4 === t.length) {
-                  var a = Q(this.addMidV(t[3], e[3], i), 2),
+                  const a = Q(this.addMidV(t[3], e[3], i), 2),
                     l = a[0],
                     c = a[1]
                   ;(this.addExtV(t[1], e[1], n, 0, T, l, i),
@@ -31242,11 +31242,11 @@
                 } else this.addExtV(t[1], e[1], n, o, T, s, i)
               }),
               (e.prototype.stretchHorizontal = function (t, e, r) {
-                var n = r.w,
+                const n = r.w,
                   o = this.addLeft(t[0], e[0]),
                   i = this.addRight(t[2], e[2], n)
                 if (4 === t.length) {
-                  var T = Q(this.addMidH(t[3], e[3], n), 2),
+                  const T = Q(this.addMidH(t[3], e[3], n), 2),
                     s = T[0],
                     a = T[1],
                     l = n / 2
@@ -31254,7 +31254,7 @@
                 } else this.addExtH(t[1], e[1], n, o, i)
               }),
               (e.prototype.getChar = function (t, e) {
-                var r = this.font.getChar(e, t) || [0, 0, 0, null]
+                const r = this.font.getChar(e, t) || [0, 0, 0, null]
                 return [r[0], r[1], r[2], r[3] || {}]
               }),
               (e.prototype.addGlyph = function (t, e, r, n, o) {
@@ -31262,17 +31262,17 @@
               }),
               (e.prototype.addTop = function (t, e, r, n) {
                 if (!t) return 0
-                var o = Q(this.getChar(t, e), 3),
+                const o = Q(this.getChar(t, e), 3),
                   i = o[0],
                   T = o[1],
                   s = o[2]
                 return (this.addGlyph(t, e, (n - s) / 2, r - i), i + T)
               }),
               (e.prototype.addExtV = function (t, e, r, n, o, i, T) {
-                var s = this
+                const s = this
                 if (t) {
                   ;((o = Math.max(0, o - l)), (i = Math.max(0, i - l)))
-                  var a = this.adaptor,
+                  const a = this.adaptor,
                     c = Q(this.getChar(t, e), 3),
                     u = c[0],
                     p = c[1],
@@ -31281,7 +31281,7 @@
                     f = (1.5 * d) / (u + p),
                     L = (f * (u - p) - d) / 2
                   if (!(d <= 0)) {
-                    var m = this.svg('svg', {
+                    const m = this.svg('svg', {
                       width: this.fixed(h),
                       height: this.fixed(d),
                       y: this.fixed(i - n),
@@ -31293,7 +31293,7 @@
                         .join(' '),
                     })
                     this.addGlyph(t, e, 0, 0, m)
-                    var y = a.lastChild(m)
+                    const y = a.lastChild(m)
                     ;(a.setAttribute(y, 'transform', 'scale(1,'.concat(this.jax.fixed(f), ')')),
                       a.append(this.element, m))
                   }
@@ -31301,7 +31301,7 @@
               }),
               (e.prototype.addBot = function (t, e, r, n) {
                 if (!t) return 0
-                var o = Q(this.getChar(t, e), 3),
+                const o = Q(this.getChar(t, e), 3),
                   i = o[0],
                   T = o[1],
                   s = o[2]
@@ -31309,7 +31309,7 @@
               }),
               (e.prototype.addMidV = function (t, e, r) {
                 if (!t) return [0, 0]
-                var n = Q(this.getChar(t, e), 3),
+                const n = Q(this.getChar(t, e), 3),
                   o = n[0],
                   i = n[1],
                   T = n[2],
@@ -31320,10 +31320,10 @@
                 return t ? this.addGlyph(t, e, 0, 0) : 0
               }),
               (e.prototype.addExtH = function (t, e, r, n, o, i) {
-                var T = this
+                const T = this
                 if ((void 0 === i && (i = 0), t)) {
                   ;((o = Math.max(0, o - 0.1)), (n = Math.max(0, n - 0.1)))
-                  var s = this.adaptor,
+                  const s = this.adaptor,
                     a = Q(this.getChar(t, e), 3),
                     c = a[0],
                     u = a[1],
@@ -31333,7 +31333,7 @@
                     f = (h / p) * 1.5,
                     L = -(u + l)
                   if (!(h <= 0)) {
-                    var m = this.svg('svg', {
+                    const m = this.svg('svg', {
                       width: this.fixed(h),
                       height: this.fixed(d),
                       x: this.fixed(i + n),
@@ -31345,7 +31345,7 @@
                         .join(' '),
                     })
                     this.addGlyph(t, e, 0, 0, m)
-                    var y = s.lastChild(m)
+                    const y = s.lastChild(m)
                     ;(s.setAttribute(y, 'transform', 'scale(' + this.jax.fixed(f) + ',1)'),
                       s.append(this.element, m))
                   }
@@ -31353,12 +31353,12 @@
               }),
               (e.prototype.addRight = function (t, e, r) {
                 if (!t) return 0
-                var n = this.getChar(t, e)[2]
+                const n = this.getChar(t, e)[2]
                 return this.addGlyph(t, e, r - n, 0)
               }),
               (e.prototype.addMidH = function (t, e, r) {
                 if (!t) return [0, 0]
-                var n = this.getChar(t, e)[2]
+                const n = this.getChar(t, e)[2]
                 return (this.addGlyph(t, e, (r - n) / 2, 0), [(r - n) / 2, (r + n) / 2])
               }),
               (e.kind = a.MmlMo.prototype.kind),
@@ -31368,7 +31368,7 @@
         e.SVGmo = c
       },
       7512: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31380,7 +31380,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31400,9 +31400,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -31420,7 +31420,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmpadded = void 0))
-        var Q = r(7079),
+        const Q = r(7079),
           T = r(6898),
           s = r(7238),
           a = (function (t) {
@@ -31430,7 +31430,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t),
+                let e = this.standardSVGnode(t),
                   r = i(this.getDimens(), 9),
                   n = r[5],
                   o = r[6],
@@ -31448,7 +31448,7 @@
         e.SVGmpadded = a
       },
       3572: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31460,7 +31460,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31478,7 +31478,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmphantom = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5741),
           T = (function (t) {
             function e() {
@@ -31496,7 +31496,7 @@
         e.SVGmphantom = T
       },
       7725: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31508,7 +31508,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31528,9 +31528,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -31548,7 +31548,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmroot = void 0))
-        var Q = r(1107),
+        const Q = r(1107),
           T = r(9086),
           s = r(6145),
           a = (function (t) {
@@ -31559,7 +31559,7 @@
               o(e, t),
               (e.prototype.addRoot = function (t, e, r, n) {
                 e.toSVG(t)
-                var o = i(this.getRootDimens(r, n), 3),
+                const o = i(this.getRootDimens(r, n), 3),
                   Q = o[0],
                   T = o[1],
                   s = o[2],
@@ -31573,7 +31573,7 @@
         e.SVGmroot = a
       },
       3289: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31585,7 +31585,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31604,7 +31604,7 @@
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGinferredMrow = e.SVGmrow = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(8411),
           T = r(8411),
           s = r(9878),
@@ -31615,7 +31615,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.node.isInferred ? (this.element = t) : this.standardSVGnode(t)
+                const e = this.node.isInferred ? (this.element = t) : this.standardSVGnode(t)
                 this.addChildren(e)
               }),
               (e.kind = s.MmlMrow.prototype.kind),
@@ -31623,7 +31623,7 @@
             )
           })((0, Q.CommonMrowMixin)(i.SVGWrapper))
         e.SVGmrow = a
-        var l = (function (t) {
+        const l = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -31632,7 +31632,7 @@
         e.SVGinferredMrow = l
       },
       3735: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31644,7 +31644,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31662,7 +31662,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGms = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(4126),
           T = r(7265),
           s = (function (t) {
@@ -31674,7 +31674,7 @@
         e.SVGms = s
       },
       6465: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31686,7 +31686,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31704,7 +31704,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmspace = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(258),
           T = r(6030),
           s = (function (t) {
@@ -31716,7 +31716,7 @@
         e.SVGmspace = s
       },
       1107: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31728,7 +31728,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31746,18 +31746,18 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmsqrt = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(4093),
           T = r(7131),
           s = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.dx = 0), e)
             }
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.childNodes[this.surd],
+                const e = this.childNodes[this.surd],
                   r = this.childNodes[this.base],
                   n = this.root ? this.childNodes[this.root] : null,
                   o = e.getBBox(),
@@ -31790,7 +31790,7 @@
         e.SVGmsqrt = s
       },
       4445: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31802,7 +31802,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31822,9 +31822,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -31843,7 +31843,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGmsubsup = e.SVGmsup = e.SVGmsub = void 0))
-        var Q = r(6369),
+        const Q = r(6369),
           T = r(905),
           s = r(905),
           a = r(905),
@@ -31855,21 +31855,21 @@
             return (o(e, t), (e.kind = l.MmlMsub.prototype.kind), e)
           })((0, T.CommonMsubMixin)(Q.SVGscriptbase))
         e.SVGmsub = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (o(e, t), (e.kind = l.MmlMsup.prototype.kind), e)
         })((0, s.CommonMsupMixin)(Q.SVGscriptbase))
         e.SVGmsup = u
-        var p = (function (t) {
+        const p = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.toSVG = function (t) {
-              var e = this.standardSVGnode(t),
+              const e = this.standardSVGnode(t),
                 r = i([this.baseChild, this.supChild, this.subChild], 3),
                 n = r[0],
                 o = r[1],
@@ -31888,7 +31888,7 @@
         e.SVGmsubsup = p
       },
       2558: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -31900,7 +31900,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -31920,9 +31920,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -31948,13 +31948,13 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmtable = void 0))
-        var T = r(7079),
+        const T = r(7079),
           s = r(6237),
           a = r(1349),
           l = (function (t) {
             function e(e, r, n) {
               void 0 === n && (n = null)
-              var o = t.call(this, e, r, n) || this,
+              const o = t.call(this, e, r, n) || this,
                 i = { 'data-labels': !0 }
               return (
                 o.isTop && (i.transform = 'matrix(1 0 0 -1 0 0)'),
@@ -31965,12 +31965,12 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t)
+                const e = this.standardSVGnode(t)
                 ;(this.placeRows(e),
                   this.handleColumnLines(e),
                   this.handleRowLines(e),
                   this.handleFrame(e))
-                var r = this.handlePWidth(e)
+                const r = this.handlePWidth(e)
                 this.handleLabels(e, t, r)
               }),
               (e.prototype.placeRows = function (t) {
@@ -31990,7 +31990,7 @@
                   h < this.numRows;
                   h++
                 ) {
-                  var d = this.childNodes[h]
+                  const d = this.childNodes[h]
                   ;((e = i(this.getRowHD(o, l, s[h], a[h]), 2)),
                     (d.H = e[0]),
                     (d.D = e[1]),
@@ -32010,15 +32010,15 @@
               }),
               (e.prototype.handleColor = function () {
                 t.prototype.handleColor.call(this)
-                var e = this.firstChild()
+                const e = this.firstChild()
                 e && this.adaptor.setAttribute(e, 'width', this.fixed(this.getWidth()))
               }),
               (e.prototype.handleColumnLines = function (t) {
                 if ('none' !== this.node.attributes.get('columnlines')) {
-                  var e = this.getColumnAttributes('columnlines')
+                  const e = this.getColumnAttributes('columnlines')
                   if (e)
                     for (
-                      var r = this.getColumnHalfSpacing(),
+                      let r = this.getColumnHalfSpacing(),
                         n = this.cLines,
                         o = this.getComputedWidths(),
                         i = this.fLine,
@@ -32033,10 +32033,10 @@
               }),
               (e.prototype.handleRowLines = function (t) {
                 if ('none' !== this.node.attributes.get('rowlines')) {
-                  var e = this.getRowAttributes('rowlines')
+                  const e = this.getRowAttributes('rowlines')
                   if (e)
                     for (
-                      var r = this.node.attributes.get('equalrows'),
+                      let r = this.node.attributes.get('equalrows'),
                         n = this.getTableData(),
                         o = n.H,
                         Q = n.D,
@@ -32048,7 +32048,7 @@
                       c < e.length;
                       c++
                     ) {
-                      var u = i(this.getRowHD(r, T, o[c], Q[c]), 2),
+                      const u = i(this.getRowHD(r, T, o[c], Q[c]), 2),
                         p = u[0],
                         h = u[1]
                       ;((l -= s[c] + p + h + s[c + 1]),
@@ -32059,7 +32059,7 @@
               }),
               (e.prototype.handleFrame = function (t) {
                 if (this.frame && this.fLine) {
-                  var e = this.getBBox(),
+                  const e = this.getBBox(),
                     r = e.h,
                     n = e.d,
                     o = e.w,
@@ -32069,7 +32069,7 @@
               }),
               (e.prototype.handlePWidth = function (t) {
                 if (!this.pWidth) return 0
-                var e = this.getBBox(),
+                const e = this.getBBox(),
                   r = e.w,
                   n = e.L,
                   o = e.R,
@@ -32082,7 +32082,7 @@
                   s = r - (this.pWidth > T ? T : this.pWidth),
                   a = 'left' === Q ? 0 : 'right' === Q ? s : s / 2
                 if (a) {
-                  var l = this.svg('g', {}, this.adaptor.childNodes(t))
+                  const l = this.svg('g', {}, this.adaptor.childNodes(t))
                   ;(this.place(a, 0, l), this.adaptor.append(t, l))
                 }
                 return a
@@ -32091,7 +32091,7 @@
                 return 'mjx-' + t
               }),
               (e.prototype.makeFrame = function (t, e, r, n) {
-                var o = this.fLine
+                const o = this.fLine
                 return this.svg(
                   'rect',
                   this.setLineThickness(o, n, {
@@ -32105,7 +32105,7 @@
                 )
               }),
               (e.prototype.makeVLine = function (t, e, r) {
-                var n = this.getBBox(),
+                const n = this.getBBox(),
                   o = n.h,
                   i = n.d,
                   Q = 'dotted' === e ? r / 2 : 0,
@@ -32123,7 +32123,7 @@
                 )
               }),
               (e.prototype.makeHLine = function (t, e, r) {
-                var n = this.getBBox().w,
+                const n = this.getBBox().w,
                   o = 'dotted' === e ? r / 2 : 0,
                   i = this.fixed(t - r / 2)
                 return this.svg(
@@ -32149,7 +32149,7 @@
               }),
               (e.prototype.handleLabels = function (t, e, r) {
                 if (this.hasLabels) {
-                  var n = this.labels,
+                  const n = this.labels,
                     o = this.node.attributes.get('side')
                   ;(this.spaceLabels(),
                     this.isTop ? this.topTable(t, n, o) : this.subTable(t, n, o, r))
@@ -32157,7 +32157,7 @@
               }),
               (e.prototype.spaceLabels = function () {
                 for (
-                  var t = this.adaptor,
+                  let t = this.adaptor,
                     e = this.getBBox().h,
                     r = this.getTableData().L,
                     n = this.getRowHalfSpacing(),
@@ -32167,9 +32167,9 @@
                   Q < this.numRows;
                   Q++
                 ) {
-                  var T = this.childNodes[Q]
+                  const T = this.childNodes[Q]
                   if (T.node.isKind('mlabeledtr')) {
-                    var s = T.childNodes[0]
+                    const s = T.childNodes[0]
                     ;((o -= n[Q] + T.H),
                       T.placeCell(s, {
                         x: 0,
@@ -32186,7 +32186,7 @@
                 }
               }),
               (e.prototype.topTable = function (t, e, r) {
-                var n = this.adaptor,
+                const n = this.adaptor,
                   o = this.getBBox(),
                   Q = o.h,
                   T = o.d,
@@ -32232,7 +32232,7 @@
                   this.place(-a, 0, t))
               }),
               (e.prototype.subTable = function (t, e, r, n) {
-                var o = this.adaptor,
+                const o = this.adaptor,
                   i = this.getBBox(),
                   Q = i.w,
                   T = i.L,
@@ -32271,7 +32271,7 @@
         e.SVGmtable = l
       },
       8926: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32283,7 +32283,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32301,7 +32301,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmtd = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5164),
           T = r(4359),
           s = (function (t) {
@@ -32311,7 +32311,7 @@
             return (
               o(e, t),
               (e.prototype.placeCell = function (t, e, r, n, o) {
-                var i = this.getBBox(),
+                const i = this.getBBox(),
                   Q = Math.max(i.h, 0.75),
                   T = Math.max(i.d, 0.25),
                   s = this.node.attributes.get('columnalign'),
@@ -32321,7 +32321,7 @@
                 return (this.place(t + l, e + c), [l, c])
               }),
               (e.prototype.placeColor = function (t, e, r, n) {
-                var o = this.adaptor,
+                const o = this.adaptor,
                   i = this.firstChild()
                 i &&
                   'rect' === o.kind(i) &&
@@ -32338,7 +32338,7 @@
         e.SVGmtd = s
       },
       3365: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32350,7 +32350,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32368,7 +32368,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGmtext = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(6319),
           T = r(4770),
           s = (function (t) {
@@ -32380,7 +32380,7 @@
         e.SVGmtext = s
       },
       3006: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32392,7 +32392,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32412,9 +32412,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -32441,7 +32441,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGmlabeledtr = e.SVGmtr = void 0))
-        var T = r(7079),
+        const T = r(7079),
           s = r(5766),
           a = r(5766),
           l = r(5022),
@@ -32452,12 +32452,12 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t)
+                const e = this.standardSVGnode(t)
                 ;(this.placeCells(e), this.placeColor())
               }),
               (e.prototype.placeCells = function (t) {
                 for (
-                  var e = this.parent.getColumnHalfSpacing(),
+                  let e = this.parent.getColumnHalfSpacing(),
                     r = Q(
                       Q([this.parent.fLine], i(this.parent.cLines), !1),
                       [this.parent.fLine],
@@ -32470,7 +32470,7 @@
                   s < this.numCells;
                   s++
                 ) {
-                  var a = this.getChild(s)
+                  const a = this.getChild(s)
                   ;(a.toSVG(t),
                     (T += this.placeCell(a, {
                       x: T,
@@ -32484,7 +32484,7 @@
                 }
               }),
               (e.prototype.placeCell = function (t, e) {
-                var r = e.x,
+                const r = e.x,
                   n = e.y,
                   o = e.lSpace,
                   Q = e.w,
@@ -32508,11 +32508,11 @@
                 )
               }),
               (e.prototype.placeColor = function () {
-                var t = 1 / this.getBBox().rscale,
+                const t = 1 / this.getBBox().rscale,
                   e = this.adaptor,
                   r = this.firstChild()
                 if (r && 'rect' === e.kind(r) && e.getAttribute(r, 'data-bgcolor')) {
-                  var n = i([(this.tLine / 2) * t, (this.bLine / 2) * t], 2),
+                  const n = i([(this.tLine / 2) * t, (this.bLine / 2) * t], 2),
                     o = n[0],
                     Q = n[1],
                     T = i([this.tSpace * t, this.bSpace * t], 2),
@@ -32531,7 +32531,7 @@
             )
           })((0, s.CommonMtrMixin)(T.SVGWrapper))
         e.SVGmtr = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -32539,7 +32539,7 @@
             o(e, t),
             (e.prototype.toSVG = function (e) {
               t.prototype.toSVG.call(this, e)
-              var r = this.childNodes[0]
+              const r = this.childNodes[0]
               r && r.toSVG(this.parent.labels)
             }),
             (e.kind = l.MmlMlabeledtr.prototype.kind),
@@ -32549,7 +32549,7 @@
         e.SVGmlabeledtr = u
       },
       8835: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32561,7 +32561,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32581,9 +32581,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -32602,7 +32602,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGmunderover = e.SVGmover = e.SVGmunder = void 0))
-        var Q = r(4445),
+        const Q = r(4445),
           T = r(1971),
           s = r(1971),
           a = r(1971),
@@ -32616,7 +32616,7 @@
               (e.prototype.toSVG = function (e) {
                 if (this.hasMovableLimits()) t.prototype.toSVG.call(this, e)
                 else {
-                  var r = this.standardSVGnode(e),
+                  const r = this.standardSVGnode(e),
                     n = i([this.baseChild, this.scriptChild], 2),
                     o = n[0],
                     Q = n[1],
@@ -32624,7 +32624,7 @@
                     s = T[0],
                     a = T[1]
                   ;(o.toSVG(r), Q.toSVG(r))
-                  var l = this.isLineBelow ? 0 : this.getDelta(!0),
+                  const l = this.isLineBelow ? 0 : this.getDelta(!0),
                     c = this.getUnderKV(s, a)[1],
                     u = i(this.getDeltaW([s, a], [0, -l]), 2),
                     p = u[0],
@@ -32637,7 +32637,7 @@
             )
           })((0, T.CommonMunderMixin)(Q.SVGmsub))
         e.SVGmunder = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -32646,7 +32646,7 @@
             (e.prototype.toSVG = function (e) {
               if (this.hasMovableLimits()) t.prototype.toSVG.call(this, e)
               else {
-                var r = this.standardSVGnode(e),
+                const r = this.standardSVGnode(e),
                   n = i([this.baseChild, this.scriptChild], 2),
                   o = n[0],
                   Q = n[1],
@@ -32654,7 +32654,7 @@
                   s = T[0],
                   a = T[1]
                 ;(o.toSVG(r), Q.toSVG(r))
-                var l = this.isLineAbove ? 0 : this.getDelta(),
+                const l = this.isLineAbove ? 0 : this.getDelta(),
                   c = this.getOverKU(s, a)[1],
                   u = i(this.getDeltaW([s, a], [0, l]), 2),
                   p = u[0],
@@ -32667,7 +32667,7 @@
           )
         })((0, s.CommonMoverMixin)(Q.SVGmsup))
         e.SVGmover = u
-        var p = (function (t) {
+        const p = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -32676,7 +32676,7 @@
             (e.prototype.toSVG = function (e) {
               if (this.hasMovableLimits()) t.prototype.toSVG.call(this, e)
               else {
-                var r = this.standardSVGnode(e),
+                const r = this.standardSVGnode(e),
                   n = i([this.baseChild, this.overChild, this.underChild], 3),
                   o = n[0],
                   Q = n[1],
@@ -32686,7 +32686,7 @@
                   l = s[1],
                   c = s[2]
                 ;(o.toSVG(r), T.toSVG(r), Q.toSVG(r))
-                var u = this.getDelta(),
+                const u = this.getDelta(),
                   p = this.getOverKU(a, l)[1],
                   h = this.getUnderKV(a, c)[1],
                   d = i(
@@ -32709,7 +32709,7 @@
         e.SVGmunderover = p
       },
       6369: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32721,7 +32721,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32741,9 +32741,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -32761,7 +32761,7 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SVGscriptbase = void 0))
-        var Q = r(7079),
+        const Q = r(7079),
           T = (function (t) {
             function e() {
               return (null !== t && t.apply(this, arguments)) || this
@@ -32769,7 +32769,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t),
+                const e = this.standardSVGnode(t),
                   r = this.getBaseWidth(),
                   n = i(this.getOffset(), 2),
                   o = n[0],
@@ -32785,7 +32785,7 @@
         e.SVGscriptbase = T
       },
       2417: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32797,7 +32797,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32816,7 +32816,7 @@
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SVGxml = e.SVGannotationXML = e.SVGannotation = e.SVGsemantics = void 0))
-        var i = r(7079),
+        const i = r(7079),
           Q = r(5806),
           T = r(9102),
           s = r(9007),
@@ -32827,7 +32827,7 @@
             return (
               o(e, t),
               (e.prototype.toSVG = function (t) {
-                var e = this.standardSVGnode(t)
+                const e = this.standardSVGnode(t)
                 this.childNodes.length && this.childNodes[0].toSVG(e)
               }),
               (e.kind = T.MmlSemantics.prototype.kind),
@@ -32835,7 +32835,7 @@
             )
           })((0, Q.CommonSemanticsMixin)(i.SVGWrapper))
         e.SVGsemantics = a
-        var l = (function (t) {
+        const l = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -32852,7 +32852,7 @@
           )
         })(i.SVGWrapper)
         e.SVGannotation = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -32870,14 +32870,14 @@
           )
         })(i.SVGWrapper)
         e.SVGannotationXML = c
-        var u = (function (t) {
+        const u = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.toSVG = function (t) {
-              var e = this.adaptor.clone(this.node.getXML()),
+              const e = this.adaptor.clone(this.node.getXML()),
                 r = this.jax.math.metrics.em * this.jax.math.metrics.scale,
                 n = this.fixed(1 / r),
                 o = this.getBBox(),
@@ -32901,7 +32901,7 @@
             }),
             (e.prototype.computeBBox = function (t, e) {
               void 0 === e && (e = !1)
-              var r = this.jax.measureXMLnode(this.node.getXML()),
+              const r = this.jax.measureXMLnode(this.node.getXML()),
                 n = r.w,
                 o = r.h,
                 i = r.d
@@ -32918,7 +32918,7 @@
         e.SVGxml = u
       },
       42: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -32930,7 +32930,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -32950,7 +32950,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -32963,7 +32963,7 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.TeXFont = void 0))
-        var Q = r(768),
+        const Q = r(768),
           T = r(5920),
           s = r(7040),
           a = r(2560),
@@ -32992,9 +32992,9 @@
           C = r(9124),
           N = (function (t) {
             function e(e) {
-              var r, n
+              let r, n
               void 0 === e && (e = null)
-              var o = t.call(this, e) || this,
+              const o = t.call(this, e) || this,
                 Q = o.constructor
               try {
                 for (
@@ -33002,7 +33002,7 @@
                   !s.done;
                   s = T.next()
                 ) {
-                  var a = s.value
+                  const a = s.value
                   o.variant[a].cacheID = 'TEX-' + Q.variantCacheIds[a]
                 }
               } catch (t) {
@@ -33078,7 +33078,7 @@
       },
       7040: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.boldItalic = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(3980)
         e.boldItalic = (0, n.AddPaths)(
           o.boldItalic,
@@ -33096,7 +33096,7 @@
       },
       2560: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.bold = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(1103)
         e.bold = (0, n.AddPaths)(
           o.bold,
@@ -33380,7 +33380,7 @@
       },
       2810: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.doubleStruck = void 0))
-        var n = r(6001)
+        const n = r(6001)
         Object.defineProperty(e, 'doubleStruck', {
           enumerable: !0,
           get: function () {
@@ -33390,7 +33390,7 @@
       },
       6982: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.frakturBold = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(3696)
         e.frakturBold = (0, n.AddPaths)(
           o.frakturBold,
@@ -33447,7 +33447,7 @@
       },
       175: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.fraktur = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(9587)
         e.fraktur = (0, n.AddPaths)(
           o.fraktur,
@@ -33506,7 +33506,7 @@
       },
       5735: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.italic = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(8348)
         e.italic = (0, n.AddPaths)(
           o.italic,
@@ -33578,7 +33578,7 @@
       },
       8594: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.largeop = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(1376)
         e.largeop = (0, n.AddPaths)(
           o.largeop,
@@ -33648,7 +33648,7 @@
       },
       4749: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.monospace = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(1439)
         e.monospace = (0, n.AddPaths)(
           o.monospace,
@@ -33734,7 +33734,7 @@
       },
       9320: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.normal = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(331)
         e.normal = (0, n.AddPaths)(
           o.normal,
@@ -35800,7 +35800,7 @@
       },
       466: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.sansSerifBoldItalic = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(4886)
         e.sansSerifBoldItalic = (0, n.AddPaths)(
           o.sansSerifBoldItalic,
@@ -35813,7 +35813,7 @@
       },
       9671: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.sansSerifBold = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(4471)
         e.sansSerifBold = (0, n.AddPaths)(
           o.sansSerifBold,
@@ -35872,7 +35872,7 @@
       },
       3746: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.sansSerifItalic = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(5181)
         e.sansSerifItalic = (0, n.AddPaths)(
           o.sansSerifItalic,
@@ -35965,7 +35965,7 @@
       },
       3240: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.sansSerif = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(3526)
         e.sansSerif = (0, n.AddPaths)(
           o.sansSerif,
@@ -36048,7 +36048,7 @@
       },
       1325: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.scriptBold = void 0))
-        var n = r(5649)
+        const n = r(5649)
         Object.defineProperty(e, 'scriptBold', {
           enumerable: !0,
           get: function () {
@@ -36058,7 +36058,7 @@
       },
       4164: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.script = void 0))
-        var n = r(7153)
+        const n = r(7153)
         Object.defineProperty(e, 'script', {
           enumerable: !0,
           get: function () {
@@ -36068,7 +36068,7 @@
       },
       8652: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.smallop = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(5745)
         e.smallop = (0, n.AddPaths)(
           o.smallop,
@@ -36138,7 +36138,7 @@
       },
       5667: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texCalligraphicBold = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(1411)
         e.texCalligraphicBold = (0, n.AddPaths)(
           o.texCalligraphicBold,
@@ -36177,7 +36177,7 @@
       },
       5821: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texCalligraphic = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(6384)
         e.texCalligraphic = (0, n.AddPaths)(
           o.texCalligraphic,
@@ -36214,7 +36214,7 @@
       },
       957: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texMathit = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(6041)
         e.texMathit = (0, n.AddPaths)(
           o.texMathit,
@@ -36277,7 +36277,7 @@
       },
       1044: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texOldstyleBold = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(8199)
         e.texOldstyleBold = (0, n.AddPaths)(
           o.texOldstyleBold,
@@ -36324,7 +36324,7 @@
       },
       7292: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texOldstyle = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(9848)
         e.texOldstyle = (0, n.AddPaths)(
           o.texOldstyle,
@@ -36371,7 +36371,7 @@
       },
       2162: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texSize3 = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(7906)
         e.texSize3 = (0, n.AddPaths)(
           o.texSize3,
@@ -36410,7 +36410,7 @@
       },
       9244: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texSize4 = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(2644)
         e.texSize4 = (0, n.AddPaths)(
           o.texSize4,
@@ -36482,7 +36482,7 @@
       },
       2675: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.texVariant = void 0))
-        var n = r(768),
+        const n = r(768),
           o = r(4926)
         e.texVariant = (0, n.AddPaths)(
           o.texVariant,
@@ -36534,7 +36534,7 @@
         )
       },
       5865: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -36546,7 +36546,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -36566,7 +36566,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -36581,9 +36581,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -36601,11 +36601,11 @@
               return Q
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MJContextMenu = void 0))
-        var T = r(5073),
+        const T = r(5073),
           s = r(6186),
           a = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.mathItem = null), (e.annotation = ''), (e.annotationTypes = {}), e)
             }
             return (
@@ -36613,11 +36613,11 @@
               (e.prototype.post = function (e, r) {
                 if (this.mathItem) {
                   if (void 0 !== r) {
-                    var n = this.mathItem.inputJax.name,
+                    const n = this.mathItem.inputJax.name,
                       o = this.findID('Show', 'Original')
                     ;((o.content = 'MathML' === n ? 'Original MathML' : n + ' Commands'),
                       (this.findID('Copy', 'Original').content = o.content))
-                    var i = this.findID('Settings', 'semantics')
+                    const i = this.findID('Settings', 'semantics')
                     ;('MathML' === n ? i.disable() : i.enable(),
                       this.getAnnotationMenu(),
                       this.dynamicSubmenus())
@@ -36630,11 +36630,11 @@
               }),
               (e.prototype.findID = function () {
                 for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
-                var o = this,
+                let o = this,
                   Q = null
                 try {
                   for (var T = i(r), a = T.next(); !a.done; a = T.next()) {
-                    var l = a.value
+                    const l = a.value
                     o
                       ? ((Q = o.find(l)), (o = Q instanceof s.Submenu ? Q.submenu : null))
                       : (Q = null)
@@ -36651,7 +36651,7 @@
                 return Q
               }),
               (e.prototype.getAnnotationMenu = function () {
-                var t = this,
+                const t = this,
                   e = this.getAnnotations(this.getSemanticNode())
                 ;(this.createAnnotationMenu('Show', e, function () {
                   return t.showAnnotation.post()
@@ -36668,17 +36668,17 @@
                 return t
               }),
               (e.prototype.getAnnotations = function (t) {
-                var e,
+                let e,
                   r,
                   n = []
                 if (!t) return n
                 try {
                   for (var o = i(t.childNodes), Q = o.next(); !Q.done; Q = o.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     if (T.isKind('annotation')) {
-                      var s = this.annotationMatch(T)
+                      const s = this.annotationMatch(T)
                       if (s) {
-                        var a = T.childNodes.reduce(function (t, e) {
+                        const a = T.childNodes.reduce(function (t, e) {
                           return t + e.toString()
                         }, '')
                         n.push([s, a])
@@ -36697,7 +36697,7 @@
                 return n
               }),
               (e.prototype.annotationMatch = function (t) {
-                var e,
+                let e,
                   r,
                   n = t.attributes.get('encoding')
                 try {
@@ -36706,7 +36706,7 @@
                     !Q.done;
                     Q = o.next()
                   ) {
-                    var T = Q.value
+                    const T = Q.value
                     if (this.annotationTypes[T].indexOf(n) >= 0) return T
                   }
                 } catch (t) {
@@ -36721,13 +36721,13 @@
                 return null
               }),
               (e.prototype.createAnnotationMenu = function (t, e, r) {
-                var n = this,
+                const n = this,
                   o = this.findID(t, 'Annotation')
                 ;((o.submenu = this.factory.get('subMenu')(
                   this.factory,
                   {
                     items: e.map(function (t) {
-                      var e = Q(t, 2),
+                      const e = Q(t, 2),
                         o = e[0],
                         i = e[1]
                       return {
@@ -36746,15 +36746,15 @@
                   e.length ? o.enable() : o.disable())
               }),
               (e.prototype.dynamicSubmenus = function () {
-                var t, r
+                let t, r
                 try {
                   for (var n = i(e.DynamicSubmenus), o = n.next(); !o.done; o = n.next()) {
-                    var T = Q(o.value, 2),
+                    const T = Q(o.value, 2),
                       s = T[0],
                       a = T[1],
                       l = this.find(s)
                     if (l) {
-                      var c = a(this, l)
+                      const c = a(this, l)
                       ;((l.submenu = c), c.items.length ? l.enable() : l.disable())
                     }
                   }
@@ -36775,12 +36775,12 @@
         e.MJContextMenu = a
       },
       8310: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -36800,7 +36800,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -36818,7 +36818,7 @@
               return t && t.__esModule ? t : { default: t }
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Menu = void 0))
-        var Q = r(5713),
+        const Q = r(5713),
           T = r(4474),
           s = r(9515),
           a = r(7233),
@@ -36838,7 +36838,7 @@
           H = (function () {
             function t(t, e) {
               void 0 === e && (e = {})
-              var r = this
+              const r = this
               ;((this.settings = null),
                 (this.defaultSettings = null),
                 (this.menu = null),
@@ -36848,7 +36848,7 @@
                 (this.about = new p.Info(
                   '<b style="font-size:120%;">MathJax</b> v' + Q.mathjax.version,
                   function () {
-                    var t = []
+                    const t = []
                     return (
                       t.push(
                         'Input Jax: ' +
@@ -36908,7 +36908,7 @@
                   'MathJax MathML Expression',
                   function () {
                     if (!r.menu.mathItem) return ''
-                    var t = r.toMML(r.menu.mathItem)
+                    const t = r.toMML(r.menu.mathItem)
                     return '<pre>' + r.formatSource(t) + '</pre>'
                   },
                   '',
@@ -36917,7 +36917,7 @@
                   'MathJax Original Source',
                   function () {
                     if (!r.menu.mathItem) return ''
-                    var t = r.menu.mathItem.math
+                    const t = r.menu.mathItem.math
                     return '<pre style="font-size:125%; margin:0">' + r.formatSource(t) + '</pre>'
                   },
                   '',
@@ -36926,7 +36926,7 @@
                   'MathJax Annotation Text',
                   function () {
                     if (!r.menu.mathItem) return ''
-                    var t = r.menu.annotation
+                    const t = r.menu.annotation
                     return '<pre style="font-size:125%; margin:0">' + r.formatSource(t) + '</pre>'
                   },
                   '',
@@ -36935,7 +36935,7 @@
                   'MathJax Zoomed Expression',
                   function () {
                     if (!r.menu.mathItem) return ''
-                    var t = r.menu.mathItem.typesetRoot.cloneNode(!0)
+                    const t = r.menu.mathItem.typesetRoot.cloneNode(!0)
                     return (
                       (t.style.margin = '0'),
                       '<div style="font-size: ' +
@@ -36980,7 +36980,7 @@
               }),
               (t.prototype.initSettings = function () {
                 ;((this.settings = this.options.settings), (this.jax = this.options.jax))
-                var t = this.document.outputJax
+                const t = this.document.outputJax
                 ;((this.jax[t.name] = t),
                   (this.settings.renderer = t.name),
                   m._.a11y &&
@@ -36990,7 +36990,7 @@
                   (this.defaultSettings = Object.assign({}, this.settings)))
               }),
               (t.prototype.initMenu = function () {
-                var t = this,
+                const t = this,
                   e = new h.Parser([
                     ['contextMenu', l.MJContextMenu.fromJson.bind(l.MJContextMenu)],
                   ])
@@ -37028,7 +37028,7 @@
                       return L.default.setupEngine({ locale: t })
                     }),
                     this.a11yVar('speechRules', function (e) {
-                      var r = n(e.split('-'), 2),
+                      const r = n(e.split('-'), 2),
                         o = r[0],
                         i = r[1]
                       ;((t.document.options.sre.domain = o), (t.document.options.sre.style = i))
@@ -37221,7 +37221,7 @@
                     }),
                   ],
                 })
-                var r = this.menu
+                const r = this.menu
                 ;(this.about.attachMenu(r),
                   this.help.attachMenu(r),
                   this.originalText.attachMenu(r),
@@ -37237,7 +37237,7 @@
                   f.CssStyles.addMenuStyles(this.document.document))
               }),
               (t.prototype.checkLoadableItems = function () {
-                var t, e
+                let t, e
                 if (m && m._ && m.loader && m.startup)
                   (!this.settings.collapsible ||
                     (m._.a11y && m._.a11y.complexity) ||
@@ -37249,10 +37249,10 @@
                       (m._.a11y && m._.a11y['assistive-mml']) ||
                       this.loadA11y('assistive-mml'))
                 else {
-                  var r = this.menu
+                  const r = this.menu
                   try {
                     for (var n = o(Object.keys(this.jax)), i = n.next(); !i.done; i = n.next()) {
-                      var Q = i.value
+                      const Q = i.value
                       this.jax[Q] || r.findID('Settings', 'Renderer', Q).disable()
                     }
                   } catch (e) {
@@ -37270,12 +37270,12 @@
                 }
               }),
               (t.prototype.enableExplorerItems = function (t) {
-                var e,
+                let e,
                   r,
                   n = this.menu.findID('Accessibility', 'Activate').menu
                 try {
                   for (var i = o(n.items.slice(1)), Q = i.next(); !Q.done; Q = i.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     if (T instanceof d.Rule) break
                     t ? T.enable() : T.disable()
                   }
@@ -37291,7 +37291,7 @@
               }),
               (t.prototype.mergeUserSettings = function () {
                 try {
-                  var e = localStorage.getItem(t.MENU_STORAGE)
+                  const e = localStorage.getItem(t.MENU_STORAGE)
                   if (!e) return
                   ;(Object.assign(this.settings, JSON.parse(e)), this.setA11y(this.settings))
                 } catch (t) {
@@ -37299,12 +37299,12 @@
                 }
               }),
               (t.prototype.saveUserSettings = function () {
-                var e,
+                let e,
                   r,
                   n = {}
                 try {
                   for (var i = o(Object.keys(this.settings)), Q = i.next(); !Q.done; Q = i.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     this.settings[T] !== this.defaultSettings[T] && (n[T] = this.settings[T])
                   }
                 } catch (t) {
@@ -37346,12 +37346,12 @@
                 ;((this.document.outputJax.options.scale = parseFloat(t)), this.document.rerender())
               }),
               (t.prototype.setRenderer = function (t) {
-                var e = this
+                const e = this
                 if (this.jax[t]) this.setOutputJax(t)
                 else {
-                  var r = t.toLowerCase()
+                  const r = t.toLowerCase()
                   this.loadComponent('output/' + r, function () {
-                    var n = m.startup
+                    const n = m.startup
                     r in n.constructors &&
                       (n.useOutput(r, !0),
                       (n.output = n.getOutputJax()),
@@ -37388,28 +37388,28 @@
                     : this.loadA11y('complexity'))
               }),
               (t.prototype.scaleAllMath = function () {
-                var t = (100 * parseFloat(this.settings.scale)).toFixed(1).replace(/.0$/, ''),
+                const t = (100 * parseFloat(this.settings.scale)).toFixed(1).replace(/.0$/, ''),
                   e = prompt('Scale all mathematics (compared to surrounding text) by', t + '%')
                 if (e)
                   if (e.match(/^\s*\d+(\.\d*)?\s*%?\s*$/)) {
-                    var r = parseFloat(e) / 100
+                    const r = parseFloat(e) / 100
                     r
                       ? this.menu.pool.lookup('scale').setValue(String(r))
                       : alert('The scale should not be zero')
                   } else alert('The scale should be a percentage (e.g., 120%)')
               }),
               (t.prototype.resetDefaults = function () {
-                var e, r
+                let e, r
                 t.loading++
-                var n = this.menu.pool,
+                const n = this.menu.pool,
                   i = this.defaultSettings
                 try {
                   for (var Q = o(Object.keys(this.settings)), s = Q.next(); !s.done; s = Q.next()) {
-                    var a = s.value,
+                    const a = s.value,
                       l = n.lookup(a)
                     if (l) {
                       l.setValue(i[a])
-                      var c = l.items[0]
+                      const c = l.items[0]
                       c && c.executeCallbacks_()
                     } else this.settings[a] = i[a]
                   }
@@ -37425,15 +37425,15 @@
                 ;(t.loading--, this.rerender(T.STATE.COMPILED))
               }),
               (t.prototype.checkComponent = function (e) {
-                var r = t.loadingPromises.get(e)
+                const r = t.loadingPromises.get(e)
                 r && Q.mathjax.retryAfter(r)
               }),
               (t.prototype.loadComponent = function (e, r) {
                 if (!t.loadingPromises.has(e)) {
-                  var n = m.loader
+                  const n = m.loader
                   if (n) {
                     t.loading++
-                    var o = n
+                    const o = n
                       .load(e)
                       .then(function () {
                         ;(t.loading--,
@@ -37453,14 +37453,14 @@
                 }
               }),
               (t.prototype.loadA11y = function (e) {
-                var r = this,
+                const r = this,
                   n = !T.STATE.ENRICHED
                 this.loadComponent('a11y/' + e, function () {
-                  var o = m.startup
+                  const o = m.startup
                   ;(Q.mathjax.handlers.unregister(o.handler),
                     (o.handler = o.getHandler()),
                     Q.mathjax.handlers.register(o.handler))
-                  var i = r.document
+                  const i = r.document
                   ;((r.document = o.document = o.getDocument()),
                     (r.document.menu = r),
                     r.document.outputJax.reset(),
@@ -37472,12 +37472,12 @@
                 })
               }),
               (t.prototype.transferMathList = function (t) {
-                var e,
+                let e,
                   r,
                   n = this.document.options.MathItem
                 try {
                   for (var i = o(t.math), Q = i.next(); !Q.done; Q = i.next()) {
-                    var T = Q.value,
+                    const T = Q.value,
                       s = new n()
                     ;(Object.assign(s, T), this.document.math.push(s))
                   }
@@ -37532,7 +37532,7 @@
                 this.copyToClipboard(this.menu.annotation.trim())
               }),
               (t.prototype.copyToClipboard = function (t) {
-                var e = document.createElement('textarea')
+                const e = document.createElement('textarea')
                 ;((e.value = t),
                   e.setAttribute('readonly', ''),
                   (e.style.cssText =
@@ -37547,7 +37547,7 @@
                 document.body.removeChild(e)
               }),
               (t.prototype.addMenu = function (t) {
-                var e = this,
+                const e = this,
                   r = t.typesetRoot
                 ;(r.addEventListener(
                   'contextmenu',
@@ -37583,7 +37583,7 @@
                 this.menu.store.clear()
               }),
               (t.prototype.variable = function (t, e) {
-                var r = this
+                const r = this
                 return {
                   name: t,
                   getter: function () {
@@ -37595,7 +37595,7 @@
                 }
               }),
               (t.prototype.a11yVar = function (t, e) {
-                var r = this
+                const r = this
                 return {
                   name: t,
                   getter: function () {
@@ -37603,18 +37603,18 @@
                   },
                   setter: function (n) {
                     r.settings[t] = n
-                    var o = {}
+                    const o = {}
                     ;((o[t] = n), r.setA11y(o), e && e(n), r.saveUserSettings())
                   },
                 }
               }),
               (t.prototype.submenu = function (t, e, r, n) {
-                var i, Q
+                let i, Q
                 ;(void 0 === r && (r = []), void 0 === n && (n = !1))
-                var T = []
+                let T = []
                 try {
                   for (var s = o(r), a = s.next(); !a.done; a = s.next()) {
-                    var l = a.value
+                    const l = a.value
                     Array.isArray(l) ? (T = T.concat(l)) : T.push(l)
                   }
                 } catch (t) {
@@ -37647,7 +37647,7 @@
                 )
               }),
               (t.prototype.radioGroup = function (t, e) {
-                var r = this
+                const r = this
                 return e.map(function (e) {
                   return r.radio(e[0], e[1] || e[0], t)
                 })
@@ -37715,7 +37715,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -37740,7 +37740,7 @@
                   Object.assign ||
                   function (t) {
                     for (var e, r = 1, n = arguments.length; r < n; r++)
-                      for (var o in (e = arguments[r]))
+                      for (const o in (e = arguments[r]))
                         Object.prototype.hasOwnProperty.call(e, o) && (t[o] = e[o])
                     return t
                   }),
@@ -37750,9 +37750,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -37780,7 +37780,7 @@
           s =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -37794,7 +37794,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.MenuHandler = e.MenuMathDocumentMixin = e.MenuMathItemMixin = void 0))
-        var a = r(5713),
+        const a = r(5713),
           l = r(4474),
           c = r(7233),
           u = r(8310)
@@ -37819,14 +37819,14 @@
           })(t)
         }
         function h(t) {
-          var e
+          let e
           return (
             (e = (function (t) {
               function e() {
                 for (var e = [], r = 0; r < arguments.length; r++) e[r] = arguments[r]
-                var n = t.apply(this, T([], Q(e), !1)) || this
+                const n = t.apply(this, T([], Q(e), !1)) || this
                 n.menu = new n.options.MenuClass(n, n.options.menuOptions)
-                var o = n.constructor.ProcessBits
+                const o = n.constructor.ProcessBits
                 return (
                   o.has('context-menu') || o.allocate('context-menu'),
                   (n.options.MathItem = p(n.options.MathItem)),
@@ -37836,7 +37836,7 @@
               return (
                 o(e, t),
                 (e.prototype.addMenu = function () {
-                  var t, e
+                  let t, e
                   if (!this.processed.isSet('context-menu')) {
                     try {
                       for (var r = s(this.math), n = r.next(); !n.done; n = r.next()) {
@@ -37862,7 +37862,7 @@
                         return console.log(t)
                       }),
                     )
-                  var t = this.menu.settings
+                  const t = this.menu.settings
                   return (
                     t.collapsible &&
                       ((this.options.enableComplexity = !0),
@@ -37926,7 +37926,7 @@
           }))
       },
       473: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -37938,7 +37938,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -37956,11 +37956,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MmlVisitor = void 0))
-        var i = r(9259),
+        const i = r(9259),
           Q = r(7233),
           T = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return ((e.options = { texHints: !0, semantics: !1 }), (e.mathItem = null), e)
             }
             return (
@@ -37990,7 +37990,7 @@
               (e.prototype.visitMathNode = function (e, r) {
                 if (!this.options.semantics || 'TeX' !== this.mathItem.inputJax.name)
                   return t.prototype.visitDefault.call(this, e, r)
-                var n = e.childNodes.length && e.childNodes[0].childNodes.length > 1
+                const n = e.childNodes.length && e.childNodes[0].childNodes.length > 1
                 return (
                   r +
                   '<math' +
@@ -38017,7 +38017,7 @@
         e.MmlVisitor = T
       },
       4414: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -38029,7 +38029,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -38047,7 +38047,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SelectableInfo = void 0))
-        var i = r(4922),
+        const i = r(4922),
           Q = r(2165),
           T = (function (t) {
             function e() {
@@ -38056,7 +38056,7 @@
             return (
               o(e, t),
               (e.prototype.addEvents = function (t) {
-                var e = this
+                const e = this
                 t.addEventListener('keypress', function (t) {
                   'a' === t.key && (t.ctrlKey || t.metaKey) && (e.selectAll(), e.stop(t))
                 })
@@ -38074,9 +38074,9 @@
                 document.getSelection().removeAllRanges()
               }),
               (e.prototype.generateHtml = function () {
-                var e = this
+                const e = this
                 t.prototype.generateHtml.call(this)
-                var r = this.html
+                const r = this.html
                   .querySelector('span.' + Q.HtmlClasses.INFOSIGNATURE)
                   .appendChild(document.createElement('input'))
                 ;((r.type = 'button'),
@@ -38092,11 +38092,11 @@
       },
       9923: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.asyncLoad = void 0))
-        var n = r(5713)
+        const n = r(5713)
         e.asyncLoad = function (t) {
           return n.mathjax.asyncLoad
             ? new Promise(function (e, r) {
-                var o = n.mathjax.asyncLoad(t)
+                const o = n.mathjax.asyncLoad(t)
                 o instanceof Promise
                   ? o
                       .then(function (t) {
@@ -38112,7 +38112,7 @@
       },
       6469: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.BBox = void 0))
-        var n = r(6010),
+        const n = r(6010),
           o = (function () {
             function t(t) {
               ;(void 0 === t && (t = { w: 0, h: -n.BIGDIMEN, d: -n.BIGDIMEN }),
@@ -38143,7 +38143,7 @@
               }),
               (t.prototype.combine = function (t, e, r) {
                 ;(void 0 === e && (e = 0), void 0 === r && (r = 0))
-                var n = t.rscale,
+                const n = t.rscale,
                   o = e + n * (t.w + t.L + t.R),
                   i = r + n * t.h,
                   Q = n * t.d - r
@@ -38152,7 +38152,7 @@
                   Q > this.d && (this.d = Q))
               }),
               (t.prototype.append = function (t) {
-                var e = t.rscale
+                const e = t.rscale
                 ;((this.w += e * (t.w + t.L + t.R)),
                   e * t.h > this.h && (this.h = e * t.h),
                   e * t.d > this.d && (this.d = e * t.d))
@@ -38180,7 +38180,7 @@
         e.BBox = o
       },
       6751: function (t, e) {
-        var r,
+        let r,
           n =
             (this && this.__extends) ||
             ((r = function (t, e) {
@@ -38192,7 +38192,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 r(t, e)
               )
@@ -38212,7 +38212,7 @@
           o =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -38227,9 +38227,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -38256,7 +38256,7 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.BitFieldClass = e.BitField = void 0))
-        var T = (function () {
+        const T = (function () {
           function t() {
             this.bits = 0
           }
@@ -38265,7 +38265,7 @@
               for (var e, r, n = [], i = 0; i < arguments.length; i++) n[i] = arguments[i]
               try {
                 for (var Q = o(n), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   if (this.has(s)) throw new Error('Bit already allocated for ' + s)
                   if (this.next === t.MAXBIT)
                     throw new Error('Maximum number of bits already allocated')
@@ -38297,7 +38297,7 @@
               this.bits = 0
             }),
             (t.prototype.getBit = function (t) {
-              var e = this.constructor.names.get(t)
+              const e = this.constructor.names.get(t)
               if (!e) throw new Error('Unknown bit-field name: ' + t)
               return e
             }),
@@ -38310,7 +38310,7 @@
         ;((e.BitField = T),
           (e.BitFieldClass = function () {
             for (var t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
-            var r = (function (t) {
+            const r = (function (t) {
               function e() {
                 return (null !== t && t.apply(this, arguments)) || this
               }
@@ -38322,7 +38322,7 @@
       5368: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.numeric = e.translate = e.remove = e.add = e.entities = e.options = void 0))
-        var n = r(4542),
+        const n = r(4542),
           o = r(9923)
         ;((e.options = { loadMissingEntities: !0 }),
           (e.entities = {
@@ -38733,19 +38733,19 @@
             rsquo: '\u2019',
             lsquo: '\u2018',
           }))
-        var i = {}
+        const i = {}
         function Q(t, r) {
           if ('#' === r.charAt(0)) return T(r.slice(1))
           if (e.entities[r]) return e.entities[r]
           if (e.options.loadMissingEntities) {
-            var Q = r.match(/^[a-zA-Z](fr|scr|opf)$/) ? RegExp.$1 : r.charAt(0).toLowerCase()
+            const Q = r.match(/^[a-zA-Z](fr|scr|opf)$/) ? RegExp.$1 : r.charAt(0).toLowerCase()
             i[Q] ||
               ((i[Q] = !0), (0, n.retryAfter)((0, o.asyncLoad)('./util/entities/' + Q + '.js')))
           }
           return t
         }
         function T(t) {
-          var e = 'x' === t.charAt(0) ? parseInt(t.slice(1), 16) : parseInt(t)
+          const e = 'x' === t.charAt(0) ? parseInt(t.slice(1), 16) : parseInt(t)
           return String.fromCodePoint(e)
         }
         ;((e.add = function (t, r) {
@@ -38760,7 +38760,7 @@
           (e.numeric = T))
       },
       7525: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -38772,7 +38772,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
+                    for (const r in e) Object.prototype.hasOwnProperty.call(e, r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -38792,7 +38792,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -38807,9 +38807,9 @@
           Q =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -38835,7 +38835,7 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.FunctionList = void 0))
-        var s = (function (t) {
+        const s = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -38845,7 +38845,7 @@
               for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
               try {
                 for (var o = i(this), s = o.next(); !s.done; s = o.next()) {
-                  var a = s.value,
+                  const a = s.value,
                     l = a.item.apply(a, T([], Q(r), !1))
                   if (!1 === l) return !1
                 }
@@ -38862,12 +38862,12 @@
             }),
             (e.prototype.asyncExecute = function () {
               for (var t = [], e = 0; e < arguments.length; e++) t[e] = arguments[e]
-              var r = -1,
+              let r = -1,
                 n = this.items
               return new Promise(function (e, o) {
                 !(function i() {
                   for (var s; ++r < n.length; ) {
-                    var a = (s = n[r]).item.apply(s, T([], Q(t), !1))
+                    const a = (s = n[r]).item.apply(s, T([], Q(t), !1))
                     if (a instanceof Promise)
                       return void a.then(i).catch(function (t) {
                         return o(t)
@@ -38884,10 +38884,10 @@
         e.FunctionList = s
       },
       103: function (t, e) {
-        var r =
+        const r =
             (this && this.__generator) ||
             function (t, e) {
-              var r,
+              let r,
                 n,
                 o,
                 i,
@@ -38977,9 +38977,9 @@
           n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -39007,7 +39007,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -39022,11 +39022,11 @@
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.LinkedList = e.ListItem = e.END = void 0),
           (e.END = Symbol()))
-        var Q = function (t) {
+        const Q = function (t) {
           ;(void 0 === t && (t = null), (this.next = null), (this.prev = null), (this.data = t))
         }
         e.ListItem = Q
-        var T = (function () {
+        const T = (function () {
           function t() {
             for (var t = [], r = 0; r < arguments.length; r++) t[r] = arguments[r]
             ;((this.list = new Q(e.END)),
@@ -39041,7 +39041,7 @@
               for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
               try {
                 for (var o = i(r), T = o.next(); !T.done; T = o.next()) {
-                  var s = T.value,
+                  const s = T.value,
                     a = new Q(s)
                   ;((a.next = this.list),
                     (a.prev = this.list.prev),
@@ -39060,7 +39060,7 @@
               return this
             }),
             (t.prototype.pop = function () {
-              var t = this.list.prev
+              const t = this.list.prev
               return t.data === e.END
                 ? null
                 : ((this.list.prev = t.prev),
@@ -39072,7 +39072,7 @@
               for (var t, e, r = [], n = 0; n < arguments.length; n++) r[n] = arguments[n]
               try {
                 for (var o = i(r.slice(0).reverse()), T = o.next(); !T.done; T = o.next()) {
-                  var s = T.value,
+                  const s = T.value,
                     a = new Q(s)
                   ;((a.next = this.list.next),
                     (a.prev = this.list),
@@ -39091,7 +39091,7 @@
               return this
             }),
             (t.prototype.shift = function () {
-              var t = this.list.next
+              const t = this.list.next
               return t.data === e.END
                 ? null
                 : ((this.list.next = t.next),
@@ -39101,10 +39101,10 @@
             }),
             (t.prototype.remove = function () {
               for (var t, r, n = [], o = 0; o < arguments.length; o++) n[o] = arguments[o]
-              var Q = new Map()
+              const Q = new Map()
               try {
                 for (var T = i(n), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   Q.set(a, !0)
                 }
               } catch (e) {
@@ -39116,8 +39116,8 @@
                   if (t) throw t.error
                 }
               }
-              for (var l = this.list.next; l.data !== e.END; ) {
-                var c = l.next
+              for (let l = this.list.next; l.data !== e.END; ) {
+                const c = l.next
                 ;(Q.has(l.data) &&
                   ((l.prev.next = l.next), (l.next.prev = l.prev), (l.next = l.prev = null)),
                   (l = c))
@@ -39131,7 +39131,7 @@
               )
             }),
             (t.prototype[Symbol.iterator] = function () {
-              var t
+              let t
               return r(this, function (r) {
                 switch (r.label) {
                   case 0:
@@ -39146,7 +39146,7 @@
               })
             }),
             (t.prototype.reversed = function () {
-              var t
+              let t
               return r(this, function (r) {
                 switch (r.label) {
                   case 0:
@@ -39167,12 +39167,12 @@
               return ((n.prev = o.prev), (n.next = o), (o.prev.next = o.prev = n), this)
             }),
             (t.prototype.sort = function (e) {
-              var r, n
+              let r, n
               ;(void 0 === e && (e = null), null === e && (e = this.isBefore.bind(this)))
-              var o = []
+              const o = []
               try {
                 for (var Q = i(this), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   o.push(new t(s))
                 }
               } catch (t) {
@@ -39185,14 +39185,14 @@
                 }
               }
               for (this.list.next = this.list.prev = this.list; o.length > 1; ) {
-                var a = o.shift(),
+                const a = o.shift(),
                   l = o.shift()
                 ;(a.merge(l, e), o.push(a))
               }
               return (o.length && (this.list = o[0].list), this)
             }),
             (t.prototype.merge = function (t, r) {
-              var o, i, Q, T, s
+              let o, i, Q, T, s
               ;(void 0 === r && (r = null), null === r && (r = this.isBefore.bind(this)))
               for (var a = this.list.next, l = t.list.next; a.data !== e.END && l.data !== e.END; )
                 r(l.data, a.data)
@@ -39227,10 +39227,10 @@
         e.LinkedList = T
       },
       7233: function (t, e) {
-        var r =
+        const r =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -39245,9 +39245,9 @@
           n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -39290,7 +39290,7 @@
             e.APPEND =
             e.isObject =
               void 0))
-        var i = {}.constructor
+        const i = {}.constructor
         function Q(t) {
           return 'object' == typeof t && null !== t && (t.constructor === i || t.constructor === T)
         }
@@ -39312,12 +39312,12 @@
           return t ? Object.keys(t).concat(Object.getOwnPropertySymbols(t)) : []
         }
         function l(t) {
-          var e,
+          let e,
             n,
             o = {}
           try {
             for (var i = r(a(t)), u = i.next(); !u.done; u = i.next()) {
-              var p = u.value,
+              const p = u.value,
                 h = Object.getOwnPropertyDescriptor(t, p),
                 d = h.value
               ;(Array.isArray(d) ? (h.value = c([], d, !1)) : Q(d) && (h.value = l(d)),
@@ -39335,21 +39335,21 @@
           return Object.defineProperties(t.constructor === T ? s({}) : {}, o)
         }
         function c(t, i, s) {
-          var u, p
+          let u, p
           void 0 === s && (s = !0)
-          var h = function (r) {
+          const h = function (r) {
             if (s && void 0 === t[r] && t.constructor !== T)
               return (
                 'symbol' == typeof r && (r = r.toString()),
                 e.OPTIONS.optionError('Invalid option "'.concat(r, '" (no default value).'), r),
                 'continue'
               )
-            var u = i[r],
+            let u = i[r],
               p = t[r]
             if (!Q(u) || null === p || ('object' != typeof p && 'function' != typeof p))
               Array.isArray(u) ? ((t[r] = []), c(t[r], u, !1)) : Q(u) ? (t[r] = l(u)) : (t[r] = u)
             else {
-              var h = a(u)
+              const h = a(u)
               Array.isArray(p) &&
               ((1 === h.length &&
                 (h[0] === e.APPEND || h[0] === e.REMOVE) &&
@@ -39384,10 +39384,10 @@
         }
         function u(t) {
           for (var e, n, o = [], i = 1; i < arguments.length; i++) o[i - 1] = arguments[i]
-          var Q = {}
+          const Q = {}
           try {
             for (var T = r(o), s = T.next(); !s.done; s = T.next()) {
-              var a = s.value
+              const a = s.value
               t.hasOwnProperty(a) && (Q[a] = t[a])
             }
           } catch (t) {
@@ -39433,10 +39433,10 @@
           }),
           (e.separateOptions = function (t) {
             for (var e, n, o, i, Q = [], T = 1; T < arguments.length; T++) Q[T - 1] = arguments[T]
-            var s = []
+            const s = []
             try {
               for (var a = r(Q), l = a.next(); !l.done; l = a.next()) {
-                var c = l.value,
+                const c = l.value,
                   u = {},
                   p = {}
                 try {
@@ -39445,7 +39445,7 @@
                     !d.done;
                     d = h.next()
                   ) {
-                    var f = d.value
+                    const f = d.value
                     ;(void 0 === c[f] ? p : u)[f] = t[f]
                   }
                 } catch (t) {
@@ -39476,13 +39476,13 @@
       },
       8666: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.PrioritizedList = void 0))
-        var r = (function () {
+        const r = (function () {
           function t() {
             ;((this.items = []), (this.items = []))
           }
           return (
             (t.prototype[Symbol.iterator] = function () {
-              var t = 0,
+              let t = 0,
                 e = this.items
               return {
                 next: function () {
@@ -39492,14 +39492,14 @@
             }),
             (t.prototype.add = function (e, r) {
               void 0 === r && (r = t.DEFAULTPRIORITY)
-              var n = this.items.length
+              let n = this.items.length
               do {
                 n--
               } while (n >= 0 && r < this.items[n].priority)
               return (this.items.splice(n + 1, 0, { item: e, priority: r }), e)
             }),
             (t.prototype.remove = function (t) {
-              var e = this.items.length
+              let e = this.items.length
               do {
                 e--
               } while (e >= 0 && this.items[e].item !== t)
@@ -39536,15 +39536,15 @@
             })
           }),
           (e.retryAfter = function (t) {
-            var e = new Error('MathJax retry')
+            const e = new Error('MathJax retry')
             throw ((e.retry = t), e)
           }))
       },
       4139: function (t, e) {
-        var r =
+        const r =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -39557,7 +39557,7 @@
             throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CssStyles = void 0))
-        var n = (function () {
+        const n = (function () {
           function t(t) {
             ;(void 0 === t && (t = null), (this.styles = {}), this.addStyles(t))
           }
@@ -39570,11 +39570,11 @@
               configurable: !0,
             }),
             (t.prototype.addStyles = function (t) {
-              var e, n
+              let e, n
               if (t)
                 try {
                   for (var o = r(Object.keys(t)), i = o.next(); !i.done; i = o.next()) {
-                    var Q = i.value
+                    const Q = i.value
                     ;(this.styles[Q] || (this.styles[Q] = {}), Object.assign(this.styles[Q], t[Q]))
                   }
                 } catch (t) {
@@ -39591,7 +39591,7 @@
               for (var t, e, n = [], o = 0; o < arguments.length; o++) n[o] = arguments[o]
               try {
                 for (var i = r(n), Q = i.next(); !Q.done; Q = i.next()) {
-                  var T = Q.value
+                  const T = Q.value
                   delete this.styles[T]
                 }
               } catch (e) {
@@ -39611,14 +39611,14 @@
               return this.getStyleRules().join('\n\n')
             }),
             (t.prototype.getStyleRules = function () {
-              var t,
+              let t,
                 e,
                 n = Object.keys(this.styles),
                 o = new Array(n.length),
                 i = 0
               try {
                 for (var Q = r(n), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value
+                  const s = T.value
                   o[i++] = s + ' {\n' + this.getStyleDefString(this.styles[s]) + '\n}'
                 }
               } catch (e) {
@@ -39633,14 +39633,14 @@
               return o
             }),
             (t.prototype.getStyleDefString = function (t) {
-              var e,
+              let e,
                 n,
                 o = Object.keys(t),
                 i = new Array(o.length),
                 Q = 0
               try {
                 for (var T = r(o), s = T.next(); !s.done; s = T.next()) {
-                  var a = s.value
+                  const a = s.value
                   i[Q++] = '  ' + a + ': ' + t[a] + ';'
                 }
               } catch (t) {
@@ -39660,10 +39660,10 @@
         e.CssStyles = n
       },
       8054: function (t, e) {
-        var r =
+        const r =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -39678,9 +39678,9 @@
           n =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -39706,7 +39706,7 @@
               return t.concat(n || Array.prototype.slice.call(e))
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Styles = void 0))
-        var i = ['top', 'right', 'bottom', 'left'],
+        const i = ['top', 'right', 'bottom', 'left'],
           Q = ['width', 'style', 'color']
         function T(t) {
           for (var e = t.split(/((?:'[^']*'|"[^"]*"|,[\s\n]|[^\s\n])*)/g), r = []; e.length > 1; )
@@ -39714,7 +39714,7 @@
           return r
         }
         function s(t) {
-          var e,
+          let e,
             n,
             o = T(this.styles[t])
           ;(0 === o.length && o.push(''),
@@ -39723,7 +39723,7 @@
             3 === o.length && o.push(o[1]))
           try {
             for (var i = r(y.connect[t].children), Q = i.next(); !Q.done; Q = i.next()) {
-              var s = Q.value
+              const s = Q.value
               this.setStyle(this.childName(t, s), o.shift())
             }
           } catch (t) {
@@ -39737,13 +39737,13 @@
           }
         }
         function a(t) {
-          var e,
+          let e,
             n,
             o = y.connect[t].children,
             i = []
           try {
             for (var Q = r(o), T = Q.next(); !T.done; T = Q.next()) {
-              var s = T.value,
+              const s = T.value,
                 a = this.styles[t + '-' + s]
               if (!a) return void delete this.styles[t]
               i.push(a)
@@ -39761,10 +39761,10 @@
             (this.styles[t] = i.join(' ')))
         }
         function l(t) {
-          var e, n
+          let e, n
           try {
             for (var o = r(y.connect[t].children), i = o.next(); !i.done; i = o.next()) {
-              var Q = i.value
+              const Q = i.value
               this.setStyle(this.childName(t, Q), this.styles[t])
             }
           } catch (t) {
@@ -39778,13 +39778,13 @@
           }
         }
         function c(t) {
-          var e,
+          let e,
             i,
             Q = o([], n(y.connect[t].children), !1),
             T = this.styles[this.childName(t, Q.shift())]
           try {
             for (var s = r(Q), a = s.next(); !a.done; a = s.next()) {
-              var l = a.value
+              const l = a.value
               if (this.styles[this.childName(t, l)] !== T) return void delete this.styles[t]
             }
           } catch (t) {
@@ -39798,18 +39798,18 @@
           }
           this.styles[t] = T
         }
-        var u = /^(?:[\d.]+(?:[a-z]+)|thin|medium|thick|inherit|initial|unset)$/,
+        const u = /^(?:[\d.]+(?:[a-z]+)|thin|medium|thick|inherit|initial|unset)$/,
           p =
             /^(?:none|hidden|dotted|dashed|solid|double|groove|ridge|inset|outset|inherit|initial|unset)$/
         function h(t) {
-          var e,
+          let e,
             n,
             o,
             i,
             Q = { width: '', style: '', color: '' }
           try {
             for (var s = r(T(this.styles[t])), a = s.next(); !a.done; a = s.next()) {
-              var l = a.value
+              const l = a.value
               l.match(u) && '' === Q.width
                 ? (Q.width = l)
                 : l.match(p) && '' === Q.style
@@ -39827,7 +39827,7 @@
           }
           try {
             for (var c = r(y.connect[t].children), h = c.next(); !h.done; h = c.next()) {
-              var d = h.value
+              const d = h.value
               this.setStyle(this.childName(t, d), Q[d])
             }
           } catch (t) {
@@ -39841,12 +39841,12 @@
           }
         }
         function d(t) {
-          var e,
+          let e,
             n,
             o = []
           try {
             for (var i = r(y.connect[t].children), Q = i.next(); !Q.done; Q = i.next()) {
-              var T = Q.value,
+              const T = Q.value,
                 s = this.styles[this.childName(t, T)]
               s && o.push(s)
             }
@@ -39861,7 +39861,7 @@
           }
           o.length ? (this.styles[t] = o.join(' ')) : delete this.styles[t]
         }
-        var f = {
+        const f = {
           style: /^(?:normal|italic|oblique|inherit|initial|unset)$/,
           variant: new RegExp(
             '^(?:' +
@@ -39905,7 +39905,7 @@
           ),
         }
         function L(t) {
-          var e,
+          let e,
             o,
             i,
             Q,
@@ -39921,7 +39921,7 @@
             }
           try {
             for (var l = r(s), c = l.next(); !c.done; c = l.next()) {
-              var u = c.value
+              const u = c.value
               a.family = u
               try {
                 for (
@@ -39929,10 +39929,10 @@
                   !h.done;
                   h = p.next()
                 ) {
-                  var d = h.value
+                  const d = h.value
                   if ((Array.isArray(a[d]) || '' === a[d]) && u.match(f[d]))
                     if ('size' === d) {
-                      var L = n(u.split(/\//), 2),
+                      const L = n(u.split(/\//), 2),
                         m = L[0],
                         H = L[1]
                       ;((a[d] = m), H && (a['line-height'] = H))
@@ -39958,13 +39958,13 @@
             }
           }
           ;(!(function (t, e) {
-            var n, o
+            let n, o
             try {
               for (var i = r(y.connect[t].children), Q = i.next(); !Q.done; Q = i.next()) {
-                var T = Q.value,
+                const T = Q.value,
                   s = this.childName(t, T)
                 if (Array.isArray(e[T])) {
-                  var a = e[T]
+                  const a = e[T]
                   a.length && (this.styles[s] = a.join(' '))
                 } else '' !== e[T] && (this.styles[s] = e[T])
               }
@@ -39988,12 +39988,12 @@
           return (
             Object.defineProperty(t.prototype, 'cssText', {
               get: function () {
-                var t,
+                let t,
                   e,
                   n = []
                 try {
                   for (var o = r(Object.keys(this.styles)), i = o.next(); !i.done; i = o.next()) {
-                    var Q = i.value,
+                    const Q = i.value,
                       T = this.parentName(Q)
                     this.styles[T] || n.push(Q + ': ' + this.styles[Q] + ';')
                   }
@@ -40034,12 +40034,12 @@
                 '' === r && delete this.styles[e])
             }),
             (t.prototype.combineChildren = function (e) {
-              var n,
+              let n,
                 o,
                 i = this.parentName(e)
               try {
                 for (var Q = r(t.connect[e].children), T = Q.next(); !T.done; T = Q.next()) {
-                  var s = T.value,
+                  const s = T.value,
                     a = this.childName(i, s)
                   t.connect[a].combine.call(this, a)
                 }
@@ -40054,7 +40054,7 @@
               }
             }),
             (t.prototype.parentName = function (t) {
-              var e = t.replace(/-[^-]*$/, '')
+              const e = t.replace(/-[^-]*$/, '')
               return t === e ? '' : e
             }),
             (t.prototype.childName = function (e, r) {
@@ -40072,10 +40072,10 @@
             }),
             (t.prototype.parse = function (t) {
               void 0 === t && (t = '')
-              var e = this.constructor.pattern
+              const e = this.constructor.pattern
               this.styles = {}
-              for (var r = t.replace(e.comment, '').split(e.style); r.length > 1; ) {
-                var o = n(r.splice(0, 3), 3),
+              for (let r = t.replace(e.comment, '').split(e.style); r.length > 1; ) {
+                const o = n(r.splice(0, 3), 3),
                   i = o[0],
                   Q = o[1],
                   T = o[2]
@@ -40164,9 +40164,9 @@
             )
               return r
             if (e.MATHSPACE[t]) return e.MATHSPACE[t]
-            var i = t.match(/^\s*([-+]?(?:\.\d+|\d+(?:\.\d*)?))?(pt|em|ex|mu|px|pc|in|mm|cm|%)?/)
+            const i = t.match(/^\s*([-+]?(?:\.\d+|\d+(?:\.\d*)?))?(pt|em|ex|mu|px|pc|in|mm|cm|%)?/)
             if (!i) return r
-            var Q = parseFloat(i[1] || '1'),
+            const Q = parseFloat(i[1] || '1'),
               T = i[2]
             return e.UNITS.hasOwnProperty(T)
               ? (Q * e.UNITS[T]) / o / n
@@ -40214,12 +40214,12 @@
           }))
       },
       505: function (t, e) {
-        var r =
+        const r =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -40274,7 +40274,7 @@
           }))
       },
       9329: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40286,7 +40286,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40300,11 +40300,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractEntry = void 0))
-        var i = r(9328),
+        const i = r(9328),
           Q = r(2165),
           T = (function (t) {
             function e(e, r) {
-              var n = t.call(this) || this
+              const n = t.call(this) || this
               return (
                 (n._menu = e),
                 (n._type = r),
@@ -40348,7 +40348,7 @@
         e.AbstractEntry = T
       },
       1340: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40360,7 +40360,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40376,7 +40376,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -40389,12 +40389,12 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractItem = void 0))
-        var Q = r(9329),
+        const Q = r(9329),
           T = r(2556),
           s = r(2165),
           a = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, r) || this
+              const i = t.call(this, e, r) || this
               return ((i._content = n), (i.disabled = !1), (i.callbacks = []), (i._id = o || n), i)
             }
             return (
@@ -40424,7 +40424,7 @@
                 ;-1 === this.callbacks.indexOf(t) && this.callbacks.push(t)
               }),
               (e.prototype.unregisterCallback = function (t) {
-                var e = this.callbacks.indexOf(t)
+                const e = this.callbacks.indexOf(t)
                 ;-1 !== e && this.callbacks.splice(e, 1)
               }),
               (e.prototype.mousedown = function (t) {
@@ -40438,7 +40438,7 @@
               }),
               (e.prototype.generateHtml = function () {
                 t.prototype.generateHtml.call(this)
-                var e = this.html
+                const e = this.html
                 ;(e.setAttribute('aria-disabled', 'false'), (e.textContent = this.content))
               }),
               (e.prototype.activate = function () {
@@ -40473,21 +40473,21 @@
               }),
               (e.prototype.disable = function () {
                 this.disabled = !0
-                var t = this.html
+                const t = this.html
                 ;(t.classList.add(s.HtmlClasses.MENUDISABLED),
                   t.setAttribute('aria-disabled', 'true'))
               }),
               (e.prototype.enable = function () {
                 this.disabled = !1
-                var t = this.html
+                const t = this.html
                 ;(t.classList.remove(s.HtmlClasses.MENUDISABLED),
                   t.removeAttribute('aria-disabled'))
               }),
               (e.prototype.executeCallbacks_ = function () {
-                var t, e
+                let t, e
                 try {
                   for (var r = i(this.callbacks), n = r.next(); !n.done; n = r.next()) {
-                    var o = n.value
+                    const o = n.value
                     try {
                       o(this)
                     } catch (t) {
@@ -40510,7 +40510,7 @@
         e.AbstractItem = a
       },
       1484: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40522,7 +40522,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40538,7 +40538,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -40551,13 +40551,13 @@
               throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractMenu = void 0))
-        var Q = r(8372),
+        const Q = r(8372),
           T = r(1340),
           s = r(2165),
           a = r(6186),
           l = (function (t) {
             function e() {
-              var e = (null !== t && t.apply(this, arguments)) || this
+              const e = (null !== t && t.apply(this, arguments)) || this
               return (
                 (e.className = s.HtmlClasses.CONTEXTMENU),
                 (e.role = 'menu'),
@@ -40602,7 +40602,7 @@
                 set: function (t) {
                   if (this._focused !== t) {
                     this._focused || this.unfocus()
-                    var e = this._focused
+                    const e = this._focused
                     ;((this._focused = t), e && e.unfocus())
                   }
                 },
@@ -40610,22 +40610,22 @@
                 configurable: !0,
               }),
               (e.prototype.up = function (t) {
-                var e = this.items.filter(function (t) {
+                const e = this.items.filter(function (t) {
                   return t instanceof T.AbstractItem && !t.isHidden()
                 })
                 if (0 !== e.length)
                   if (this.focused) {
-                    var r = e.indexOf(this.focused)
+                    let r = e.indexOf(this.focused)
                     ;-1 !== r && e[(r = r ? --r : e.length - 1)].focus()
                   } else e[e.length - 1].focus()
               }),
               (e.prototype.down = function (t) {
-                var e = this.items.filter(function (t) {
+                const e = this.items.filter(function (t) {
                   return t instanceof T.AbstractItem && !t.isHidden()
                 })
                 if (0 !== e.length)
                   if (this.focused) {
-                    var r = e.indexOf(this.focused)
+                    let r = e.indexOf(this.focused)
                     ;-1 !== r && e[(r = ++r === e.length ? 0 : r)].focus()
                   } else e[0].focus()
               }),
@@ -40633,15 +40633,15 @@
                 ;(t.prototype.generateHtml.call(this), this.generateMenu())
               }),
               (e.prototype.generateMenu = function () {
-                var t,
+                let t,
                   e,
                   r = this.html
                 r.classList.add(s.HtmlClasses.MENU)
                 try {
                   for (var n = i(this.items), o = n.next(); !o.done; o = n.next()) {
-                    var Q = o.value
+                    const Q = o.value
                     if (Q.isHidden()) {
-                      var T = Q.html
+                      const T = Q.html
                       T.parentNode && T.parentNode.removeChild(T)
                     } else r.appendChild(Q.html)
                   }
@@ -40659,14 +40659,14 @@
                 ;(this.variablePool.update(), t.prototype.post.call(this, e, r))
               }),
               (e.prototype.unpostSubmenus = function () {
-                var t,
+                let t,
                   e,
                   r = this.items.filter(function (t) {
                     return t instanceof a.Submenu
                   })
                 try {
                   for (var n = i(r), o = n.next(); !o.done; o = n.next()) {
-                    var Q = o.value
+                    const Q = o.value
                     ;(Q.submenu.unpost(), Q !== this.focused && Q.unfocus())
                   }
                 } catch (e) {
@@ -40683,14 +40683,14 @@
                 ;(t.prototype.unpost.call(this), this.unpostSubmenus(), (this.focused = null))
               }),
               (e.prototype.find = function (t) {
-                var e, r
+                let e, r
                 try {
                   for (var n = i(this.items), o = n.next(); !o.done; o = n.next()) {
-                    var Q = o.value
+                    const Q = o.value
                     if ('rule' !== Q.type) {
                       if (Q.id === t) return Q
                       if ('submenu' === Q.type) {
-                        var T = Q.submenu.find(t)
+                        const T = Q.submenu.find(t)
                         if (T) return T
                       }
                     }
@@ -40713,7 +40713,7 @@
       },
       2868: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractNavigatable = void 0))
-        var n = r(3205),
+        const n = r(3205),
           o = r(8853),
           i = (function () {
             function t() {
@@ -40791,7 +40791,7 @@
         e.AbstractNavigatable = i
       },
       8372: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40803,7 +40803,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40817,9 +40817,9 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractPostable = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
-            var e = (null !== t && t.apply(this, arguments)) || this
+            const e = (null !== t && t.apply(this, arguments)) || this
             return ((e.posted = !1), e)
           }
           return (
@@ -40837,7 +40837,7 @@
             }),
             (e.prototype.unpost = function () {
               if (this.posted) {
-                var t = this.html
+                const t = this.html
                 ;(t.parentNode && t.parentNode.removeChild(t), (this.posted = !1))
               }
             }),
@@ -40847,7 +40847,7 @@
         e.AbstractPostable = i
       },
       6765: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40859,7 +40859,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40873,7 +40873,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.AbstractVariableItem = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
@@ -40881,7 +40881,7 @@
             o(e, t),
             (e.prototype.generateHtml = function () {
               t.prototype.generateHtml.call(this)
-              var e = this.html
+              const e = this.html
               ;(this.span || this.generateSpan(), e.appendChild(this.span), this.update())
             }),
             (e.prototype.register = function () {
@@ -40899,7 +40899,7 @@
         e.AbstractVariableItem = i
       },
       5179: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40911,7 +40911,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40925,11 +40925,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CloseButton = void 0))
-        var i = r(8372),
+        const i = r(8372),
           Q = r(2165),
           T = (function (t) {
             function e(e) {
-              var r = t.call(this) || this
+              const r = t.call(this) || this
               return (
                 (r.element = e),
                 (r.className = Q.HtmlClasses.MENUCLOSE),
@@ -40940,11 +40940,11 @@
             return (
               o(e, t),
               (e.prototype.generateHtml = function () {
-                var t = document.createElement('span')
+                const t = document.createElement('span')
                 ;(t.classList.add(this.className),
                   t.setAttribute('role', this.role),
                   t.setAttribute('tabindex', '0'))
-                var e = document.createElement('span')
+                const e = document.createElement('span')
                 ;((e.textContent = '\xd7'), t.appendChild(e), (this.html = t))
               }),
               (e.prototype.display = function () {}),
@@ -40966,7 +40966,7 @@
         e.CloseButton = T
       },
       5073: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -40978,7 +40978,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -40992,13 +40992,13 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.ContextMenu = void 0))
-        var i = r(1484),
+        const i = r(1484),
           Q = r(2165),
           T = r(1932),
           s = r(2358),
           a = (function (t) {
             function e(e) {
-              var r = t.call(this) || this
+              const r = t.call(this) || this
               return (
                 (r.factory = e),
                 (r.id = ''),
@@ -41012,17 +41012,17 @@
             return (
               o(e, t),
               (e.fromJson = function (t, e) {
-                var r = e.pool,
+                const r = e.pool,
                   n = e.items,
                   o = e.id,
                   i = void 0 === o ? '' : o,
                   Q = new this(t)
                 Q.id = i
-                var T = t.get('variable')
+                const T = t.get('variable')
                 r.forEach(function (e) {
                   return T(t, e, Q.pool)
                 })
-                var s = t.get('items')(t, n, Q)
+                const s = t.get('items')(t, n, Q)
                 return ((Q.items = s), Q)
               }),
               (e.prototype.generateHtml = function () {
@@ -41030,10 +41030,10 @@
                   t.prototype.generateHtml.call(this),
                   (this._frame = document.createElement('div')),
                   this._frame.classList.add(Q.HtmlClasses.MENUFRAME))
-                var e =
+                const e =
                   'left: 0px; top: 0px; z-index: 200; width: 100%; height: 100%; border: 0px; padding: 0px; margin: 0px;'
                 this._frame.setAttribute('style', 'position: absolute; ' + e)
-                var r = document.createElement('div')
+                const r = document.createElement('div')
                 ;(r.setAttribute('style', 'position: fixed; ' + e),
                   this._frame.appendChild(r),
                   r.addEventListener(
@@ -41054,7 +41054,7 @@
               (e.prototype.unpost = function () {
                 if ((t.prototype.unpost.call(this), !(this.widgets.length > 0))) {
                   this.frame.parentNode.removeChild(this.frame)
-                  var e = this.store
+                  const e = this.store
                   ;(this.moving || e.insertTaborder(), e.active.focus())
                 }
               }),
@@ -41084,7 +41084,7 @@
                     this.moving || this.store.removeTaborder(),
                     void t.prototype.post.call(this, e, r)
                   )
-                var n,
+                let n,
                   o,
                   i,
                   Q = e
@@ -41102,13 +41102,13 @@
                         Q.clientY + document.body.scrollTop + document.documentElement.scrollTop))),
                   !o && !i && n)
                 ) {
-                  var T = window.pageXOffset || document.documentElement.scrollLeft,
+                  const T = window.pageXOffset || document.documentElement.scrollLeft,
                     s = window.pageYOffset || document.documentElement.scrollTop,
                     a = n.getBoundingClientRect()
                   ;((o = (a.right + a.left) / 2 + T), (i = (a.bottom + a.top) / 2 + s))
                 }
                 ;((this.store.active = n), (this.anchor = this.store.active))
-                var l = this.html
+                const l = this.html
                 ;(o + l.offsetWidth > document.body.offsetWidth - 5 &&
                   (o = document.body.offsetWidth - l.offsetWidth - 5),
                   this.post(o, i))
@@ -41117,7 +41117,7 @@
                 this.widgets.push(t)
               }),
               (e.prototype.unregisterWidget = function (t) {
-                var e = this.widgets.indexOf(t)
+                const e = this.widgets.indexOf(t)
                 ;(e > -1 && this.widgets.splice(e, 1), 0 === this.widgets.length && this.unpost())
               }),
               (e.prototype.unpostWidgets = function () {
@@ -41140,19 +41140,19 @@
       },
       7309: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.CssStyles = void 0))
-        var n = r(2165)
+        const n = r(2165)
         !(function (t) {
           function e(t) {
             return '.' + (n.HtmlClasses[t] || t)
           }
-          var r = {}
+          const r = {}
           ;((r[e('INFOCLOSE')] = '{  top:.2em; right:.2em;}'),
             (r[e('INFOCONTENT')] =
               '{  overflow:auto; text-align:left; font-size:80%;  padding:.4em .6em; border:1px inset; margin:1em 0px;  max-height:20em; max-width:30em; background-color:#EEEEEE;  white-space:normal;}'),
             (r[e('INFO') + e('MOUSEPOST')] = '{outline:none;}'),
             (r[e('INFO')] =
               '{  position:fixed; left:50%; width:auto; text-align:center;  border:3px outset; padding:1em 2em; background-color:#DDDDDD;  color:black;  cursor:default; font-family:message-box; font-size:120%;  font-style:normal; text-indent:0; text-transform:none;  line-height:normal; letter-spacing:normal; word-spacing:normal;  word-wrap:normal; white-space:nowrap; float:none; z-index:201;  border-radius: 15px;                     /* Opera 10.5 and IE9 */  -webkit-border-radius:15px;               /* Safari and Chrome */  -moz-border-radius:15px;                  /* Firefox */  -khtml-border-radius:15px;                /* Konqueror */  box-shadow:0px 10px 20px #808080;         /* Opera 10.5 and IE9 */  -webkit-box-shadow:0px 10px 20px #808080; /* Safari 3 & Chrome */  -moz-box-shadow:0px 10px 20px #808080;    /* Forefox 3.5 */  -khtml-box-shadow:0px 10px 20px #808080;  /* Konqueror */  filter:progid:DXImageTransform.Microsoft.dropshadow(OffX=2, OffY=2, Color="gray", Positive="true"); /* IE */}'))
-          var o = {}
+          const o = {}
           ;((o[e('MENU')] =
             '{  position:absolute;  background-color:white;  color:black;  width:auto; padding:5px 0px;  border:1px solid #CCCCCC; margin:0; cursor:default;  font: menu; text-align:left; text-indent:0; text-transform:none;  line-height:normal; letter-spacing:normal; word-spacing:normal;  word-wrap:normal; white-space:nowrap; float:none; z-index:201;  border-radius: 5px;                     /* Opera 10.5 and IE9 */  -webkit-border-radius: 5px;             /* Safari and Chrome */  -moz-border-radius: 5px;                /* Firefox */  -khtml-border-radius: 5px;              /* Konqueror */  box-shadow:0px 10px 20px #808080;         /* Opera 10.5 and IE9 */  -webkit-box-shadow:0px 10px 20px #808080; /* Safari 3 & Chrome */  -moz-box-shadow:0px 10px 20px #808080;    /* Forefox 3.5 */  -khtml-box-shadow:0px 10px 20px #808080;  /* Konqueror */}'),
             (o[e('MENUITEM')] = '{  padding: 1px 2em;  background:transparent;}'),
@@ -41188,7 +41188,7 @@
               '{  padding: 0em; max-height:20em; max-width: none;  background-color:#FFFFFF;}'),
             (o[e('SELECTIONDIVIDER')] = '{  clear: both; border-top: 2px solid #000000;}'),
             (o[e('MENU') + ' ' + e('MENUCLOSE')] = '{  top:-10px; left:-10px}'))
-          var i = {}
+          const i = {}
           ;((i[e('MENUCLOSE')] =
             '{  position:absolute;  cursor:pointer;  display:inline-block;  border:2px solid #AAA;  border-radius:18px;  -webkit-border-radius: 18px;             /* Safari and Chrome */  -moz-border-radius: 18px;                /* Firefox */  -khtml-border-radius: 18px;              /* Konqueror */  font-family: "Courier New", Courier;  font-size:24px;  color:#F0F0F0}'),
             (i[e('MENUCLOSE') + ' span'] =
@@ -41197,18 +41197,18 @@
               '{  color:white!important;  border:2px solid #CCC!important}'),
             (i[e('MENUCLOSE') + ':hover span'] = '{  background-color:#CCC!important}'),
             (i[e('MENUCLOSE') + ':hover:focus'] = '{  outline:none}'))
-          var Q = !1,
+          let Q = !1,
             T = !1,
             s = !1
           function a(t) {
             s || (l(i, t), (s = !0))
           }
           function l(t, e) {
-            var r = e || document,
+            const r = e || document,
               n = r.createElement('style')
             n.type = 'text/css'
-            var o = ''
-            for (var i in t) ((o += i), (o += ' '), (o += t[i]), (o += '\n'))
+            let o = ''
+            for (const i in t) ((o += i), (o += ' '), (o += t[i]), (o += '\n'))
             ;((n.innerHTML = o), r.head.appendChild(n))
           }
           ;((t.addMenuStyles = function (t) {
@@ -41272,7 +41272,7 @@
           }))
       },
       4922: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41284,7 +41284,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41298,11 +41298,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Info = void 0))
-        var i = r(5179),
+        const i = r(5179),
           Q = r(2165),
           T = (function (t) {
             function e(e, r, n) {
-              var o = t.call(this) || this
+              const o = t.call(this) || this
               return (
                 (o.title = e),
                 (o.signature = n),
@@ -41325,7 +41325,7 @@
               }),
               (e.prototype.generateHtml = function () {
                 t.prototype.generateHtml.call(this)
-                var e = this.html
+                const e = this.html
                 ;(e.appendChild(this.generateTitle()),
                   e.appendChild(this.contentDiv),
                   e.appendChild(this.generateSignature()),
@@ -41334,7 +41334,7 @@
               }),
               (e.prototype.post = function () {
                 t.prototype.post.call(this)
-                var e = document.documentElement,
+                const e = document.documentElement,
                   r = this.html,
                   n = window.innerHeight || e.clientHeight || e.scrollHeight || 0,
                   o = Math.floor(-r.offsetWidth / 2),
@@ -41345,7 +41345,7 @@
               }),
               (e.prototype.display = function () {
                 ;(this.menu.registerWidget(this), (this.contentDiv.innerHTML = this.content()))
-                var t = this.menu.html
+                const t = this.menu.html
                 ;(t.parentNode && t.parentNode.removeChild(t),
                   this.menu.frame.appendChild(this.html))
               }),
@@ -41362,7 +41362,7 @@
                   this.menu.unregisterWidget(this))
               }),
               (e.prototype.generateClose = function () {
-                var t = new i.CloseButton(this),
+                const t = new i.CloseButton(this),
                   e = t.html
                 return (
                   e.classList.add(Q.HtmlClasses.INFOCLOSE),
@@ -41371,11 +41371,11 @@
                 )
               }),
               (e.prototype.generateTitle = function () {
-                var t = document.createElement('span')
+                const t = document.createElement('span')
                 return ((t.innerHTML = this.title), t.classList.add(Q.HtmlClasses.INFOTITLE), t)
               }),
               (e.prototype.generateContent = function () {
-                var t = document.createElement('div')
+                const t = document.createElement('div')
                 return (
                   t.classList.add(Q.HtmlClasses.INFOCONTENT),
                   t.setAttribute('tabindex', '0'),
@@ -41383,7 +41383,7 @@
                 )
               }),
               (e.prototype.generateSignature = function () {
-                var t = document.createElement('span')
+                const t = document.createElement('span')
                 return (
                   (t.innerHTML = this.signature),
                   t.classList.add(Q.HtmlClasses.INFOSIGNATURE),
@@ -41399,7 +41399,7 @@
         e.Info = T
       },
       1409: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41411,7 +41411,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41425,12 +41425,12 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Checkbox = void 0))
-        var i = r(6765),
+        const i = r(6765),
           Q = r(2556),
           T = r(2165),
           s = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, 'checkbox', r, o) || this
+              const i = t.call(this, e, 'checkbox', r, o) || this
               return (
                 (i.role = 'menuitemcheckbox'),
                 (i.variable = e.pool.lookup(n)),
@@ -41466,7 +41466,7 @@
         e.Checkbox = s
       },
       9886: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41478,7 +41478,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41492,13 +41492,13 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Combo = void 0))
-        var i = r(6765),
+        const i = r(6765),
           Q = r(2556),
           T = r(2165),
           s = r(3205),
           a = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, 'combobox', r, o) || this
+              const i = t.call(this, e, 'combobox', r, o) || this
               return (
                 (i.role = 'combobox'),
                 (i.inputEvent = !1),
@@ -41548,7 +41548,7 @@
               }),
               (e.prototype.updateAria = function () {}),
               (e.prototype.updateSpan = function () {
-                var t
+                let t
                 try {
                   t = this.variable.getValue(Q.MenuUtil.getActiveElement(this))
                 } catch (e) {
@@ -41565,7 +41565,7 @@
         e.Combo = a
       },
       3467: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41577,7 +41577,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41591,11 +41591,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Command = void 0))
-        var i = r(1340),
+        const i = r(1340),
           Q = r(2556),
           T = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, 'command', r, o) || this
+              const i = t.call(this, e, 'command', r, o) || this
               return ((i.command = n), i)
             }
             return (
@@ -41620,7 +41620,7 @@
         e.Command = T
       },
       2965: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41632,7 +41632,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41646,7 +41646,7 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Label = void 0))
-        var i = r(1340),
+        const i = r(1340),
           Q = r(2165),
           T = (function (t) {
             function e(e, r, n) {
@@ -41670,7 +41670,7 @@
         e.Label = T
       },
       385: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41682,7 +41682,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41696,12 +41696,12 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Radio = void 0))
-        var i = r(6765),
+        const i = r(6765),
           Q = r(2556),
           T = r(2165),
           s = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, 'radio', r, o) || this
+              const i = t.call(this, e, 'radio', r, o) || this
               return ((i.role = 'menuitemradio'), (i.variable = e.pool.lookup(n)), i.register(), i)
             }
             return (
@@ -41735,7 +41735,7 @@
         e.Radio = s
       },
       3463: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41747,7 +41747,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41761,11 +41761,11 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Rule = void 0))
-        var i = r(9329),
+        const i = r(9329),
           Q = r(2165),
           T = (function (t) {
             function e(e) {
-              var r = t.call(this, e, 'rule') || this
+              const r = t.call(this, e, 'rule') || this
               return ((r.className = Q.HtmlClasses.MENUITEM), (r.role = 'separator'), r)
             }
             return (
@@ -41775,7 +41775,7 @@
               }),
               (e.prototype.generateHtml = function () {
                 t.prototype.generateHtml.call(this)
-                var e = this.html
+                const e = this.html
                 ;(e.classList.add(Q.HtmlClasses.MENURULE),
                   e.setAttribute('aria-orientation', 'vertical'))
               }),
@@ -41789,7 +41789,7 @@
         e.Rule = T
       },
       7625: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41801,7 +41801,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41815,13 +41815,13 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Slider = void 0))
-        var i = r(6765),
+        const i = r(6765),
           Q = r(2556),
           T = r(2165),
           s = r(3205),
           a = (function (t) {
             function e(e, r, n, o) {
-              var i = t.call(this, e, 'slider', r, o) || this
+              const i = t.call(this, e, 'slider', r, o) || this
               return (
                 (i.role = 'slider'),
                 (i.labelId = 'ctx_slideLabel' + Q.MenuUtil.counter()),
@@ -41886,7 +41886,7 @@
                 event.stopPropagation()
               }),
               (e.prototype.keydown = function (e) {
-                var r = e.keyCode
+                const r = e.keyCode
                 return r === s.KEY.UP || r === s.KEY.DOWN
                   ? (e.preventDefault(), void t.prototype.keydown.call(this, e))
                   : this.inputEvent && r !== s.KEY.ESCAPE && r !== s.KEY.RETURN
@@ -41894,14 +41894,14 @@
                     : (t.prototype.keydown.call(this, e), void e.stopPropagation())
               }),
               (e.prototype.updateAria = function () {
-                var t = this.variable.getValue()
+                const t = this.variable.getValue()
                 t &&
                   this.input &&
                   (this.input.setAttribute('aria-valuenow', t),
                   this.input.setAttribute('aria-valuetext', t + '%'))
               }),
               (e.prototype.updateSpan = function () {
-                var t
+                let t
                 try {
                   ;((t = this.variable.getValue(Q.MenuUtil.getActiveElement(this))),
                     (this.valueSpan.innerHTML = t + '%'))
@@ -41919,7 +41919,7 @@
         e.Slider = a
       },
       6186: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -41931,7 +41931,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -41945,17 +41945,17 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Submenu = void 0))
-        var i = r(1340),
+        const i = r(1340),
           Q = r(2165),
           T = (function (t) {
             function e(e, r, n) {
-              var o = t.call(this, e, 'submenu', r, n) || this
+              const o = t.call(this, e, 'submenu', r, n) || this
               return ((o._submenu = null), o)
             }
             return (
               o(e, t),
               (e.fromJson = function (t, e, r) {
-                var n = e.content,
+                const n = e.content,
                   o = e.menu,
                   i = new this(r, n, e.id),
                   Q = t.get('subMenu')(t, o, i)
@@ -41993,7 +41993,7 @@
               }),
               (e.prototype.generateHtml = function () {
                 t.prototype.generateHtml.call(this)
-                var e = this.html
+                const e = this.html
                 ;((this.span = document.createElement('span')),
                   (this.span.textContent = '\u25ba'),
                   this.span.classList.add(Q.HtmlClasses.MENUARROW),
@@ -42028,7 +42028,7 @@
           })(e.KEY || (e.KEY = {})))
       },
       9328: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -42040,7 +42040,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -42054,14 +42054,14 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MenuElement = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e() {
             return (null !== t && t.apply(this, arguments)) || this
           }
           return (
             o(e, t),
             (e.prototype.addAttributes = function (t) {
-              for (var e in t) this.html.setAttribute(e, t[e])
+              for (const e in t) this.html.setAttribute(e, t[e])
             }),
             Object.defineProperty(e.prototype, 'html', {
               get: function () {
@@ -42074,15 +42074,15 @@
               configurable: !0,
             }),
             (e.prototype.generateHtml = function () {
-              var t = document.createElement('div')
+              const t = document.createElement('div')
               ;(t.classList.add(this.className), t.setAttribute('role', this.role), (this.html = t))
             }),
             (e.prototype.focus = function () {
-              var t = this.html
+              const t = this.html
               ;(t.setAttribute('tabindex', '0'), t.focus())
             }),
             (e.prototype.unfocus = function () {
-              var t = this.html
+              const t = this.html
               t.hasAttribute('tabindex') && t.setAttribute('tabindex', '-1')
               try {
                 t.blur()
@@ -42095,10 +42095,10 @@
         e.MenuElement = i
       },
       1932: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__values) ||
           function (t) {
-            var e = 'function' == typeof Symbol && Symbol.iterator,
+            let e = 'function' == typeof Symbol && Symbol.iterator,
               r = e && t[e],
               n = 0
             if (r) return r.call(t)
@@ -42111,7 +42111,7 @@
             throw new TypeError(e ? 'Object is not iterable.' : 'Symbol.iterator is not defined.')
           }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.MenuStore = void 0))
-        var o = r(2556),
+        const o = r(2556),
           i = r(2165),
           Q = r(3205),
           T = (function () {
@@ -42142,9 +42142,9 @@
                 configurable: !0,
               }),
               (t.prototype.next = function () {
-                var t = this.store.length
+                const t = this.store.length
                 if (0 === t) return ((this.active = null), null)
-                var e = this.store.indexOf(this.active)
+                let e = this.store.indexOf(this.active)
                 return (
                   (e = -1 === e ? 0 : e < t - 1 ? e + 1 : 0),
                   (this.active = this.store[e]),
@@ -42152,9 +42152,9 @@
                 )
               }),
               (t.prototype.previous = function () {
-                var t = this.store.length
+                const t = this.store.length
                 if (0 === t) return ((this.active = null), null)
-                var e = t - 1,
+                let e = t - 1,
                   r = this.store.indexOf(this.active)
                 return (
                   (r = -1 === r || 0 === r ? e : r - 1),
@@ -42166,12 +42166,12 @@
                 this.remove(this.store)
               }),
               (t.prototype.insert = function (t) {
-                var e,
+                let e,
                   r,
                   o = t instanceof HTMLElement ? [t] : t
                 try {
                   for (var i = n(o), Q = i.next(); !Q.done; Q = i.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     this.insertElement(T)
                   }
                 } catch (t) {
@@ -42186,12 +42186,12 @@
                 this.sort()
               }),
               (t.prototype.remove = function (t) {
-                var e,
+                let e,
                   r,
                   o = t instanceof HTMLElement ? [t] : t
                 try {
                   for (var i = n(o), Q = i.next(); !Q.done; Q = i.next()) {
-                    var T = Q.value
+                    const T = Q.value
                     this.removeElement(T)
                   }
                 } catch (t) {
@@ -42229,7 +42229,7 @@
                   this.removeEvents(t))
               }),
               (t.prototype.sort = function () {
-                var t = document.getElementsByClassName(this.attachedClass)
+                const t = document.getElementsByClassName(this.attachedClass)
                 this.store = [].slice.call(t)
               }),
               (t.prototype.insertTaborder_ = function () {
@@ -42261,19 +42261,19 @@
                   this.counter++)
               }),
               (t.prototype.addEvent = function (t, e, r) {
-                var n = i.HtmlAttrs[e.toUpperCase() + 'FUNC']
+                const n = i.HtmlAttrs[e.toUpperCase() + 'FUNC']
                 ;((this.attrMap[n + this.counter] = r), t.addEventListener(e, r))
               }),
               (t.prototype.removeEvents = function (t) {
                 if (t.hasAttribute(i.HtmlAttrs.COUNTER)) {
-                  var e = t.getAttribute(i.HtmlAttrs.COUNTER)
+                  const e = t.getAttribute(i.HtmlAttrs.COUNTER)
                   ;(this.removeEvent(t, 'contextmenu', e),
                     this.removeEvent(t, 'keydown', e),
                     t.removeAttribute(i.HtmlAttrs.COUNTER))
                 }
               }),
               (t.prototype.removeEvent = function (t, e, r) {
-                var n = i.HtmlAttrs[e.toUpperCase() + 'FUNC'],
+                const n = i.HtmlAttrs[e.toUpperCase() + 'FUNC'],
                   o = this.attrMap[n + r]
                 t.removeEventListener(e, o)
               }),
@@ -42291,11 +42291,11 @@
           (e.MenuUtil = void 0),
           (function (t) {
             ;((t.close = function (t) {
-              var e = t.menu
+              const e = t.menu
               e.baseMenu ? e.baseMenu.unpost() : e.unpost()
             }),
               (t.getActiveElement = function (t) {
-                var e = t.menu
+                const e = t.menu
                 return (e.baseMenu ? e.baseMenu : e).store.active
               }),
               (t.error = function (t, e) {
@@ -42323,14 +42323,14 @@
           }))
       },
       6914: function (t, e, r) {
-        var n =
+        const n =
             (this && this.__rest) ||
             function (t, e) {
-              var r = {}
+              const r = {}
               for (var n in t)
                 Object.prototype.hasOwnProperty.call(t, n) && e.indexOf(n) < 0 && (r[n] = t[n])
               if (null != t && 'function' == typeof Object.getOwnPropertySymbols) {
-                var o = 0
+                let o = 0
                 for (n = Object.getOwnPropertySymbols(t); o < n.length; o++)
                   e.indexOf(n[o]) < 0 &&
                     Object.prototype.propertyIsEnumerable.call(t, n[o]) &&
@@ -42341,9 +42341,9 @@
           o =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -42363,7 +42363,7 @@
           i =
             (this && this.__values) ||
             function (t) {
-              var e = 'function' == typeof Symbol && Symbol.iterator,
+              let e = 'function' == typeof Symbol && Symbol.iterator,
                 r = e && t[e],
                 n = 0
               if (r) return r.call(t)
@@ -42382,7 +42382,7 @@
               return t
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Parser = void 0))
-        var T = r(3467),
+        const T = r(3467),
           s = r(5073),
           a = r(3737),
           l = r(1409),
@@ -42397,7 +42397,7 @@
           y = r(2308),
           H = (function () {
             function t(t) {
-              var e = this
+              const e = this
               ;(void 0 === t && (t = []),
                 (this._initList = [
                   ['command', T.Command.fromJson.bind(T.Command)],
@@ -42417,7 +42417,7 @@
                 ]),
                 (this._factory = new y.ParserFactory(this._initList)),
                 t.forEach(function (t) {
-                  var r = o(t, 2),
+                  const r = o(t, 2),
                     n = r[0],
                     i = r[1]
                   return e.factory.add(n, i)
@@ -42432,12 +42432,12 @@
                 configurable: !0,
               }),
               (t.prototype.items = function (t, e, r) {
-                var n,
+                let n,
                   o,
                   Q = []
                 try {
                   for (var T = i(e), s = T.next(); !s.done; s = T.next()) {
-                    var a = s.value,
+                    const a = s.value,
                       l = this.parse(a, r)
                     l && (r.items.push(l), a.disabled && l.disable(), a.hidden && Q.push(l))
                   }
@@ -42459,7 +42459,7 @@
               }),
               (t.prototype.parse = function (t) {
                 for (var e = [], r = 1; r < arguments.length; r++) e[r - 1] = arguments[r]
-                var o = t.type,
+                const o = t.type,
                   i = n(t, ['type']),
                   T = this.factory.get(o)
                 return T ? T.apply(void 0, Q([this.factory, i], e)) : null
@@ -42471,7 +42471,7 @@
       },
       2308: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.ParserFactory = void 0))
-        var r = (function () {
+        const r = (function () {
           function t(t) {
             this._parser = new Map(t)
           }
@@ -42488,7 +42488,7 @@
         e.ParserFactory = r
       },
       2100: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -42500,7 +42500,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -42516,9 +42516,9 @@
           i =
             (this && this.__read) ||
             function (t, e) {
-              var r = 'function' == typeof Symbol && t[Symbol.iterator]
+              let r = 'function' == typeof Symbol && t[Symbol.iterator]
               if (!r) return t
-              var n,
+              let n,
                 o,
                 i = r.call(t),
                 Q = []
@@ -42537,13 +42537,13 @@
             }
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.SelectionBox = e.SelectionMenu = void 0))
-        var Q = r(2556),
+        const Q = r(2556),
           T = r(2165),
           s = r(1484),
           a = r(4922),
           l = (function (t) {
             function e(e) {
-              var r = t.call(this) || this
+              const r = t.call(this) || this
               return (
                 (r.anchor = e),
                 (r.className = T.HtmlClasses.SELECTIONMENU),
@@ -42555,7 +42555,7 @@
             return (
               o(e, t),
               (e.fromJson = function (t, e, r) {
-                var n = e.title,
+                const n = e.title,
                   o = e.values,
                   i = e.variable,
                   Q = new this(r),
@@ -42584,10 +42584,10 @@
             )
           })(s.AbstractMenu)
         e.SelectionMenu = l
-        var c = (function (t) {
+        const c = (function (t) {
           function e(e, r, n, o) {
             ;(void 0 === n && (n = 'none'), void 0 === o && (o = 'vertical'))
-            var i = t.call(this, e, null, r) || this
+            const i = t.call(this, e, null, r) || this
             return (
               (i.style = n),
               (i.grid = o),
@@ -42600,12 +42600,12 @@
           return (
             o(e, t),
             (e.fromJson = function (t, e, r) {
-              var n = e.title,
+              const n = e.title,
                 o = e.signature,
                 i = e.selections,
                 Q = new this(n, o, e.order, e.grid)
               Q.attachMenu(r)
-              var T = i.map(function (e) {
+              const T = i.map(function (e) {
                 return t.get('selectionMenu')(t, e, Q)
               })
               return ((Q.selections = T), Q)
@@ -42618,7 +42618,7 @@
                 return this._selections
               },
               set: function (t) {
-                var e = this
+                const e = this
                 ;((this._selections = []),
                   t.forEach(function (t) {
                     return e.addSelection(t)
@@ -42631,10 +42631,10 @@
               ;((t.anchor = this), this._selections.push(t))
             }),
             (e.prototype.rowDiv = function (t) {
-              var e = this,
+              const e = this,
                 r = document.createElement('div')
               this.contentDiv.appendChild(r)
-              var n = t.map(function (t) {
+              const n = t.map(function (t) {
                   return (
                     r.appendChild(t.html),
                     t.html.id || (t.html.id = e.prefix + Q.MenuUtil.counter()),
@@ -42664,7 +42664,7 @@
                     n = [],
                     o = this.getChunkSize(this.selections.length),
                     Q = function (t) {
-                      var Q = T.selections.slice(t, t + o),
+                      const Q = T.selections.slice(t, t + o),
                         s = i(T.rowDiv(Q), 4),
                         a = s[0],
                         l = s[1],
@@ -42705,7 +42705,7 @@
             }),
             (e.prototype.balanceColumn = function (t, e) {
               t.forEach(function (t) {
-                for (var r = Array.from(t.children), n = 0, o = void 0; (o = r[n]); n++)
+                for (let r = Array.from(t.children), n = 0, o = void 0; (o = r[n]); n++)
                   o.style.width = e[n] + 'px'
               })
             }),
@@ -42724,13 +42724,13 @@
               return r
             }),
             (e.prototype.left = function (t) {
-              var e = this
+              const e = this
               this.move(t, function (t) {
                 return (0 === t ? e.selections.length : t) - 1
               })
             }),
             (e.prototype.right = function (t) {
-              var e = this
+              const e = this
               this.move(t, function (t) {
                 return t === e.selections.length - 1 ? 0 : t + 1
               })
@@ -42740,11 +42740,11 @@
                 this.html.classList.add(T.HtmlClasses.SELECTION))
             }),
             (e.prototype.generateContent = function () {
-              var e = t.prototype.generateContent.call(this)
+              const e = t.prototype.generateContent.call(this)
               return (e.classList.add(T.HtmlClasses.SELECTIONBOX), e.removeAttribute('tabindex'), e)
             }),
             (e.prototype.findSelection = function (t) {
-              var e = t.target,
+              let e = t.target,
                 r = null
               if (
                 (e.id &&
@@ -42753,7 +42753,7 @@
                   })),
                 !r)
               ) {
-                var n = e.parentElement.id
+                const n = e.parentElement.id
                 r = this.selections.find(function (t) {
                   return t.html.id === n
                 })
@@ -42761,9 +42761,9 @@
               return r
             }),
             (e.prototype.move = function (t, e) {
-              var r = this.findSelection(t)
+              const r = this.findSelection(t)
               r.focused && r.focused.unfocus()
-              var n = e(this.selections.indexOf(r))
+              const n = e(this.selections.indexOf(r))
               this.selections[n].focus()
             }),
             (e.prototype.order = function () {
@@ -42789,7 +42789,7 @@
               [
                 'decreasing',
                 function (t, e) {
-                  var r = t.items.length,
+                  const r = t.items.length,
                     n = e.items.length
                   return r < n ? 1 : n < r ? -1 : 0
                 },
@@ -42797,7 +42797,7 @@
               [
                 'increasing',
                 function (t, e) {
-                  var r = t.items.length,
+                  const r = t.items.length,
                     n = e.items.length
                   return r < n ? -1 : n < r ? 1 : 0
                 },
@@ -42809,7 +42809,7 @@
         e.SelectionBox = c
       },
       4834: function (t, e, r) {
-        var n,
+        let n,
           o =
             (this && this.__extends) ||
             ((n = function (t, e) {
@@ -42821,7 +42821,7 @@
                       t.__proto__ = e
                     }) ||
                   function (t, e) {
-                    for (var r in e) e.hasOwnProperty(r) && (t[r] = e[r])
+                    for (const r in e) e.hasOwnProperty(r) && (t[r] = e[r])
                   }),
                 n(t, e)
               )
@@ -42835,15 +42835,15 @@
                   null === e ? Object.create(e) : ((r.prototype = e.prototype), new r())))
             })
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.SubMenu = void 0))
-        var i = (function (t) {
+        const i = (function (t) {
           function e(e) {
-            var r = t.call(this) || this
+            const r = t.call(this) || this
             return ((r._anchor = e), (r.variablePool = r.anchor.menu.pool), r.setBaseMenu(), r)
           }
           return (
             o(e, t),
             (e.fromJson = function (t, e, r) {
-              var n = e.items,
+              const n = e.items,
                 o = new this(r),
                 i = t.get('items')(t, n, o)
               return ((o.items = i), o)
@@ -42876,7 +42876,7 @@
               this.baseMenu.frame.appendChild(this.html)
             }),
             (e.prototype.setBaseMenu = function () {
-              var t = this
+              let t = this
               do {
                 t = t.anchor.menu
               } while (t instanceof e)
@@ -42895,14 +42895,14 @@
       },
       3737: function (t, e, r) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.Variable = void 0))
-        var n = r(2556),
+        const n = r(2556),
           o = (function () {
             function t(t, e, r) {
               ;((this._name = t), (this.getter = e), (this.setter = r), (this.items = []))
             }
             return (
               (t.fromJson = function (t, e, r) {
-                var n = new this(e.name, e.getter, e.setter)
+                const n = new this(e.name, e.getter, e.setter)
                 r.insert(n)
               }),
               Object.defineProperty(t.prototype, 'name', {
@@ -42934,7 +42934,7 @@
                 ;-1 === this.items.indexOf(t) && this.items.push(t)
               }),
               (t.prototype.unregister = function (t) {
-                var e = this.items.indexOf(t)
+                const e = this.items.indexOf(t)
                 ;-1 !== e && this.items.splice(e, 1)
               }),
               (t.prototype.update = function () {
@@ -42967,7 +42967,7 @@
       },
       2358: function (t, e) {
         ;(Object.defineProperty(e, '__esModule', { value: !0 }), (e.VariablePool = void 0))
-        var r = (function () {
+        const r = (function () {
           function t() {
             this.pool = {}
           }
@@ -42982,7 +42982,7 @@
               delete this.pool[t]
             }),
             (t.prototype.update = function () {
-              for (var t in this.pool) this.pool[t].update()
+              for (const t in this.pool) this.pool[t].update()
             }),
             t
           )
@@ -43986,7 +43986,7 @@
           )
         }),
           (e.detectEdge = function () {
-            var t
+            let t
             return (
               'undefined' != typeof window &&
               'MSGestureEvent' in window &&
@@ -44336,7 +44336,7 @@
         ;((e.EnginePromise = a), (a.loaded = {}), (a.promises = {}))
       },
       4440: function (t, e) {
-        var r
+        let r
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.DOMAIN_TO_STYLES =
             e.Markup =
@@ -44373,7 +44373,7 @@
           (e.DOMAIN_TO_STYLES = { mathspeak: 'default', clearspeak: 'default' }))
       },
       6828: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__awaiter) ||
           function (t, e, r, n) {
             return new (r || (r = Promise))(function (o, i) {
@@ -44392,7 +44392,7 @@
                 }
               }
               function s(t) {
-                var e
+                let e
                 t.done
                   ? o(t.value)
                   : ((e = t.value),
@@ -44874,7 +44874,7 @@
           ))
       },
       2998: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__awaiter) ||
           function (t, e, r, n) {
             return new (r || (r = Promise))(function (o, i) {
@@ -44893,7 +44893,7 @@
                 }
               }
               function s(t) {
-                var e
+                let e
                 t.done
                   ? o(t.value)
                   : ((e = t.value),
@@ -45066,7 +45066,7 @@
             : u({ mode: Q.Mode.SYNC }).then(() => u({ mode: Q.Mode.ASYNC })))
       },
       2315: function (__unused_webpack_module, exports, __webpack_require__) {
-        var __dirname = '/'
+        const __dirname = '/'
         Object.defineProperty(exports, '__esModule', { value: !0 })
         const variables_1 = __webpack_require__(1377)
         class SystemExternal {
@@ -45812,7 +45812,7 @@
           (e.prepareMmlString = c))
       },
       2298: function (t, e) {
-        var r
+        let r
         function n(t) {
           return t
             .map(function (t) {
@@ -46160,7 +46160,7 @@
           }
           return !1
         }
-        var v
+        let v
         function M(t) {
           const e = V(t)
           if (!e) return { type: v.INVALID, node: null }
@@ -46579,7 +46579,7 @@
                 t.blue +
                 ')'
             )
-            var t, e
+            let t, e
           }
           increment() {
             this.hue = (this.hue + this.incr) % 360
@@ -47162,7 +47162,7 @@
           if (t.match(/^name\(\.\.\/\.\.\)="\w+"$/)) {
             const e = t.split('"')[1].toUpperCase()
             return (t) => {
-              var r, o
+              let r, o
               return (
                 (null ===
                   (o = null === (r = t.parentNode) || void 0 === r ? void 0 : r.parentNode) ||
@@ -47176,7 +47176,7 @@
             const e = t.split('='),
               r = parseInt(e[1], 10)
             return (t) => {
-              var e
+              let e
               return (null === (e = t.parentNode) || void 0 === e ? void 0 : e.childNodes[r]) === t
             }
           }
@@ -48948,7 +48948,7 @@
         e.BrailleStore = i
       },
       1676: function (t, e) {
-        var r
+        let r
         ;(Object.defineProperty(e, '__esModule', { value: !0 }),
           (e.DefaultComparator =
             e.DynamicCstrParser =
@@ -49619,7 +49619,7 @@
               void 0))
         const n = r(5897),
           o = r(2105)
-        var i
+        let i
         function Q(t) {
           switch (t) {
             case '[n]':
@@ -53281,11 +53281,11 @@
           return t.type === e.type && t.role === e.role && t.font === e.font
         }),
           (e.lookupType = function (t) {
-            var e
+            let e
             return (null === (e = yt[t]) || void 0 === e ? void 0 : e.type) || 'unknown'
           }),
           (e.lookupRole = function (t) {
-            var e
+            let e
             return (null === (e = yt[t]) || void 0 === e ? void 0 : e.role) || 'unknown'
           }),
           (e.lookupMeaning = function (t) {
@@ -56023,7 +56023,7 @@
                   ? [r]
                   : ((r = r), Q.contentCollapseStructure(r[1]) ? r.slice(2) : r.slice(1))),
               )
-              var r
+              let r
             }, [])
           }
           static fromStructure(t, e) {
@@ -56724,7 +56724,7 @@
           i = r(4356),
           Q = r(2536),
           T = r(2780)
-        var s, a, l
+        let s, a, l
         function c() {
           const t = i.LOCALE.ALPHABETS,
             r = (t, e) => {
@@ -58024,7 +58024,7 @@
           }))
       },
       6141: function (t, e, r) {
-        var n =
+        const n =
           (this && this.__awaiter) ||
           function (t, e, r, n) {
             return new (r || (r = Promise))(function (o, i) {
@@ -58043,7 +58043,7 @@
                 }
               }
               function s(t) {
-                var e
+                let e
                 t.done
                   ? o(t.value)
                   : ((e = t.value),
@@ -60267,9 +60267,9 @@
     },
     __webpack_module_cache__ = {}
   function __webpack_require__(t) {
-    var e = __webpack_module_cache__[t]
+    const e = __webpack_module_cache__[t]
     if (void 0 !== e) return e.exports
-    var r = (__webpack_module_cache__[t] = { exports: {} })
+    const r = (__webpack_module_cache__[t] = { exports: {} })
     return (__webpack_modules__[t].call(r.exports, r, r.exports, __webpack_require__), r.exports)
   }
   __webpack_require__.g = (function () {
@@ -60280,9 +60280,9 @@
       if ('object' == typeof window) return window
     }
   })()
-  var __webpack_exports__ = {}
+  const __webpack_exports__ = {}
   !(function () {
-    var t = __webpack_require__(9515),
+    const t = __webpack_require__(9515),
       e = __webpack_require__(3282),
       r = __webpack_require__(235),
       n = __webpack_require__(265),
@@ -60294,7 +60294,7 @@
     }
     ;(MathJax.loader && MathJax.loader.checkVersion('startup', e.VERSION, 'startup'),
       (0, t.combineWithMathJax)({ _: { components: { loader: r, package: n, startup: o } } }))
-    var Q,
+    let Q,
       T = {
         'a11y/semantic-enrich': ['input/mml', 'a11y/sre'],
         'a11y/complexity': ['a11y/semantic-enrich'],
@@ -60368,7 +60368,7 @@
             (function (t, e) {
               if (t) {
                 if ('string' == typeof t) return i(t, e)
-                var r = Object.prototype.toString.call(t).slice(8, -1)
+                let r = Object.prototype.toString.call(t).slice(8, -1)
                 return (
                   'Object' === r && t.constructor && (r = t.constructor.name),
                   'Map' === r || 'Set' === r
@@ -60410,7 +60410,7 @@
         'ui/menu',
         'a11y/assistive-mml',
       ))
-    var l = __webpack_require__(444),
+    const l = __webpack_require__(444),
       c = __webpack_require__(6191),
       u = __webpack_require__(5009),
       p = __webpack_require__(3494),
@@ -60590,7 +60590,7 @@
         (MathJax._.mathjax.mathjax.asyncLoad = function (t) {
           return MathJax.loader.load(t)
         }))
-    var Ct = __webpack_require__(8462),
+    const Ct = __webpack_require__(8462),
       Nt = __webpack_require__(9899),
       wt = __webpack_require__(4676),
       Pt = __webpack_require__(7073),
@@ -60673,19 +60673,19 @@
         '[tex]/configmacros',
       ),
       (function () {
-        var t = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [],
+        const t = arguments.length > 0 && void 0 !== arguments[0] ? arguments[0] : [],
           e = !(arguments.length > 1 && void 0 !== arguments[1]) || arguments[1]
         if (MathJax.startup) {
           ;(e &&
             (MathJax.startup.registerConstructor('tex', MathJax._.input.tex_ts.TeX),
             MathJax.startup.useInput('tex')),
             MathJax.config.tex || (MathJax.config.tex = {}))
-          var r = MathJax.config.tex.packages
+          const r = MathJax.config.tex.packages
           ;((MathJax.config.tex.packages = t),
             r && (0, Mt.insert)(MathJax.config.tex, { packages: r }))
         }
       })(['base', 'ams', 'newcommand', 'noundefined', 'require', 'autoload', 'configmacros']))
-    var ce = __webpack_require__(5884),
+    const ce = __webpack_require__(5884),
       ue = __webpack_require__(5552),
       pe = __webpack_require__(3055),
       he = __webpack_require__(7519),
@@ -60840,7 +60840,7 @@
         }),
       MathJax.startup &&
         (MathJax.startup.registerConstructor('svg', Fe.SVG), MathJax.startup.useOutput('svg')))
-    var vr = __webpack_require__(3980),
+    const vr = __webpack_require__(3980),
       Mr = __webpack_require__(1103),
       _r = __webpack_require__(9124),
       Vr = __webpack_require__(6001),
@@ -60956,10 +60956,10 @@
       }),
       MathJax.startup)
     ) {
-      var Ln = (0, Mt.selectOptionsFromKeys)(MathJax.config.svg || {}, Xr.TeXFont.OPTIONS)
+      const Ln = (0, Mt.selectOptionsFromKeys)(MathJax.config.svg || {}, Xr.TeXFont.OPTIONS)
       ;(0, t.combineDefaults)(MathJax.config, 'svg', { font: new Xr.TeXFont(Ln) })
     }
-    var mn = __webpack_require__(5865),
+    const mn = __webpack_require__(5865),
       yn = __webpack_require__(8310),
       Hn = __webpack_require__(4001),
       gn = __webpack_require__(473),
@@ -60983,7 +60983,7 @@
         MathJax.startup.extendHandler(function (t) {
           return (0, Hn.MenuHandler)(t)
         }, 20))
-    var vn = __webpack_require__(351)
+    const vn = __webpack_require__(351)
     function Mn(t, e) {
       ;(null == e || e > t.length) && (e = t.length)
       for (var r = 0, n = new Array(e); r < e; r++) n[r] = t[r]
@@ -61014,7 +61014,7 @@
               (function (t, e) {
                 if (!t) return
                 if ('string' == typeof t) return Mn(t, e)
-                var r = Object.prototype.toString.call(t).slice(8, -1)
+                let r = Object.prototype.toString.call(t).slice(8, -1)
                 'Object' === r && t.constructor && (r = t.constructor.name)
                 if ('Map' === r || 'Set' === r) return Array.from(t)
                 if ('Arguments' === r || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(r))

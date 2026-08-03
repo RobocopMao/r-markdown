@@ -15,6 +15,7 @@ src/**/*.js
 # IDE
 .vscode/
 .idea/
+.reasonix
 
 # OS files
 .DS_Store

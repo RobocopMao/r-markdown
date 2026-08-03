@@ -7,6 +7,7 @@ import { uploadCoverImage, saveDraft } from '@/services/wechatPublisher'
 import { getCoverMediaId, setCoverMediaId, clearMediaId } from '@/services/coverCache'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { getDataURL } from '@/utils/imageDB'
+import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
 import { useTheme } from '@/composables/useTheme'
 import { useMermaid } from '@/composables/useMermaid'
@@ -286,7 +287,11 @@ async function handleSave() {
   const thumbMediaId = coverMediaId.value
   try {
     const step1 = resolveLocalBase64(props.content)
-    const step2 = await resolveIdbImages(step1)
+    let step2 = await resolveIdbImages(step1)
+    // 桌面端：解析本地磁盘图片引用
+    if (import.meta.env.VITE_TAURI === 'true') {
+      step2 = await resolveDiskImages(step2)
+    }
     const renderedHtml = await parseMarkdownAsync(step2, colors.value)
 
     // 在隐藏 DOM 中渲染 mermaid 图表（renderAll 需要真实 DOM）
