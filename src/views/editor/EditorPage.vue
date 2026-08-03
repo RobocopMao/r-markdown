@@ -651,6 +651,21 @@ function onTagDialogClose() {
   tagInfo.value = null
 }
 
+/** 双击草稿图标：取消当前草稿关联 */
+function onUnlinkDraft() {
+  if (!currentDraftId.value) return
+  currentDraftId.value = null
+  showToast('已取消草稿关联')
+}
+
+/** 双击仓库文章图标：取消当前仓库文章关联 */
+function onUnlinkCloudArticle() {
+  if (!currentCloudArticleId.value) return
+  currentCloudArticleId.value = null
+  clearCloudArticlePersistence()
+  showToast('已取消仓库文章关联')
+}
+
 /** SettingsDialog 关闭：关闭弹窗并刷新 cloudConfigured 状态 */
 function onSettingsClose() {
   settingsVisible.value = false
@@ -777,22 +792,28 @@ function loadDemo() {
         <BaseTooltip
           v-if="currentDraftId"
           class="inline-flex ml-1"
-          :text="'已关联草稿：' + currentDraftTitle"
+          :text="'已关联草稿：' + currentDraftTitle + '（双击取消）'"
           placement="bottom"
         >
           <SquareBottomDashedScissors
             :size="14"
-            class="w-3.5 h-3.5 shrink-0"
+            class="w-3.5 h-3.5 shrink-0 cursor-pointer"
             :style="{ color: colors.accent }"
+            @dblclick="onUnlinkDraft"
           />
         </BaseTooltip>
         <BaseTooltip
           v-if="currentCloudArticleId"
           class="inline-flex ml-1"
-          :text="'已关联仓库文章：' + currentCloudArticleTitle"
+          :text="'已关联仓库文章：' + currentCloudArticleTitle + '（双击取消）'"
           placement="bottom"
         >
-          <Cloud :size="14" class="w-3.5 h-3.5 shrink-0" :style="{ color: colors.accent }" />
+          <Cloud
+            :size="14"
+            class="w-3.5 h-3.5 shrink-0 cursor-pointer"
+            :style="{ color: colors.accent }"
+            @dblclick="onUnlinkCloudArticle"
+          />
         </BaseTooltip>
       </div>
       <div class="flex items-center gap-1.5">
