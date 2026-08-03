@@ -22,6 +22,7 @@ import BaseDialog from '@/components/BaseDialog.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import TreeNodeComponent from './TreeNode.vue'
+import PushToCloudTree from './PushToCloudTree.vue'
 
 const emit = defineEmits<{
   (e: 'openSettings', tab: string): void
@@ -173,7 +174,13 @@ watch(visibleNodeIds, (ids) => {
 })
 
 // ── 排序 ──
-type SortMode = 'created-desc' | 'created-asc' | 'updated-desc' | 'updated-asc' | 'alpha-asc' | 'alpha-desc'
+type SortMode =
+  | 'created-desc'
+  | 'created-asc'
+  | 'updated-desc'
+  | 'updated-asc'
+  | 'alpha-asc'
+  | 'alpha-desc'
 
 const SORT_OPTIONS: { label: string; value: SortMode }[] = [
   { label: '文件名 A-Z', value: 'alpha-asc' },
@@ -187,9 +194,7 @@ const SORT_OPTIONS: { label: string; value: SortMode }[] = [
 const SORT_MODE_KEY = 'r-markdown-treeSortMode'
 const SORT_ACTIVE_KEY = 'r-markdown-treeSortActive'
 
-const sortMode = ref<SortMode>(
-  (localStorage.getItem(SORT_MODE_KEY) as SortMode) || 'created-desc',
-)
+const sortMode = ref<SortMode>((localStorage.getItem(SORT_MODE_KEY) as SortMode) || 'created-desc')
 
 const isSorting = ref(localStorage.getItem(SORT_ACTIVE_KEY) === 'true')
 
@@ -238,16 +243,20 @@ function sortByMode(a: TreeNode, b: TreeNode): number {
 
 const sortedTreeRoots = computed(() => {
   const roots = [...treeRoots.value]
-  const folders = roots.filter(n => n.type === 'folder').sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  const articles = roots.filter(n => n.type === 'article')
+  const folders = roots
+    .filter((n) => n.type === 'folder')
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const articles = roots.filter((n) => n.type === 'article')
   articles.sort(isSorting.value ? sortByMode : (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
   return [...folders, ...articles]
 })
 
 function sortedGetChildren(parentId: string): TreeNode[] {
   const children = [...getChildren(parentId)]
-  const folders = children.filter(n => n.type === 'folder').sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
-  const articles = children.filter(n => n.type === 'article')
+  const folders = children
+    .filter((n) => n.type === 'folder')
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+  const articles = children.filter((n) => n.type === 'article')
   articles.sort(isSorting.value ? sortByMode : (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
   return [...folders, ...articles]
 }
@@ -340,7 +349,12 @@ async function confirmNewRootArticle() {
   const finalTitle = title.endsWith('.md') ? title : title + '.md'
   newRootArticleCreating.value = true
   try {
-    await createArticle(null, finalTitle, '# ' + finalTitle.replace(/\.md$/, '') + '\n', newAtTop.value)
+    await createArticle(
+      null,
+      finalTitle,
+      '# ' + finalTitle.replace(/\.md$/, '') + '\n',
+      newAtTop.value,
+    )
     newRootArticlePopup.value = false
     emit('toast', `文章「${finalTitle}」已创建`)
     emit('clearEditor')
@@ -733,7 +747,10 @@ function onSettingChanged(e: Event) {
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
             @click="toggleAutoExpand()"
           >
-            <Crosshair :size="14" :style="{ color: autoExpandEnabled ? 'var(--accent)' : undefined }" />
+            <Crosshair
+              :size="14"
+              :style="{ color: autoExpandEnabled ? 'var(--accent)' : undefined }"
+            />
           </button>
         </BaseTooltip>
         <div class="relative">
@@ -760,8 +777,10 @@ function onSettingChanged(e: Event) {
               :key="opt.value"
               class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
               :style="{
-                color: isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
-                background: isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
+                color:
+                  isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
+                background:
+                  isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
               }"
               @click="setSortMode(opt.value)"
             >
@@ -1037,92 +1056,18 @@ function onSettingChanged(e: Event) {
           <span>（根目录）</span>
         </div>
 
-        <!-- 文件夹树 -->
-        <template v-for="root in treeRoots.filter((n) => n.type === 'folder')" :key="root.id">
-          <div
-            class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-            :class="{
-              'cursor-pointer': !moveDisabledIds.has(root.id),
-              'cursor-not-allowed': moveDisabledIds.has(root.id),
-            }"
-            :style="
-              moveParentId === root.id
-                ? { background: 'var(--accent-light)', color: 'var(--accent)' }
-                : { color: 'var(--text-primary)', opacity: moveDisabledIds.has(root.id) ? 0.3 : 1 }
-            "
-            @click="!moveDisabledIds.has(root.id) && (moveParentId = root.id)"
-          >
-            <span
-              class="flex items-center justify-center w-4 h-4 shrink-0 cursor-pointer"
-              @click.stop="toggleExpand(root.id)"
-            >
-              <ChevronRight
-                v-if="!isExpanded(root.id)"
-                :size="12"
-                style="color: var(--text-secondary)"
-              />
-              <ChevronDown v-else :size="12" style="color: var(--text-secondary)" />
-            </span>
-            <Folder :size="14" style="color: var(--accent)" />
-            <span>{{ root.title }}</span>
-          </div>
-
-          <!-- 一级子文件夹 -->
-          <template v-if="isExpanded(root.id)">
-            <template
-              v-for="child in getChildren(root.id).filter((n) => n.type === 'folder')"
-              :key="child.id"
-            >
-              <div
-                class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-                :class="{
-                  'cursor-pointer': !moveDisabledIds.has(child.id),
-                  'cursor-not-allowed': moveDisabledIds.has(child.id),
-                }"
-                :style="{
-                  paddingLeft: '36px',
-                  ...(moveParentId === child.id
-                    ? { background: 'var(--accent-light)', color: 'var(--accent)' }
-                    : {
-                        color: 'var(--text-primary)',
-                        opacity: moveDisabledIds.has(child.id) ? 0.3 : 1,
-                      }),
-                }"
-                @click="!moveDisabledIds.has(child.id) && (moveParentId = child.id)"
-              >
-                <Folder :size="14" style="color: var(--accent)" />
-                <span>{{ child.title }}</span>
-              </div>
-
-              <!-- 二级子文件夹 -->
-              <template
-                v-for="grandchild in getChildren(child.id).filter((n) => n.type === 'folder')"
-                :key="grandchild.id"
-              >
-                <div
-                  class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
-                  :class="{
-                    'cursor-pointer': !moveDisabledIds.has(grandchild.id),
-                    'cursor-not-allowed': moveDisabledIds.has(grandchild.id),
-                  }"
-                  :style="{
-                    paddingLeft: '52px',
-                    ...(moveParentId === grandchild.id
-                      ? { background: 'var(--accent-light)', color: 'var(--accent)' }
-                      : {
-                          color: 'var(--text-primary)',
-                          opacity: moveDisabledIds.has(grandchild.id) ? 0.3 : 1,
-                        }),
-                  }"
-                  @click="!moveDisabledIds.has(grandchild.id) && (moveParentId = grandchild.id)"
-                >
-                  <Folder :size="14" style="color: var(--accent)" />
-                  <span>{{ grandchild.title }}</span>
-                </div>
-              </template>
-            </template>
-          </template>
-        </template>
+        <!-- 文件夹树（复用 PushToCloudTree 递归渲染，支持任意层级） -->
+        <PushToCloudTree
+          :nodes="treeRoots"
+          :depth="0"
+          mode="new"
+          :selected-id="moveParentId"
+          :disabled-ids="moveDisabledIds"
+          :get-children="getChildren"
+          :is-expanded="isExpanded"
+          :toggle-expand="toggleExpand"
+          @select="(id: string) => (moveParentId = id)"
+        />
       </div>
     </BaseDialog>
     <ConfirmDialog

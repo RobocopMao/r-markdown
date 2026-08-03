@@ -792,7 +792,7 @@ function loadDemo() {
         <BaseTooltip
           v-if="currentDraftId"
           class="inline-flex ml-1"
-          :text="'已关联草稿：' + currentDraftTitle + '（双击取消）'"
+          :text="'已关联草稿：' + currentDraftTitle + '（双击取消关联）'"
           placement="bottom"
         >
           <SquareBottomDashedScissors
@@ -805,7 +805,7 @@ function loadDemo() {
         <BaseTooltip
           v-if="currentCloudArticleId"
           class="inline-flex ml-1"
-          :text="'已关联仓库文章：' + currentCloudArticleTitle + '（双击取消）'"
+          :text="'已关联仓库文章：' + currentCloudArticleTitle + '（双击取消关联）'"
           placement="bottom"
         >
           <Cloud

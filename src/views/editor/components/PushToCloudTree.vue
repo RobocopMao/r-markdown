@@ -2,11 +2,13 @@
 import { Folder, FileText, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import type { TreeNode } from '@/services/GitHubTreeService'
 
-defineProps<{
+const props = defineProps<{
   nodes: TreeNode[]
   depth: number
   mode: 'new' | 'update'
   selectedId: string | null
+  /** 不可选中的节点 id 集合（如移动目标自身及其后代） */
+  disabledIds?: Set<string>
   getChildren: (id: string) => TreeNode[]
   isExpanded: (id: string) => boolean
   toggleExpand: (id: string) => void
@@ -17,6 +19,7 @@ const emit = defineEmits<{
 }>()
 
 function onSelect(id: string) {
+  if (props.disabledIds?.has(id)) return
   emit('select', id)
 }
 </script>
@@ -27,9 +30,11 @@ function onSelect(id: string) {
     <template v-if="mode === 'new'">
       <template v-if="node.type === 'folder'">
         <div
-          class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-xs transition-colors duration-100"
+          class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs transition-colors duration-100"
+          :class="disabledIds?.has(node.id) ? 'cursor-not-allowed' : 'cursor-pointer'"
           :style="{
             paddingLeft: 12 + depth * 20 + 'px',
+            opacity: disabledIds?.has(node.id) ? 0.3 : 1,
             ...(selectedId === node.id
               ? { background: 'var(--accent-light)', color: 'var(--accent)' }
               : { color: 'var(--text-primary)' }),
@@ -56,6 +61,7 @@ function onSelect(id: string) {
           :depth="depth + 1"
           :mode="mode"
           :selected-id="selectedId"
+          :disabled-ids="disabledIds"
           :get-children="getChildren"
           :is-expanded="isExpanded"
           :toggle-expand="toggleExpand"
