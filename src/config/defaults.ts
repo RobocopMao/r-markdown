@@ -29,7 +29,11 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   letaToken: { default: '' },
   /** 乐塔图床存储 ID */
   letaStorageId: { default: '1' },
-  /** 粘贴/拖拽图片上传方式：'local' 本地存储 | 'github' GitHub 图床 | 'leta' 乐塔图床 */
+  /**
+   * 粘贴/拖拽图片上传方式：
+   * - 'local' IndexedDB 存储 | 'disk' 本地磁盘存储（仅桌面端）
+   * - 'github' GitHub 图床 | 'leta' 乐塔图床
+   */
   pasteDropMode: { default: 'local' },
   /** 工具栏图床上传默认使用哪个图床：'github' | 'leta' */
   defaultHosting: { default: 'github' },
@@ -59,6 +63,13 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   cloudArticleRepo: { default: '' },
   /** 云端文章 GitHub Token */
   cloudArticleToken: { default: '' },
+  /**
+   * 文章目录树存储模式（仅桌面端）：
+   * - 'github' 使用 GitHub 仓库存储（默认）
+   * - 'local'  使用本地磁盘存储（Documents/R-Markdown/articles/）
+   * Web 端固定为 'github'。
+   */
+  articleStorageMode: { default: 'github', platforms: ['desktop'] },
   /** TreeSidebar 初始展开状态 */
   treeSidebarExpanded: { default: false },
   /** TreeSidebar 宽度（px） */

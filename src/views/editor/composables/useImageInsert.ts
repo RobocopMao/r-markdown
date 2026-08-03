@@ -4,6 +4,7 @@ import { putImage } from '@/utils/imageDB'
 import { getErrorMessage } from '@/utils/helpers'
 import { uploadToGitHub } from '@/services/githubUploader'
 import { uploadToLeta } from '@/services/letaUploader'
+import { LocalImageDisk } from '@/services/localImageDisk'
 
 // base64 图片数据存储，避免长字符串撑大编辑器
 const IMG_STORE_KEY = 'r-markdown-editorImgs'
@@ -150,6 +151,7 @@ export function useImageInsert(
   const imageInputRef = ref<HTMLInputElement>()
   const persistImageInputRef = ref<HTMLInputElement>()
   const githubImageInputRef = ref<HTMLInputElement>()
+  const diskImageInputRef = ref<HTMLInputElement>()
   const githubUploading = ref(false)
   const githubUploadProgress = ref(0)
   const uploadHostingLabel = ref(
@@ -354,6 +356,37 @@ export function useImageInsert(
       return
     }
 
+    if (mode === 'disk') {
+      // 本地磁盘存储模式（仅桌面端）
+      const quality = (getSetting<number>('compressQuality') || 100) / 100
+      let finalFile = file
+      if (quality < 1.0) {
+        showToast('正在压缩图片...')
+        finalFile = await compressImage(file, 10000, quality)
+        if (finalFile.size > 10 * 1024 * 1024) {
+          showToast('图片压缩后仍超过 10MB')
+          return
+        }
+      } else if (file.size > 10 * 1024 * 1024) {
+        showToast('图片不能超过 10MB')
+        return
+      }
+      try {
+        const relPath = await LocalImageDisk.saveImage(finalFile)
+        const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
+        if (insertAt !== null) {
+          editorRef.value?.replaceRange(insertAt, insertAt, tag)
+        } else {
+          editorRef.value?.insertAtCursor(tag)
+        }
+        showToast('已保存到本地磁盘')
+        await nextTick()
+      } catch (e: unknown) {
+        showToast(getErrorMessage(e, '保存图片失败'))
+      }
+      return
+    }
+
     // 本地模式 → IndexedDB 存储
     const quality = (getSetting<number>('compressQuality') || 100) / 100
     let finalFile = file
@@ -492,10 +525,55 @@ export function useImageInsert(
     input.value = ''
   }
 
+  function handleUploadToDisk() {
+    diskImageInputRef.value?.click()
+  }
+
+  async function onDiskImageSelected(e: Event) {
+    const input = e.target as HTMLInputElement
+    const file = input.files?.[0]
+    if (!file) return
+
+    if (!file.type.startsWith('image/')) {
+      showToast('请选择图片文件')
+      input.value = ''
+      return
+    }
+
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      showToast('正在压缩图片...')
+      finalFile = await compressImage(file, 10000, quality)
+      if (finalFile.size > 10 * 1024 * 1024) {
+        showToast('图片压缩后仍超过 10MB')
+        input.value = ''
+        return
+      }
+    } else if (file.size > 10 * 1024 * 1024) {
+      showToast('图片不能超过 10MB')
+      input.value = ''
+      return
+    }
+
+    try {
+      const relPath = await LocalImageDisk.saveImage(finalFile)
+      editorRef.value?.insertAtCursor(
+        `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`,
+      )
+      showToast('已保存到本地磁盘')
+      await nextTick()
+    } catch (err: unknown) {
+      showToast(getErrorMessage(err, '保存图片失败'))
+    }
+    input.value = ''
+  }
+
   return {
     imageInputRef,
     persistImageInputRef,
     githubImageInputRef,
+    diskImageInputRef,
     githubUploading,
     githubUploadProgress,
     uploadHostingLabel,
@@ -510,5 +588,7 @@ export function useImageInsert(
     handleDropNonImage,
     handleUploadToGitHub,
     onGithubImageSelected,
+    handleUploadToDisk,
+    onDiskImageSelected,
   }
 }

@@ -267,6 +267,17 @@ const cloudToken = ref(GitHubTreeService.getToken() || '')
 const _repoInit = GitHubTreeService.getRepo()
 const cloudRepo = ref(_repoInit ? `${_repoInit.owner}/${_repoInit.repo}` : '')
 
+// ── 文章存储模式（仅桌面端）──
+const articleStorageMode = ref<'github' | 'local'>(
+  getSetting<'github' | 'local'>('articleStorageMode'),
+)
+
+function saveArticleStorageMode(mode: 'github' | 'local') {
+  if (mode === articleStorageMode.value) return
+  articleStorageMode.value = mode
+  setSetting('articleStorageMode', mode)
+}
+
 const cloudTesting = ref(false)
 const cloudTestResult = ref<'ok' | 'fail' | ''>('')
 const cloudTestError = ref('')
@@ -608,9 +619,9 @@ async function doDownloadUpdate() {
           <button
             class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
             :class="autoSaveEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-            @click="autoSaveEnabled = !autoSaveEnabled"
             role="switch"
             :aria-checked="autoSaveEnabled"
+            @click="autoSaveEnabled = !autoSaveEnabled"
           >
             <span
               class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
@@ -664,9 +675,9 @@ async function doDownloadUpdate() {
           <button
             class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
             :class="minimapEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-            @click="minimapEnabled = !minimapEnabled"
             role="switch"
             :aria-checked="minimapEnabled"
+            @click="minimapEnabled = !minimapEnabled"
           >
             <span
               class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
@@ -774,6 +785,24 @@ async function doDownloadUpdate() {
             本地存储
           </label>
           <label
+            v-if="isTauri"
+            class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+            :class="
+              pasteDropMode === 'disk'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+            "
+          >
+            <input
+              type="radio"
+              class="sr-only"
+              value="disk"
+              :checked="pasteDropMode === 'disk'"
+              @change="savePasteDropMode('disk')"
+            />
+            磁盘存储
+          </label>
+          <label
             class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
             :class="
               pasteDropMode === 'github'
@@ -810,6 +839,9 @@ async function doDownloadUpdate() {
         </div>
         <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
           本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
+          磁盘存储：图片保存到
+          <code class="text-[var(--accent)]">Documents/R-Markdown/articles/images/</code>
+          ，保留原文件名，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
           GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
           乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
         </p>
@@ -1046,48 +1078,117 @@ async function doDownloadUpdate() {
     <!-- 文章仓库 -->
     <template v-if="settingsTab === 'cloud'">
       <section>
-        <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
-          GitHub 私有仓库（文章仓库存储）。仅需 <code class="text-[var(--accent)]">repo</code> scope
-          的 Personal Access Token。
-        </p>
-        <div class="mb-3">
-          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
-          <input
-            :value="cloudRepo"
-            placeholder="用户名/仓库名"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-            @input="saveCloudRepo(($event.target as HTMLInputElement).value)"
-          />
-        </div>
-        <div class="mb-4">
-          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
-          <input
-            :value="cloudToken"
-            type="password"
-            placeholder="ghp_xxxxxxxxxxxx"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-            @input="saveCloudToken(($event.target as HTMLInputElement).value)"
-          />
-        </div>
-        <div class="flex items-center gap-3 flex-wrap">
-          <button
-            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="cloudTesting"
-            @click="handleCloudTestConnection"
+        <!-- 存储模式切换（仅桌面端） -->
+        <div v-if="isTauri" class="mb-5">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">存储位置</label>
+          <div
+            class="flex gap-2"
+            style="background: var(--bg-secondary, #f5f5f5); border-radius: 8px; padding: 3px"
           >
-            {{ cloudTesting ? '测试中…' : '测试连接' }}
-          </button>
-          <span
-            v-if="cloudTestResult === 'ok'"
-            class="text-[12px]"
-            style="color: var(--accent-green, #27ae60)"
-          >
-            连接成功
-          </span>
-          <span v-if="cloudTestResult === 'fail'" class="text-[12px]" style="color: #e74c3c">
-            {{ cloudTestError || '连接失败' }}
-          </span>
+            <button
+              class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
+              :style="
+                articleStorageMode === 'github'
+                  ? { background: 'var(--accent)', color: 'white' }
+                  : {
+                      background: 'transparent',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-color, #e0e0e0)',
+                    }
+              "
+              @click="saveArticleStorageMode('github')"
+            >
+              GitHub 仓库
+            </button>
+            <button
+              class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
+              :style="
+                articleStorageMode === 'local'
+                  ? { background: 'var(--accent)', color: 'white' }
+                  : {
+                      background: 'transparent',
+                      color: 'var(--text-secondary)',
+                      border: '1px solid var(--border-color, #e0e0e0)',
+                    }
+              "
+              @click="saveArticleStorageMode('local')"
+            >
+              本地磁盘
+            </button>
+          </div>
+          <p class="text-[11px] mt-2" style="color: var(--text-secondary)">
+            <template v-if="articleStorageMode === 'local'">
+              文章存储在 <code class="text-[var(--accent)]">Documents/R-Markdown/articles/</code>
+              ，切换到 GitHub 模式后原有配置不受影响，两者独立运行。
+            </template>
+            <template v-else>
+              切换到本地模式后，GitHub 仓库配置会保留但暂不使用；两种模式各自独立，不会互相影响。
+            </template>
+          </p>
         </div>
+
+        <!-- GitHub 仓库配置（仅 github 模式显示） -->
+        <template v-if="articleStorageMode === 'github'">
+          <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
+            GitHub 私有仓库（文章仓库存储）。仅需
+            <code class="text-[var(--accent)]">repo</code> scope 的 Personal Access Token。
+          </p>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
+            <input
+              :value="cloudRepo"
+              placeholder="用户名/仓库名"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveCloudRepo(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-4">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
+            <input
+              :value="cloudToken"
+              type="password"
+              placeholder="ghp_xxxxxxxxxxxx"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveCloudToken(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="cloudTesting"
+              @click="handleCloudTestConnection"
+            >
+              {{ cloudTesting ? '测试中…' : '测试连接' }}
+            </button>
+            <span
+              v-if="cloudTestResult === 'ok'"
+              class="text-[12px]"
+              style="color: var(--accent-green, #27ae60)"
+            >
+              连接成功
+            </span>
+            <span v-if="cloudTestResult === 'fail'" class="text-[12px]" style="color: #e74c3c">
+              {{ cloudTestError || '连接失败' }}
+            </span>
+          </div>
+        </template>
+
+        <!-- 本地模式说明 -->
+        <template v-else>
+          <p class="text-[12px] text-[#666] dark:text-[#999] mb-3">
+            本地存储模式已启用。文章目录树将读写到本地磁盘：
+          </p>
+          <div
+            class="rounded-lg px-3 py-2 text-[12px] font-mono break-all"
+            style="background: var(--bg-secondary, #f5f5f5); color: var(--text-primary)"
+          >
+            Documents/R-Markdown/articles/
+          </div>
+          <p class="text-[11px] mt-3" style="color: var(--text-secondary)">
+            目录结构与 GitHub 模式一致：<code>tree.json</code> 记录树结构，
+            <code>articles/</code> 子目录存放各文章 Markdown 文件。
+          </p>
+        </template>
       </section>
     </template>
 
@@ -1124,9 +1225,9 @@ async function doDownloadUpdate() {
           <button
             class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
             :class="autoUpdateEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-            @click="autoUpdateEnabled = !autoUpdateEnabled"
             role="switch"
             :aria-checked="autoUpdateEnabled"
+            @click="autoUpdateEnabled = !autoUpdateEnabled"
           >
             <span
               class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"

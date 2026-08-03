@@ -67,10 +67,11 @@ import {
   Type,
   Layers,
   Cloud,
+  HardDrive,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
+import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
-import { GitHubTreeService } from '@/services/GitHubTreeService'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
@@ -112,7 +113,6 @@ const treePanelVisible = ref(
 )
 const pushCloudVisible = ref(false)
 const pushingCloud = ref(false)
-const cloudConfigured = ref(GitHubTreeService.getConfig() !== null)
 
 function onToggleTreePanel() {
   treePanelVisible.value = !treePanelVisible.value
@@ -192,7 +192,16 @@ async function onPushToCloud(result: {
       result.existingArticleId,
     )
     pushCloudVisible.value = false
-    showToast(result.existingArticleId ? '文章已更新到仓库' : `「${result.title}」已上传到仓库`)
+    const isLocal = articleStorageMode.value === 'local'
+    showToast(
+      result.existingArticleId
+        ? isLocal
+          ? '文章已更新到本地'
+          : '文章已更新到仓库'
+        : isLocal
+          ? `「${result.title}」已保存到本地`
+          : `「${result.title}」已上传到仓库`,
+    )
     // 检查是否绑定了本地草稿
     if (draftToCheck !== null) {
       setTimeout(() => {
@@ -200,7 +209,13 @@ async function onPushToCloud(result: {
       }, 200)
     }
   } catch (e: unknown) {
-    showToast(getErrorMessage(e, '上传失败，请检查网络和仓库配置'))
+    const isLocal = articleStorageMode.value === 'local'
+    showToast(
+      getErrorMessage(
+        e,
+        isLocal ? '保存失败，请检查本地目录权限' : '上传失败，请检查网络和仓库配置',
+      ),
+    )
   } finally {
     pushingCloud.value = false
   }
@@ -229,14 +244,12 @@ async function onTreeEditArticle(
     return
   }
   setCloudArticle(node)
-  persistedCloudTitle.value = node.title
   doLoadArticle(content)
 }
 
 function confirmLoadArticle() {
   if (!pendingArticleLoad.value) return
   setCloudArticle(pendingArticleLoad.value.node)
-  persistedCloudTitle.value = pendingArticleLoad.value.node.title
   doLoadArticle(pendingArticleLoad.value.content)
   articleLoadConfirmVisible.value = false
   pendingArticleLoad.value = null
@@ -281,10 +294,8 @@ function onPreviewClickLine(lineNo: number) {
 onMounted(() => {
   refreshDrafts()
   // 恢复云端文章关联（刷新后 selectedNode 为 null，但 ID 已持久化到 localStorage）
-  const { id: storedCloudId, title: storedCloudTitle } = restoreCloudArticlePersistence()
+  const { id: storedCloudId } = restoreCloudArticlePersistence()
   if (storedCloudId) {
-    currentCloudArticleId.value = storedCloudId
-    persistedCloudTitle.value = storedCloudTitle
     // 树加载完成后自动展开关联文章所在路径
     let expanded = false
     watch(
@@ -384,18 +395,22 @@ function stripIdbSrc(text: string): string {
 
 const saved = localStorage.getItem(STORAGE_KEY)
 const markdown = ref(saved !== null ? saved : DEMO_CONTENT)
+const isTauri = import.meta.env.VITE_TAURI === 'true'
 const resolvedMarkdown = ref(stripIdbSrc(resolveBase64(markdown.value)))
 
 watch(
   markdown,
   async (val) => {
-    const step1 = resolveBase64(val)
+    let step1 = resolveBase64(val)
     const hasIdb = /idb:DBI_\d+_[a-z0-9]{6}/.test(step1)
-    if (!hasIdb) {
-      resolvedMarkdown.value = step1
-      return
+    if (hasIdb) {
+      step1 = await resolveIdbImages(step1)
     }
-    resolvedMarkdown.value = await resolveIdbImages(step1)
+    // 桌面端：解析本地磁盘图片引用（images/xxx.png）为 dataURL
+    if (isTauri && /src="images\/[^"<>|*?\\]+\.(?:png|jpe?g|gif|webp|bmp|svg|ico)"/i.test(step1)) {
+      step1 = await resolveDiskImages(step1)
+    }
+    resolvedMarkdown.value = step1
   },
   { immediate: true, flush: 'sync' },
 )
@@ -405,7 +420,6 @@ const xhsVisible = ref(false)
 const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
 const showGallery = ref(false)
-const isTauri = import.meta.env.VITE_TAURI === 'true'
 
 // ── 自动更新 ──
 const autoUpdateDialogVisible = ref(false)
@@ -463,6 +477,7 @@ const confirmLoadVisible = ref(false)
 // ── 云端文章关联 ──
 const {
   currentCloudArticleId,
+  persistedCloudTitle,
   treeData,
   selectedNode: cloudSelectedNode,
   restoreCloudArticlePersistence,
@@ -470,7 +485,12 @@ const {
   matchCloudArticle,
   expandAncestors,
   clearCloudArticlePersistence,
+  articleStorageMode,
+  isConfigured: cloudTreeConfigured,
 } = useGitHubTree()
+
+// 是否已配置（local 模式始终 true，github 模式需要 token+repo）
+const cloudConfigured = computed(() => cloudTreeConfigured.value)
 
 // ── 草稿功能 ──
 const extractedTitle = computed(() => extractTitle(markdown.value) || '')
@@ -516,13 +536,10 @@ const {
   matchCloudArticle,
 )
 
-// 刷新后 selectedNode 为 null，用 localStorage 持久化 title 作为回退
-const persistedCloudTitle = ref('')
-
+// currentCloudArticleTitle：优先用 selectedNode 的 title（已选中时），
+// 否则回退到 persistedCloudTitle（由 useGitHubTree 在 setCloudArticle/restore 时同步）
 const currentCloudArticleTitle = computed(() => {
   if (!currentCloudArticleId.value) return ''
-  // 只有当 selectedNode 的 id 与当前关联的 cloudArticleId 一致时，才使用 selectedNode 的标题；
-  // 否则说明用户只是点击了其他节点（还未确认关联），应回退到持久化标题，避免 tooltip 提前变化
   if (cloudSelectedNode.value?.id === currentCloudArticleId.value) {
     return cloudSelectedNode.value.title
   }
@@ -603,6 +620,7 @@ const {
   imageInputRef,
   persistImageInputRef,
   githubImageInputRef,
+  diskImageInputRef,
   githubUploading,
   githubUploadProgress,
   uploadHostingLabel,
@@ -617,6 +635,8 @@ const {
   handleDropNonImage,
   handleUploadToGitHub,
   onGithubImageSelected,
+  handleUploadToDisk,
+  onDiskImageSelected,
 } = useImageInsert(editorRef, showToast, markdown)
 
 const imageMenuOpen = ref(false)
@@ -658,18 +678,19 @@ function onUnlinkDraft() {
   showToast('已取消草稿关联')
 }
 
-/** 双击仓库文章图标：取消当前仓库文章关联 */
+/** 双击关联图标：取消当前仓库/本地文章关联 */
 function onUnlinkCloudArticle() {
   if (!currentCloudArticleId.value) return
   currentCloudArticleId.value = null
   clearCloudArticlePersistence()
-  showToast('已取消仓库文章关联')
+  showToast(articleStorageMode.value === 'local' ? '已取消本地文章关联' : '已取消仓库文章关联')
 }
 
-/** SettingsDialog 关闭：关闭弹窗并刷新 cloudConfigured 状态 */
+/** SettingsDialog 关闭：关闭弹窗并刷新树配置状态（含模式切换） */
 function onSettingsClose() {
   settingsVisible.value = false
-  cloudConfigured.value = GitHubTreeService.getConfig() !== null
+  // checkConfig 内部会同步 articleStorageMode 并按需重载树
+  useGitHubTree().checkConfig()
 }
 
 function onPasteText() {
@@ -805,10 +826,22 @@ function loadDemo() {
         <BaseTooltip
           v-if="currentCloudArticleId"
           class="inline-flex ml-1"
-          :text="'已关联仓库文章：' + currentCloudArticleTitle + '（双击取消关联）'"
+          :text="
+            (articleStorageMode === 'local' ? '已关联本地文章：' : '已关联仓库文章：') +
+            currentCloudArticleTitle +
+            '（双击取消关联）'
+          "
           placement="bottom"
         >
           <Cloud
+            v-if="articleStorageMode === 'github'"
+            :size="14"
+            class="w-3.5 h-3.5 shrink-0 cursor-pointer"
+            :style="{ color: colors.accent }"
+            @dblclick="onUnlinkCloudArticle"
+          />
+          <HardDrive
+            v-else
             :size="14"
             class="w-3.5 h-3.5 shrink-0 cursor-pointer"
             :style="{ color: colors.accent }"
@@ -941,12 +974,12 @@ function loadDemo() {
         <!-- Tree Resize Handle -->
         <div
           v-if="treePanelVisible"
+          ref="treeResizeHandleRef"
           class="resize-handle shrink-0 hidden md:block"
           @mousedown="onTreeDragStart"
           @mouseenter="onTreeHandleEnter"
           @mousemove="onTreeHandleMove"
           @mouseleave="onTreeHandleLeave"
-          ref="treeResizeHandleRef"
         >
           <div
             class="resize-handle-btn"
@@ -1367,7 +1400,22 @@ function loadDemo() {
                         :style="{ color: colors.accent }"
                       />
                       <span class="text-[#333] dark:text-white font-medium">长期存储</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">本地永久图片</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">本地长期图片</span>
+                    </button>
+                    <button
+                      v-if="isTauri"
+                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                      :disabled="!editorRef?.isAtLineStart"
+                      @click="editorRef?.isAtLineStart && handleUploadToDisk()"
+                    >
+                      <HardDrive
+                        :size="14"
+                        class="w-3.5 h-3.5 flex-shrink-0"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span class="text-[#333] dark:text-white font-medium">磁盘存储</span>
+                      <span class="text-[#999] dark:text-white/40 ml-auto">本地磁盘图片</span>
                     </button>
                     <button
                       class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100"
@@ -1497,13 +1545,27 @@ function loadDemo() {
                   <span>定稿</span>
                 </button>
               </BaseTooltip>
-              <BaseTooltip v-if="cloudConfigured" text="推送到远程仓库">
+              <BaseTooltip
+                v-if="cloudConfigured"
+                :text="articleStorageMode === 'local' ? '保存到本地' : '推送到远程仓库'"
+              >
                 <button
                   class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="pushCloudVisible = true"
                 >
-                  <Cloud :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>仓库</span>
+                  <Cloud
+                    v-if="articleStorageMode === 'github'"
+                    :size="14"
+                    class="w-3.5 h-3.5"
+                    :style="{ color: colors.accent }"
+                  />
+                  <HardDrive
+                    v-else
+                    :size="14"
+                    class="w-3.5 h-3.5"
+                    :style="{ color: colors.accent }"
+                  />
+                  <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
                 </button>
               </BaseTooltip>
             </span>
@@ -1561,6 +1623,14 @@ function loadDemo() {
               class="hidden"
               @change="onImagePersistSelected"
             />
+            <input
+              v-if="isTauri"
+              ref="diskImageInputRef"
+              type="file"
+              accept="image/*"
+              class="hidden"
+              @change="onDiskImageSelected"
+            />
             <TagPropsForm
               :visible="showTagDialog && !isMobile"
               :tag-info="tagInfo"
@@ -1572,12 +1642,12 @@ function loadDemo() {
 
         <!-- Resize Handle -->
         <div
+          ref="resizeHandleRef"
           class="resize-handle hidden md:block"
           @mousedown="onDragStart"
           @mouseenter="onHandleEnter"
           @mousemove="onHandleMove"
           @mouseleave="onHandleLeave"
-          ref="resizeHandleRef"
         >
           <div
             class="resize-handle-btn"
@@ -1654,7 +1724,7 @@ function loadDemo() {
   />
   <SettingsDialog
     :visible="settingsVisible"
-    :initialTab="settingsInitialTab"
+    :initial-tab="settingsInitialTab"
     @close="onSettingsClose"
   />
   <PushToCloudDialog
@@ -1669,8 +1739,8 @@ function loadDemo() {
     :visible="wechatPublishVisible"
     :title="extractedTitle"
     :content="markdown"
-    :updateMediaId="wechatMediaId"
-    :initialCoverMediaId="wechatCoverMediaId"
+    :update-media-id="wechatMediaId"
+    :initial-cover-media-id="wechatCoverMediaId"
     @close="wechatPublishVisible = false"
     @saved="handleWechatSaved"
   />
@@ -1742,11 +1812,15 @@ function loadDemo() {
     @confirm="handleDeleteAfterFinalize"
     @update:visible="finalizeDeleteConfirmVisible = $event"
   />
-  <!-- 传仓库后删除草稿确认弹窗 -->
+  <!-- 保存到仓库/本地后删除草稿确认弹窗 -->
   <ConfirmDialog
     :visible="pushToCloudDeleteConfirmVisible"
-    title="上传成功"
-    message="文章已上传到仓库，是否删除本地草稿？"
+    :title="articleStorageMode === 'local' ? '保存成功' : '上传成功'"
+    :message="
+      articleStorageMode === 'local'
+        ? '文章已保存到本地，是否删除草稿？'
+        : '文章已上传到仓库，是否删除本地草稿？'
+    "
     confirm-text="删除"
     confirm-type="danger"
     @confirm="handlePushCloudDeleteConfirm"

@@ -24,8 +24,21 @@ const emit = defineEmits<{
   ): void
 }>()
 
-const { treeRoots, expandedIds, isExpanded, toggleExpand, getChildren, init, expandAncestors } =
-  useGitHubTree()
+const {
+  treeRoots,
+  expandedIds,
+  isExpanded,
+  toggleExpand,
+  getChildren,
+  init,
+  expandAncestors,
+  articleStorageMode,
+} = useGitHubTree()
+
+const isLocal = computed(() => articleStorageMode.value === 'local')
+const dialogTitle = computed(() => (isLocal.value ? '保存到本地' : '上传到仓库'))
+const confirmLabel = computed(() => (isLocal.value ? '确认保存' : '确认上传'))
+const loadingLabel = computed(() => (isLocal.value ? '正在保存...' : '正在上传...'))
 
 // 当 visible 为 true 时初始化
 watch(
@@ -135,14 +148,14 @@ function close() {
 <template>
   <BaseDialog
     :visible="visible"
-    title="上传到仓库"
+    :title="dialogTitle"
     width="420px"
     max-height="80vh"
     :show-footer="true"
-    confirm-text="确认上传"
+    :confirm-text="confirmLabel"
     :confirm-disabled="confirmDisabled"
     :loading="loading"
-    loading-text="正在上传..."
+    :loading-text="loadingLabel"
     accent="var(--accent)"
     @close="close"
     @confirm="confirm"

@@ -1,7 +1,21 @@
 import { ref, computed } from 'vue'
 import { GitHubTreeService, type TreeNode } from '@/services/GitHubTreeService'
+import { LocalTreeService } from '@/services/LocalTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
 import { getErrorMessage } from '@/utils/helpers'
+import { getSetting } from '@/config/settings'
+
+// ── 存储模式 ──
+// 'github' 使用 GitHub 仓库；'local' 使用本地磁盘（仅桌面端）
+type ArticleStorageMode = 'github' | 'local'
+const articleStorageMode = ref<ArticleStorageMode>(
+  getSetting<ArticleStorageMode>('articleStorageMode'),
+)
+
+/** 根据当前模式选择 service（接口与 GitHubTreeService 一致） */
+const treeService = computed(() =>
+  articleStorageMode.value === 'local' ? LocalTreeService : GitHubTreeService,
+)
 
 // ── 模块级单例状态（所有调用方共享同一份数据）──
 const isConfigured = ref(false)
@@ -17,6 +31,7 @@ const expandedIds = ref<Set<string>>(new Set())
 const loading = ref(false)
 const error = ref('')
 const currentCloudArticleId = ref<string | null>(null)
+const persistedCloudTitle = ref('')
 const reordering = ref(false)
 
 /** 是否自动展开当前关联文章所在文件夹 */
@@ -30,13 +45,18 @@ function persistCloudArticle(id: string, title?: string) {
 function clearCloudArticlePersistence() {
   localStorage.removeItem(CLOUD_ARTICLE_ID_KEY)
   localStorage.removeItem(CLOUD_ARTICLE_TITLE_KEY)
+  persistedCloudTitle.value = ''
 }
 
 function restoreCloudArticlePersistence(): { id: string | null; title: string } {
-  return {
-    id: localStorage.getItem(CLOUD_ARTICLE_ID_KEY),
-    title: localStorage.getItem(CLOUD_ARTICLE_TITLE_KEY) || '',
+  const id = localStorage.getItem(CLOUD_ARTICLE_ID_KEY)
+  const title = localStorage.getItem(CLOUD_ARTICLE_TITLE_KEY) || ''
+  // 同步 ref 状态，供 currentCloudArticleTitle computed 使用
+  if (id) {
+    currentCloudArticleId.value = id
+    persistedCloudTitle.value = title
   }
+  return { id, title }
 }
 
 /** 展开目标节点的所有祖先 folder，使关联文章在树中可见 */
@@ -108,8 +128,15 @@ export function useGitHubTree() {
 
   /**
    * 初始化：检查配置，拉取 tree
+   * - local 模式：本地磁盘始终可用，直接加载
+   * - github 模式：需要 token + repo 配置完成
    */
   async function init(): Promise<boolean> {
+    if (articleStorageMode.value === 'local') {
+      isConfigured.value = true
+      await loadTree()
+      return true
+    }
     const cfg = GitHubTreeService.getConfig()
     if (!cfg) {
       isConfigured.value = false
@@ -125,6 +152,22 @@ export function useGitHubTree() {
    * TreeSidebar 通过 window focus 事件触发更新 isConfigured 状态
    */
   function checkConfig() {
+    // 同步最新的存储模式（用户可能在设置中切换）
+    const newMode = getSetting<ArticleStorageMode>('articleStorageMode')
+    if (newMode !== articleStorageMode.value) {
+      setArticleStorageMode(newMode)
+      return
+    }
+
+    // local 模式始终视为已配置
+    if (articleStorageMode.value === 'local') {
+      if (!isConfigured.value) {
+        isConfigured.value = true
+        loadTree()
+      }
+      return
+    }
+
     const wasConfigured = isConfigured.value
     isConfigured.value = !!GitHubTreeService.getConfig()
     if (!wasConfigured && isConfigured.value) {
@@ -138,10 +181,32 @@ export function useGitHubTree() {
   }
 
   /**
+   * 切换存储模式：清空当前树状态并按新模式重新加载
+   */
+  function setArticleStorageMode(mode: ArticleStorageMode) {
+    if (mode === articleStorageMode.value) return
+    articleStorageMode.value = mode
+    // 清空旧模式的树状态（两种模式互相独立，避免错位）
+    treeData.value = []
+    selectedNode.value = null
+    currentCloudArticleId.value = null
+    expandedIds.value = new Set()
+    clearCloudArticlePersistence()
+    isConfigured.value = mode === 'local' ? true : !!GitHubTreeService.getConfig()
+    if (isConfigured.value) {
+      loadTree()
+    }
+  }
+
+  /**
    * 将 GitHub API 原始错误转为用户友好提示
    */
   function formatError(e: unknown): string {
     const msg = getErrorMessage(e)
+    // local 模式错误直接返回
+    if (articleStorageMode.value === 'local') {
+      return msg || '加载失败'
+    }
     // 仓库为空
     if (msg.includes('This repository is empty')) {
       return '仓库为空，请先创建文章或文件夹'
@@ -173,7 +238,7 @@ export function useGitHubTree() {
 
     // 后台请求最新
     try {
-      const tree = await GitHubTreeService.fetchTree()
+      const tree = await treeService.value.fetchTree()
       treeData.value = tree.nodes
       await GitHubArticleCache.setTreeCache(JSON.stringify(tree))
     } catch (e: unknown) {
@@ -201,7 +266,8 @@ export function useGitHubTree() {
       const cached = await GitHubArticleCache.getArticle(node.id)
       if (cached) {
         // 后台更新
-        GitHubTreeService.fetchArticle(node.id)
+        treeService.value
+          .fetchArticle(node.id)
           .then((remote) => {
             if (remote !== cached) {
               GitHubArticleCache.setArticle(node.id, remote)
@@ -212,7 +278,7 @@ export function useGitHubTree() {
       }
 
       // 没缓存，直接请求
-      const content = await GitHubTreeService.fetchArticle(node.id)
+      const content = await treeService.value.fetchArticle(node.id)
       await GitHubArticleCache.setArticle(node.id, content)
       return content
     } catch (e: unknown) {
@@ -232,6 +298,7 @@ export function useGitHubTree() {
   /** 将指定节点设为当前关联的云端文章 */
   function setCloudArticle(node: TreeNode) {
     currentCloudArticleId.value = node.id
+    persistedCloudTitle.value = node.title
     persistCloudArticle(node.id, node.title)
   }
 
@@ -252,7 +319,7 @@ export function useGitHubTree() {
     title: string,
     prepend = false,
   ): Promise<TreeNode> {
-    const node = await GitHubTreeService.createFolder(parentId, title)
+    const node = await treeService.value.createFolder(parentId, title)
     treeData.value = [...treeData.value, node]
     if (prepend) {
       try {
@@ -277,7 +344,7 @@ export function useGitHubTree() {
     content: string,
     prepend = false,
   ): Promise<TreeNode> {
-    const node = await GitHubTreeService.createArticle(parentId, title, content)
+    const node = await treeService.value.createArticle(parentId, title, content)
     treeData.value = [...treeData.value, node]
     if (prepend) {
       try {
@@ -298,7 +365,7 @@ export function useGitHubTree() {
   }
 
   async function renameNode(id: string, newTitle: string): Promise<void> {
-    await GitHubTreeService.renameNode(id, newTitle)
+    await treeService.value.renameNode(id, newTitle)
     // 本地立即更新 treeData，避免依赖 loadTree() 回读
     const idx = treeData.value.findIndex((n) => n.id === id)
     if (idx !== -1) {
@@ -313,7 +380,7 @@ export function useGitHubTree() {
 
   async function deleteNode(id: string): Promise<void> {
     const node = treeData.value.find((n) => n.id === id)
-    await GitHubTreeService.deleteNode(id)
+    await treeService.value.deleteNode(id)
     // 本地立即更新 treeData，避免依赖 loadTree() 回读
     treeData.value = treeData.value.filter((n) => n.id !== id)
     // 清除缓存
@@ -356,7 +423,7 @@ export function useGitHubTree() {
     if (newParentId) expandedIds.value.add(newParentId)
 
     try {
-      await GitHubTreeService.moveNode(id, newParentId)
+      await treeService.value.moveNode(id, newParentId)
       // 乐观更新已生效，同步写入缓存防止刷新后回跳
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
     } catch {
@@ -383,7 +450,7 @@ export function useGitHubTree() {
     b.sortOrder = tmp
 
     try {
-      await GitHubTreeService.reorderNode(id, direction)
+      await treeService.value.reorderNode(id, direction)
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
     } catch {
       // 失败时回滚
@@ -417,7 +484,7 @@ export function useGitHubTree() {
 
     reordering.value = true
     try {
-      await GitHubTreeService.reorderToPosition(id, newIndex)
+      await treeService.value.reorderToPosition(id, newIndex)
       // 乐观更新已生效，同步写入缓存防止刷新后回跳
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
     } catch {
@@ -443,10 +510,10 @@ export function useGitHubTree() {
   ): Promise<TreeNode> {
     if (existingArticleId) {
       // 更新已有文章
-      await GitHubTreeService.saveArticle(existingArticleId, content)
-      await GitHubTreeService.renameNode(existingArticleId, title)
+      await treeService.value.saveArticle(existingArticleId, content)
+      await treeService.value.renameNode(existingArticleId, title)
       try {
-        await GitHubTreeService.updateNodeUpdatedAt(existingArticleId)
+        await treeService.value.updateNodeUpdatedAt(existingArticleId)
       } catch {
         /* 时间戳更新失败不影响主流程 */
       }
@@ -467,7 +534,7 @@ export function useGitHubTree() {
       return node
     } else {
       // 新建文章
-      const node = await GitHubTreeService.createArticle(parentId, title, content)
+      const node = await treeService.value.createArticle(parentId, title, content)
       // 本地立即更新 treeData，避免依赖 API 回读（GitHub 内容 API 有短暂缓存延迟）
       treeData.value = [...treeData.value, node]
       try {
@@ -493,6 +560,8 @@ export function useGitHubTree() {
     error,
     reordering,
     currentCloudArticleId,
+    persistedCloudTitle,
+    articleStorageMode,
 
     // 方法
     init,
@@ -514,6 +583,7 @@ export function useGitHubTree() {
     reorderNode,
     reorderToPosition,
     pushToCloud,
+    setArticleStorageMode,
 
     // 持久化
     restoreCloudArticlePersistence,

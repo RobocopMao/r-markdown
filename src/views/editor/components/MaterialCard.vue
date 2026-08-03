@@ -4,6 +4,7 @@ import { Check, Pin } from 'lucide-vue-next'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
+import { resolveDiskImages } from '@/services/localImageDisk'
 import { useTheme } from '@/composables/useTheme'
 import { useMermaid } from '@/composables/useMermaid'
 
@@ -41,7 +42,10 @@ async function refreshRendered() {
     return
   }
   try {
-    const resolvedContent = await resolveIdbImages(props.content)
+    let resolvedContent = await resolveIdbImages(props.content)
+    if (import.meta.env.VITE_TAURI === 'true') {
+      resolvedContent = await resolveDiskImages(resolvedContent)
+    }
     let html = await parseMarkdownAsync(resolvedContent, colors.value)
     // 处理 mermaid
     if (html.includes('class="mermaid"')) {

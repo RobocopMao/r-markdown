@@ -712,10 +712,10 @@ onBeforeUnmount(() => {
   window.removeEventListener('setting-changed', onSettingChanged)
 })
 
-/** SettingsDialog 保存云端配置后自动同步 */
+/** SettingsDialog 保存云端配置或切换存储模式后自动同步 */
 function onSettingChanged(e: Event) {
   const { key } = (e as CustomEvent).detail || {}
-  if (key === 'cloudArticleToken' || key === 'cloudArticleRepo') {
+  if (key === 'cloudArticleToken' || key === 'cloudArticleRepo' || key === 'articleStorageMode') {
     checkConfig()
   }
 }
@@ -914,8 +914,8 @@ function onSettingChanged(e: Event) {
     <!-- 右键菜单 -->
     <Teleport to="body">
       <div
-        ref="ctxMenuRef"
         v-if="contextMenu.visible && contextMenu.node"
+        ref="ctxMenuRef"
         class="ctx-menu fixed z-[9999] rounded-lg py-1 min-w-[140px]"
         :style="{
           left: contextMenu.x + 'px',
