@@ -1162,35 +1162,24 @@ async function doDownloadUpdate() {
         <!-- 存储模式切换（仅桌面端） -->
         <div v-if="isTauri" class="mb-5">
           <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">存储位置</label>
-          <div
-            class="flex gap-2"
-            style="background: var(--bg-secondary, #f5f5f5); border-radius: 8px; padding: 3px"
-          >
+          <div class="flex gap-2">
             <button
-              class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
-              :style="
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
                 articleStorageMode === 'github'
-                  ? { background: 'var(--accent)', color: 'white' }
-                  : {
-                      background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border-color, #e0e0e0)',
-                    }
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
               "
               @click="saveArticleStorageMode('github')"
             >
               GitHub 仓库
             </button>
             <button
-              class="flex-1 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150"
-              :style="
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
                 articleStorageMode === 'local'
-                  ? { background: 'var(--accent)', color: 'white' }
-                  : {
-                      background: 'transparent',
-                      color: 'var(--text-secondary)',
-                      border: '1px solid var(--border-color, #e0e0e0)',
-                    }
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
               "
               @click="saveArticleStorageMode('local')"
             >
@@ -1220,20 +1209,14 @@ async function doDownloadUpdate() {
             </div>
             <div class="flex flex-wrap gap-2">
               <button
-                class="px-3 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150 disabled:opacity-50"
-                :style="{ background: 'var(--accent)', color: 'white' }"
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] font-medium transition-colors min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
                 :disabled="dirChanging"
                 @click="onChangeStorageDir"
               >
                 {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
               </button>
               <button
-                class="px-3 py-1.5 text-xs rounded-md cursor-pointer transition-colors duration-150 disabled:opacity-50"
-                :style="{
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border-color, #e0e0e0)',
-                }"
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="dirChanging"
                 @click="onSelectStorageDir"
               >
@@ -1241,12 +1224,7 @@ async function doDownloadUpdate() {
               </button>
               <button
                 v-if="articleStorageDir"
-                class="px-3 py-1.5 text-xs rounded-md cursor-pointer transition-colors duration-150 disabled:opacity-50"
-                :style="{
-                  background: 'transparent',
-                  color: 'var(--text-secondary)',
-                  border: '1px solid var(--border-color, #e0e0e0)',
-                }"
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="dirChanging"
                 @click="onResetStorageDir"
               >
@@ -1254,7 +1232,7 @@ async function doDownloadUpdate() {
               </button>
             </div>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
-              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。<br>修改目录后如果遇到加载异常，建议先重启客户端。
+              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。<br />修改目录后如果遇到加载异常，建议先重启客户端。
             </p>
             <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
               {{ dirError }}
