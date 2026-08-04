@@ -56,10 +56,11 @@ function normalizePath(p: string): string {
  * 跨平台：同时识别 POSIX（/Users/x、/home/x）与 Windows（C:\Users\x、
  * C:\、D:\）路径。通过 Tauri homeDir() 拿真实主目录做精确比对。
  *
- * 规则：
+ * 规则（只拦「整个磁盘/整个主目录」级别的路径）：
  * - 裸盘符根（C:\、D:\）和 POSIX 根（/）→ 危险
- * - 等于用户主目录，或位于主目录内但深度不足（主目录直接子目录）→ 危险
- *   例：C:\Users\xx 危险，C:\Users\xx\Documents 危险，C:\Users\xx\Documents\foo 放行
+ * - 等于用户主目录本身（~/）→ 危险
+ * - 主目录下的子目录（如 ~/R-Markdown、~/Documents/foo）→ 放行，
+ *   由 containsOnlyAppData 兜底：只删仅含本应用数据的目录，不会动用户其他文件
  * - 非主目录路径：Windows 盘符下一级即可（D:\MyArticles 放行），
  *   POSIX 需 ≥ 2 级（/data/foo 放行，/foo 危险）
  */
@@ -78,29 +79,13 @@ async function isDangerousPath(p: string): Promise<boolean> {
   } catch {
     home = ''
   }
+  // 等于主目录本身 → 危险（递归删除会清空整个 home）
+  if (home && path === home.replace(/\/+$/, '')) return true
 
   const isWindows = /^[a-z]:\//.test(path)
-  if (home) {
-    const homeNorm = home.replace(/\/+$/, '')
-    // 等于主目录
-    if (path === homeNorm) return true
-    // 主目录内的子路径：主目录本身和直接子目录都危险，
-    // 主目录下深度 ≥ 2（home/x/y）才放行
-    if (path.startsWith(homeNorm + '/')) {
-      const rest = path
-        .slice(homeNorm.length + 1)
-        .split('/')
-        .filter(Boolean)
-      if (rest.length < 2) return true
-      return false // 主目录下深度 ≥ 2，放行
-    }
-  }
-
-  // 非主目录路径
   const parts = path.split('/').filter(Boolean)
   if (isWindows) {
     // Windows：盘符段 + 至少 1 级子目录（D:\MyArticles → ['d:', 'myarticles'] = 2 段，放行）
-    // 但 D:\ 本身已在上面拦截
     if (parts.length < 2) return true
     return false
   }
