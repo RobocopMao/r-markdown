@@ -712,11 +712,14 @@ onBeforeUnmount(() => {
   window.removeEventListener('setting-changed', onSettingChanged)
 })
 
-/** SettingsDialog 保存云端配置或切换存储模式后自动同步 */
+/** SettingsDialog 保存云端配置、切换存储模式或更改本地目录后自动同步 */
 function onSettingChanged(e: Event) {
   const { key } = (e as CustomEvent).detail || {}
   if (key === 'cloudArticleToken' || key === 'cloudArticleRepo' || key === 'articleStorageMode') {
     checkConfig()
+  } else if (key === 'articleStorageDir') {
+    // 本地存储目录被移动/切换后，重新从新路径加载树
+    loadTree()
   }
 }
 </script>
@@ -898,7 +901,7 @@ function onSettingChanged(e: Event) {
         <div v-if="treeData.length === 0 && !loading" class="px-3 py-6 text-center">
           <p class="text-xs" style="color: var(--text-secondary)">暂无文章</p>
           <p class="text-xs mt-1" style="color: var(--text-secondary); opacity: 0.6">
-            点击右上角 [+] 新建
+            点击上方「新建文章」图标创建
           </p>
         </div>
 

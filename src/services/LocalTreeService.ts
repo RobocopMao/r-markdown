@@ -10,26 +10,13 @@
  */
 
 import type { TreeNode, TreeData } from './GitHubTreeService'
+import {
+  getArticlesDir,
+  getArticleFilesDir,
+  getTreeFilePath,
+} from './localArticlePath'
 
-const ARTICLES_DIR = 'R-Markdown/articles'
-const ARTICLES_SUBDIR = 'articles'
-
-/** 获取本地文章根目录路径 */
-async function getArticlesDir(): Promise<string> {
-  const { documentDir } = await import('@tauri-apps/api/path')
-  const doc = await documentDir()
-  return `${doc}/${ARTICLES_DIR}`
-}
-
-/** 获取文章文件存储子目录路径 */
-async function getArticleFilesDir(): Promise<string> {
-  return `${await getArticlesDir()}/${ARTICLES_SUBDIR}`
-}
-
-/** 获取 tree.json 路径 */
-async function getTreeFilePath(): Promise<string> {
-  return `${await getArticlesDir()}/tree.json`
-}
+// 路径解析已抽到 localArticlePath.ts，统一支持用户自定义存储目录
 
 /** 确保目录存在 */
 async function ensureDir(dir: string): Promise<void> {

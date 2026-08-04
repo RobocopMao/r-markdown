@@ -278,6 +278,87 @@ function saveArticleStorageMode(mode: 'github' | 'local') {
   setSetting('articleStorageMode', mode)
 }
 
+// ── 本地存储目录（仅桌面端、local 模式）──
+const articleStorageDir = ref<string>(getSetting<string>('articleStorageDir'))
+const dirChanging = ref(false)
+const dirError = ref('')
+
+function clearDirError() {
+  dirError.value = ''
+}
+
+async function onSelectStorageDir() {
+  dirChanging.value = true
+  clearDirError()
+  try {
+    const { pickArticleDir } = await import('@/services/localArticleStorage')
+    const dir = await pickArticleDir()
+    if (dir) {
+      articleStorageDir.value = dir
+      // 通知编辑器重新加载本地树
+      window.dispatchEvent(
+        new CustomEvent('setting-changed', {
+          detail: { key: 'articleStorageDir', value: dir },
+        }),
+      )
+    }
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '选择目录失败')
+    console.error('[SettingsDialog] select storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
+async function onChangeStorageDir() {
+  // 先让用户选目标目录，再执行剪切移动
+  clearDirError()
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const target = await open({
+    directory: true,
+    title: '选择文章存储目录（原有文章将移动到此处）',
+    canCreateDirectories: true,
+  })
+  if (typeof target !== 'string' || !target) return
+
+  dirChanging.value = true
+  try {
+    const { moveArticleDir } = await import('@/services/localArticleStorage')
+    await moveArticleDir(target)
+    articleStorageDir.value = target
+    window.dispatchEvent(
+      new CustomEvent('setting-changed', {
+        detail: { key: 'articleStorageDir', value: target },
+      }),
+    )
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '移动目录失败，请选择空目录后重试')
+    console.error('[SettingsDialog] move storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
+async function onResetStorageDir() {
+  dirChanging.value = true
+  clearDirError()
+  try {
+    const { resetToDefaultDir } = await import('@/services/localArticleStorage')
+    await resetToDefaultDir()
+    articleStorageDir.value = ''
+    window.dispatchEvent(
+      new CustomEvent('setting-changed', {
+        detail: { key: 'articleStorageDir', value: '' },
+      }),
+    )
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '恢复默认目录失败')
+    console.error('[SettingsDialog] reset storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
 const cloudTesting = ref(false)
 const cloudTestResult = ref<'ok' | 'fail' | ''>('')
 const cloudTestError = ref('')
@@ -839,9 +920,9 @@ async function doDownloadUpdate() {
         </div>
         <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
           本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
-          磁盘存储：图片保存到
-          <code class="text-[var(--accent)]">Documents/R-Markdown/articles/images/</code>
-          ，保留原文件名，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
+          磁盘存储：图片保存到文章存储目录下的
+          <code class="text-[var(--accent)]">images/</code>
+          子目录，保留原文件名，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
           GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
           乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
         </p>
@@ -1118,13 +1199,67 @@ async function doDownloadUpdate() {
           </div>
           <p class="text-[11px] mt-2" style="color: var(--text-secondary)">
             <template v-if="articleStorageMode === 'local'">
-              文章存储在 <code class="text-[var(--accent)]">Documents/R-Markdown/articles/</code>
-              ，切换到 GitHub 模式后原有配置不受影响，两者独立运行。
+              文章与图片存储在本地磁盘；卸载重装后，可在下方「选择已有目录」加载之前的文件。
             </template>
             <template v-else>
               切换到本地模式后，GitHub 仓库配置会保留但暂不使用；两种模式各自独立，不会互相影响。
             </template>
           </p>
+
+          <!-- 本地存储目录管理（仅 local 模式） -->
+          <div
+            v-if="articleStorageMode === 'local'"
+            class="mt-4 rounded-lg border border-[var(--border-color,#e0e0e0)] p-3"
+          >
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">文章存储目录</label>
+            <div
+              class="text-[12px] break-all rounded-md px-2.5 py-2 mb-3"
+              style="background: var(--bg-secondary, #f5f5f5); color: var(--text-secondary)"
+            >
+              {{ articleStorageDir || 'Documents/R-Markdown/articles/（默认）' }}
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button
+                class="px-3 py-1.5 text-xs rounded-md border-none cursor-pointer transition-colors duration-150 disabled:opacity-50"
+                :style="{ background: 'var(--accent)', color: 'white' }"
+                :disabled="dirChanging"
+                @click="onChangeStorageDir"
+              >
+                {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
+              </button>
+              <button
+                class="px-3 py-1.5 text-xs rounded-md cursor-pointer transition-colors duration-150 disabled:opacity-50"
+                :style="{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-color, #e0e0e0)',
+                }"
+                :disabled="dirChanging"
+                @click="onSelectStorageDir"
+              >
+                选择已有目录
+              </button>
+              <button
+                v-if="articleStorageDir"
+                class="px-3 py-1.5 text-xs rounded-md cursor-pointer transition-colors duration-150 disabled:opacity-50"
+                :style="{
+                  background: 'transparent',
+                  color: 'var(--text-secondary)',
+                  border: '1px solid var(--border-color, #e0e0e0)',
+                }"
+                :disabled="dirChanging"
+                @click="onResetStorageDir"
+              >
+                恢复默认目录
+              </button>
+            </div>
+            <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
+              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。<br>修改目录后如果遇到加载异常，建议先重启客户端。
+            </p>
+            <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
+              {{ dirError }}
+            </p>
+          </div>
         </div>
 
         <!-- GitHub 仓库配置（仅 github 模式显示） -->
@@ -1171,23 +1306,6 @@ async function doDownloadUpdate() {
               {{ cloudTestError || '连接失败' }}
             </span>
           </div>
-        </template>
-
-        <!-- 本地模式说明 -->
-        <template v-else>
-          <p class="text-[12px] text-[#666] dark:text-[#999] mb-3">
-            本地存储模式已启用。文章目录树将读写到本地磁盘：
-          </p>
-          <div
-            class="rounded-lg px-3 py-2 text-[12px] font-mono break-all"
-            style="background: var(--bg-secondary, #f5f5f5); color: var(--text-primary)"
-          >
-            Documents/R-Markdown/articles/
-          </div>
-          <p class="text-[11px] mt-3" style="color: var(--text-secondary)">
-            目录结构与 GitHub 模式一致：<code>tree.json</code> 记录树结构，
-            <code>articles/</code> 子目录存放各文章 Markdown 文件。
-          </p>
         </template>
       </section>
     </template>

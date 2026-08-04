@@ -1,20 +1,13 @@
 /**
  * 本地磁盘图片存储（仅桌面端 Tauri）
  *
- * 将图片保存到 Documents/R-Markdown/articles/images/ 下，文件名保持原样
+ * 将图片保存到 <自定义根目录>/images/ 下，文件名保持原样
  * （重名时追加序号如 photo(1).png）。文章中以相对路径 `images/文件名` 引用。
  *
  * 预览渲染时通过 resolveDiskImages() 读取磁盘文件为 base64 dataURL 替换。
  */
 
-const IMAGES_SUBDIR = 'articles/images'
-
-/** 获取本地图片目录绝对路径 */
-async function getImagesDir(): Promise<string> {
-  const { documentDir } = await import('@tauri-apps/api/path')
-  const doc = await documentDir()
-  return `${doc}/R-Markdown/${IMAGES_SUBDIR}`
-}
+import { getImagesDir } from './localArticlePath'
 
 /** 确保目录存在 */
 async function ensureDir(dir: string): Promise<void> {

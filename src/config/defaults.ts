@@ -70,6 +70,12 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
    * Web 端固定为 'github'。
    */
   articleStorageMode: { default: 'github', platforms: ['desktop'] },
+  /**
+   * 本地磁盘存储的根目录绝对路径（仅桌面端、local 模式生效）。
+   * 空字符串表示使用默认路径 Documents/R-Markdown/articles。
+   * 用户可在设置中修改，修改后原有文章文件夹会被剪切移动到新目录。
+   */
+  articleStorageDir: { default: '', platforms: ['desktop'] },
   /** TreeSidebar 初始展开状态 */
   treeSidebarExpanded: { default: false },
   /** TreeSidebar 宽度（px） */
