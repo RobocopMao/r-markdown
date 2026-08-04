@@ -543,7 +543,7 @@ async function doDownloadUpdate() {
           "
           @click="settingsTab = 'cloud'"
         >
-          文章仓库
+          {{ isTauri ? '文章存储' : '文章仓库' }}
         </button>
         <button
           v-if="isTauri"
@@ -1232,7 +1232,7 @@ async function doDownloadUpdate() {
               </button>
             </div>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
-              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。<br />修改目录后如果遇到加载异常，建议先重启客户端。
+              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。恢复默认目录不会移动文章。<br />修改目录后如果遇到当前编辑图片加载异常，建议先重启客户端。
             </p>
             <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
               {{ dirError }}

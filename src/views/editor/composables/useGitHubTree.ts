@@ -401,19 +401,37 @@ export function useGitHubTree() {
     }
   }
 
-  async function moveNode(id: string, newParentId: string | null): Promise<void> {
+  async function moveNode(
+    id: string,
+    newParentId: string | null,
+    position: 'top' | 'bottom' = 'bottom',
+  ): Promise<void> {
     // 乐观更新：立即移动节点
     const node = treeData.value.find((n) => n.id === id)
     if (node) {
       const oldParentId = node.parentId
       node.parentId = newParentId
       if (oldParentId !== newParentId) {
-        // 对受影响的分组重新排序
+        // 根据位置偏好设置被移节点在新父级下的 sortOrder
+        const newSiblings = treeData.value.filter(
+          (n) => String(n.parentId) === String(newParentId) && n.id !== id,
+        )
+        if (position === 'top') {
+          const minOrder = newSiblings.reduce((min, n) => Math.min(min, n.sortOrder), 1)
+          node.sortOrder = minOrder - 1
+        } else {
+          const maxOrder = newSiblings.reduce((max, n) => Math.max(max, n.sortOrder), -1)
+          node.sortOrder = maxOrder + 1
+        }
+        // 对受影响分组重新规整 sortOrder（步长 10）
         const affected = new Set([oldParentId, newParentId].map((p) => String(p)))
         affected.forEach((pid) => {
           treeData.value
             .filter((n) => String(n.parentId) === pid)
-            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .sort((a, b) => {
+              if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+              return a.sortOrder - b.sortOrder
+            })
             .forEach((n, i) => {
               n.sortOrder = i * 10
             })
@@ -423,7 +441,7 @@ export function useGitHubTree() {
     if (newParentId) expandedIds.value.add(newParentId)
 
     try {
-      await treeService.value.moveNode(id, newParentId)
+      await treeService.value.moveNode(id, newParentId, position)
       // 乐观更新已生效，同步写入缓存防止刷新后回跳
       await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
     } catch {
@@ -471,7 +489,11 @@ export function useGitHubTree() {
     if (node) {
       const siblings = treeData.value
         .filter((n) => n.parentId === node.parentId)
-        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .sort((a, b) => {
+          // 与 defaultSort 一致：folder 优先，再按 sortOrder
+          if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+          return a.sortOrder - b.sortOrder
+        })
       const oldIndex = siblings.findIndex((n) => n.id === id)
       if (oldIndex !== -1 && oldIndex !== newIndex) {
         siblings.splice(oldIndex, 1)
@@ -490,6 +512,61 @@ export function useGitHubTree() {
     } catch {
       await loadTree() // 失败时回滚
       throw new Error('排序失败，已还原')
+    } finally {
+      reordering.value = false
+    }
+  }
+
+  /**
+   * 跨级移动并排序：把节点移到新父级下的指定位置。
+   * 用于拖拽到不同父级的兄弟节点 before/after 位置。
+   * @param id 被移动节点 id
+   * @param newParentId 新父级 id（根级为 null）
+   * @param newIndex 在新父级兄弟中的目标 index（0 起算）
+   */
+  async function moveAndReorder(
+    id: string,
+    newParentId: string | null,
+    newIndex: number,
+  ): Promise<void> {
+    if (reordering.value) return
+    const node = treeData.value.find((n) => n.id === id)
+    if (!node) return
+    const oldParentId = node.parentId
+
+    // 乐观更新：立即改 parentId 并按目标位置插入
+    node.parentId = newParentId
+    const newSiblings = treeData.value
+      .filter((n) => String(n.parentId) === String(newParentId))
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+    // 过滤掉自身后插入到目标位置
+    const idx = newSiblings.findIndex((n) => n.id === id)
+    if (idx !== -1) newSiblings.splice(idx, 1)
+    const clamped = Math.max(0, Math.min(newIndex, newSiblings.length))
+    newSiblings.splice(clamped, 0, node)
+    newSiblings.forEach((n, i) => {
+      n.sortOrder = i * 10
+    })
+    // 旧父级兄弟重排（若跨父级）
+    if (String(oldParentId) !== String(newParentId)) {
+      treeData.value
+        .filter((n) => String(n.parentId) === String(oldParentId))
+        .sort((a, b) => a.sortOrder - b.sortOrder)
+        .forEach((n, i) => {
+          n.sortOrder = i * 10
+        })
+    }
+    if (newParentId) expandedIds.value.add(newParentId)
+
+    reordering.value = true
+    try {
+      // 先 moveNode 改父级（服务层会追加到末尾），再 reorderToPosition 排到目标位置
+      await treeService.value.moveNode(id, newParentId)
+      await treeService.value.reorderToPosition(id, clamped)
+      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+    } catch {
+      await loadTree() // 失败时回滚
+      throw new Error('移动失败，已还原')
     } finally {
       reordering.value = false
     }
@@ -582,6 +659,7 @@ export function useGitHubTree() {
     moveNode,
     reorderNode,
     reorderToPosition,
+    moveAndReorder,
     pushToCloud,
     setArticleStorageMode,
 

@@ -427,7 +427,11 @@ export const GitHubTreeService = {
     await this.saveTree(tree.nodes)
   },
 
-  async moveNode(id: string, newParentId: string | null): Promise<void> {
+  async moveNode(
+    id: string,
+    newParentId: string | null,
+    position: 'top' | 'bottom' = 'bottom',
+  ): Promise<void> {
     const tree = await this.fetchTree()
     const node = tree.nodes.find((n) => n.id === id)
     if (!node) throw new Error(`节点不存在: ${id}`)
@@ -445,10 +449,16 @@ export const GitHubTreeService = {
 
     node.parentId = newParentId
     node.updatedAt = new Date().toISOString()
-    const maxOrder = tree.nodes
-      .filter((n) => n.parentId === newParentId && n.id !== id)
-      .reduce((max, n) => Math.max(max, n.sortOrder), -1)
-    node.sortOrder = maxOrder + 1
+    const siblings = tree.nodes.filter((n) => n.parentId === newParentId && n.id !== id)
+    if (position === 'top') {
+      // 插到头部：取最小 sortOrder - 1
+      const minOrder = siblings.reduce((min, n) => Math.min(min, n.sortOrder), 1)
+      node.sortOrder = minOrder - 1
+    } else {
+      // 追加到尾部
+      const maxOrder = siblings.reduce((max, n) => Math.max(max, n.sortOrder), -1)
+      node.sortOrder = maxOrder + 1
+    }
     await this.saveTree(tree.nodes)
   },
 
@@ -473,10 +483,13 @@ export const GitHubTreeService = {
     const node = tree.nodes.find((n) => n.id === id)
     if (!node) throw new Error('节点未找到')
 
-    // 获取同级节点（同一 parentId），按 sortOrder 排序
+    // 获取同级节点（同一 parentId），folder 优先再按 sortOrder，与 composable defaultSort 一致
     const siblings = tree.nodes
       .filter((n) => n.parentId === node.parentId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .sort((a, b) => {
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+        return a.sortOrder - b.sortOrder
+      })
 
     const idx = siblings.findIndex((n) => n.id === id)
     if (idx === -1) return
@@ -504,12 +517,18 @@ export const GitHubTreeService = {
 
     const siblings = tree.nodes
       .filter((n) => n.parentId === node.parentId)
-      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .sort((a, b) => {
+        // 与 composable defaultSort 一致：folder 优先，再按 sortOrder
+        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1
+        return a.sortOrder - b.sortOrder
+      })
 
     const oldIndex = siblings.findIndex((n) => n.id === id)
     if (oldIndex === -1) return
     if (oldIndex === newIndex) return
-    if (newIndex < 0 || newIndex >= siblings.length) return
+    if (newIndex < 0) return
+    // 允许 newIndex === siblings.length（追加到末尾）：
+    // splice 移除自身后 length-1，splice(newIndex, 0) 会追加到末尾，合法
 
     // 从旧位置移除，插入新位置
     siblings.splice(oldIndex, 1)

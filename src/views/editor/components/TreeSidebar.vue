@@ -56,6 +56,7 @@ const {
   deleteNode,
   moveNode,
   reorderToPosition,
+  moveAndReorder,
   getSiblings,
   autoExpandEnabled,
   toggleAutoExpand,
@@ -483,7 +484,7 @@ async function confirmMove() {
     : '根目录'
   moving.value = true
   try {
-    await moveNode(target.id, moveParentId.value)
+    await moveNode(target.id, moveParentId.value, newAtTop.value ? 'top' : 'bottom')
     movePopup.value = false
     emit('toast', `「${targetTitle}」已移动到「${destName}」`)
   } catch {
@@ -560,13 +561,16 @@ function onPointerMove(e: PointerEvent) {
 
   const draggedNode = treeData.value.find((n) => n.id === dragNodeId.value)
   if (!draggedNode) return
-  if (isDescendantOf(hit.node.id, dragNodeId.value)) return
 
   dragOverNodeId.value = hit.node.id
   const rect = hit.el.getBoundingClientRect()
   const yRatio = (e.clientY - rect.top) / rect.height
 
-  if (hit.node.type === 'folder' && yRatio > 0.33 && yRatio < 0.67) {
+  // folder 中部区域（15%~85%）作为 inside 吸入态，显示虚线框；
+  // 文章节点不支持 inside，只能 before/after。
+  // folder 拖到祖先 folder 也显示 inside 虚线框（视觉反馈），
+  // 实际行为在 onPointerUp 区分：直接父级不移动，更高祖先移到其同级
+  if (hit.node.type === 'folder' && yRatio > 0.15 && yRatio < 0.85) {
     dragOverPosition.value = 'inside'
   } else {
     dragOverPosition.value = yRatio < 0.5 ? 'before' : 'after'
@@ -594,22 +598,41 @@ async function onPointerUp(e: PointerEvent) {
   }
 
   if (dragOverPosition.value === 'inside' && targetNode.type === 'folder') {
+    // folder 拖到自己的后代 folder 会造成循环，禁止；
+    // 拖到祖先 folder（含直接父级）安全，移到该 folder 内部
+    if (draggedNode.type === 'folder' && isDescendantOf(dragNodeId.value, targetNode.id)) {
+      // targetNode 是 draggedNode 的后代 → 循环，不移动
+      resetDrag()
+      return
+    }
     try {
-      await moveNode(dragNodeId.value, targetNode.id)
+      await moveNode(dragNodeId.value, targetNode.id, newAtTop.value ? 'top' : 'bottom')
     } catch {
       emit('toast', '移动失败')
     }
-  } else if (draggedNode.parentId === targetNode.parentId) {
+  } else if (dragOverPosition.value === 'before' || dragOverPosition.value === 'after') {
+    // before/after 落点：移动到目标节点的同级位置（支持跨级）
     const targetSiblings = getSiblings(targetNode.id)
-    let newIndex = targetSiblings.findIndex((n) => n.id === targetNode.id)
-    if (newIndex !== -1) {
-      if (dragOverPosition.value === 'after') newIndex++
-      const oldIndex = targetSiblings.findIndex((n) => n.id === dragNodeId.value)
-      if (oldIndex < newIndex) newIndex--
-      try {
-        await reorderToPosition(dragNodeId.value, newIndex)
-      } catch {
-        emit('toast', '排序失败')
+    const targetIdx = targetSiblings.findIndex((n) => n.id === targetNode.id)
+    if (targetIdx !== -1) {
+      // newIndex 语义：在「移除被拖节点后的兄弟列表」中的插入位置。
+      // targetSiblings 不含跨级的被拖节点；同级时含自身，但 splice 先移除再插入，
+      // 所以 after+1 / before 不变的原始 index 即正确值，无需 oldIndex 调整。
+      const newIndex = dragOverPosition.value === 'after' ? targetIdx + 1 : targetIdx
+      if (draggedNode.parentId === targetNode.parentId) {
+        // 同级排序
+        try {
+          await reorderToPosition(dragNodeId.value, newIndex)
+        } catch {
+          emit('toast', '排序失败')
+        }
+      } else {
+        // 跨级移动：先改父级再排到目标位置
+        try {
+          await moveAndReorder(dragNodeId.value, targetNode.parentId, newIndex)
+        } catch {
+          emit('toast', '移动失败')
+        }
       }
     }
   }
@@ -808,7 +831,7 @@ function onSettingChanged(e: Event) {
             <ArrowDownToLine v-else :size="14" :style="{ color: 'var(--accent)' }" />
           </button>
         </BaseTooltip>
-        <BaseTooltip text="新建文件">
+        <BaseTooltip text="新建文章">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
             @click="showNewRootArticle()"
