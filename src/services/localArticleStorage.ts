@@ -38,16 +38,74 @@ function isOsJunkEntry(name: string): boolean {
 }
 
 /**
- * 判断路径是否为危险目标（根、用户主目录、过短路径等），禁止移动到这里。
- * 这些路径一旦被清空/删除，会导致用户大量数据丢失。
+ * 规范化路径用于比较：统一分隔符为 /，去除首尾分隔符与盘符大小写差异。
+ * 例：'C:\\Users\\foo\\bar' → 'c:/users/foo/bar'
+ *     '/Users/foo/bar/'    → '/users/foo/bar'
  */
-function isDangerousPath(p: string): boolean {
-  const path = p.trim().replace(/\/+$/, '')
-  if (!path || path === '/') return true
+function normalizePath(p: string): string {
+  let s = p.trim().replace(/\\/g, '/').replace(/\/+$/, '')
+  // Windows 盘符统一小写：C:/ → c:/
+  if (/^[A-Za-z]:\//.test(s)) s = s[0].toLowerCase() + s.slice(1)
+  return s
+}
+
+/**
+ * 判断路径是否为危险目标（根、用户主目录、盘符根等），禁止移动到这里。
+ * 这些路径一旦被清空/删除，会导致用户大量数据丢失。
+ *
+ * 跨平台：同时识别 POSIX（/Users/x、/home/x）与 Windows（C:\Users\x、
+ * C:\、D:\）路径。通过 Tauri homeDir() 拿真实主目录做精确比对。
+ *
+ * 规则：
+ * - 裸盘符根（C:\、D:\）和 POSIX 根（/）→ 危险
+ * - 等于用户主目录，或位于主目录内但深度不足（主目录直接子目录）→ 危险
+ *   例：C:\Users\xx 危险，C:\Users\xx\Documents 危险，C:\Users\xx\Documents\foo 放行
+ * - 非主目录路径：Windows 盘符下一级即可（D:\MyArticles 放行），
+ *   POSIX 需 ≥ 2 级（/data/foo 放行，/foo 危险）
+ */
+async function isDangerousPath(p: string): Promise<boolean> {
+  const path = normalizePath(p)
+  if (!path) return true
+  // 裸盘符根（c:、c:/）或 POSIX 根（/）
+  if (/^[a-z]:\/?$/.test(path)) return true
+  if (path === '/') return true
+
+  // 拿系统真实主目录比对，兼容 Windows / macOS / Linux
+  let home = ''
+  try {
+    const { homeDir } = await import('@tauri-apps/api/path')
+    home = normalizePath(await homeDir())
+  } catch {
+    home = ''
+  }
+
+  const isWindows = /^[a-z]:\//.test(path)
+  if (home) {
+    const homeNorm = home.replace(/\/+$/, '')
+    // 等于主目录
+    if (path === homeNorm) return true
+    // 主目录内的子路径：主目录本身和直接子目录都危险，
+    // 主目录下深度 ≥ 2（home/x/y）才放行
+    if (path.startsWith(homeNorm + '/')) {
+      const rest = path
+        .slice(homeNorm.length + 1)
+        .split('/')
+        .filter(Boolean)
+      if (rest.length < 2) return true
+      return false // 主目录下深度 ≥ 2，放行
+    }
+  }
+
+  // 非主目录路径
   const parts = path.split('/').filter(Boolean)
-  // 路径深度必须 ≥ 3（如 /Users/<name>/Documents），
-  // 这样能挡住根、/Users、/Users/<name> 等危险目标
-  if (parts.length < 3) return true
+  if (isWindows) {
+    // Windows：盘符段 + 至少 1 级子目录（D:\MyArticles → ['d:', 'myarticles'] = 2 段，放行）
+    // 但 D:\ 本身已在上面拦截
+    if (parts.length < 2) return true
+    return false
+  }
+  // POSIX：根下至少 2 级（/data/foo 放行，/foo 危险）
+  if (parts.length < 2) return true
   return false
 }
 
@@ -135,7 +193,7 @@ export async function moveArticleDir(targetDir: string): Promise<void> {
   const dest = targetDir.trim().replace(/\/+$/, '')
 
   if (!dest) throw new Error('目标目录不能为空')
-  if (isDangerousPath(dest)) {
+  if (await isDangerousPath(dest)) {
     throw new Error('目标目录不安全（不能是根目录或用户主目录），请选择更深的子目录')
   }
   if (src === dest) return
