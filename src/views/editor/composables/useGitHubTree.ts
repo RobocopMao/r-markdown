@@ -305,9 +305,16 @@ export function useGitHubTree() {
   /** 根据标题自动匹配云端文章并关联（仅当尚未关联时生效） */
   function matchCloudArticle(title: string | null): boolean {
     if (!title || treeData.value.length === 0 || currentCloudArticleId.value) return false
-    const node = treeData.value.find((n) => n.type === 'article' && n.title === title)
-    if (node) {
-      setCloudArticle(node)
+    // 优先精确匹配；匹配不到时回退到包含关系（树节点标题包含提取的标题）
+    // 兼容用户在树标题前加日期等前缀的情况
+    const exact = treeData.value.find((n) => n.type === 'article' && n.title === title)
+    if (exact) {
+      setCloudArticle(exact)
+      return true
+    }
+    const contains = treeData.value.find((n) => n.type === 'article' && n.title.includes(title))
+    if (contains) {
+      setCloudArticle(contains)
       return true
     }
     return false
