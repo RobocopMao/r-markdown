@@ -694,9 +694,9 @@ function onSettingsClose() {
 }
 
 function onPasteText() {
-  currentDraftId.value = null
-  currentCloudArticleId.value = null
-  clearCloudArticlePersistence()
+  // currentDraftId.value = null
+  // currentCloudArticleId.value = null
+  // clearCloudArticlePersistence()
   setTimeout(() => {
     matchExistingDraft()
     matchCloudArticle(extractTitle(markdown.value))
@@ -704,9 +704,9 @@ function onPasteText() {
 }
 
 function onUndoRedo() {
-  currentDraftId.value = null
-  currentCloudArticleId.value = null
-  clearCloudArticlePersistence()
+  // currentDraftId.value = null
+  // currentCloudArticleId.value = null
+  // clearCloudArticlePersistence()
   setTimeout(() => {
     matchExistingDraft()
     matchCloudArticle(extractTitle(markdown.value))
