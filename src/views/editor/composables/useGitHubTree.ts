@@ -617,18 +617,10 @@ export function useGitHubTree() {
       setCloudArticle(node)
       return node
     } else {
-      // 新建文章
-      const node = await treeService.value.createArticle(parentId, title, content)
-      // 本地立即更新 treeData，避免依赖 API 回读（GitHub 内容 API 有短暂缓存延迟）
-      treeData.value = [...treeData.value, node]
-      try {
-        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-        await GitHubArticleCache.setArticle(node.id, content)
-      } catch {
-        /* 缓存失败不影响主流程 */
-      }
-      setCloudArticle(node)
-      return node
+      // 新建文章 - 复用 createArticle，尊重新建位置偏好
+      const prepend =
+        localStorage.getItem('r-markdown-treeNewArticlePosition') === 'top'
+      return await createArticle(parentId, title, content, prepend)
     }
   }
 

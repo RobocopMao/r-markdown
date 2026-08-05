@@ -85,7 +85,7 @@ function toggleNewArticlePosition() {
 // ── 手动刷新 ──
 async function refreshTree() {
   await loadTree()
-  emit('toast', '树结构已刷新')
+  emit('toast', '文章已刷新')
 }
 
 /** 递归收集某节点的所有后代 ID */
