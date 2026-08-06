@@ -10,6 +10,7 @@
  */
 import type { ThemeColors } from '@/composables/useTheme'
 import { esc, parseAttrs } from './helpers'
+import { countChars } from './charCount'
 
 // ── 设计令牌（对齐公众号配图）──
 // 注意：强调色（accent）不写死，跟随 r-markdown 当前主题色（buildCover/内容图都用传入的 ThemeColors）。
@@ -176,14 +177,10 @@ export function extractXhs(md: string): { meta: XhsMeta; contentMd: string } {
   }
   meta.teaser = meta.teaser.slice(0, 300)
 
-  // 字数 / 阅读时长（沿用 renderFrontMatter 的口径）
-  const clean = md
-    .replace(/---[\s\S]*?---\s*/, '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/[#*`>[\]!|_~=^:-]/g, '')
-    .replace(/\s+/g, '')
-  meta.charCount = clean.length
-  meta.readMin = Math.max(1, Math.ceil(meta.charCount / 400))
+  // 字数 / 阅读时长（复用共享 countChars 口径）
+  const { chars: charCount, minutes: readMin } = countChars(md)
+  meta.charCount = charCount
+  meta.readMin = readMin
 
   return { meta, contentMd }
 }
