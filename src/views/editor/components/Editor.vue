@@ -445,6 +445,8 @@ const warmEditorTheme = EditorView.theme(
       color: 'var(--text-muted)',
       borderRight: '1px solid var(--border-color)',
       minWidth: '40px',
+      fontFamily:
+        'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Microsoft YaHei", monospace',
     },
     '.cm-activeLineGutter': {
       backgroundColor: 'var(--bg-editor)',
