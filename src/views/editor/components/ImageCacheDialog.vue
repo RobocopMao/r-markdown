@@ -19,6 +19,7 @@ const emit = defineEmits<{
 
 const { colors } = useTheme()
 
+const isTauri = import.meta.env.VITE_TAURI === 'true'
 const isGallery = computed(() => props.mode === 'gallery')
 
 // ── 本地图片（IndexedDB 缓存，清理模式与图库共用）──
@@ -207,7 +208,7 @@ watch(
       activeTab.value = 'local'
       loadPinnedTokens()
       loadImages()
-      if (isGallery.value) loadDiskImages()
+      if (isGallery.value && isTauri) loadDiskImages()
       nextTick(() => requestAnimationFrame(updateTabSlider))
     }
   },
@@ -236,6 +237,7 @@ defineExpose({ doCleanup })
     <template v-if="isGallery" #header>
       <div class="text-xs text-[#999] dark:text-[#666]">{{ countText }}</div>
       <div
+        v-if="isTauri"
         class="relative flex shrink-0 items-center gap-0.5 rounded-full p-0.5 bg-[#f3f0ea] dark:bg-[#333]"
       >
         <div
