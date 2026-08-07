@@ -1782,6 +1782,8 @@ function loadDemo() {
     :visible="autoUpdateDialogVisible"
     title="发现新版本"
     :message="`版本 ${autoUpdateVersion} 可用，是否立即下载安装？`"
+    :body="autoUpdateObj?.body"
+    :wide="true"
     confirm-text="立即更新"
     @confirm="doAutoUpdateDownload"
     @update:visible="autoUpdateDialogVisible = $event"

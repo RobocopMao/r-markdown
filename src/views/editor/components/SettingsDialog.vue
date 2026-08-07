@@ -1378,6 +1378,8 @@ async function doDownloadUpdate() {
     v-model:visible="updateDialogVisible"
     title="发现新版本"
     :message="`版本 ${updateDialogVersion} 可用，是否立即下载安装？`"
+    :body="pendingUpdate?.body"
+    :wide="true"
     confirm-text="立即更新"
     @confirm="doDownloadUpdate"
     @cancel="updateDialogVisible = false"

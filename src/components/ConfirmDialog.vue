@@ -6,6 +6,10 @@ const props = withDefaults(
     visible: boolean
     title?: string
     message?: string
+    /** 附加说明正文（如更新日志），存在时渲染为可滚动文本区 */
+    body?: string
+    /** 是否加宽弹窗（用于展示较长的说明正文） */
+    wide?: boolean
     cancelText?: string
     confirmText?: string
     /** 确认按钮主题：'accent' | 'danger' */
@@ -18,6 +22,8 @@ const props = withDefaults(
   {
     title: '确认操作',
     message: '',
+    body: '',
+    wide: false,
     cancelText: '取消',
     confirmText: '确认',
     confirmType: 'accent',
@@ -53,11 +59,20 @@ function onCancel() {
     class="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-base-dialog-fade-in"
     @click.self="onCancel"
   >
-    <div class="confirm-dialog bg-white rounded-xl p-6 w-80 shadow-[0_16px_48px_rgba(0,0,0,0.2)]">
+    <div
+      class="confirm-dialog bg-white rounded-xl p-6 shadow-[0_16px_48px_rgba(0,0,0,0.2)]"
+      :class="wide ? 'w-[420px] max-w-[90vw]' : 'w-80'"
+    >
       <h3 class="confirm-dialog-title m-0 mb-2 text-base text-[#1f1a17]">{{ title }}</h3>
       <p v-if="message" class="confirm-dialog-message m-0 mb-4 text-[13px] text-[#8a8175]">
         {{ message }}
       </p>
+      <div
+        v-if="body"
+        class="confirm-dialog-body m-0 mb-4 max-h-[220px] overflow-y-auto rounded-lg bg-[#f7f4ef] p-3 text-[13px] leading-relaxed text-[#4a443c] whitespace-pre-wrap"
+      >
+        {{ body }}
+      </div>
       <div class="flex gap-2 mt-4" :class="hasSlot() ? 'flex-col' : 'justify-end'">
         <template v-if="hasSlot()">
           <button
@@ -136,5 +151,9 @@ function onCancel() {
 }
 [data-theme='dark'] .confirm-dialog-cancel-btn:hover {
   background: #555;
+}
+[data-theme='dark'] .confirm-dialog-body {
+  background: #333;
+  color: #bbb;
 }
 </style>
