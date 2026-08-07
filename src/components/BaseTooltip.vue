@@ -1,10 +1,20 @@
 <script setup vapor lang="ts">
 import { ref, useSlots } from 'vue'
 
-const props = withDefaults(defineProps<{ text?: string; placement?: 'top' | 'bottom'; delay?: number }>(), {
-  placement: 'top',
-  delay: 0,
-})
+const props = withDefaults(
+  defineProps<{
+    text?: string
+    placement?: 'top' | 'bottom'
+    delay?: number
+    /** content 插槽内容的自定义宽度（默认 180px） */
+    contentWidth?: number
+  }>(),
+  {
+    placement: 'top',
+    delay: 0,
+    contentWidth: 180,
+  },
+)
 const slots = useSlots()
 
 const triggerRef = ref<HTMLElement>()
@@ -68,8 +78,8 @@ function clearTimer() {
       <span
         v-show="visible"
         class="fixed px-2 py-1 rounded-md bg-white text-[#333] dark:bg-[#333] dark:text-white border border-[#e5e5e5] dark:border-white/10 shadow-lg text-[11px] leading-none whitespace-nowrap pointer-events-none z-[9999]"
-        :class="{ '!leading-relaxed !whitespace-normal !px-3 !py-2 !w-[180px]': slots.content }"
-        :style="tooltipStyle"
+        :class="{ '!leading-relaxed !whitespace-normal !px-3 !py-2': slots.content }"
+        :style="{ ...tooltipStyle, width: slots.content ? `${props.contentWidth}px` : undefined }"
       >
         <slot v-if="slots.content" name="content" />
         <template v-else>{{ text }}</template>

@@ -1,7 +1,10 @@
 <script setup vapor lang="ts">
 import { ref, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-shell'
+import pkg from '../../../../package.json'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
 import {
@@ -436,6 +439,16 @@ async function applyZoom(scale: number) {
   }
 }
 
+/** 打开 GitHub 仓库主页（桌面端在系统浏览器新开页面） */
+function openGitHubRepo() {
+  const url = 'https://github.com/RobocopMao/r-markdown'
+  if (isTauri) {
+    open(url).catch(() => window.open(url, '_blank'))
+  } else {
+    window.open(url, '_blank')
+  }
+}
+
 async function manualCheckUpdate() {
   updateChecking.value = true
   updateMessage.value = ''
@@ -558,7 +571,6 @@ async function doDownloadUpdate() {
           公众号
         </button>
         <button
-          v-if="isTauri"
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
           :class="
             settingsTab === 'other'
@@ -567,7 +579,7 @@ async function doDownloadUpdate() {
           "
           @click="settingsTab = 'other'"
         >
-          其他设置
+          关于
         </button>
       </div>
     </template>
@@ -586,114 +598,139 @@ async function doDownloadUpdate() {
           </button>
         </div>
 
-        <!-- 字体大小 -->
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">字体大小</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-              >{{ paraFontSize }}px</span
+        <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+          <!-- 字体大小 -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">字体大小</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ paraFontSize }}px</span
+              >
+            </div>
+            <input
+              type="range"
+              min="12"
+              max="24"
+              step="1"
+              :value="paraFontSize"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveParaFontSize(Number(($event.target as HTMLInputElement).value))"
+            />
+            <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              <span>12px</span>
+              <span>24px</span>
+            </div>
+          </div>
+
+          <!-- 字重 -->
+          <div>
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
+            <select
+              :value="paraFontWeight"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
             >
+              <option value="300">300（更细）</option>
+              <option value="400">400（常规）</option>
+              <option value="500">500（中等）</option>
+              <option value="600">600（半粗）</option>
+              <option value="700">700（粗体）</option>
+            </select>
           </div>
-          <input
-            type="range"
-            min="12"
-            max="24"
-            step="1"
-            :value="paraFontSize"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveParaFontSize(Number(($event.target as HTMLInputElement).value))"
-          />
-          <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            <span>12px</span>
-            <span>24px</span>
-          </div>
-        </div>
 
-        <!-- 行高 -->
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">行高</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
-              paraLineHeight
-            }}</span>
+          <!-- 行高 -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">行高</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+                paraLineHeight
+              }}</span>
+            </div>
+            <input
+              type="range"
+              min="1.2"
+              max="3.0"
+              step="0.05"
+              :value="paraLineHeight"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveParaLineHeight(Number(($event.target as HTMLInputElement).value))"
+            />
+            <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              <span>1.2</span>
+              <span>3.0</span>
+            </div>
           </div>
-          <input
-            type="range"
-            min="1.2"
-            max="3.0"
-            step="0.05"
-            :value="paraLineHeight"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveParaLineHeight(Number(($event.target as HTMLInputElement).value))"
-          />
-          <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            <span>1.2</span>
-            <span>3.0</span>
-          </div>
-        </div>
 
-        <!-- 字重 -->
-        <div class="mb-3">
-          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
-          <select
-            :value="paraFontWeight"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-            :style="selectChevronStyle"
-            @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
-          >
-            <option value="300">300（更细）</option>
-            <option value="400">400（常规）</option>
-            <option value="500">500（中等）</option>
-            <option value="600">600（半粗）</option>
-            <option value="700">700（粗体）</option>
-          </select>
-        </div>
+          <!-- 首行缩进 -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">首行缩进</label>
+              <span
+                v-if="paraIndent"
+                class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ paraIndent }}</span
+              >
+            </div>
+            <input
+              type="text"
+              :value="paraIndent"
+              placeholder="如 2em（不填则不缩进）"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
+              @input="saveParaIndent(($event.target as HTMLInputElement).value)"
+            />
+          </div>
 
-        <!-- 间距 -->
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">段落间距</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-              >{{ paraMargin }}px</span
-            >
+          <!-- 间距 -->
+          <div>
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">段落间距</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ paraMargin }}px</span
+              >
+            </div>
+            <input
+              type="range"
+              min="8"
+              max="48"
+              step="1"
+              :value="paraMargin"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveParaMargin(Number(($event.target as HTMLInputElement).value))"
+            />
+            <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              <span>8px</span>
+              <span>48px</span>
+            </div>
           </div>
-          <input
-            type="range"
-            min="8"
-            max="48"
-            step="1"
-            :value="paraMargin"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveParaMargin(Number(($event.target as HTMLInputElement).value))"
-          />
-          <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            <span>8px</span>
-            <span>48px</span>
-          </div>
-        </div>
-
-        <!-- 首行缩进 -->
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">首行缩进</label>
-            <span
-              v-if="paraIndent"
-              class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-              >{{ paraIndent }}</span
-            >
-          </div>
-          <input
-            type="text"
-            :value="paraIndent"
-            placeholder="如 2em（不填则不缩进）"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
-            @input="saveParaIndent(($event.target as HTMLInputElement).value)"
-          />
         </div>
       </section>
 
+      <!-- 页面缩放 -->
+      <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">页面缩放</h3>
+        <div class="flex flex-nowrap gap-2">
+          <button
+            v-for="p in ZOOM_PRESETS"
+            :key="p"
+            class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0"
+            :class="
+              currentZoom === p
+                ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
+                : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
+            "
+            @click="applyZoom(p)"
+          >
+            {{ p }}%
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
+          当前缩放：{{ currentZoom }}%（设置会自动保存）
+        </p>
+      </section>
+
       <!-- 自动保存（仅桌面端） -->
-      <section v-if="isTauri">
+      <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">自动保存</h3>
         <div class="flex items-center justify-between mb-3">
           <span class="text-[12px] text-[#666] dark:text-[#999]">启用自动保存</span>
@@ -1288,33 +1325,79 @@ async function doDownloadUpdate() {
       </section>
     </template>
 
-    <!-- 其他设置（仅桌面端） -->
+    <!-- 关于 -->
     <template v-if="settingsTab === 'other'">
-      <!-- 页面缩放 -->
-      <section>
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">页面缩放</h3>
-        <div class="flex flex-nowrap gap-2">
-          <button
-            v-for="p in ZOOM_PRESETS"
-            :key="p"
-            class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0"
-            :class="
-              currentZoom === p
-                ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
-            "
-            @click="applyZoom(p)"
+      <!-- 应用介绍 -->
+      <section class="flex flex-col items-center text-center mb-6 pt-2">
+        <svg viewBox="0 0 24 24" width="56" height="56" class="mb-3">
+          <rect width="24" height="24" rx="6" :fill="colors.accent" />
+          <text
+            x="3.5"
+            y="16"
+            font-family="Arial, sans-serif"
+            font-size="11"
+            font-weight="bold"
+            fill="white"
           >
-            {{ p }}%
-          </button>
-        </div>
-        <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
-          当前缩放：{{ currentZoom }}%（设置会自动保存）
+            RM
+          </text>
+        </svg>
+        <BaseTooltip placement="bottom" :delay="300" :content-width="300">
+          <span class="relative inline-block">
+            <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">
+              R-Markdown
+            </h3>
+            <span class="sponsor-bubble">
+              <span
+                class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
+                style="background: #ff8c42"
+              >
+                请我喝杯咖啡
+              </span>
+              <span class="sponsor-bubble-tail" />
+            </span>
+          </span>
+          <template #content>
+            <div class="flex flex-col items-center gap-2 pt-2 pb-1">
+              <img
+                src="/wechat-qr.jpg"
+                alt="微信公众号二维码"
+                class="qr-light w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+              />
+              <img
+                src="/wechat-qr-dark.jpg"
+                alt="微信公众号二维码"
+                class="qr-dark w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+              />
+              <span class="text-center leading-relaxed">
+                微信搜索「<span class="text-[var(--accent)] font-medium">五味杂陈杂货铺</span
+                >」关注，文章末尾可赞赏
+              </span>
+            </div>
+          </template>
+        </BaseTooltip>
+        <p class="m-0 mt-1 text-[12px] text-[#666] dark:text-[#999]">版本 v{{ pkg.version }}</p>
+        <p class="m-0 mt-2 text-[12px] text-[#999] dark:text-[#666]">
+          面向公众号排版的一站式 Markdown 扩展免费写作工具
+        </p>
+        <button
+          class="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] hover:text-[#333] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] dark:hover:text-[#ccc]"
+          @click="openGitHubRepo"
+        >
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+            <path
+              d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
+            />
+          </svg>
+          GitHub 仓库
+        </button>
+        <p class="m-0 mt-2 text-[11px] text-[#bbb] dark:text-[#555]">
+          Copyright © 2026 R-Markdown
         </p>
       </section>
 
       <!-- 版本更新 -->
-      <section class="mt-6 pt-6 border-t border-[#f0f0f0] dark:border-[#333]">
+      <section v-if="isTauri" class="mt-6 pt-6 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">版本更新</h3>
         <div class="flex items-center justify-between mb-3">
           <span class="text-[12px] text-[#666] dark:text-[#999]">启动时自动检查更新</span>
@@ -1435,5 +1518,44 @@ async function doDownloadUpdate() {
   height: 4px;
   background: #e5e5e5;
   border-radius: 2px;
+}
+
+/* 收款码明暗切换（与首页公众号二维码一致） */
+.qr-dark {
+  display: none;
+}
+[data-theme='dark'] .qr-light {
+  display: none;
+}
+[data-theme='dark'] .qr-dark {
+  display: block;
+}
+
+/* 标题右上方气泡：上下轻轻摇动，气泡悬于标题右上角 */
+.sponsor-bubble {
+  position: absolute;
+  top: -22px;
+  right: -60px;
+  animation: sponsor-bob 1.6s ease-in-out infinite;
+}
+@keyframes sponsor-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.sponsor-bubble-tail {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 4px 0 4px;
+  border-color: #ff8c42 transparent transparent transparent;
+  transform: rotate(30deg);
 }
 </style>
