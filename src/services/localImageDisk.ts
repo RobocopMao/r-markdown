@@ -44,7 +44,57 @@ async function resolveUniqueName(dir: string, filename: string): Promise<string>
   }
 }
 
+/** 磁盘图片条目（images 目录下的一个图片文件） */
+export interface DiskImageEntry {
+  name: string
+  relPath: string
+  size: number
+  modified: number
+}
+
+const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.svg', '.ico'])
+
+/** 跳过系统/编辑器生成的隐藏文件 */
+function isJunkEntry(name: string): boolean {
+  if (!name) return true
+  if (name === '.DS_Store' || name === 'Thumbs.db' || name === 'desktop.ini') return true
+  if (name.startsWith('._')) return true
+  return false
+}
+
 export const LocalImageDisk = {
+  /**
+   * 列出 images 目录下所有图片文件，按修改时间倒序。
+   * 目录不存在或非桌面端时返回空数组。
+   */
+  async listImages(): Promise<DiskImageEntry[]> {
+    try {
+      const { exists, readDir, stat } = await import('@tauri-apps/plugin-fs')
+      const dir = await getImagesDir()
+      if (!(await exists(dir))) return []
+      const entries = await readDir(dir)
+      const items: DiskImageEntry[] = []
+      for (const entry of entries) {
+        const name = entry.name ?? ''
+        if (!entry.isFile || isJunkEntry(name)) continue
+        const ext = name.slice(name.lastIndexOf('.')).toLowerCase()
+        if (!IMAGE_EXTS.has(ext)) continue
+        let size = 0
+        let modified = 0
+        try {
+          const info = await stat(`${dir}/${name}`)
+          size = info.size
+          modified = info.mtime?.getTime() ?? 0
+        } catch {
+          /* 忽略单个文件读取失败 */
+        }
+        items.push({ name, relPath: `images/${name}`, size, modified })
+      }
+      return items.sort((a, b) => b.modified - a.modified)
+    } catch {
+      return []
+    }
+  },
   /**
    * 保存图片到本地磁盘，返回用于文章引用的相对路径（如 `images/photo.png`）
    * 不修改原始文件名，重名时追加序号。

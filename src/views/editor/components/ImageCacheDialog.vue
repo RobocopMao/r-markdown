@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { ListChecks, CheckCheck, Pin, PinOff } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
+import { LocalImageDisk, type DiskImageEntry } from '@/services/localImageDisk'
 import { useTheme } from '@/composables/useTheme'
 import { getSetting, setSetting } from '@/config/settings'
 
@@ -12,7 +13,7 @@ const props = withDefaults(defineProps<{ visible: boolean; mode?: 'cleanup' | 'g
 })
 const emit = defineEmits<{
   close: []
-  insert: [token: string]
+  insert: [payload: { kind: 'local' | 'disk'; value: string }]
   'request-cleanup': [payload: { message: string; tokens: string[] }]
 }>()
 
@@ -20,12 +21,40 @@ const { colors } = useTheme()
 
 const isGallery = computed(() => props.mode === 'gallery')
 
+// ── 本地图片（IndexedDB 缓存，清理模式与图库共用）──
 const loading = ref(true)
 const images = ref<{ token: string; dataUrl: string; size: number; createdAt: number }[]>([])
 const multiSelect = ref(false)
 const selectedTokens = ref(new Set<string>())
 const gallerySelected = ref<string | null>(null)
 const pinnedTokens = ref(new Set<string>([]))
+
+// ── 磁盘图片（images 目录，仅图库模式）──
+type DiskImageItem = DiskImageEntry & { dataUrl?: string }
+const activeTab = ref<'local' | 'disk'>('local')
+const diskLoading = ref(false)
+const diskImages = ref<DiskImageItem[]>([])
+const diskSelected = ref<string | null>(null)
+
+// 顶部切换按钮：主题色滑块（参考 XhsExporter 比例切换）
+const btnLocal = ref<HTMLButtonElement | null>(null)
+const btnDisk = ref<HTMLButtonElement | null>(null)
+const tabSliderStyle = ref<Record<string, string>>({})
+
+function updateTabSlider() {
+  const btn = activeTab.value === 'local' ? btnLocal.value : btnDisk.value
+  if (!btn) return
+  const parent = btn.parentElement
+  if (!parent) return
+  const parentRect = parent.getBoundingClientRect()
+  const btnRect = btn.getBoundingClientRect()
+  tabSliderStyle.value = {
+    width: `${btnRect.width - 4}px`,
+    transform: `translateX(${btnRect.left - parentRect.left}px)`,
+  }
+}
+
+watch(activeTab, () => nextTick(updateTabSlider))
 
 const sortedImages = computed(() => {
   const pinned = images.value.filter((img) => pinnedTokens.value.has(img.token))
@@ -39,9 +68,46 @@ const allSelected = computed(
 
 const titleText = computed(() => (isGallery.value ? '图库' : '清理图片缓存'))
 
+const countText = computed(() =>
+  isGallery.value
+    ? `${activeTab.value === 'local' ? images.value.length : diskImages.value.length} 张`
+    : `${images.value.length} 张`,
+)
+
 const isPinned = computed(() =>
   gallerySelected.value ? pinnedTokens.value.has(gallerySelected.value) : false,
 )
+
+async function loadDiskImages() {
+  diskLoading.value = true
+  const list = await LocalImageDisk.listImages()
+  diskImages.value = list
+  for (const item of list) {
+    loadDiskPreview(item)
+  }
+  diskLoading.value = false
+}
+
+async function loadDiskPreview(item: DiskImageItem) {
+  const url = await LocalImageDisk.readAsDataURL(item.relPath)
+  if (url) item.dataUrl = url
+}
+
+function toggleDisk(relPath: string) {
+  diskSelected.value = diskSelected.value === relPath ? null : relPath
+}
+
+function handleInsert() {
+  if (activeTab.value === 'local') {
+    if (!gallerySelected.value) return
+    emit('insert', { kind: 'local', value: gallerySelected.value })
+    gallerySelected.value = null
+  } else {
+    if (!diskSelected.value) return
+    emit('insert', { kind: 'disk', value: diskSelected.value })
+    diskSelected.value = null
+  }
+}
 
 function loadPinnedTokens() {
   const saved = getSetting<string[]>('pinnedImageTokens') || []
@@ -108,13 +174,6 @@ function toggleGallery(token: string) {
   gallerySelected.value = gallerySelected.value === token ? null : token
 }
 
-function handleInsert() {
-  if (gallerySelected.value) {
-    emit('insert', gallerySelected.value)
-    gallerySelected.value = null
-  }
-}
-
 function confirmDelete(token: string) {
   emit('request-cleanup', { message: '确定要清理这张图片缓存吗？', tokens: [token] })
 }
@@ -144,8 +203,12 @@ watch(
       selectedTokens.value.clear()
       multiSelect.value = false
       gallerySelected.value = null
+      diskSelected.value = null
+      activeTab.value = 'local'
       loadPinnedTokens()
       loadImages()
+      if (isGallery.value) loadDiskImages()
+      nextTick(() => requestAnimationFrame(updateTabSlider))
     }
   },
 )
@@ -161,12 +224,42 @@ defineExpose({ doCleanup })
     :visible="visible"
     :title="titleText"
     width="min(95vw, 1000px)"
-    :show-footer="isGallery ? gallerySelected !== null : multiSelect && selectedTokens.size > 0"
+    :show-footer="
+      isGallery
+        ? activeTab === 'local'
+          ? gallerySelected !== null
+          : diskSelected !== null
+        : multiSelect && selectedTokens.size > 0
+    "
     @close="emit('close')"
   >
     <template v-if="isGallery" #header>
-      <div class="text-xs text-[#999] dark:text-[#666]">{{ images.length }} 张</div>
-      <span v-if="gallerySelected" class="ml-auto shrink-0">
+      <div class="text-xs text-[#999] dark:text-[#666]">{{ countText }}</div>
+      <div
+        class="relative flex shrink-0 items-center gap-0.5 rounded-full p-0.5 bg-[#f3f0ea] dark:bg-[#333]"
+      >
+        <div
+          class="absolute top-0.5 bottom-0.5 rounded-full bg-[var(--accent)] transition-all duration-300 ease-out"
+          :style="tabSliderStyle"
+        ></div>
+        <button
+          ref="btnLocal"
+          class="relative z-10 cursor-pointer rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition-colors"
+          :class="activeTab === 'local' ? 'text-white' : 'text-[#8a8175] dark:text-[#999]'"
+          @click="activeTab = 'local'"
+        >
+          本地图片
+        </button>
+        <button
+          ref="btnDisk"
+          class="relative z-10 cursor-pointer rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold whitespace-nowrap transition-colors"
+          :class="activeTab === 'disk' ? 'text-white' : 'text-[#8a8175] dark:text-[#999]'"
+          @click="activeTab = 'disk'"
+        >
+          磁盘图片
+        </button>
+      </div>
+      <span v-if="activeTab === 'local' && gallerySelected" class="ml-auto shrink-0">
         <BaseTooltip :text="isPinned ? '取消置顶' : '置顶'" placement="bottom">
           <button
             class="flex size-7 cursor-pointer items-center justify-center rounded-full border-0 bg-transparent transition-colors hover:bg-[#f5f5f5] dark:hover:bg-[#333]"
@@ -206,76 +299,136 @@ defineExpose({ doCleanup })
       </div>
     </template>
 
-    <div v-if="loading" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">
-      加载中...
-    </div>
-    <div
-      v-else-if="images.length === 0"
-      class="py-10 text-center text-sm text-[#999] dark:text-[#666]"
-    >
-      暂无缓存图片
-    </div>
-    <div v-else class="relative grid grid-cols-6 gap-3">
+    <!-- 本地图片（IndexedDB 缓存） -->
+    <template v-if="!isGallery || activeTab === 'local'">
+      <div v-if="loading" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">
+        加载中...
+      </div>
       <div
-        v-for="img in sortedImages"
-        :key="img.token"
-        class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
-        :class="
-          isGallery
-            ? gallerySelected === img.token
-              ? 'cursor-pointer border-[var(--accent)]'
-              : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
-            : multiSelect
-              ? selectedTokens.has(img.token)
+        v-else-if="images.length === 0"
+        class="py-10 text-center text-sm text-[#999] dark:text-[#666]"
+      >
+        暂无缓存图片
+      </div>
+      <div v-else class="relative grid grid-cols-6 gap-3">
+        <div
+          v-for="img in sortedImages"
+          :key="img.token"
+          class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
+          :class="
+            isGallery
+              ? gallerySelected === img.token
                 ? 'cursor-pointer border-[var(--accent)]'
                 : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
-              : 'cursor-default border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
-        "
-        @click="isGallery ? toggleGallery(img.token) : multiSelect && toggleSelect(img.token)"
-      >
-        <img :src="img.dataUrl" class="block h-full w-full object-cover" />
-        <!-- Pin badge -->
-        <div
-          v-if="pinnedTokens.has(img.token)"
-          class="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/55 px-1 py-[2px] text-[10px] text-white"
-        >
-          <Pin :size="10" />
-        </div>
-        <!-- Selected checkmark -->
-        <div
-          v-if="
-            isGallery ? gallerySelected === img.token : multiSelect && selectedTokens.has(img.token)
+              : multiSelect
+                ? selectedTokens.has(img.token)
+                  ? 'cursor-pointer border-[var(--accent)]'
+                  : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
+                : 'cursor-default border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
           "
-          class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90"
-          :class="
-            isGallery || selectedTokens.has(img.token)
-              ? '!border-[var(--accent)] !bg-[var(--accent)]'
-              : 'border-[#d9d9d9] dark:border-[#555]'
-          "
+          @click="isGallery ? toggleGallery(img.token) : multiSelect && toggleSelect(img.token)"
         >
-          <span class="text-[13px] font-bold text-white">✓</span>
+          <img :src="img.dataUrl" class="block h-full w-full object-cover" />
+          <!-- Pin badge -->
+          <div
+            v-if="pinnedTokens.has(img.token)"
+            class="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/55 px-1 py-[2px] text-[10px] text-white"
+          >
+            <Pin :size="10" />
+          </div>
+          <!-- Selected checkmark -->
+          <div
+            v-if="
+              isGallery ? gallerySelected === img.token : multiSelect && selectedTokens.has(img.token)
+            "
+            class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90"
+            :class="
+              isGallery || selectedTokens.has(img.token)
+                ? '!border-[var(--accent)] !bg-[var(--accent)]'
+                : 'border-[#d9d9d9] dark:border-[#555]'
+            "
+          >
+            <span class="text-[13px] font-bold text-white">✓</span>
+          </div>
+          <!-- Size label -->
+          <div
+            class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+          >
+            {{ formatSize(img.size) }}
+          </div>
+          <!-- Date label -->
+          <div
+            class="absolute bottom-1.5 right-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+          >
+            {{ formatDate(img.createdAt) }}
+          </div>
+          <button
+            v-if="!isGallery && !multiSelect"
+            class="absolute bottom-1.5 right-1.5 cursor-pointer rounded border-0 bg-black/55 px-2.5 py-[3px] text-xs text-white opacity-0 transition-opacity hover:bg-red-600/80"
+            @click.stop="confirmDelete(img.token)"
+          >
+            清理
+          </button>
         </div>
-        <!-- Size label -->
-        <div
-          class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
-        >
-          {{ formatSize(img.size) }}
-        </div>
-        <!-- Date label -->
-        <div
-          class="absolute bottom-1.5 right-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
-        >
-          {{ formatDate(img.createdAt) }}
-        </div>
-        <button
-          v-if="!isGallery && !multiSelect"
-          class="absolute bottom-1.5 right-1.5 cursor-pointer rounded border-0 bg-black/55 px-2.5 py-[3px] text-xs text-white opacity-0 transition-opacity hover:bg-red-600/80"
-          @click.stop="confirmDelete(img.token)"
-        >
-          清理
-        </button>
       </div>
-    </div>
+    </template>
+
+    <!-- 磁盘图片（images 目录，仅图库模式） -->
+    <template v-else>
+      <div v-if="diskLoading" class="py-10 text-center text-sm text-[#999] dark:text-[#666]">
+        加载中...
+      </div>
+      <div
+        v-else-if="diskImages.length === 0"
+        class="py-10 text-center text-sm text-[#999] dark:text-[#666]"
+      >
+        磁盘目录暂无图片
+        <div class="mt-1 text-xs text-[#bbb] dark:text-[#666]">
+          通过「保存到本地磁盘」上传的图片会存放在这里
+        </div>
+      </div>
+      <div v-else class="relative grid grid-cols-6 gap-3">
+        <div
+          v-for="img in diskImages"
+          :key="img.relPath"
+          class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
+          :class="
+            diskSelected === img.relPath
+              ? 'cursor-pointer border-[var(--accent)]'
+              : 'cursor-pointer border-transparent hover:border-[#e0e0e0] dark:hover:border-[#555]'
+          "
+          @click="toggleDisk(img.relPath)"
+        >
+          <img
+            v-if="img.dataUrl"
+            :src="img.dataUrl"
+            class="block h-full w-full object-cover"
+          />
+          <div v-else class="flex h-full w-full items-center justify-center bg-[#f0f0f0] dark:bg-[#222]">
+            <div class="size-4 animate-spin rounded-full border-2 border-[#ccc] border-t-transparent" />
+          </div>
+          <!-- Selected checkmark -->
+          <div
+            v-if="diskSelected === img.relPath"
+            class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90 !border-[var(--accent)] !bg-[var(--accent)]"
+          >
+            <span class="text-[13px] font-bold text-white">✓</span>
+          </div>
+          <!-- Size label -->
+          <div
+            class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+          >
+            {{ formatSize(img.size) }}
+          </div>
+          <!-- Date label -->
+          <div
+            class="absolute bottom-1.5 right-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
+          >
+            {{ formatDate(img.modified) }}
+          </div>
+        </div>
+      </div>
+    </template>
 
     <template v-if="isGallery" #footer>
       <button

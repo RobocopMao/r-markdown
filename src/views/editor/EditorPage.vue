@@ -1749,10 +1749,11 @@ function loadDemo() {
     mode="gallery"
     @close="showGallery = false"
     @insert="
-      (token: string) => {
+      (payload: { kind: 'local' | 'disk'; value: string }) => {
         showGallery = false
+        const src = payload.kind === 'disk' ? payload.value : `idb:${payload.value}`
         editorRef?.insertAtCursor(
-          `<img src=&quot;idb:${token}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`,
+          `<img src=&quot;${src}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`,
         )
       }
     "
