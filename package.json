@@ -34,6 +34,7 @@
     "@uiw/codemirror-theme-solarized": "^4.25.11",
     "@vue/compiler-dom": "^3.6.0-rc.2",
     "@vue/compiler-sfc": "^3.6.0-rc.2",
+    "@yeger/vue-masonry-wall": "^6.1.4",
     "awesome-design-md": "^1.1.0",
     "codemirror": "^6.0.2",
     "highlight.js": "^11.11.1",

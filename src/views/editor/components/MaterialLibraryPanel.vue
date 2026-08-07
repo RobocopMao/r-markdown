@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount, nextTick } from 'vue'
+import { MasonryWall } from '@yeger/vue-masonry-wall'
 import { Package, CheckSquare, Upload } from 'lucide-vue-next'
 import { MaterialStorage, DEFAULT_CATEGORIES, type MaterialItem } from '@/services/materialStorage'
 import { publishMaterial, generateMaterialId, validateImageUrls } from '@/services/materialPublish'
@@ -30,6 +31,42 @@ const uploading = ref(false)
 const toastVisible = ref(false)
 const toastMessage = ref('')
 const publishConfirmVisible = ref(false)
+
+// ── 瀑布流（@yeger/vue-masonry-wall）──
+const COLS = 2
+const COLS_GAP = 8
+const wallWidth = ref(0)
+const wallWrapperRef = ref<HTMLElement | null>(null)
+let wallResizeObserver: ResizeObserver | null = null
+const columnWidth = computed(() => {
+  if (wallWidth.value <= 0) return 0
+  return (wallWidth.value - COLS_GAP * (COLS - 1)) / COLS
+})
+
+function initWallObserver() {
+  nextTick(() => {
+    if (!wallResizeObserver) {
+      wallResizeObserver = new ResizeObserver((entries) => {
+        wallWidth.value = entries[0]?.contentRect.width ?? 0
+      })
+    }
+    wallResizeObserver.disconnect()
+    if (wallWrapperRef.value) wallResizeObserver.observe(wallWrapperRef.value)
+  })
+}
+onMounted(() => {
+  if (props.visible) initWallObserver()
+})
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) initWallObserver()
+  },
+)
+onBeforeUnmount(() => {
+  wallResizeObserver?.disconnect()
+  wallResizeObserver = null
+})
 
 function showToast(msg: string) {
   toastMessage.value = msg
@@ -262,7 +299,7 @@ watch(
         </button>
       </div>
 
-      <div class="flex-1 pt-1 pb-3 px-3">
+      <div ref="wallWrapperRef" class="flex-1 pt-1 pb-3 px-3">
         <div
           v-if="myMaterials.length === 0"
           class="flex flex-col items-center justify-center h-full gap-2 opacity-40"
@@ -271,31 +308,35 @@ watch(
           <span class="text-[12px]">还没有素材</span>
           <span class="text-[11px]">在编辑器中设计内容后，点右上角保存按钮即可</span>
         </div>
-        <div v-else class="columns-2 gap-x-2 [contain:layout]">
-          <div
-            v-for="item in filteredMaterials"
-            :key="item.id"
-            class="break-inside-avoid [-webkit-column-break-inside:avoid] inline-block w-full mb-2.5 relative"
-          >
-            <MaterialCard
-              :id="item.officialId"
-              :name="item.name"
-              :category="item.category"
-              :sub-category="item.subCategory"
-              :author="item.author"
-              :description="item.description"
-              :updated-at="item.updatedAt"
-              :content="item.content"
-              :show-check="selectMode"
-              :selected="selectedIds.has(item.id)"
-              :active="activeMaterialId === item.id && !selectMode"
-              :pinned="!!item.pinned"
-              compact
-              @click="handleCardClick(item)"
-              @pin="handlePin(item)"
-            />
-          </div>
-        </div>
+        <MasonryWall
+          v-else
+          :items="filteredMaterials"
+          :column-width="columnWidth"
+          :gap="COLS_GAP"
+          :min-columns="COLS"
+          :max-columns="COLS"
+          :key-mapper="(item) => item.id"
+        >
+          <template #default="{ item }">
+          <MaterialCard
+            :id="item.officialId"
+            :name="item.name"
+            :category="item.category"
+            :sub-category="item.subCategory"
+            :author="item.author"
+            :description="item.description"
+            :updated-at="item.updatedAt"
+            :content="item.content"
+            :show-check="selectMode"
+            :selected="selectedIds.has(item.id)"
+            :active="activeMaterialId === item.id && !selectMode"
+            :pinned="!!item.pinned"
+            compact
+            @click="handleCardClick(item)"
+            @pin="handlePin(item)"
+          />
+          </template>
+        </MasonryWall>
       </div>
     </div>
 

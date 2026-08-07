@@ -1,5 +1,6 @@
 <script setup vapor lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+import { MasonryWall } from '@yeger/vue-masonry-wall'
 import { SquarePen, Home } from 'lucide-vue-next'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { useTheme } from '@/composables/useTheme'
@@ -29,6 +30,19 @@ const categories = [
   { key: 'other', label: '其他' },
 ]
 const activeCategory = ref('all')
+
+// ── 瀑布流（@yeger/vue-masonry-wall）──
+const COLS_BREAKPOINT = 1024
+const COLS_GAP = 24
+const wallWidth = ref(0)
+const viewportWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 0)
+const wallWrapperRef = ref<HTMLElement | null>(null)
+let wallResizeObserver: ResizeObserver | null = null
+const cols = computed(() => (viewportWidth.value >= COLS_BREAKPOINT ? 2 : 1))
+const columnWidth = computed(() => {
+  if (wallWidth.value <= 0) return 0
+  return (wallWidth.value - COLS_GAP * (cols.value - 1)) / cols.value
+})
 
 // 组件 id → 分类映射
 const componentCategoryMap: Record<string, string> = {
@@ -95,6 +109,11 @@ onMounted(async () => {
   requestAnimationFrame(() => {
     visible.value = true
   })
+  window.addEventListener('resize', onWindowResize)
+  wallResizeObserver = new ResizeObserver((entries) => {
+    wallWidth.value = entries[0]?.contentRect.width ?? 0
+  })
+  if (wallWrapperRef.value) wallResizeObserver.observe(wallWrapperRef.value)
   const colorsVal = colors.value
   const examples = await Promise.all(
     components
@@ -174,6 +193,16 @@ function onCardLeave(e: MouseEvent) {
   const card = e.currentTarget as HTMLElement
   card.style.minHeight = ''
 }
+
+onBeforeUnmount(() => {
+  window.removeEventListener('resize', onWindowResize)
+  wallResizeObserver?.disconnect()
+  wallResizeObserver = null
+})
+
+function onWindowResize() {
+  viewportWidth.value = window.innerWidth
+}
 </script>
 
 <template>
@@ -199,7 +228,7 @@ function onCardLeave(e: MouseEvent) {
 
     <!-- Main Content -->
     <main class="px-4 sm:px-8 py-8 sm:py-12">
-      <div class="mx-auto max-w-[1020px]">
+      <div ref="wallWrapperRef" class="mx-auto max-w-[1020px]">
         <div class="mb-4 sm:mb-6">
           <h1
             class="text-[28px] sm:text-[40px] font-extrabold tracking-tight m-0 mb-2"
@@ -225,10 +254,16 @@ function onCardLeave(e: MouseEvent) {
         </div>
 
         <!-- Components Waterfall -->
-        <div class="waterfall">
+        <MasonryWall
+          :items="filteredComponents"
+          :column-width="columnWidth"
+          :gap="COLS_GAP"
+          :min-columns="cols"
+          :max-columns="cols"
+          :key-mapper="(item) => item.id"
+        >
+          <template #default="{ item }">
           <div
-            v-for="comp in filteredComponents"
-            :key="comp.id"
             class="spotlight-card"
             @mousemove="onMouseMove"
             @mouseenter="onCardEnter"
@@ -240,19 +275,19 @@ function onCardLeave(e: MouseEvent) {
             <!-- 正面：渲染预览 -->
             <div class="card-front">
               <div class="p-6">
-                <div v-if="comp.rendered" class="preview-content" v-html="comp.rendered"></div>
+                <div v-if="item.rendered" class="preview-content" v-html="item.rendered"></div>
                 <div v-else class="text-[13px] text-[#ccc] italic py-8 text-center">暂无示例</div>
               </div>
             </div>
 
             <!-- 悬浮层：语法用法 -->
-            <div v-if="comp.example" class="card-overlay">
+            <div v-if="item.example" class="card-overlay">
               <div class="overlay-content">
                 <div class="overlay-header">
                   <span class="overlay-title"
-                    >{{ comp.name }} <span class="overlay-id">{{ comp.idSuffix }}</span></span
+                    >{{ item.name }} <span class="overlay-id">{{ item.idSuffix }}</span></span
                   >
-                  <button class="copy-btn" @click.stop="copySyntax(comp.example)">
+                  <button class="copy-btn" @click.stop="copySyntax(item.example)">
                     <svg
                       viewBox="0 0 16 16"
                       width="13"
@@ -271,14 +306,14 @@ function onCardLeave(e: MouseEvent) {
                     复制
                   </button>
                 </div>
-                <pre class="syntax-code"><code>{{ comp.example }}</code></pre>
+                <pre class="syntax-code"><code>{{ item.example }}</code></pre>
                 <!-- 属性说明表 -->
-                <div v-if="comp.attrs && comp.attrs.length" class="attrs-table">
+                <div v-if="item.attrs && item.attrs.length" class="attrs-table">
                   <div class="attrs-row attrs-label-row">
                     <span class="attr-col-key">属性</span>
                     <span class="attr-col-desc">说明</span>
                   </div>
-                  <div v-for="attr in comp.attrs" :key="attr.key" class="attrs-row">
+                  <div v-for="attr in item.attrs" :key="attr.key" class="attrs-row">
                     <span class="attr-col-key"
                       ><code>{{ attr.key }}</code
                       ><span v-if="attr.required" class="attr-required">必填</span></span
@@ -302,8 +337,9 @@ function onCardLeave(e: MouseEvent) {
               </div>
             </div>
           </div>
+            </template>
+          </MasonryWall>
         </div>
-      </div>
     </main>
 
     <!-- Footer -->
@@ -349,27 +385,10 @@ function onCardLeave(e: MouseEvent) {
   border-color: var(--accent);
 }
 
-/* ── 瀑布流 ── */
-.waterfall {
-  columns: 2;
-  column-gap: 1.5rem;
-}
-
-@media (max-width: 1023px) {
-  .waterfall {
-    columns: 1;
-  }
-}
-
-/* ── 聚光灯卡片 ── */
+/* ── 聚光灯卡片（瀑布流间距由 @yeger/vue-masonry-wall 的 gap 控制）── */
 .spotlight-card {
-  break-inside: avoid;
-  -webkit-column-break-inside: avoid;
-  /* Safari 多列布局中 backdrop-filter/gradient 元素会触发列分裂，
-     display:inline-block + width:100% 强制将卡片作为不可分割的原子块 */
   display: inline-block;
   width: 100%;
-  margin-bottom: 1.5rem;
   position: relative;
   border-radius: 1rem;
   background: var(--bg-primary);
