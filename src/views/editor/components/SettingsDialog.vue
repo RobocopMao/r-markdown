@@ -12,8 +12,6 @@ import {
   autoUpdatePending,
   autoUpdateRid,
   checkForUpdates,
-  downloadUpdateWithRid,
-  type UpdateInfo,
 } from '@/composables/useAutoUpdater'
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
 import {
@@ -217,13 +215,6 @@ const currentZoom = ref(getSetting<number>('pageZoom'))
 const updateChecking = ref(false)
 const updateMessage = ref('')
 const updateError = ref(false)
-
-const updateDialogVisible = ref(false)
-const updateDialogVersion = ref('')
-const pendingUpdate = ref<UpdateInfo | null>(null)
-const pendingRid = ref<number | null>(null)
-const downloading = ref(false)
-const downloadProgress = ref(0)
 
 const showImageCache = ref(false)
 
@@ -449,20 +440,15 @@ function openGitHubRepo() {
   }
 }
 
+/**
+ * 手动检查更新。复用 EditorPage 的更新弹窗：
+ * 检查成功后把结果写入共享的 autoUpdatePending / autoUpdateRid，
+ * 由 EditorPage 的 watcher 统一弹出「发现新版本」弹窗并处理下载。
+ */
 async function manualCheckUpdate() {
   updateChecking.value = true
   updateMessage.value = ''
   updateError.value = false
-
-  // 复用 EditorPage 自动检查的结果（同一个 rid），避免创建重复 Update 资源
-  if (autoUpdatePending.value && autoUpdateRid.value != null) {
-    pendingUpdate.value = autoUpdatePending.value
-    pendingRid.value = autoUpdateRid.value
-    updateDialogVersion.value = autoUpdatePending.value.version
-    updateDialogVisible.value = true
-    updateChecking.value = false
-    return
-  }
 
   const result = await checkForUpdates()
 
@@ -470,48 +456,15 @@ async function manualCheckUpdate() {
     updateMessage.value = result.error
     updateError.value = true
   } else if (result.update) {
-    pendingUpdate.value = result.update
-    pendingRid.value = result.rid
-    updateDialogVersion.value = result.update.version
-    updateDialogVisible.value = true
+    autoUpdatePending.value = result.update
+    autoUpdateRid.value = result.rid
   } else {
+    autoUpdatePending.value = null
     updateMessage.value = '已是最新版本'
     updateError.value = false
   }
 
   updateChecking.value = false
-}
-
-async function doDownloadUpdate() {
-  updateDialogVisible.value = false
-  if (!pendingUpdate.value || pendingRid.value == null) return
-
-  downloading.value = true
-  downloadProgress.value = 0
-
-  try {
-    let total = 0
-    let totalSize = 0
-    await downloadUpdateWithRid(pendingRid.value, (event) => {
-      if (event.event === 'Started') {
-        totalSize = event.data?.contentLength ?? 0
-      } else if (event.event === 'Progress') {
-        total += event.data?.chunkLength ?? 0
-        if (totalSize > 0) {
-          downloadProgress.value = Math.round((total / totalSize) * 100)
-        }
-      }
-    })
-    // downloadAndInstall 成功后自动重启；dev 模式下重启不生效，提示手动重启
-    updateMessage.value = '更新已下载，请重启应用以完成安装'
-    updateError.value = false
-    downloading.value = false
-  } catch (e) {
-    console.error('[updater] download error:', e, typeof e, JSON.stringify(e))
-    updateMessage.value = `安装失败: ${e}`
-    updateError.value = true
-    downloading.value = false
-  }
 }
 </script>
 
@@ -1417,10 +1370,10 @@ async function doDownloadUpdate() {
         <div class="flex items-center gap-3 flex-wrap">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-            :disabled="updateChecking || downloading"
+            :disabled="updateChecking"
             @click="manualCheckUpdate"
           >
-            {{ updateChecking ? '检查中…' : downloading ? '下载中…' : '检查更新' }}
+            {{ updateChecking ? '检查中…' : '检查更新' }}
           </button>
           <span
             v-if="updateMessage"
@@ -1429,21 +1382,6 @@ async function doDownloadUpdate() {
           >
             {{ updateMessage }}
           </span>
-        </div>
-        <!-- 下载进度 -->
-        <div v-if="downloading" class="mt-3">
-          <div class="flex items-center gap-2 mb-1.5">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">正在下载更新...</span>
-            <span class="text-[12px] font-medium text-[var(--accent)]"
-              >{{ downloadProgress }}%</span
-            >
-          </div>
-          <div class="h-1.5 w-full rounded-full bg-[#eee] dark:bg-[#444] overflow-hidden">
-            <div
-              class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
-              :style="{ width: downloadProgress + '%' }"
-            />
-          </div>
         </div>
       </section>
     </template>
@@ -1455,18 +1393,6 @@ async function doDownloadUpdate() {
       @request-cleanup="onImgRequestCleanup"
     />
   </BaseDrawer>
-
-  <!-- 更新确认弹窗（全局显示） -->
-  <ConfirmDialog
-    v-model:visible="updateDialogVisible"
-    title="发现新版本"
-    :message="`版本 ${updateDialogVersion} 可用，是否立即下载安装？`"
-    :body="pendingUpdate?.body"
-    :wide="true"
-    confirm-text="立即更新"
-    @confirm="doDownloadUpdate"
-    @cancel="updateDialogVisible = false"
-  />
 
   <!-- 清理图片缓存全局确认弹窗 -->
   <ConfirmDialog

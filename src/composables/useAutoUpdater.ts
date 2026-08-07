@@ -37,7 +37,7 @@ async function fetchReleaseNotes(version: string): Promise<string> {
       .replace(/\*\*/g, '')
       .replace(/\r\n/g, '\n')
       .replace(/\n{2,}/g, '\n')
-      .replace(/^变更$/m, '本次更新内容：')
+      .replace(/^变更$/m, '更新内容：')
       .trim()
     releaseNotesCache.set(version, body)
     return body
