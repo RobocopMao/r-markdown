@@ -1461,7 +1461,7 @@ async function manualCheckUpdate() {
 .sponsor-bubble {
   position: absolute;
   top: -22px;
-  right: -60px;
+  right: -72px;
   animation: sponsor-bob 1.6s ease-in-out infinite;
 }
 @keyframes sponsor-bob {
