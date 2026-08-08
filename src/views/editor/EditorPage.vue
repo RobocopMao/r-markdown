@@ -1017,11 +1017,11 @@ function loadDemo() {
           >
             <span class="flex flex-wrap items-center gap-2">
               <!-- 操作按钮组：图标+文字 -->
-              <span class="flex items-center gap-1">
+              <span class="flex flex-wrap items-center gap-1">
                 <!-- 基础语法 -->
                 <span class="relative inline-flex items-center group">
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                     :class="
                       editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                     "
@@ -1125,7 +1125,7 @@ function loadDemo() {
                 <!-- 容器/布局 -->
                 <span class="relative inline-flex items-center group">
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                     :class="
                       editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                     "
@@ -1360,7 +1360,7 @@ function loadDemo() {
                   @mouseleave="closeImageMenu"
                 >
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                     :class="
                       editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                     "
@@ -1443,7 +1443,7 @@ function loadDemo() {
                 </span>
                 <BaseTooltip text="插入组件">
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                     :class="
                       editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
                     "
@@ -1462,7 +1462,7 @@ function loadDemo() {
                   "
                 >
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                     :class="
                       tagInfo && !showTagDialog && !isMobile
                         ? 'cursor-pointer'
@@ -1475,9 +1475,7 @@ function loadDemo() {
                     <span>解析</span>
                   </button>
                 </BaseTooltip>
-              </span>
-              <!-- 行内样式按钮组 -->
-              <span class="flex items-center gap-0.5">
+                <!-- 行内样式按钮组 -->
                 <BaseTooltip
                   v-for="opt in inlineFormatOptions"
                   :key="opt.syntax"
@@ -1504,19 +1502,19 @@ function loadDemo() {
                     />
                   </button>
                 </BaseTooltip>
+                <!-- 帮助提示 -->
+                <BaseTooltip placement="bottom">
+                  <CircleQuestionMark :size="14" />
+                  <template #content>
+                    选中非标签内文字后可加样式<br />基础/语法/图片/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
+                  </template>
+                </BaseTooltip>
               </span>
-              <!-- 帮助提示 -->
-              <BaseTooltip placement="bottom">
-                <CircleQuestionMark :size="14" />
-                <template #content>
-                  选中非标签内文字后可加样式<br />基础/语法/图片/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
-                </template>
-              </BaseTooltip>
             </span>
             <span class="flex flex-col lg:flex-row lg:items-center gap-1">
               <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
                 <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="saveContent(markdown, true)"
                 >
                   <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
@@ -1525,7 +1523,7 @@ function loadDemo() {
               </BaseTooltip>
               <BaseTooltip text="保存草稿">
                 <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="handleOpenSaveDraft"
                 >
                   <SquareBottomDashedScissors
@@ -1538,7 +1536,7 @@ function loadDemo() {
               </BaseTooltip>
               <BaseTooltip text="本地导出">
                 <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="handleOpenFinalize"
                 >
                   <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
@@ -1550,7 +1548,7 @@ function loadDemo() {
                 :text="articleStorageMode === 'local' ? '保存到本地' : '推送到远程仓库'"
               >
                 <button
-                  class="inline-flex items-center gap-1 h-7 px-2 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="pushCloudVisible = true"
                 >
                   <Cloud
