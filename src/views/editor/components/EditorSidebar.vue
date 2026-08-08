@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
 import { useDarkMode, type DarkMode } from '@/composables/useDarkMode'
 import {
-  Component,
+  Puzzle,
   Paperclip,
   FilePlus,
   Bot,
@@ -279,7 +279,7 @@ function toggleCollapse() {
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
         @click="emit('openComponents')"
       >
-        <Component :size="24" class="shrink-0" />
+        <Puzzle :size="24" class="shrink-0" />
         <span class="text-[10px] leading-tight">组件</span>
       </button>
       <!-- 图库 button -->
