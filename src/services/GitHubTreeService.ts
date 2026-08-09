@@ -36,6 +36,8 @@ interface CloudConfig {
   owner: string
   repo: string
   token: string
+  /** 分支（默认 main），GET 用 ?ref，写入用 body.branch */
+  branch: string
 }
 
 interface RepoConfig {
@@ -80,12 +82,18 @@ export const GitHubTreeService = {
     const token = this.getToken()
     const repo = this.getRepo()
     if (!token || !repo) return null
-    return { token, ...repo }
+    return { token, ...repo, branch: getSetting<string>('cloudArticleBranch') || 'main' }
   },
 
-  setConfig(owner: string, repo: string, token: string): void {
-    this.setToken(token)
-    this.setRepo(owner, repo)
+  setConfig(owner: string, repo: string, token: string, branch = 'main'): void {
+    // 值未变化时跳过写入，避免重复触发 setting-changed 造成重入
+    if (getSetting<string>('cloudArticleToken') !== token) this.setToken(token)
+    const combo = `${owner}/${repo}`
+    if (getSetting<string>('cloudArticleRepo') !== combo) this.setRepo(owner, repo)
+    const targetBranch = branch || 'main'
+    if ((getSetting<string>('cloudArticleBranch') || 'main') !== targetBranch) {
+      setSetting('cloudArticleBranch', targetBranch, true)
+    }
     treeSha = null
   },
 
@@ -96,11 +104,13 @@ export const GitHubTreeService = {
   },
 
   setToken(token: string): void {
-    setSetting('cloudArticleToken', token)
+    // silent：GitHubTreeService 仅作为激活工作区 token 的副本同步层，
+    // 写入不应触发 setting-changed → onSettingChanged → checkConfig 重入。
+    setSetting('cloudArticleToken', token, true)
   },
 
   clearToken(): void {
-    setSetting('cloudArticleToken', '')
+    setSetting('cloudArticleToken', '', true)
     treeSha = null
   },
 
@@ -115,11 +125,12 @@ export const GitHubTreeService = {
   },
 
   setRepo(owner: string, repo: string): void {
-    setSetting('cloudArticleRepo', `${owner}/${repo}`)
+    // silent：原因同 setToken，避免 applyActiveWorkspace 同步副本触发事件循环
+    setSetting('cloudArticleRepo', `${owner}/${repo}`, true)
   },
 
   clearRepo(): void {
-    setSetting('cloudArticleRepo', '')
+    setSetting('cloudArticleRepo', '', true)
     treeSha = null
   },
 
@@ -128,7 +139,7 @@ export const GitHubTreeService = {
   async fetchTree(): Promise<TreeData> {
     const cfg = this.getConfig()
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
-    const url = `${apiBase(cfg.owner, cfg.repo)}/tree.json`
+    const url = `${apiBase(cfg.owner, cfg.repo)}/tree.json?ref=${encodeURIComponent(cfg.branch)}`
     const res = await request(url, cfg.token, { cache: 'no-cache' })
     const data: GitHubContentResponse = await res.json()
     treeSha = data.sha
@@ -151,7 +162,9 @@ export const GitHubTreeService = {
       // 每次都拉取最新 tree.json，同时获取 sha 和 content
       let latestTree: TreeData | null = null
       try {
-        const getRes = await request(url, cfg.token, { cache: 'no-cache' })
+        const getRes = await request(`${url}?ref=${encodeURIComponent(cfg.branch)}`, cfg.token, {
+          cache: 'no-cache',
+        })
         const data: GitHubContentResponse = await getRes.json()
         treeSha = data.sha
         const json = fromB64(data.content)
@@ -180,6 +193,7 @@ export const GitHubTreeService = {
       const body: any = {
         message: '更新文章树',
         content,
+        branch: cfg.branch,
       }
       if (treeSha) body.sha = treeSha
 
@@ -221,7 +235,9 @@ export const GitHubTreeService = {
   async fetchArticle(id: string): Promise<string> {
     const cfg = this.getConfig()
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
-    const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md`
+    const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md?ref=${encodeURIComponent(
+      cfg.branch,
+    )}`
     const res = await request(url, cfg.token, { cache: 'no-cache' })
     const data: GitHubContentResponse = await res.json()
     return fromB64(data.content)
@@ -235,7 +251,9 @@ export const GitHubTreeService = {
     // 先获取已有 sha（更新时）
     let existingSha: string | null = null
     try {
-      const getRes = await request(url, cfg.token, { cache: 'no-cache' })
+      const getRes = await request(`${url}?ref=${encodeURIComponent(cfg.branch)}`, cfg.token, {
+        cache: 'no-cache',
+      })
       const data: GitHubContentResponse = await getRes.json()
       existingSha = data.sha
     } catch {
@@ -245,6 +263,7 @@ export const GitHubTreeService = {
     const body: any = {
       message: `保存文章: ${id}`,
       content: b64(content),
+      branch: cfg.branch,
     }
     if (existingSha) body.sha = existingSha
 
@@ -268,7 +287,9 @@ export const GitHubTreeService = {
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
     const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md`
 
-    const getRes = await request(url, cfg.token, { cache: 'no-cache' })
+    const getRes = await request(`${url}?ref=${encodeURIComponent(cfg.branch)}`, cfg.token, {
+      cache: 'no-cache',
+    })
     const data: GitHubContentResponse = await getRes.json()
 
     const delRes = await fetch(url, {
@@ -281,6 +302,7 @@ export const GitHubTreeService = {
       body: JSON.stringify({
         message: `删除文章: ${id}`,
         sha: data.sha,
+        branch: cfg.branch,
       }),
     })
     if (!delRes.ok) {
@@ -290,11 +312,25 @@ export const GitHubTreeService = {
   },
 
   /**
-   * 测试连接：验证 Token 和仓库是否可访问
+   * 测试连接：验证 Token、仓库是否可访问；branch 提供时额外校验分支是否存在
    */
-  async testConnection(owner: string, repo: string, token: string): Promise<void> {
-    const url = `https://api.github.com/repos/${owner}/${repo}`
-    await request(url, token)
+  async testConnection(
+    owner: string,
+    repo: string,
+    token: string,
+    branch?: string,
+  ): Promise<void> {
+    const base = `https://api.github.com/repos/${owner}/${repo}`
+    await request(base, token)
+    if (branch) {
+      // 校验分支存在（空仓库默认分支为 main），不存在则抛出可读错误
+      const branchUrl = `${base}/branches/${encodeURIComponent(branch)}`
+      try {
+        await request(branchUrl, token)
+      } catch {
+        throw new Error(`仓库不存在分支 "${branch}"`)
+      }
+    }
   },
 
   // ── 原子操作 ──
