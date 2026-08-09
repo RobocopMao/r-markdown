@@ -1,8 +1,9 @@
-<script setup vapor lang="ts">
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
+import { Check, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -52,6 +53,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   close: []
+  toast: [message: string]
 }>()
 
 const ZOOM_PRESETS = [50, 75, 80, 90, 100, 110, 125, 150, 175, 200]
@@ -376,9 +378,11 @@ async function onResetStorageDir() {
   }
 }
 
-const cloudTesting = ref(false)
-const cloudTestResult = ref<'ok' | 'fail' | ''>('')
-const cloudTestError = ref('')
+/** 当前正在测试中的工作区 id（空表示无） */
+const cloudTestingWsId = ref<string | null>(null)
+/** 各工作区的测试结果：'ok' | 'fail' | ''，以及失败信息 */
+const cloudTestResult = ref<Record<string, 'ok' | 'fail' | ''>>({})
+const cloudTestError = ref<Record<string, string>>({})
 
 function onCloudTokenInput(id: string, val: string) {
   setWorkspaceToken(id, val)
@@ -450,7 +454,13 @@ async function onAddLocalWorkspace() {
     canCreateDirectories: true,
   })
   if (typeof selected !== 'string' || !selected) return
-  addWorkspace('local', { dir: selected.trim().replace(/\/+$/, '') })
+  const dir = selected.trim().replace(/\/+$/, '')
+  const exists = localWorkspaces.value.some((ws) => ws.dir === dir)
+  if (exists) {
+    emit('toast', '该目录已添加为本地工作区，请勿重复添加')
+    return
+  }
+  addWorkspace('local', { dir })
 }
 
 async function onRemoveLocalWorkspace(id: string) {
@@ -486,29 +496,29 @@ function bindPrimaryActive() {
   if (primary) setActiveWorkspace('local', primary.id)
 }
 
-async function handleCloudTestConnection() {
-  const ws = getWorkspaceById(activeGithubWorkspaceId.value) ?? githubWorkspaces.value[0]
+async function handleCloudTestConnection(id: string) {
+  const ws = getWorkspaceById(id)
   const token = ws ? getWorkspaceToken(ws.id) : ''
   if (!token || !ws?.repo || !ws.repo.includes('/')) {
-    cloudTestResult.value = 'fail'
-    cloudTestError.value = '请填写 Token 和仓库'
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'fail' }
+    cloudTestError.value = { ...cloudTestError.value, [id]: '请填写 Token 和仓库' }
     return
   }
   const slashIdx = ws.repo.indexOf('/')
   const owner = ws.repo.substring(0, slashIdx)
   const repoName = ws.repo.substring(slashIdx + 1)
 
-  cloudTesting.value = true
-  cloudTestResult.value = ''
-  cloudTestError.value = ''
+  cloudTestingWsId.value = id
+  cloudTestResult.value = { ...cloudTestResult.value, [id]: '' }
+  cloudTestError.value = { ...cloudTestError.value, [id]: '' }
   try {
     await GitHubTreeService.testConnection(owner, repoName, token, ws.branch || 'main')
-    cloudTestResult.value = 'ok'
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'ok' }
   } catch (e: unknown) {
-    cloudTestResult.value = 'fail'
-    cloudTestError.value = getErrorMessage(e, '连接失败')
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'fail' }
+    cloudTestError.value = { ...cloudTestError.value, [id]: getErrorMessage(e, '连接失败') }
   }
-  cloudTesting.value = false
+  cloudTestingWsId.value = null
 }
 
 async function applyZoom(scale: number) {
@@ -1279,7 +1289,7 @@ async function manualCheckUpdate() {
           <!-- 本地存储目录管理（仅 local 模式） -->
           <div
             v-if="articleStorageMode === 'local'"
-            class="mt-4 rounded-lg border border-[var(--border-color,#e0e0e0)] p-3"
+            class="mt-4 rounded-lg"
           >
             <div class="flex items-center justify-between mb-2">
               <label class="text-[12px] text-[#666] dark:text-[#999] block">本地工作区（多目录）</label>
@@ -1292,11 +1302,16 @@ async function manualCheckUpdate() {
             <div
               v-for="(ws, idx) in localWorkspaces"
               :key="ws.id"
-              class="mb-3 rounded-md border border-[var(--border-color,#e5e5e5)] p-2.5"
+              class="mb-3 rounded-md border p-2.5"
+              :class="
+                isLocalActive(ws.id)
+                  ? 'border-[var(--accent)]'
+                  : 'border-[var(--border-color,#e5e5e5)]'
+              "
             >
               <div class="flex items-center gap-2 mb-2">
                 <span class="text-[12px] font-medium" style="color: var(--text-primary)">
-                  {{ idx === 0 ? '默认工作区' : '工作区' }}
+                  {{ idx === 0 ? '默认工作区' : '工作区' + (idx + 1) }}
                 </span>
                 <span
                   v-if="isLocalActive(ws.id)"
@@ -1304,21 +1319,24 @@ async function manualCheckUpdate() {
                   style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
                   >当前</span
                 >
-                <button
-                  v-if="idx > 0"
-                  class="ml-auto cursor-pointer border-0 bg-transparent text-[11px] px-1 py-0.5 rounded hover:bg-[var(--bg-hover)]"
-                  style="color: var(--text-secondary)"
-                  @click="onRemoveLocalWorkspace(ws.id)"
-                >
-                  移除
-                </button>
-                <button
-                  v-if="!isLocalActive(ws.id)"
-                  class="ml-auto cursor-pointer rounded border px-2 py-0.5 text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
-                  @click="onSwitchLocalWorkspace(ws.id)"
-                >
-                  切换到此目录
-                </button>
+                <span class="ml-auto flex items-center gap-1">
+                  <BaseTooltip v-if="!isLocalActive(ws.id)" text="设为当前" placement="top">
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333]"
+                      @click="onSwitchLocalWorkspace(ws.id)"
+                    >
+                      <Check :size="14" />
+                    </button>
+                  </BaseTooltip>
+                  <BaseTooltip v-if="idx > 0" text="删除" placement="top">
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c]"
+                      @click="onRemoveLocalWorkspace(ws.id)"
+                    >
+                      <Trash2 :size="14" />
+                    </button>
+                  </BaseTooltip>
+                </span>
               </div>
               <div
                 class="text-[12px] break-all rounded-md px-2.5 py-2 mb-2"
@@ -1363,7 +1381,7 @@ async function manualCheckUpdate() {
               class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
               @click="onAddLocalWorkspace"
             >
-              + 添加本地工作区
+              添加本地工作区
             </button>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
               新增工作区只需选择目录（不存在时自动创建 tree.json / articles / images），移除仅从列表移出，不会删除任何文件。
@@ -1392,20 +1410,24 @@ async function manualCheckUpdate() {
               color: #b08017;
             "
           >
-            检测到工作区 Token 缺失。若你刚从旧版本升级，旧 Token 可能未自动迁移，请在下方对应仓库补填 Token
-            后保存。生成 Token 时需勾选 <code>repo</code> scope。
+            由于v0.3.9版本文章存储升级为工作区（可绑定多个仓库）。若你刚从旧版本升级，旧仓库 和 Token 可能未自动迁移，请在下方填补对应仓库 和 Token。
           </div>
 
           <!-- 仓库工作区列表 -->
           <div class="mb-3 space-y-2">
             <div
-              v-for="ws in githubWorkspaces"
+              v-for="(ws, i) in githubWorkspaces"
               :key="ws.id"
-              class="rounded-lg border border-[var(--border-color,#e5e5e5)] p-2.5"
+              class="rounded-lg border p-2.5"
+              :class="
+                isCloudActive(ws.id)
+                  ? 'border-[var(--accent)]'
+                  : 'border-[var(--border-color,#e5e5e5)]'
+              "
             >
               <div class="flex items-center gap-2 mb-1.5">
                 <span class="text-[12px] font-medium" style="color: var(--text-primary)">{{
-                  ws.repo || '（未填写）'
+                  `工作区${i + 1}`
                 }}</span>
                 <span
                   v-if="isCloudActive(ws.id)"
@@ -1413,45 +1435,80 @@ async function manualCheckUpdate() {
                   style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
                   >当前</span
                 >
-                <span class="ml-auto flex items-center gap-1.5">
-                  <button
-                    v-if="!isCloudActive(ws.id)"
-                    class="cursor-pointer rounded border px-2 py-[3px] text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
-                    @click="onSwitchCloudWorkspace(ws.id)"
-                  >
-                    设为当前
-                  </button>
-                  <button
-                    class="cursor-pointer rounded border px-2 py-[3px] text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
-                    @click="onRemoveCloudWorkspace(ws.id)"
-                  >
-                    删除
-                  </button>
+                <span class="ml-auto flex items-center gap-1">
+                  <BaseTooltip v-if="!isCloudActive(ws.id)" text="设为当前" placement="top">
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333]"
+                      @click="onSwitchCloudWorkspace(ws.id)"
+                    >
+                      <Check :size="14" />
+                    </button>
+                  </BaseTooltip>
+                  <BaseTooltip text="删除" placement="top">
+                    <button
+                      class="flex h-6 w-6 items-center justify-center rounded text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c]"
+                      @click="onRemoveCloudWorkspace(ws.id)"
+                    >
+                      <Trash2 :size="14" />
+                    </button>
+                  </BaseTooltip>
                 </span>
               </div>
-              <div class="grid grid-cols-[1fr_90px_1.4fr] gap-2">
-                <input
-                  :value="ws.repo"
-                  placeholder="用户名/仓库名"
-                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-                  @input="onCloudRepoInput(ws.id, ($event.target as HTMLInputElement).value)"
-                  @blur="onCloudRepoBlur(ws.id)"
-                />
-                <input
-                  :value="ws.branch"
-                  placeholder="main"
-                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-                  @input="onCloudBranchInput(ws.id, ($event.target as HTMLInputElement).value)"
-                  @blur="onCloudRepoBlur(ws.id)"
-                />
+              <div class="grid grid-cols-2 gap-2 mb-2">
+                <div>
+                  <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">仓库名</label>
+                  <input
+                    :value="ws.repo"
+                    placeholder="用户名/仓库名"
+                    class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                    @input="onCloudRepoInput(ws.id, ($event.target as HTMLInputElement).value)"
+                    @blur="onCloudRepoBlur(ws.id)"
+                  />
+                </div>
+                <div>
+                  <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">分支</label>
+                  <input
+                    :value="ws.branch"
+                    placeholder="main"
+                    class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                    @input="onCloudBranchInput(ws.id, ($event.target as HTMLInputElement).value)"
+                    @blur="onCloudRepoBlur(ws.id)"
+                  />
+                </div>
+              </div>
+              <div>
+                <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">Token</label>
                 <input
                   :value="getWorkspaceToken(ws.id)"
                   type="password"
-                  placeholder="Token"
-                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                  placeholder="ghp_xxxxxxxxxxxx"
+                  class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
                   @input="onCloudTokenInput(ws.id, ($event.target as HTMLInputElement).value)"
                   @blur="onCloudRepoBlur(ws.id)"
                 />
+              </div>
+              <div class="flex items-center gap-3 mt-2">
+                <button
+                  class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-3 py-1 text-[12px] text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="cloudTestingWsId === ws.id"
+                  @click="handleCloudTestConnection(ws.id)"
+                >
+                  {{ cloudTestingWsId === ws.id ? '测试中…' : '测试连接' }}
+                </button>
+                <span
+                  v-if="cloudTestResult[ws.id] === 'ok'"
+                  class="text-[12px]"
+                  style="color: var(--accent-green, #27ae60)"
+                >
+                  连接成功
+                </span>
+                <span
+                  v-if="cloudTestResult[ws.id] === 'fail'"
+                  class="text-[12px]"
+                  style="color: #e74c3c"
+                >
+                  {{ cloudTestError[ws.id] || '连接失败' }}
+                </span>
               </div>
             </div>
           </div>
@@ -1460,28 +1517,8 @@ async function manualCheckUpdate() {
             class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors mb-3 border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             @click="addCloudWorkspace"
           >
-            + 添加仓库
+            添加仓库
           </button>
-
-          <div class="flex items-center gap-3 flex-wrap">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="cloudTesting"
-              @click="handleCloudTestConnection"
-            >
-              {{ cloudTesting ? '测试中…' : '测试连接' }}
-            </button>
-            <span
-              v-if="cloudTestResult === 'ok'"
-              class="text-[12px]"
-              style="color: var(--accent-green, #27ae60)"
-            >
-              连接成功
-            </span>
-            <span v-if="cloudTestResult === 'fail'" class="text-[12px]" style="color: #e74c3c">
-              {{ cloudTestError || '连接失败' }}
-            </span>
-          </div>
         </template>
       </section>
     </template>

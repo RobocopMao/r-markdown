@@ -95,5 +95,5 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   /** TreeSidebar 初始展开状态 */
   treeSidebarExpanded: { default: false },
   /** TreeSidebar 宽度（px） */
-  treePanelWidth: { default: 275 },
+  treePanelWidth: { default: 278 },
 }

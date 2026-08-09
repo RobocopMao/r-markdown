@@ -1724,6 +1724,7 @@ function loadDemo() {
     :visible="settingsVisible"
     :initial-tab="settingsInitialTab"
     @close="onSettingsClose"
+    @toast="showToast"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"

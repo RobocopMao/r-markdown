@@ -15,8 +15,10 @@ import {
   ArrowUpToLine,
   ArrowDownToLine,
   Check,
+  GitBranch,
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
+import { getWorkspaceToken } from '@/services/articleWorkspace'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
@@ -69,15 +71,40 @@ const {
 
 // ── 工作区切换 ──
 const wsMenuVisible = ref(false)
+/** 弹层定位：基于触发按钮的 fixed 坐标（避开滚动容器裁切） */
+const wsMenuStyle = ref<Record<string, string>>({})
+const wsTriggerRef = ref<HTMLElement | null>(null)
 
-/** 当前模式下的工作区列表 */
-const kindWorkspaceList = computed(() =>
-  workspaces.value.filter((w) => w.kind === (articleStorageMode.value === 'local' ? 'local' : 'github')),
-)
+/** 当前模式下的工作区列表（未配置仓库/Token 的 github 工作区不展示） */
+const kindWorkspaceList = computed(() => {
+  const githubMode = articleStorageMode.value !== 'local'
+  return workspaces.value.filter((w) => {
+    const isLocalKind = w.kind === 'local'
+    if (isLocalKind !== !githubMode) return false
+    // github 工作区需已配置仓库且 Token 才可展示/切换
+    if (githubMode) {
+      return !!w.repo && !!w.repo.includes('/') && !!getWorkspaceToken(w.id)
+    }
+    return true
+  })
+})
 
 async function onSwitchWorkspace(ws: (typeof workspaces.value)[number]) {
   wsMenuVisible.value = false
   await switchToWorkspace(ws.kind, ws.id)
+}
+
+/** 打开工作区菜单：把弹层定位到按钮下方（fixed，避免被滚动容器裁剪） */
+function toggleWsMenu() {
+  sortMenuVisible.value = false
+  wsMenuVisible.value = !wsMenuVisible.value
+  if (wsMenuVisible.value && wsTriggerRef.value) {
+    const rect = wsTriggerRef.value.getBoundingClientRect()
+    wsMenuStyle.value = {
+      left: `${rect.left}px`,
+      top: `${rect.bottom + 4}px`,
+    }
+  }
 }
 
 // ── 搜索 ──
@@ -222,6 +249,9 @@ const sortMode = ref<SortMode>((localStorage.getItem(SORT_MODE_KEY) as SortMode)
 const isSorting = ref(localStorage.getItem(SORT_ACTIVE_KEY) === 'true')
 
 const sortMenuVisible = ref(false)
+/** 排序弹层定位（fixed，避开滚动容器裁剪） */
+const sortMenuStyle = ref<Record<string, string>>({})
+const sortTriggerRef = ref<HTMLElement | null>(null)
 
 function getSortModeLabel(): string {
   return SORT_OPTIONS.find((o) => o.value === sortMode.value)?.label || '排序'
@@ -242,7 +272,15 @@ function setSortMode(mode: SortMode) {
 }
 
 function toggleSortMenu() {
+  wsMenuVisible.value = false
   sortMenuVisible.value = !sortMenuVisible.value
+  if (sortMenuVisible.value && sortTriggerRef.value) {
+    const rect = sortTriggerRef.value.getBoundingClientRect()
+    sortMenuStyle.value = {
+      left: `${rect.left}px`,
+      top: `${rect.bottom + 4}px`,
+    }
+  }
 }
 
 function sortByMode(a: TreeNode, b: TreeNode): number {
@@ -781,59 +819,7 @@ function onSettingChanged(e: Event) {
       class="flex items-center justify-between px-3 py-2 shrink-0"
       :style="{ borderBottom: searchVisible ? 'none' : '1px solid var(--border-color, #e5e5e5)' }"
     >
-      <div class="flex items-center gap-0.5">
-        <div class="relative mr-0.5">
-          <BaseTooltip text="切换工作区">
-            <button
-              class="flex items-center gap-1 h-7 max-w-[150px] pl-2 pr-1.5 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
-              @click.stop="wsMenuVisible = !wsMenuVisible"
-            >
-              <span class="text-xs font-medium truncate" style="color: var(--text-primary)">
-                {{ currentWorkspace?.name || (articleStorageMode === 'local' ? '默认目录' : '默认仓库') }}
-              </span>
-              <ChevronDown :size="12" class="shrink-0" style="color: var(--text-secondary)" />
-            </button>
-          </BaseTooltip>
-          <div
-            v-if="wsMenuVisible"
-            class="absolute left-0 top-full mt-1 rounded-lg py-1 min-w-[180px] z-50"
-            :style="{
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border-color, #e5e5e5)',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            }"
-            @click.stop
-          >
-            <div v-if="kindWorkspaceList.length === 0" class="px-3 py-1.5 text-xs" style="color: var(--text-secondary)">
-              暂无工作区
-            </div>
-            <button
-              v-for="ws in kindWorkspaceList"
-              :key="ws.id"
-              class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
-              :style="{ color: 'var(--text-primary)' }"
-              @click="onSwitchWorkspace(ws)"
-            >
-              <span class="flex-1 truncate">{{ ws.name }}</span>
-              <Check
-                v-if="ws.id === currentWorkspace?.id"
-                :size="13"
-                style="color: var(--accent)"
-              />
-            </button>
-            <div
-              class="my-1"
-              :style="{ borderTop: '1px solid var(--border-color, #e5e5e5)' }"
-            />
-            <button
-              class="flex items-center w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left transition-colors duration-100 hover:bg-[var(--bg-hover)]"
-              style="color: var(--text-secondary)"
-              @click="emit('openSettings', 'cloud'); wsMenuVisible = false"
-            >
-              管理工作区
-            </button>
-          </div>
-        </div>
+      <div class="flex items-center gap-0.5 overflow-x-auto scrollbar-hide">
         <BaseTooltip :text="isAllExpanded ? '收起全部' : '展开全部'">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
@@ -843,51 +829,28 @@ function onSettingChanged(e: Event) {
             <ChevronDown v-else :size="14" />
           </button>
         </BaseTooltip>
-        <BaseTooltip :text="autoExpandEnabled ? '关闭自动定位' : '自动定位到当前文章'">
-          <button
-            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
-            @click="toggleAutoExpand()"
-          >
-            <Crosshair
-              :size="14"
-              :style="{ color: autoExpandEnabled ? 'var(--accent)' : undefined }"
-            />
-          </button>
-        </BaseTooltip>
+        <div class="relative mr-0.5">
+          <BaseTooltip text="切换工作区">
+            <button
+              ref="wsTriggerRef"
+              class="flex items-center justify-center h-7 w-7 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+              @click.stop="toggleWsMenu"
+            >
+              <GitBranch :size="14" class="shrink-0" />
+            </button>
+          </BaseTooltip>
+        </div>
+
         <div class="relative">
           <BaseTooltip text="排序">
             <button
+              ref="sortTriggerRef"
               class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
               @click.stop="toggleSortMenu"
             >
               <ArrowUpDown :size="14" :style="{ color: isSorting ? 'var(--accent)' : undefined }" />
             </button>
           </BaseTooltip>
-          <div
-            v-if="sortMenuVisible"
-            class="absolute left-0 top-full mt-1 rounded-lg py-1 min-w-[140px] z-50"
-            :style="{
-              background: 'var(--bg-primary)',
-              border: '1px solid var(--border-color, #e5e5e5)',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            }"
-            @click.stop
-          >
-            <button
-              v-for="opt in SORT_OPTIONS"
-              :key="opt.value"
-              class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
-              :style="{
-                color:
-                  isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
-                background:
-                  isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
-              }"
-              @click="setSortMode(opt.value)"
-            >
-              {{ opt.label }}
-            </button>
-          </div>
         </div>
         <BaseTooltip text="手动刷新">
           <button
@@ -928,6 +891,17 @@ function onSettingChanged(e: Event) {
             @click="toggleSearch"
           >
             <Search :size="14" :style="{ color: searchVisible ? 'var(--accent)' : undefined }" />
+          </button>
+        </BaseTooltip>
+        <BaseTooltip :text="autoExpandEnabled ? '关闭自动定位' : '自动定位到当前文章'">
+          <button
+            class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+            @click="toggleAutoExpand()"
+          >
+            <Crosshair
+              :size="14"
+              :style="{ color: autoExpandEnabled ? 'var(--accent)' : undefined }"
+            />
           </button>
         </BaseTooltip>
       </div>
@@ -1182,6 +1156,80 @@ function onSettingChanged(e: Event) {
       @confirm="confirmDelete"
       @cancel="cancelDelete"
     />
+
+    <!-- 工作区切换弹层（teleport 到 body，避免被滚动容器裁剪） -->
+    <Teleport to="body">
+      <div
+        v-if="wsMenuVisible"
+        class="fixed rounded-lg py-1 min-w-[180px] z-[9999]"
+        :style="{
+          ...wsMenuStyle,
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color, #e5e5e5)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        }"
+        @click.stop
+      >
+        <div v-if="kindWorkspaceList.length === 0" class="px-3 py-1.5 text-xs" style="color: var(--text-secondary)">
+          暂无工作区
+        </div>
+        <button
+          v-for="ws in kindWorkspaceList"
+          :key="ws.id"
+          class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
+          :style="{ color: 'var(--text-primary)' }"
+          @click="onSwitchWorkspace(ws)"
+        >
+          <span class="flex-1 truncate">{{ ws.name }}</span>
+          <Check
+            v-if="ws.id === currentWorkspace?.id"
+            :size="13"
+            style="color: var(--accent)"
+          />
+        </button>
+        <div
+          class="my-1"
+          :style="{ borderTop: '1px solid var(--border-color, #e5e5e5)' }"
+        />
+        <button
+          class="flex items-center w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left transition-colors duration-100 hover:bg-[var(--bg-hover)]"
+          style="color: var(--text-secondary)"
+          @click="emit('openSettings', 'cloud'); wsMenuVisible = false"
+        >
+          管理工作区
+        </button>
+      </div>
+    </Teleport>
+
+    <!-- 排序弹层（teleport 到 body，避免被滚动容器裁剪） -->
+    <Teleport to="body">
+      <div
+        v-if="sortMenuVisible"
+        class="fixed rounded-lg py-1 min-w-[140px] z-[9999]"
+        :style="{
+          ...sortMenuStyle,
+          background: 'var(--bg-primary)',
+          border: '1px solid var(--border-color, #e5e5e5)',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+        }"
+        @click.stop
+      >
+        <button
+          v-for="opt in SORT_OPTIONS"
+          :key="opt.value"
+          class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
+          :style="{
+            color:
+              isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
+            background:
+              isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
+          }"
+          @click="setSortMode(opt.value)"
+        >
+          {{ opt.label }}
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
