@@ -100,12 +100,16 @@ export function listWorkspaces(kind: WorkspaceKind): ArticleWorkspace[] {
   return workspaces.value.filter((w) => w.kind === kind)
 }
 
-/** 获取当前激活的工作区；未设置时回退到该类型第一个；没有则返回 null（沿用旧行为） */
+/** 获取当前激活的工作区；未设置时回退到该类型第一个并持久化，没有则返回 null */
 export function getActiveWorkspace(kind: WorkspaceKind): ArticleWorkspace | null {
   const list = listWorkspaces(kind)
   if (list.length === 0) return null
   const activeId = kind === 'github' ? activeGithubWorkspaceId.value : activeLocalWorkspaceId.value
-  return list.find((w) => w.id === activeId) ?? list[0]
+  const found = list.find((w) => w.id === activeId)
+  if (found) return found
+  // activeId 未指向有效工作区 → 回退到第一个并持久化，保证 UI「当前」标识能正确显示
+  persistActive(kind, list[0].id)
+  return list[0]
 }
 
 /** 设置激活工作区并持久化 */
@@ -128,8 +132,11 @@ export function addWorkspace(kind: WorkspaceKind, partial: Partial<ArticleWorksp
     name: isGithub ? githubName(repo, branch) : localName(dir),
     ...(isGithub ? { repo, branch } : { dir }),
   }
+  // 若该类型之前没有工作区，新增的第一个自动设为激活，UI 立即显示「当前」标识
+  const wasEmpty = listWorkspaces(kind).length === 0
   workspaces.value = [...workspaces.value, ws]
   persistWorkspaces()
+  if (wasEmpty) persistActive(kind, ws.id)
   return ws
 }
 
