@@ -388,11 +388,11 @@ function onCloudTokenInput(id: string, val: string) {
 const localWorkspaces = computed(() => listWorkspaces('local'))
 const githubWorkspaces = computed(() => listWorkspaces('github'))
 
-/** 是否存在 Token 缺失的工作区（用于显示补填提示） */
+/** 是否所有工作区都未配置 Token（仅在用户完全没填过 Token 时提示） */
 const hasMissingToken = computed(
   () =>
     githubWorkspaces.value.length > 0 &&
-    githubWorkspaces.value.some((ws) => !getWorkspaceToken(ws.id)),
+    githubWorkspaces.value.every((ws) => !getWorkspaceToken(ws.id)),
 )
 
 function isCloudActive(id: string): boolean {
