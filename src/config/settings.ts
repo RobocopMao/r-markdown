@@ -12,6 +12,7 @@ const sensitiveCache = new Map<string, string>()
 
 const SENSITIVE_KEYS: Set<string> = new Set([
   'cloudArticleToken',
+  'cloudArticleTokens',
   'cloudArticleRepo',
   'githubRepo',
   'githubToken',
@@ -141,8 +142,10 @@ export function getSetting<T = unknown>(key: string): T {
 /**
  * 写入一个设置项到 localStorage。桌面端同时同步到磁盘 JSON。
  * 敏感字段：先更新内存缓存，再异步加密写入 localStorage（不阻塞调用方）。
+ * @param silent true 时不派发 setting-changed 事件（用于避免事件循环触发递归，
+ *               例如迁移逻辑清空 cloudArticleToken 副本会触发 TreeSidebar.checkConfig 重入）
  */
-export function setSetting(key: string, value: unknown): void {
+export function setSetting(key: string, value: unknown, silent = false): void {
   const serialized = JSON.stringify(value)
 
   if (SENSITIVE_KEYS.has(key)) {
@@ -163,7 +166,9 @@ export function setSetting(key: string, value: unknown): void {
     syncToDisk()
   }
 
-  window.dispatchEvent(new CustomEvent('setting-changed', { detail: { key, value } }))
+  if (!silent) {
+    window.dispatchEvent(new CustomEvent('setting-changed', { detail: { key, value } }))
+  }
 }
 
 /** 导出当前所有设置（用于写入磁盘 JSON） */

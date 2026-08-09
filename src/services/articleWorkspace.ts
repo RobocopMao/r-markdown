@@ -180,13 +180,15 @@ function migrateLegacyToken(): boolean {
   if (githubList.length === 0) return false // 没有工作区可迁，保留旧值下次重试
   // 任一工作区已配 token → 视为用户已在新架构下配置，cloudArticleToken 只是被反向同步的副本
   if (githubList.some((w) => getWorkspaceToken(w.id))) {
-    setSetting('cloudArticleToken', '')
+    // silent 避免触发 setting-changed → checkConfig → ensureWorkspaces 重入
+    setSetting('cloudArticleToken', '', true)
     return true
   }
   // 所有工作区都没配 token：真正首次迁移
   const target = githubList[0]
   setWorkspaceToken(target.id, legacyToken)
-  setSetting('cloudArticleToken', '')
+  // silent 避免触发 setting-changed → checkConfig → ensureWorkspaces 重入
+  setSetting('cloudArticleToken', '', true)
   return true
 }
 
