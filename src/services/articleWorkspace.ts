@@ -163,12 +163,29 @@ export function removeWorkspace(id: string): void {
   workspaces.value = workspaces.value.filter((w) => w.id !== id)
   persistWorkspaces()
   setWorkspaceToken(id, '')
+  // 清除该工作区对应的 IndexedDB 缓存（tree.json 与文章缓存）
+  clearWorkspaceCache(ws)
   const wasGithubActive = ws.kind === 'github' && activeGithubWorkspaceId.value === id
   const wasLocalActive = ws.kind === 'local' && activeLocalWorkspaceId.value === id
   if (wasGithubActive || wasLocalActive) {
     const first = listWorkspaces(ws.kind)[0]
     persistActive(ws.kind, first ? first.id : '')
   }
+}
+
+/** 计算工作区的索引缓存命名空间（与 useGitHubTree cacheNs 规则一致） */
+function workspaceNamespace(ws: ArticleWorkspace): string {
+  if (ws.kind === 'github') {
+    return ws.repo ? `github:${ws.repo}:${ws.branch || 'main'}` : 'github:legacy'
+  }
+  return ws.dir ? `local:${ws.dir}` : 'local:default'
+}
+
+/** 删除工作区在 IndexedDB 中对应的缓存（异步，不阻塞移除流程） */
+function clearWorkspaceCache(ws: ArticleWorkspace): void {
+  import('@/services/GitHubArticleCache').then(({ GitHubArticleCache }) => {
+    GitHubArticleCache.clearNamespace(workspaceNamespace(ws)).catch(() => {})
+  })
 }
 
 /**

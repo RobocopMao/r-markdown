@@ -78,6 +78,43 @@ export const GitHubArticleCache = {
     }
   },
 
+  /** 删除某个命名空间下的全部缓存（tree_cache + article_cache） */
+  async clearNamespace(ns: string): Promise<void> {
+    try {
+      const db = await openDB()
+      const tx = db.transaction(['tree_cache', 'article_cache'], 'readwrite')
+      const prefix = `${ns}:`
+      ;(async (storeName: 'tree_cache' | 'article_cache') => {
+        const store = tx.objectStore(storeName)
+        const req = store.openCursor()
+        req.onsuccess = () => {
+          const cursor = req.result
+          if (cursor) {
+            if (String(cursor.key).startsWith(prefix)) cursor.delete()
+            cursor.continue()
+          }
+        }
+      })('tree_cache')
+      ;(async (storeName: 'tree_cache' | 'article_cache') => {
+        const store = tx.objectStore(storeName)
+        const req = store.openCursor()
+        req.onsuccess = () => {
+          const cursor = req.result
+          if (cursor) {
+            if (String(cursor.key).startsWith(prefix)) cursor.delete()
+            cursor.continue()
+          }
+        }
+      })('article_cache')
+      await new Promise<void>((resolve) => {
+        tx.oncomplete = () => resolve()
+        tx.onerror = () => resolve()
+      })
+    } catch {
+      /* ignore */
+    }
+  },
+
   // ── article_cache ──
 
   async getArticle(ns: string, id: string): Promise<string | null> {
