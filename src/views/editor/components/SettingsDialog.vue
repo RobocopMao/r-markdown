@@ -1,5 +1,5 @@
 <script setup vapor lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
@@ -27,6 +27,23 @@ import { useTheme } from '@/composables/useTheme'
 import ImageCacheDialog from './ImageCacheDialog.vue'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
 import { getErrorMessage } from '@/utils/helpers'
+import {
+  activeGithubWorkspaceId,
+  activeLocalWorkspaceId,
+  ensureWorkspaces,
+  listWorkspaces,
+  addWorkspace,
+  updateWorkspace,
+  removeWorkspace,
+  getWorkspaceById,
+  getWorkspaceToken,
+  setWorkspaceToken,
+  setActiveWorkspace,
+} from '@/services/articleWorkspace'
+import { useGitHubTree } from '../composables/useGitHubTree'
+
+const { switchToWorkspace } = useGitHubTree()
+ensureWorkspaces()
 
 const props = defineProps<{
   visible: boolean
@@ -256,10 +273,7 @@ function saveWechatDefaultAuthor(val: string) {
   setSetting('wechatDefaultAuthor', val)
 }
 
-// ── 云端文章 GitHub 配置 ──
-const cloudToken = ref(GitHubTreeService.getToken() || '')
-const _repoInit = GitHubTreeService.getRepo()
-const cloudRepo = ref(_repoInit ? `${_repoInit.owner}/${_repoInit.repo}` : '')
+// ── 云端文章 GitHub 配置（Token 按工作区单独配置）──
 
 // ── 文章存储模式（仅桌面端）──
 const articleStorageMode = ref<'github' | 'local'>(
@@ -282,6 +296,8 @@ function clearDirError() {
 }
 
 async function onSelectStorageDir() {
+  // 默认工作区的目录操作总是作用于第一个本地工作区
+  bindPrimaryActive()
   dirChanging.value = true
   clearDirError()
   try {
@@ -289,6 +305,7 @@ async function onSelectStorageDir() {
     const dir = await pickArticleDir()
     if (dir) {
       articleStorageDir.value = dir
+      bindPrimaryLocalDir(dir)
       // 通知编辑器重新加载本地树
       window.dispatchEvent(
         new CustomEvent('setting-changed', {
@@ -307,6 +324,8 @@ async function onSelectStorageDir() {
 async function onChangeStorageDir() {
   // 先让用户选目标目录，再执行剪切移动
   clearDirError()
+  // 移动前先切到默认工作区，确保移动的是「默认工作区」的文件
+  bindPrimaryActive()
   const { open } = await import('@tauri-apps/plugin-dialog')
   const target = await open({
     directory: true,
@@ -320,6 +339,7 @@ async function onChangeStorageDir() {
     const { moveArticleDir } = await import('@/services/localArticleStorage')
     await moveArticleDir(target)
     articleStorageDir.value = target
+    bindPrimaryLocalDir(target)
     window.dispatchEvent(
       new CustomEvent('setting-changed', {
         detail: { key: 'articleStorageDir', value: target },
@@ -334,12 +354,15 @@ async function onChangeStorageDir() {
 }
 
 async function onResetStorageDir() {
+  // 默认工作区的目录操作总是作用于第一个本地工作区
+  bindPrimaryActive()
   dirChanging.value = true
   clearDirError()
   try {
     const { resetToDefaultDir } = await import('@/services/localArticleStorage')
     await resetToDefaultDir()
     articleStorageDir.value = ''
+    bindPrimaryLocalDir('')
     window.dispatchEvent(
       new CustomEvent('setting-changed', {
         detail: { key: 'articleStorageDir', value: '' },
@@ -357,61 +380,129 @@ const cloudTesting = ref(false)
 const cloudTestResult = ref<'ok' | 'fail' | ''>('')
 const cloudTestError = ref('')
 
-function saveCloudToken(val: string) {
-  cloudToken.value = val
-  cloudTestResult.value = ''
-  if (!val) {
-    GitHubTreeService.clearToken()
-    return
+function onCloudTokenInput(id: string, val: string) {
+  setWorkspaceToken(id, val)
+}
+
+// ── 文章工作区管理（github 多仓库/分支 + local 多目录）──
+const localWorkspaces = computed(() => listWorkspaces('local'))
+const githubWorkspaces = computed(() => listWorkspaces('github'))
+
+/** 是否存在 Token 缺失的工作区（用于显示补填提示） */
+const hasMissingToken = computed(
+  () =>
+    githubWorkspaces.value.length > 0 &&
+    githubWorkspaces.value.some((ws) => !getWorkspaceToken(ws.id)),
+)
+
+function isCloudActive(id: string): boolean {
+  return activeGithubWorkspaceId.value === id
+}
+
+function isLocalActive(id: string): boolean {
+  return activeLocalWorkspaceId.value === id
+}
+
+function onCloudRepoInput(id: string, val: string) {
+  updateWorkspace(id, { repo: val.trim() })
+}
+
+function onCloudBranchInput(id: string, val: string) {
+  updateWorkspace(id, { branch: val.trim() || 'main' })
+}
+
+function onCloudRepoBlur(id: string) {
+  const ws = getWorkspaceById(id)
+  if (!ws) return
+  // 正在编辑的是激活工作区时，失焦即应用并重载
+  if (isCloudActive(id)) {
+    switchToWorkspace('github', id)
   }
-  const repo = cloudRepo.value.trim()
-  if (repo) {
-    const slashIdx = repo.indexOf('/')
-    if (slashIdx > 0) {
-      const owner = repo.substring(0, slashIdx)
-      const repoName = repo.substring(slashIdx + 1)
-      GitHubTreeService.setConfig(owner, repoName, val)
+}
+
+function addCloudWorkspace() {
+  addWorkspace('github', { repo: '', branch: 'main' })
+}
+
+async function onSwitchCloudWorkspace(id: string) {
+  await switchToWorkspace('github', id)
+}
+
+async function onRemoveCloudWorkspace(id: string) {
+  const wasActive = isCloudActive(id)
+  removeWorkspace(id)
+  if (wasActive) {
+    const remains = listWorkspaces('github')
+    if (remains.length > 0) {
+      await switchToWorkspace('github', remains[0].id)
+    } else {
+      // 删光所有仓库 → 视为未配置
+      if (getSetting<string>('cloudArticleRepo')) GitHubTreeService.clearRepo()
     }
   }
 }
 
-function saveCloudRepo(val: string) {
-  cloudRepo.value = val
-  cloudTestResult.value = ''
-  if (!val) {
-    GitHubTreeService.clearRepo()
-    return
-  }
-  const token = cloudToken.value.trim()
-  if (token) {
-    const slashIdx = val.indexOf('/')
-    if (slashIdx > 0) {
-      const owner = val.substring(0, slashIdx)
-      const repoName = val.substring(slashIdx + 1)
-      GitHubTreeService.setConfig(owner, repoName, token)
+async function onAddLocalWorkspace() {
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const selected = await open({
+    directory: true,
+    title: '选择本地工作区目录（将自动创建 tree.json / articles / images）',
+    canCreateDirectories: true,
+  })
+  if (typeof selected !== 'string' || !selected) return
+  addWorkspace('local', { dir: selected.trim().replace(/\/+$/, '') })
+}
+
+async function onRemoveLocalWorkspace(id: string) {
+  const wasActive = isLocalActive(id)
+  removeWorkspace(id)
+  if (wasActive) {
+    const remains = listWorkspaces('local')
+    if (remains.length > 0) {
+      await switchToWorkspace('local', remains[0].id)
+    } else {
+      setSetting('articleStorageDir', '')
     }
   }
+}
+
+function onSwitchLocalWorkspace(id: string) {
+  switchToWorkspace('local', id)
+}
+
+/** 绑定「默认/第一个」本地工作区目录（移动/选择/恢复操作后调用） */
+function bindPrimaryLocalDir(dir: string) {
+  articleStorageDir.value = dir
+  const primary = localWorkspaces.value[0]
+  if (primary) {
+    updateWorkspace(primary.id, { dir })
+    setActiveWorkspace('local', primary.id)
+  }
+}
+
+/** 切换激活到「默认/第一个」本地工作区（不改变目录内容） */
+function bindPrimaryActive() {
+  const primary = localWorkspaces.value[0]
+  if (primary) setActiveWorkspace('local', primary.id)
 }
 
 async function handleCloudTestConnection() {
-  const repo = cloudRepo.value.trim()
-  const token = cloudToken.value.trim()
-  if (!repo || !token) return
-
-  const slashIdx = repo.indexOf('/')
-  if (slashIdx <= 0) {
+  const ws = getWorkspaceById(activeGithubWorkspaceId.value) ?? githubWorkspaces.value[0]
+  const token = ws ? getWorkspaceToken(ws.id) : ''
+  if (!token || !ws?.repo || !ws.repo.includes('/')) {
     cloudTestResult.value = 'fail'
-    cloudTestError.value = '仓库格式错误，应为 owner/repo'
+    cloudTestError.value = '请填写 Token 和仓库'
     return
   }
-  const owner = repo.substring(0, slashIdx)
-  const repoName = repo.substring(slashIdx + 1)
+  const slashIdx = ws.repo.indexOf('/')
+  const owner = ws.repo.substring(0, slashIdx)
+  const repoName = ws.repo.substring(slashIdx + 1)
 
   cloudTesting.value = true
   cloudTestResult.value = ''
   cloudTestError.value = ''
   try {
-    await GitHubTreeService.testConnection(owner, repoName, token)
+    await GitHubTreeService.testConnection(owner, repoName, token, ws.branch || 'main')
     cloudTestResult.value = 'ok'
   } catch (e: unknown) {
     cloudTestResult.value = 'fail'
@@ -1190,39 +1281,92 @@ async function manualCheckUpdate() {
             v-if="articleStorageMode === 'local'"
             class="mt-4 rounded-lg border border-[var(--border-color,#e0e0e0)] p-3"
           >
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">文章存储目录</label>
+            <div class="flex items-center justify-between mb-2">
+              <label class="text-[12px] text-[#666] dark:text-[#999] block">本地工作区（多目录）</label>
+              <span class="text-[11px]" style="color: var(--text-secondary)"
+                >{{ localWorkspaces.length }} 个</span
+              >
+            </div>
+
+            <!-- 第一个（默认）工作区：保留原有移动/选择/恢复功能 -->
             <div
-              class="text-[12px] break-all rounded-md px-2.5 py-2 mb-3"
-              style="background: var(--bg-secondary, #f5f5f5); color: var(--text-secondary)"
+              v-for="(ws, idx) in localWorkspaces"
+              :key="ws.id"
+              class="mb-3 rounded-md border border-[var(--border-color,#e5e5e5)] p-2.5"
             >
-              {{ articleStorageDir || 'Documents/R-Markdown/articles/（默认）' }}
+              <div class="flex items-center gap-2 mb-2">
+                <span class="text-[12px] font-medium" style="color: var(--text-primary)">
+                  {{ idx === 0 ? '默认工作区' : '工作区' }}
+                </span>
+                <span
+                  v-if="isLocalActive(ws.id)"
+                  class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                  style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
+                  >当前</span
+                >
+                <button
+                  v-if="idx > 0"
+                  class="ml-auto cursor-pointer border-0 bg-transparent text-[11px] px-1 py-0.5 rounded hover:bg-[var(--bg-hover)]"
+                  style="color: var(--text-secondary)"
+                  @click="onRemoveLocalWorkspace(ws.id)"
+                >
+                  移除
+                </button>
+                <button
+                  v-if="!isLocalActive(ws.id)"
+                  class="ml-auto cursor-pointer rounded border px-2 py-0.5 text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                  @click="onSwitchLocalWorkspace(ws.id)"
+                >
+                  切换到此目录
+                </button>
+              </div>
+              <div
+                class="text-[12px] break-all rounded-md px-2.5 py-2 mb-2"
+                style="background: var(--bg-secondary, #f5f5f5); color: var(--text-secondary)"
+              >
+                {{ ws.dir || 'Documents/R-Markdown/articles/（默认）' }}
+              </div>
+
+              <!-- 仅默认工作区保留移动/选择/恢复功能 -->
+              <template v-if="idx === 0">
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] font-medium transition-colors min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                    :disabled="dirChanging"
+                    @click="onChangeStorageDir"
+                  >
+                    {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
+                  </button>
+                  <button
+                    class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="dirChanging"
+                    @click="onSelectStorageDir"
+                  >
+                    选择已有目录
+                  </button>
+                  <button
+                    v-if="articleStorageDir"
+                    class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="dirChanging"
+                    @click="onResetStorageDir"
+                  >
+                    恢复默认目录
+                  </button>
+                </div>
+                <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
+                  更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。恢复默认目录不会移动文章。<br />修改目录后如果遇到当前编辑图片加载异常，建议先重启客户端。
+                </p>
+              </template>
             </div>
-            <div class="flex flex-wrap gap-2">
-              <button
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] font-medium transition-colors min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
-                :disabled="dirChanging"
-                @click="onChangeStorageDir"
-              >
-                {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
-              </button>
-              <button
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="dirChanging"
-                @click="onSelectStorageDir"
-              >
-                选择已有目录
-              </button>
-              <button
-                v-if="articleStorageDir"
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="dirChanging"
-                @click="onResetStorageDir"
-              >
-                恢复默认目录
-              </button>
-            </div>
+
+            <button
+              class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+              @click="onAddLocalWorkspace"
+            >
+              + 添加本地工作区
+            </button>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
-              更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。恢复默认目录不会移动文章。<br />修改目录后如果遇到当前编辑图片加载异常，建议先重启客户端。
+              新增工作区只需选择目录（不存在时自动创建 tree.json / articles / images），移除仅从列表移出，不会删除任何文件。
             </p>
             <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
               {{ dirError }}
@@ -1233,28 +1377,92 @@ async function manualCheckUpdate() {
         <!-- GitHub 仓库配置（仅 github 模式显示） -->
         <template v-if="articleStorageMode === 'github'">
           <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
-            GitHub 私有仓库（文章仓库存储）。仅需
-            <code class="text-[var(--accent)]">repo</code> scope 的 Personal Access Token。
+            GitHub 私有仓库（文章仓库存储），支持多个仓库/分支/账号，<strong>每个仓库单独配置</strong
+            >Personal Access Token（<code class="text-[var(--accent)]">repo</code>
+            scope）。
           </p>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
-            <input
-              :value="cloudRepo"
-              placeholder="用户名/仓库名"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveCloudRepo(($event.target as HTMLInputElement).value)"
-            />
+
+          <!-- Token 缺失提示 -->
+          <div
+            v-if="hasMissingToken"
+            class="mb-3 rounded-lg border px-3 py-2 text-[12px] leading-relaxed"
+            style="
+              background: rgba(255, 193, 7, 0.1);
+              border-color: rgba(255, 193, 7, 0.4);
+              color: #b08017;
+            "
+          >
+            检测到工作区 Token 缺失。若你刚从旧版本升级，旧 Token 可能未自动迁移，请在下方对应仓库补填 Token
+            后保存。生成 Token 时需勾选 <code>repo</code> scope。
           </div>
-          <div class="mb-4">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
-            <input
-              :value="cloudToken"
-              type="password"
-              placeholder="ghp_xxxxxxxxxxxx"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveCloudToken(($event.target as HTMLInputElement).value)"
-            />
+
+          <!-- 仓库工作区列表 -->
+          <div class="mb-3 space-y-2">
+            <div
+              v-for="ws in githubWorkspaces"
+              :key="ws.id"
+              class="rounded-lg border border-[var(--border-color,#e5e5e5)] p-2.5"
+            >
+              <div class="flex items-center gap-2 mb-1.5">
+                <span class="text-[12px] font-medium" style="color: var(--text-primary)">{{
+                  ws.repo || '（未填写）'
+                }}</span>
+                <span
+                  v-if="isCloudActive(ws.id)"
+                  class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                  style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
+                  >当前</span
+                >
+                <span class="ml-auto flex items-center gap-1.5">
+                  <button
+                    v-if="!isCloudActive(ws.id)"
+                    class="cursor-pointer rounded border px-2 py-[3px] text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                    @click="onSwitchCloudWorkspace(ws.id)"
+                  >
+                    设为当前
+                  </button>
+                  <button
+                    class="cursor-pointer rounded border px-2 py-[3px] text-[11px] transition-colors border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                    @click="onRemoveCloudWorkspace(ws.id)"
+                  >
+                    删除
+                  </button>
+                </span>
+              </div>
+              <div class="grid grid-cols-[1fr_90px_1.4fr] gap-2">
+                <input
+                  :value="ws.repo"
+                  placeholder="用户名/仓库名"
+                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                  @input="onCloudRepoInput(ws.id, ($event.target as HTMLInputElement).value)"
+                  @blur="onCloudRepoBlur(ws.id)"
+                />
+                <input
+                  :value="ws.branch"
+                  placeholder="main"
+                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                  @input="onCloudBranchInput(ws.id, ($event.target as HTMLInputElement).value)"
+                  @blur="onCloudRepoBlur(ws.id)"
+                />
+                <input
+                  :value="getWorkspaceToken(ws.id)"
+                  type="password"
+                  placeholder="Token"
+                  class="rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                  @input="onCloudTokenInput(ws.id, ($event.target as HTMLInputElement).value)"
+                  @blur="onCloudRepoBlur(ws.id)"
+                />
+              </div>
+            </div>
           </div>
+
+          <button
+            class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors mb-3 border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            @click="addCloudWorkspace"
+          >
+            + 添加仓库
+          </button>
+
           <div class="flex items-center gap-3 flex-wrap">
             <button
               class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
