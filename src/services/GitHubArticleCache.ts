@@ -4,6 +4,9 @@
  * DB: RMarkdownGitHubCache
  *  - tree_cache store (keyPath: 'key')
  *  - article_cache store (keyPath: 'id')
+ *
+ * 缓存 key 全部带命名空间（ns），避免多个仓库/分支/本地目录之间串数据。
+ * 例如 ns 形如 'github:owner/repo:main' 或 'local:/abs/path'。
  */
 
 interface CacheEntry<T = string> {
@@ -14,6 +17,7 @@ interface CacheEntry<T = string> {
 
 const DB_NAME = 'RMarkdownGitHubCache'
 const DB_VERSION = 1
+const TREE_KEY_SUFFIX = 'tree.json'
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -50,40 +54,49 @@ function storeOp(
 export const GitHubArticleCache = {
   // ── tree_cache ──
 
-  async getTreeCache(): Promise<string | null> {
+  async getTreeCache(ns: string): Promise<string | null> {
     try {
-      const entry = await storeOp('tree_cache', 'readonly', (s) => s.get('tree.json'))
+      const entry = await storeOp('tree_cache', 'readonly', (s) => s.get(`${ns}:${TREE_KEY_SUFFIX}`))
       return entry?.content ?? null
     } catch {
       return null
     }
   },
 
-  async setTreeCache(content: string): Promise<void> {
+  async setTreeCache(ns: string, content: string): Promise<void> {
     await storeOp('tree_cache', 'readwrite', (s) =>
-      s.put({ key: 'tree.json', content, updatedAt: Date.now() }),
+      s.put({ key: `${ns}:${TREE_KEY_SUFFIX}`, content, updatedAt: Date.now() }),
     )
+  },
+
+  /** 删除某个命名空间的树缓存（仓库/分支中无 tree.json 时清空） */
+  async clearTreeCache(ns: string): Promise<void> {
+    try {
+      await storeOp('tree_cache', 'readwrite', (s) => s.delete(`${ns}:${TREE_KEY_SUFFIX}`))
+    } catch {
+      /* ignore */
+    }
   },
 
   // ── article_cache ──
 
-  async getArticle(id: string): Promise<string | null> {
+  async getArticle(ns: string, id: string): Promise<string | null> {
     try {
-      const entry = await storeOp('article_cache', 'readonly', (s) => s.get(id))
+      const entry = await storeOp('article_cache', 'readonly', (s) => s.get(`${ns}:${id}`))
       return entry?.content ?? null
     } catch {
       return null
     }
   },
 
-  async setArticle(id: string, content: string): Promise<void> {
+  async setArticle(ns: string, id: string, content: string): Promise<void> {
     await storeOp('article_cache', 'readwrite', (s) =>
-      s.put({ id, content, updatedAt: Date.now() }),
+      s.put({ id: `${ns}:${id}`, content, updatedAt: Date.now() }),
     )
   },
 
-  async deleteArticle(id: string): Promise<void> {
-    await storeOp('article_cache', 'readwrite', (s) => s.delete(id))
+  async deleteArticle(ns: string, id: string): Promise<void> {
+    await storeOp('article_cache', 'readwrite', (s) => s.delete(`${ns}:${id}`))
   },
 
   // ── clear ──

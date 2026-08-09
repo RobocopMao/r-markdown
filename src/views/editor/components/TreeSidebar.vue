@@ -14,6 +14,7 @@ import {
   RefreshCw,
   ArrowUpToLine,
   ArrowDownToLine,
+  Check,
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import type { TreeNode } from '@/services/GitHubTreeService'
@@ -60,7 +61,24 @@ const {
   getSiblings,
   autoExpandEnabled,
   toggleAutoExpand,
+  articleStorageMode,
+  currentWorkspace,
+  workspaces,
+  switchToWorkspace,
 } = useGitHubTree()
+
+// ── 工作区切换 ──
+const wsMenuVisible = ref(false)
+
+/** 当前模式下的工作区列表 */
+const kindWorkspaceList = computed(() =>
+  workspaces.value.filter((w) => w.kind === (articleStorageMode.value === 'local' ? 'local' : 'github')),
+)
+
+async function onSwitchWorkspace(ws: (typeof workspaces.value)[number]) {
+  wsMenuVisible.value = false
+  await switchToWorkspace(ws.kind, ws.id)
+}
 
 // ── 搜索 ──
 const SEARCH_VISIBLE_KEY = 'r-markdown-treeSearchVisible'
@@ -84,8 +102,12 @@ function toggleNewArticlePosition() {
 
 // ── 手动刷新 ──
 async function refreshTree() {
-  await loadTree()
-  emit('toast', '文章已刷新')
+  try {
+    const ok = await loadTree()
+    emit('toast', ok ? '文章已刷新' : '刷新失败')
+  } catch {
+    emit('toast', '刷新失败')
+  }
 }
 
 /** 递归收集某节点的所有后代 ID */
@@ -718,6 +740,7 @@ function toggleAllExpand() {
 function onDocumentClick() {
   closeContextMenu()
   sortMenuVisible.value = false
+  wsMenuVisible.value = false
 }
 
 onMounted(() => {
@@ -759,6 +782,58 @@ function onSettingChanged(e: Event) {
       :style="{ borderBottom: searchVisible ? 'none' : '1px solid var(--border-color, #e5e5e5)' }"
     >
       <div class="flex items-center gap-0.5">
+        <div class="relative mr-0.5">
+          <BaseTooltip text="切换工作区">
+            <button
+              class="flex items-center gap-1 h-7 max-w-[150px] pl-2 pr-1.5 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
+              @click.stop="wsMenuVisible = !wsMenuVisible"
+            >
+              <span class="text-xs font-medium truncate" style="color: var(--text-primary)">
+                {{ currentWorkspace?.name || (articleStorageMode === 'local' ? '默认目录' : '默认仓库') }}
+              </span>
+              <ChevronDown :size="12" class="shrink-0" style="color: var(--text-secondary)" />
+            </button>
+          </BaseTooltip>
+          <div
+            v-if="wsMenuVisible"
+            class="absolute left-0 top-full mt-1 rounded-lg py-1 min-w-[180px] z-50"
+            :style="{
+              background: 'var(--bg-primary)',
+              border: '1px solid var(--border-color, #e5e5e5)',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            }"
+            @click.stop
+          >
+            <div v-if="kindWorkspaceList.length === 0" class="px-3 py-1.5 text-xs" style="color: var(--text-secondary)">
+              暂无工作区
+            </div>
+            <button
+              v-for="ws in kindWorkspaceList"
+              :key="ws.id"
+              class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
+              :style="{ color: 'var(--text-primary)' }"
+              @click="onSwitchWorkspace(ws)"
+            >
+              <span class="flex-1 truncate">{{ ws.name }}</span>
+              <Check
+                v-if="ws.id === currentWorkspace?.id"
+                :size="13"
+                style="color: var(--accent)"
+              />
+            </button>
+            <div
+              class="my-1"
+              :style="{ borderTop: '1px solid var(--border-color, #e5e5e5)' }"
+            />
+            <button
+              class="flex items-center w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left transition-colors duration-100 hover:bg-[var(--bg-hover)]"
+              style="color: var(--text-secondary)"
+              @click="emit('openSettings', 'cloud'); wsMenuVisible = false"
+            >
+              管理工作区
+            </button>
+          </div>
+        </div>
         <BaseTooltip :text="isAllExpanded ? '收起全部' : '展开全部'">
           <button
             class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
@@ -892,7 +967,7 @@ function onSettingChanged(e: Event) {
         <p class="text-xs mb-2" style="color: var(--text-secondary)">尚未配置 GitHub 仓库</p>
         <button
           class="px-3 py-1 text-xs rounded-lg border-none cursor-pointer transition-colors duration-150"
-          style="background: var(--accent); color: white"
+          style="background: var(--accent-light); color: var(--accent)"
           @click="emit('openSettings', 'cloud')"
         >
           前往设置

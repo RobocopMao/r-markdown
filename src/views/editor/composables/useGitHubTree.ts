@@ -4,6 +4,15 @@ import { LocalTreeService } from '@/services/LocalTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
 import { getErrorMessage } from '@/utils/helpers'
 import { getSetting } from '@/config/settings'
+import {
+  workspaces,
+  activeGithubWorkspaceId,
+  activeLocalWorkspaceId,
+  ensureWorkspaces,
+  getActiveWorkspace,
+  getWorkspaceToken,
+  setActiveWorkspace as storeSetActive,
+} from '@/services/articleWorkspace'
 
 // ── 存储模式 ──
 // 'github' 使用 GitHub 仓库；'local' 使用本地磁盘（仅桌面端）
@@ -77,6 +86,51 @@ function expandAncestors(nodeId: string) {
   }
 }
 
+/** 当前工作区的缓存命名空间，避免多仓库/分支/目录之间串数据 */
+const cacheNs = computed<string>(() => {
+  if (articleStorageMode.value === 'local') {
+    const ws = getActiveWorkspace('local')
+    return ws?.dir ? `local:${ws.dir}` : 'local:default'
+  }
+  const ws = getActiveWorkspace('github')
+  if (ws?.repo) return `github:${ws.repo}:${ws.branch || 'main'}`
+  const cfg = GitHubTreeService.getConfig()
+  return cfg ? `github:${cfg.owner}/${cfg.repo}:${cfg.branch}` : 'github:legacy'
+})
+
+/** 当前存储模式下的激活工作区（未设置工作区时返回 null） */
+const currentWorkspace = computed(() =>
+  articleStorageMode.value === 'local'
+    ? getActiveWorkspace('local')
+    : getActiveWorkspace('github'),
+)
+
+/**
+ * 将当前激活的工作区应用到底层配置（github 写入 repo/branch + 该工作区专属 Token）。
+ * 值未变化时 GitHubTreeService.setConfig 内部会跳过写入，避免触发事件循环。
+ */
+function applyActiveWorkspace(kind: 'github' | 'local' = articleStorageMode.value) {
+  if (kind === 'local') {
+    // 本地路径由 localArticlePath 直接读取激活工作区，无需额外配置
+    return
+  }
+  const ws = getActiveWorkspace('github')
+  if (ws?.repo && ws.repo.includes('/')) {
+    const idx = ws.repo.indexOf('/')
+    // 每个仓库使用自己的 Token（未配置则为空串 → 视为未配置）
+    GitHubTreeService.setConfig(
+      ws.repo.substring(0, idx),
+      ws.repo.substring(idx + 1),
+      getWorkspaceToken(ws.id),
+      ws.branch || 'main',
+    )
+  } else if (ws) {
+    // 激活了但仓库为空 → 视为未配置
+    if (getSetting<string>('cloudArticleRepo')) GitHubTreeService.clearRepo()
+  }
+  // 无工作区时沿用旧 cloudArticleRepo 配置，由 getConfig 判定
+}
+
 export function useGitHubTree() {
   // ── 计算属性 ──
 
@@ -132,11 +186,13 @@ export function useGitHubTree() {
    * - github 模式：需要 token + repo 配置完成
    */
   async function init(): Promise<boolean> {
+    ensureWorkspaces()
     if (articleStorageMode.value === 'local') {
       isConfigured.value = true
       await loadTree()
       return true
     }
+    applyActiveWorkspace()
     const cfg = GitHubTreeService.getConfig()
     if (!cfg) {
       isConfigured.value = false
@@ -158,6 +214,9 @@ export function useGitHubTree() {
       setArticleStorageMode(newMode)
       return
     }
+
+    ensureWorkspaces()
+    applyActiveWorkspace()
 
     // local 模式始终视为已配置
     if (articleStorageMode.value === 'local') {
@@ -192,6 +251,8 @@ export function useGitHubTree() {
     currentCloudArticleId.value = null
     expandedIds.value = new Set()
     clearCloudArticlePersistence()
+    ensureWorkspaces()
+    if (mode === 'github') applyActiveWorkspace()
     isConfigured.value = mode === 'local' ? true : !!GitHubTreeService.getConfig()
     if (isConfigured.value) {
       loadTree()
@@ -213,20 +274,21 @@ export function useGitHubTree() {
     }
     // 404 Not Found（可能是 tree.json 不存在）
     if (/GitHub API 404/.test(msg)) {
-      return '未找到文章数据，请确保仓库中有 tree.json 文件'
+      return '仓库中暂无文章数据，点击「新建文章」或「新建文件夹」创建'
     }
     return msg || '加载失败'
   }
 
   /**
    * 加载树（优先用缓存，后台静默更新）
+   * @returns 是否成功拉到最新数据（404/失败时返回 false）
    */
-  async function loadTree() {
+  async function loadTree(): Promise<boolean> {
     loading.value = true
     error.value = ''
 
     // 先展示缓存
-    const cachedJson = await GitHubArticleCache.getTreeCache()
+    const cachedJson = await GitHubArticleCache.getTreeCache(cacheNs.value)
     if (cachedJson) {
       try {
         const tree = JSON.parse(cachedJson)
@@ -240,13 +302,26 @@ export function useGitHubTree() {
     try {
       const tree = await treeService.value.fetchTree()
       treeData.value = tree.nodes
-      await GitHubArticleCache.setTreeCache(JSON.stringify(tree))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify(tree))
+      return true
     } catch (e: unknown) {
+      const msg = getErrorMessage(e)
+      // 仓库/分支中不存在 tree.json（GitHub API 404）→ 以远端为准：
+      // 清空该工作区的树缓存与当前树，明确提示，不再回退显示旧数据
+      const isMissingTree =
+        articleStorageMode.value === 'github' && /GitHub API 404/.test(msg)
+      if (isMissingTree) {
+        await GitHubArticleCache.clearTreeCache(cacheNs.value)
+        treeData.value = []
+        error.value = '仓库中暂无文章数据，点击「新建文章」或「新建文件夹」创建'
+        return false
+      }
       error.value = formatError(e)
-      // 缓存不可用时尝试用旧数据
+      // 缓存不可用且无旧数据 → 向上抛出
       if (treeData.value.length === 0) {
         throw e
       }
+      return false
     } finally {
       loading.value = false
     }
@@ -263,14 +338,14 @@ export function useGitHubTree() {
     loading.value = true
     try {
       // 先看缓存
-      const cached = await GitHubArticleCache.getArticle(node.id)
+      const cached = await GitHubArticleCache.getArticle(cacheNs.value, node.id)
       if (cached) {
         // 后台更新
         treeService.value
           .fetchArticle(node.id)
           .then((remote) => {
             if (remote !== cached) {
-              GitHubArticleCache.setArticle(node.id, remote)
+              GitHubArticleCache.setArticle(cacheNs.value, node.id, remote)
             }
           })
           .catch(() => {})
@@ -279,7 +354,7 @@ export function useGitHubTree() {
 
       // 没缓存，直接请求
       const content = await treeService.value.fetchArticle(node.id)
-      await GitHubArticleCache.setArticle(node.id, content)
+      await GitHubArticleCache.setArticle(cacheNs.value, node.id, content)
       return content
     } catch (e: unknown) {
       error.value = getErrorMessage(e, '加载文章失败')
@@ -336,7 +411,7 @@ export function useGitHubTree() {
       }
     } else {
       try {
-        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+        await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
       } catch {
         /* 缓存失败不影响主流程 */
       }
@@ -361,8 +436,8 @@ export function useGitHubTree() {
       }
     }
     try {
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-      await GitHubArticleCache.setArticle(node.id, content)
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setArticle(cacheNs.value, node.id, content)
     } catch {
       /* 缓存失败不影响主流程 */
     }
@@ -379,7 +454,7 @@ export function useGitHubTree() {
       treeData.value[idx] = { ...treeData.value[idx], title: newTitle }
     }
     try {
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       /* 缓存失败不影响主流程 */
     }
@@ -392,10 +467,10 @@ export function useGitHubTree() {
     treeData.value = treeData.value.filter((n) => n.id !== id)
     // 清除缓存
     if (node?.type === 'article') {
-      await GitHubArticleCache.deleteArticle(id)
+      await GitHubArticleCache.deleteArticle(cacheNs.value, id)
     }
     try {
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       /* 缓存失败不影响主流程 */
     }
@@ -450,7 +525,7 @@ export function useGitHubTree() {
     try {
       await treeService.value.moveNode(id, newParentId, position)
       // 乐观更新已生效，同步写入缓存防止刷新后回跳
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       await loadTree()
       throw new Error('移动失败，已还原')
@@ -476,7 +551,7 @@ export function useGitHubTree() {
 
     try {
       await treeService.value.reorderNode(id, direction)
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       // 失败时回滚
       const tmp2 = a.sortOrder
@@ -515,7 +590,7 @@ export function useGitHubTree() {
     try {
       await treeService.value.reorderToPosition(id, newIndex)
       // 乐观更新已生效，同步写入缓存防止刷新后回跳
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       await loadTree() // 失败时回滚
       throw new Error('排序失败，已还原')
@@ -570,7 +645,7 @@ export function useGitHubTree() {
       // 先 moveNode 改父级（服务层会追加到末尾），再 reorderToPosition 排到目标位置
       await treeService.value.moveNode(id, newParentId)
       await treeService.value.reorderToPosition(id, clamped)
-      await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
+      await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
     } catch {
       await loadTree() // 失败时回滚
       throw new Error('移动失败，已还原')
@@ -607,8 +682,8 @@ export function useGitHubTree() {
         treeData.value[idx] = { ...treeData.value[idx], title, updatedAt: new Date().toISOString() }
       }
       try {
-        await GitHubArticleCache.setTreeCache(JSON.stringify({ nodes: treeData.value }))
-        await GitHubArticleCache.setArticle(existingArticleId, content)
+        await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
+        await GitHubArticleCache.setArticle(cacheNs.value, existingArticleId, content)
       } catch {
         /* 缓存失败不影响主流程 */
       }
@@ -621,6 +696,37 @@ export function useGitHubTree() {
       const prepend =
         localStorage.getItem('r-markdown-treeNewArticlePosition') === 'top'
       return await createArticle(parentId, title, content, prepend)
+    }
+  }
+
+  /**
+   * 切换工作区：清空当前树与文章关联，应用新工作区配置并重新加载。
+   * @param kind 存储模式（github | local）
+   * @param id   目标工作区 id
+   */
+  async function switchToWorkspace(kind: 'github' | 'local', id: string) {
+    const ws = storeSetActive(kind, id)
+    if (!ws) return
+
+    if (kind === 'github') {
+      applyActiveWorkspace()
+    } else {
+      // 本地目录由 localArticlePath 读取激活工作区，切换后需刷新解析
+      ensureWorkspaces()
+    }
+
+    // 清空旧工作区的树状态与文章关联
+    treeData.value = []
+    selectedNode.value = null
+    currentCloudArticleId.value = null
+    persistedCloudTitle.value = ''
+    expandedIds.value = new Set()
+    clearCloudArticlePersistence()
+
+    isConfigured.value = kind === 'local' ? true : !!GitHubTreeService.getConfig()
+    error.value = ''
+    if (isConfigured.value) {
+      await loadTree()
     }
   }
 
@@ -638,6 +744,14 @@ export function useGitHubTree() {
     currentCloudArticleId,
     persistedCloudTitle,
     articleStorageMode,
+
+    // 工作区
+    workspaces,
+    activeGithubWorkspaceId,
+    activeLocalWorkspaceId,
+    currentWorkspace,
+    switchToWorkspace,
+    applyActiveWorkspace,
 
     // 方法
     init,

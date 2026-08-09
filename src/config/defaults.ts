@@ -61,8 +61,24 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   editorTheme: { default: 'default' },
   /** 云端文章 GitHub 仓库，格式 owner/repo */
   cloudArticleRepo: { default: '' },
+  /** 云端文章 GitHub 仓库分支 */
+  cloudArticleBranch: { default: 'main' },
   /** 云端文章 GitHub Token */
   cloudArticleToken: { default: '' },
+  /**
+   * 按工作区 id 的云端文章 GitHub Token 映射（敏感字段，整体加密存储）。
+   * 空对象表示未使用按工作区 token，回退到 cloudArticleToken。
+   */
+  cloudArticleTokens: { default: {} },
+  /**
+   * 文章工作区列表（github 仓库+分支 / local 目录），支持多仓库多分支多目录。
+   * 空数组表示未初始化，首次使用时按旧配置 seed。
+   */
+  articleWorkspaces: { default: [] },
+  /** 当前激活的 github 工作区 id（空表示未选择） */
+  activeGithubWorkspaceId: { default: '' },
+  /** 当前激活的 local 工作区 id（空表示未选择，仅桌面端） */
+  activeLocalWorkspaceId: { default: '', platforms: ['desktop'] },
   /**
    * 文章目录树存储模式（仅桌面端）：
    * - 'github' 使用 GitHub 仓库存储（默认）

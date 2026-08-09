@@ -13,14 +13,40 @@ checkForOldConfig()
 // 初始化默认配置（仅首次写入缺失的默认值，已有值跳过）
 initSettings()
 
-// 初始化加密层（解密敏感字段到内存缓存，迁移旧明文格式）
-initEncryption()
-
 // 预加载 MathJax CDN，减少首次渲染公式的等待
 preloadMathJax()
 
 // 桌面客户端启动显示 loading，Vue 挂载后移除，避免白屏闪烁
 const isTauri = import.meta.env.VITE_TAURI === 'true'
+
+/**
+ * 初始化加密层（解密敏感字段到内存缓存，迁移旧明文格式）。
+ * 必须在挂载 Vue、任何 getSetting 读取敏感字段之前完成，
+ * 否则旧 Token 工作区迁移等初始化逻辑会读取到空值。
+ */
+async function boot() {
+  await initEncryption()
+  createApp(App)
+    .use(vaporInteropPlugin)
+    .use(router)
+    .mount('#app')
+  if (isTauri) {
+    const loading = document.getElementById('app-loading')
+    if (loading) {
+      const minDuration = 300
+      const elapsed = performance.now() - bootStart
+      const delay = Math.max(0, minDuration - elapsed)
+      setTimeout(() => {
+        loading.style.opacity = '0'
+        loading.style.transition = 'opacity 0.15s'
+        setTimeout(() => loading.remove(), 150)
+      }, delay)
+    }
+  }
+}
+
+const bootStart = performance.now()
+void boot()
 if (isTauri) {
   const loading = document.getElementById('app-loading')
   if (loading) {
@@ -32,7 +58,9 @@ if (isTauri) {
           loading.style.setProperty('--loading-accent', theme.accent)
         }
       }
-    } catch {}
+    } catch {
+      // 主题读取失败忽略，loading 仍用默认色
+    }
     const mode = localStorage.getItem('r-markdown-darkMode') || 'system'
     const isDark =
       mode === 'dark' ||
@@ -43,23 +71,5 @@ if (isTauri) {
       'style',
       `display:flex;align-items:center;justify-content:center;height:100vh;font-family:Inter,sans-serif;color:${textColor};font-size:14px;background:${bg}`,
     )
-  }
-}
-
-const mountStart = performance.now()
-
-createApp(App).use(vaporInteropPlugin).use(router).mount('#app')
-
-if (isTauri) {
-  const loading = document.getElementById('app-loading')
-  if (loading) {
-    const minDuration = 300
-    const elapsed = performance.now() - mountStart
-    const delay = Math.max(0, minDuration - elapsed)
-    setTimeout(() => {
-      loading.style.opacity = '0'
-      loading.style.transition = 'opacity 0.15s'
-      setTimeout(() => loading.remove(), 150)
-    }, delay)
   }
 }

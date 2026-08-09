@@ -13,13 +13,20 @@
  */
 
 import { getSetting } from '@/config/settings'
+import { getActiveWorkspace } from './articleWorkspace'
 
 const DEFAULT_ARTICLES_DIR = 'R-Markdown/articles'
 const ARTICLES_SUBDIR = 'articles'
 const IMAGES_SUBDIR = 'images'
 
-/** 获取本地文章根目录绝对路径（已解析自定义设置） */
+/**
+ * 获取本地文章根目录绝对路径。
+ * 优先取「当前激活的 local 工作区」目录；未配置工作区时回退旧 articleStorageDir。
+ */
 export async function getArticlesDir(): Promise<string> {
+  const activeWs = getActiveWorkspace('local')
+  const wsDir = activeWs?.dir?.trim()
+  if (wsDir) return wsDir.replace(/\/+$/, '')
   const custom = getSetting<string>('articleStorageDir')
   if (custom && custom.trim()) return custom.trim().replace(/\/+$/, '')
   const { documentDir } = await import('@tauri-apps/api/path')
