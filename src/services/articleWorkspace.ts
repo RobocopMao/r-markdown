@@ -167,19 +167,25 @@ export function removeWorkspace(id: string): void {
 /**
  * 旧全局 Token 迁移：用户此前可能在「单仓库」结构下配置过 cloudArticleToken，
  * 需要把它对号入座到新的工作区结构，避免用户重复配置。
- * 规则：把旧 Token 拷贝到「第一个尚未配置 Token 的 github 工作区」；
- * 若没有 github 工作区或全部已配置，则保留旧值待下次重试（不清理）。
- * 只有成功迁移后才清空旧 cloudArticleToken，避免 token 被无端丢失。
+ *
+ * 关键约束：cloudArticleToken 在新架构下被 applyActiveWorkspace 用作「激活工作区 token 的副本」
+ * （供 GitHubTreeService.getConfig 同步读取）。因此只有「所有工作区都没配 token」时才视为
+ * 真正需要迁移的旧 token；只要任一工作区已配 token，就视为迁移已完成，跳过迁移并清空副本，
+ * 避免把激活工作区的 token 副本误填到新增的空工作区。
  */
 function migrateLegacyToken(): boolean {
   const legacyToken = getSetting<string>('cloudArticleToken')
   if (!legacyToken) return true // 没有旧 token，视为已迁移完成
   const githubList = listWorkspaces('github')
   if (githubList.length === 0) return false // 没有工作区可迁，保留旧值下次重试
-  const target = githubList.find((w) => !getWorkspaceToken(w.id))
-  if (!target) return false // 所有工作区都已有 token，保留旧值（用户可选择手动覆盖）
+  // 任一工作区已配 token → 视为用户已在新架构下配置，cloudArticleToken 只是被反向同步的副本
+  if (githubList.some((w) => getWorkspaceToken(w.id))) {
+    setSetting('cloudArticleToken', '')
+    return true
+  }
+  // 所有工作区都没配 token：真正首次迁移
+  const target = githubList[0]
   setWorkspaceToken(target.id, legacyToken)
-  // 成功迁移后清理旧值，避免下次启动重复迁移 / 覆盖用户新配置
   setSetting('cloudArticleToken', '')
   return true
 }
