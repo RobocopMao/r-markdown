@@ -1417,7 +1417,7 @@ async function manualCheckUpdate() {
               class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
               @click="onAddLocalWorkspace"
             >
-              添加本地工作区
+              添加工作区
             </button>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
               新增工作区只需选择目录（不存在时自动创建 tree.json / articles / images），移除仅从列表移出，不会删除任何文件。
@@ -1553,7 +1553,7 @@ async function manualCheckUpdate() {
             class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors mb-3 border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             @click="addCloudWorkspace"
           >
-            添加仓库
+            添加工作区
           </button>
         </template>
       </section>

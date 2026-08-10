@@ -89,6 +89,30 @@ const kindWorkspaceList = computed(() => {
   })
 })
 
+/** 工作区显示名：只展示最后一段（仓库不显示用户名 / 本地目录只显示最后一个文件夹） */
+function workspaceDisplayName(ws: (typeof workspaces.value)[number]): string {
+  if (ws.kind === 'github' && ws.repo) {
+    const slashIdx = ws.repo.indexOf('/')
+    const repo = slashIdx === -1 ? ws.repo : ws.repo.substring(slashIdx + 1)
+    return ws.branch && ws.branch !== 'main' ? `${repo} · ${ws.branch}` : repo
+  }
+  if (ws.kind === 'local' && ws.dir) {
+    const trimmed = ws.dir.replace(/\/+$/, '')
+    const lastSlash = trimmed.lastIndexOf('/')
+    return lastSlash === -1 ? trimmed : trimmed.substring(lastSlash + 1)
+  }
+  return ws.name
+}
+
+/** 工作区完整信息（tooltip 展示用） */
+function workspaceFullLabel(ws: (typeof workspaces.value)[number]): string {
+  if (ws.kind === 'github' && ws.repo) {
+    return ws.branch && ws.branch !== 'main' ? `${ws.repo} · ${ws.branch}` : ws.repo
+  }
+  if (ws.kind === 'local' && ws.dir) return ws.dir
+  return ws.name
+}
+
 async function onSwitchWorkspace(ws: (typeof workspaces.value)[number]) {
   wsMenuVisible.value = false
   await switchToWorkspace(ws.kind, ws.id)
@@ -1180,10 +1204,13 @@ function onSettingChanged(e: Event) {
           :style="{ color: 'var(--text-primary)' }"
           @click="onSwitchWorkspace(ws)"
         >
-          <span class="flex-1 truncate">{{ ws.name }}</span>
+          <BaseTooltip :text="workspaceFullLabel(ws)" :delay="2000">
+            <span class="flex-1 truncate">{{ workspaceDisplayName(ws) }}</span>
+          </BaseTooltip>
           <Check
             v-if="ws.id === currentWorkspace?.id"
             :size="13"
+            class="shrink-0"
             style="color: var(--accent)"
           />
         </button>
