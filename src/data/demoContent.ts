@@ -170,6 +170,12 @@ $$
 
 <badges color="#fff" bg="#e74c3c">自定义红底白字</badges>
 
+<row gap="10px">
+<badges color="#fff" bg="#ff6b6b|#6c5ce7" margin="0">渐变底色</badges>
+<badges color="#fff" bg="blue|green" margin="0">渐变底色</badges>
+<badges color="#fff" bg="blue|green|orange" margin="0">渐变底色</badges>
+</row>
+
 > 使用 \`tone\` 属性切换风格：\`accent\`（主题色）、\`green\`（绿色）、\`yellow\`（黄色）、\`dark\`（深色）或通过\`color\`和\`bg\`属性自定义。
 
 <p-title num="02" title="代码块 (Code Block)" level="2"></p-title>
