@@ -392,6 +392,42 @@ function onCloudTokenInput(id: string, val: string) {
 const localWorkspaces = computed(() => listWorkspaces('local'))
 const githubWorkspaces = computed(() => listWorkspaces('github'))
 
+/** 待删除的工作区（确认弹窗用，null 表示未在确认中） */
+const pendingDeleteWorkspace = ref<{ kind: 'github' | 'local'; id: string } | null>(null)
+const deleteConfirmVisible = ref(false)
+const deletingWorkspace = ref(false)
+
+function requestDeleteWorkspace(kind: 'github' | 'local', id: string) {
+  pendingDeleteWorkspace.value = { kind, id }
+  deleteConfirmVisible.value = true
+}
+
+const deleteWorkspaceName = computed(() => {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return ''
+  const ws = getWorkspaceById(target.id)
+  if (!ws) return ''
+  if (ws.kind === 'github') return ws.repo ? `「${ws.repo}」` : ''
+  return ws.dir ? `「${ws.dir}」` : ''
+})
+
+async function confirmDeleteWorkspace() {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return
+  deletingWorkspace.value = true
+  try {
+    if (target.kind === 'github') {
+      await removeCloudWorkspace(target.id)
+    } else {
+      await removeLocalWorkspace(target.id)
+    }
+  } finally {
+    deletingWorkspace.value = false
+    pendingDeleteWorkspace.value = null
+    deleteConfirmVisible.value = false
+  }
+}
+
 /** 是否所有工作区都未配置 Token（仅在用户完全没填过 Token 时提示） */
 const hasMissingToken = computed(
   () =>
@@ -432,7 +468,7 @@ async function onSwitchCloudWorkspace(id: string) {
   await switchToWorkspace('github', id)
 }
 
-async function onRemoveCloudWorkspace(id: string) {
+async function removeCloudWorkspace(id: string) {
   const wasActive = isCloudActive(id)
   removeWorkspace(id)
   if (wasActive) {
@@ -463,7 +499,7 @@ async function onAddLocalWorkspace() {
   addWorkspace('local', { dir })
 }
 
-async function onRemoveLocalWorkspace(id: string) {
+async function removeLocalWorkspace(id: string) {
   const wasActive = isLocalActive(id)
   removeWorkspace(id)
   if (wasActive) {
@@ -1322,7 +1358,7 @@ async function manualCheckUpdate() {
                 <span class="ml-auto flex items-center gap-1">
                   <BaseTooltip v-if="!isLocalActive(ws.id)" text="设为当前" placement="top">
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333]"
+                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
                       @click="onSwitchLocalWorkspace(ws.id)"
                     >
                       <Check :size="14" />
@@ -1330,8 +1366,8 @@ async function manualCheckUpdate() {
                   </BaseTooltip>
                   <BaseTooltip v-if="idx > 0" text="删除" placement="top">
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded-md text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c]"
-                      @click="onRemoveLocalWorkspace(ws.id)"
+                      class="flex h-6 w-6 items-center justify-center rounded-md text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                      @click="requestDeleteWorkspace('local', ws.id)"
                     >
                       <Trash2 :size="14" />
                     </button>
@@ -1438,7 +1474,7 @@ async function manualCheckUpdate() {
                 <span class="ml-auto flex items-center gap-1">
                   <BaseTooltip v-if="!isCloudActive(ws.id)" text="设为当前" placement="top">
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333]"
+                      class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
                       @click="onSwitchCloudWorkspace(ws.id)"
                     >
                       <Check :size="14" />
@@ -1446,8 +1482,8 @@ async function manualCheckUpdate() {
                   </BaseTooltip>
                   <BaseTooltip text="删除" placement="top">
                     <button
-                      class="flex h-6 w-6 items-center justify-center rounded text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c]"
-                      @click="onRemoveCloudWorkspace(ws.id)"
+                      class="flex h-6 w-6 items-center justify-center rounded text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                      @click="requestDeleteWorkspace('github', ws.id)"
                     >
                       <Trash2 :size="14" />
                     </button>
@@ -1647,6 +1683,19 @@ async function manualCheckUpdate() {
     confirm-text="确定"
     @confirm="onImgCleanupConfirm"
     @cancel="imgCleanupVisible = false"
+  />
+
+  <!-- 删除工作区确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="deleteConfirmVisible"
+    title="删除工作区"
+    :message="`确定删除该工作区${deleteWorkspaceName}？删除后其 tree.json 缓存将被清除，但本地/远程数据文件不会被删除。`"
+    confirm-text="删除"
+    confirm-type="danger"
+    :loading="deletingWorkspace"
+    loading-text="正在删除..."
+    @confirm="confirmDeleteWorkspace"
+    @cancel="pendingDeleteWorkspace = null"
   />
 </template>
 
