@@ -24,7 +24,7 @@ export const DEMO_CONTENT = `<title type="DA02" badge="GUIDE" subtitle="这是�
 
 <p-title num="04" title="单图扩展组件（Img标签）" level="2"></p-title>
 
-<img src="https://robocopmao.github.io/r-markdown/banner4.webp" width="100%" height="200px" radius="8px" fit="cover" />
+<img src="https://robocopmao.github.io/r-markdown/banner4.webp" width="100%" height="200px" radius="8px" fit="cover" desc="图片描述" />
 
 > 基于HTML的img标签添加的扩展图片组件，可以设置图片宽高、圆角、裁切和偏移。
 
