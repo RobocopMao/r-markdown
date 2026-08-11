@@ -223,7 +223,7 @@ export function parseMarkdown(
         num = num === 0 ? (m[2] ? parseInt(m[2], 10) : 1) : num + 1
         itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px;font-size:16px !important"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${num}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
       } else {
-        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px;font-size:16px !important"><span style="color:${t.accent};font-size:16px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px;font-size:16px !important"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
       }
       html += itemHtml
 
