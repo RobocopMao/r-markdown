@@ -221,9 +221,9 @@ export function parseMarkdown(
         itemHtml = `<section style="margin:5px 0px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${isChecked ? `background:${t.accent};border-radius:4px` : ''}">${checkSvg}</span><span>${inlineFormat(cb[2], t, formulaMap)}</span></span></section>`
       } else if (ordered) {
         num = num === 0 ? (m[2] ? parseInt(m[2], 10) : 1) : num + 1
-        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${num}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px;font-size:16px !important"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${num}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
       } else {
-        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px;font-size:16px !important"><span style="color:${t.accent};font-size:16px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
       }
       html += itemHtml
 
