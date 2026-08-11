@@ -182,6 +182,71 @@ export function parseMarkdown(
       leadingWs + trimmed.replace(/^<(\w+)/, `<$1 data-source-line="${lineNo + lineOffset + 1}"`)
     )
   }
+
+  /**
+   * 解析一段列表（支持多级嵌套缩进）。
+   * 返回 { html, next }：html 为整段列表（含外层包裹 section）的 HTML，next 为消费结束的下标。
+   */
+  function parseListBlock(
+    i: number,
+    indent: number,
+    ordered: boolean,
+    isTopLevel: boolean,
+  ): { html: string; next: number } {
+    const itemRe = ordered
+      ? /^([ \t]*)(\d+)\.\s+(.*)$/
+      : /^([ \t]*)[-*+]\s+(.*)$/
+    let html = ''
+    let num = 0
+    while (i < lines.length) {
+      const line = lines[i]
+      const m = line.match(itemRe)
+      if (!m) break
+      const lineIndent = m[1].replace(/\t/g, '  ').length
+      if (lineIndent !== indent) break
+      const content = ordered ? m[3] : m[2]
+      i++
+
+      let itemHtml: string
+      const cb = content.match(/^\[([ x])\]\s*(.*)/)
+      if (cb) {
+        const isChecked = cb[1] === 'x'
+        const boxStyle = isChecked
+          ? `background:${t.accent};border-color:${t.accent}`
+          : `border-color:${t.border}`
+        const uncheckedBorder = t.border === '#e2e8f0' ? '#94a3b8' : t.border
+        const checkSvg = isChecked
+          ? '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 9l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+          : `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="3" stroke="${uncheckedBorder}" stroke-width="1.5" fill="none"/></svg>`
+        itemHtml = `<section style="margin:5px 0px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${isChecked ? `background:${t.accent};border-radius:4px` : ''}">${checkSvg}</span><span>${inlineFormat(cb[2], t, formulaMap)}</span></span></section>`
+      } else if (ordered) {
+        num = num === 0 ? (m[2] ? parseInt(m[2], 10) : 1) : num + 1
+        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${num}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+      } else {
+        itemHtml = `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+      }
+      html += itemHtml
+
+      // 嵌套子列表：下一行缩进更深且为列表项时递归解析
+      if (i < lines.length) {
+        const nm = lines[i].match(/^([ \t]*)([-*+]|\d+\.)\s/)
+        if (nm) {
+          const ni = nm[1].replace(/\t/g, '  ').length
+          if (ni > indent) {
+            const nestedOrdered = /^\d+\./.test(nm[2])
+            const nested = parseListBlock(i, ni, nestedOrdered, false)
+            html += nested.html
+            i = nested.next
+          }
+        }
+      }
+    }
+    const style = isTopLevel
+      ? `margin:${ordered ? '10px' : '24px'} 0px;padding-left:24px`
+      : `margin:5px 0px 0px;padding-left:24px`
+    return { html: `<section style="${style}">${html}</section>`, next: i }
+  }
+
   // 收集脚注：[text](url "desc") 带引号标题的链接 → 脚注
   const footnotes: { label: string; url: string; desc: string }[] = []
   const footnoteRegex = /\[([^\]]+)\]\(([^)\s]+)\s+"([^"]+)"\)/g
@@ -1003,43 +1068,19 @@ export function parseMarkdown(
 
     // 无序列表
     if (/^[-*+]\s/.test(line)) {
-      const ulStartLine = i
-      html += withSourceLine(ulStartLine, `<section style="margin:24px 0px;padding-left:24px">`)
-      while (i < lines.length && /^[-*+]\s/.test(lines[i])) {
-        const li = lines[i].replace(/^[-*+]\s/, '')
-        const cb = li.match(/^\[([ x])\]\s*(.*)/)
-        if (cb) {
-          const isChecked = cb[1] === 'x'
-          const boxStyle = isChecked
-            ? `background:${t.accent};border-color:${t.accent}`
-            : `border-color:${t.border}`
-          const uncheckedBorder = t.border === '#e2e8f0' ? '#94a3b8' : t.border
-          const checkSvg = isChecked
-            ? '<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M5 9l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>'
-            : `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="3" stroke="${uncheckedBorder}" stroke-width="1.5" fill="none"/></svg>`
-          html += `<section style="margin:5px 0px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${isChecked ? `background:${t.accent};border-radius:4px` : ''}">${checkSvg}</span><span>${inlineFormat(cb[2], t, formulaMap)}</span></span></section>`
-} else {
-          html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(li, t, formulaMap)}</span></section>`
-        }
-        i++
-      }
-      html += `</section>`
+      const listStartLine = i
+      const parsed = parseListBlock(i, 0, false, true)
+      html += withSourceLine(listStartLine, parsed.html)
+      i = parsed.next
       continue
     }
 
     // 有序列表
     if (/^\d+\.\s/.test(line)) {
-      const olStartLine = i
-      const numMatch = lines[i].match(/^(\d+)\.\s/)
-      let idx = numMatch ? parseInt(numMatch[1], 10) : 1
-      html += withSourceLine(olStartLine, `<section style="margin:10px 0px;padding-left:24px">`)
-      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
-        const content = lines[i].replace(/^\d+\.\s/, '')
-        html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${idx}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
-        idx++
-        i++
-      }
-      html += `</section>`
+      const listStartLine = i
+      const parsed = parseListBlock(i, 0, true, true)
+      html += withSourceLine(listStartLine, parsed.html)
+      i = parsed.next
       continue
     }
 
