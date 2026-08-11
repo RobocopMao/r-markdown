@@ -102,6 +102,13 @@ export function withAlpha(color: string, alpha = 0.06): string {
  */
 export type Alignment = 'left' | 'center' | 'right'
 
+/** 单个单元格：合并标记解析后的文本与跨行跨列属性 */
+export type TableCell = {
+  text: string
+  colspan: number
+  rowspan: number
+}
+
 export function parseAlignment(sep: string): Alignment {
   const s = sep.trim()
   const leftColon = s.startsWith(':')
@@ -111,9 +118,41 @@ export function parseAlignment(sep: string): Alignment {
   return 'left'
 }
 
+/** 解析单元格内的合并标记并剥离，返回跨列/跨行数 */
+function parseCellSpan(raw: string): { text: string; colspan: number; rowspan: number } {
+  const trimmed = raw.trim()
+  // 被吸收格：整格内容仅为 {cover}，跨行跨列记 0，渲染时跳过
+  if (trimmed === '{cover}') return { text: '', colspan: 0, rowspan: 0 }
+  let colspan = 1
+  let rowspan = 1
+  // 支持 {col:2} {row:3} {col:2,row:3} {col:2}{row:3}（顺序任意）
+  const spanRe = /\{\s*[^{}]*\}/g
+  const kvRe = /(col|row)\s*:\s*(\d+)/g
+  const text = raw.replace(spanRe, (block) => {
+    const inner = block.slice(1, -1)
+    let m: RegExpExecArray | null
+    while ((m = kvRe.exec(inner)) !== null) {
+      const n = parseInt(m[2], 10)
+      if (m[1] === 'col') colspan = Math.max(colspan, n)
+      else rowspan = Math.max(rowspan, n)
+    }
+    const rest = inner.replace(kvRe, '').replace(/[\s,]/g, '')
+    return rest ? block : ''
+  }).trim()
+  return { text, colspan, rowspan }
+}
+
+/** 拆分一行（掐掉首尾装饰性管道）为原始格串 */
+function splitTableLine(line: string): string[] {
+  let l = line.trim()
+  if (l.startsWith('|')) l = l.slice(1)
+  if (l.endsWith('|')) l = l.slice(0, -1)
+  return l.split('|').map((s) => s.trim())
+}
+
 export function parseMarkdownTable(body: string): {
-  headers: string[]
-  rows: string[][]
+  headers: TableCell[]
+  rows: TableCell[][]
   alignments: Alignment[]
 } {
   const lines = body
@@ -123,24 +162,15 @@ export function parseMarkdownTable(body: string): {
   if (lines.length < 2) return { headers: [], rows: [], alignments: [] }
 
   // 解析表头行
-  let headerLine = lines[0]
-  if (headerLine.startsWith('|')) headerLine = headerLine.slice(1)
-  if (headerLine.endsWith('|')) headerLine = headerLine.slice(0, -1)
-  const headers = headerLine.split('|').map((s) => s.trim())
+  const headers = splitTableLine(lines[0]).map(parseCellSpan)
 
   // 解析分隔行 → 提取对齐方式
-  let sepLine = lines[1]
-  if (sepLine.startsWith('|')) sepLine = sepLine.slice(1)
-  if (sepLine.endsWith('|')) sepLine = sepLine.slice(0, -1)
-  const alignments: Alignment[] = sepLine.split('|').map(parseAlignment)
+  const alignments: Alignment[] = splitTableLine(lines[1]).map(parseAlignment)
 
   // 第三行开始是数据行
-  const rows: string[][] = []
+  const rows: TableCell[][] = []
   for (let ri = 2; ri < lines.length; ri++) {
-    let cellLine = lines[ri]
-    if (cellLine.startsWith('|')) cellLine = cellLine.slice(1)
-    if (cellLine.endsWith('|')) cellLine = cellLine.slice(0, -1)
-    rows.push(cellLine.split('|').map((s) => s.trim()))
+    rows.push(splitTableLine(lines[ri]).map(parseCellSpan))
   }
 
   return { headers, rows, alignments }
