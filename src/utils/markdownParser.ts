@@ -1019,7 +1019,7 @@ export function parseMarkdown(
             : `<svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="1" y="1" width="16" height="16" rx="3" stroke="${uncheckedBorder}" stroke-width="1.5" fill="none"/></svg>`
           html += `<section style="margin:5px 0px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;${isChecked ? `background:${t.accent};border-radius:4px` : ''}">${checkSvg}</span><span>${inlineFormat(cb[2], t, formulaMap)}</span></span></section>`
 } else {
-          html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-word;overflow-wrap:break-word;min-width:0">${inlineFormat(li, t, formulaMap)}</span></section>`
+          html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-size:15px;line-height:1.8;flex-shrink:0;transform:scale(0.6)">●</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(li, t, formulaMap)}</span></section>`
         }
         i++
       }
@@ -1035,7 +1035,7 @@ export function parseMarkdown(
       html += withSourceLine(olStartLine, `<section style="margin:10px 0px;padding-left:24px">`)
       while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
         const content = lines[i].replace(/^\d+\.\s/, '')
-        html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${idx}.</span><span style="word-break:break-word;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
+        html += `<section style="margin:5px 0px;display:flex;align-items:flex-start;gap:6px"><span style="color:${t.accent};font-weight:700;flex-shrink:0;">${idx}.</span><span style="word-break:break-all;overflow-wrap:break-word;min-width:0">${inlineFormat(content, t, formulaMap)}</span></section>`
         idx++
         i++
       }
