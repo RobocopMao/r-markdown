@@ -87,7 +87,7 @@ function githubName(repo: string, branch: string): string {
 }
 
 function localName(dir: string): string {
-  return dir ? dir : '默认目录'
+  return dir ? dir : '本地默认目录'
 }
 
 /** 按 id 查找工作区（不分类型） */
@@ -223,6 +223,19 @@ function migrateLegacyToken(): boolean {
  * 同时执行旧 Token 迁移（无论列表是否刚 seed，保证用户历史 Token 不被丢）。
  * 桌面端主按钮点击树头选择器前保证执行一次。
  */
+/**
+ * 桌面端初始化优化：若未配置任何 GitHub 仓库（无 github 工作区），
+ * 默认将存储位置切到本地磁盘模式，避免初始化后树结构空置、用户被困在「未配置 GitHub」界面。
+ * 仅在当前模式非 local 时才写入，避免与 setting-changed 事件形成重入循环。
+ */
+function maybeDefaultToLocal(): void {
+  if (import.meta.env.VITE_TAURI !== 'true') return
+  if (listWorkspaces('github').length > 0) return
+  if (getSetting<string>('articleStorageMode') !== 'local') {
+    setSetting('articleStorageMode', 'local')
+  }
+}
+
 export function ensureWorkspaces(): void {
   // 模块加载阶段解密尚未就绪（initEncryption 可能未完成），
   // 这里重新从已经解密好的敏感缓存同步一次工作区 Token。
@@ -230,11 +243,13 @@ export function ensureWorkspaces(): void {
   if (seeded) {
     // 已 seed 过：仍尝试补迁旧 token（避免首次启动时迁移条件不满足导致 token 永久丢失）
     migrateLegacyToken()
+    maybeDefaultToLocal()
     return
   }
   if (workspaces.value.length > 0) {
     seeded = true
     migrateLegacyToken()
+    maybeDefaultToLocal()
     return
   }
   const stored = getSetting<ArticleWorkspace[]>(WORKSPACES_KEY)
@@ -242,10 +257,11 @@ export function ensureWorkspaces(): void {
     workspaces.value = stored
     seeded = true
     migrateLegacyToken()
+    maybeDefaultToLocal()
     return
   }
 
-  const isDesktop = import.meta.env.VITE_TAURI === 'true'
+  const isTauri = import.meta.env.VITE_TAURI === 'true'
   const seeds: ArticleWorkspace[] = []
   const repo = getSetting<string>('cloudArticleRepo')
   if (repo) {
@@ -257,7 +273,7 @@ export function ensureWorkspaces(): void {
       branch: getSetting<string>('cloudArticleBranch') || 'main',
     })
   }
-  if (isDesktop) {
+  if (isTauri) {
     seeds.push({
       id: genId('local'),
       kind: 'local',
@@ -271,4 +287,5 @@ export function ensureWorkspaces(): void {
   // seed 完成后尝试迁移旧 token；迁移失败时保持 seeded=false 让下次 ensureWorkspaces 重试
   // （主要场景：cloudArticleRepo 暂未配置导致没有 github 工作区可迁）
   if (!migrateLegacyToken()) seeded = false
+  maybeDefaultToLocal()
 }

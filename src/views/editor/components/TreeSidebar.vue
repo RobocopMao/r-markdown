@@ -16,6 +16,8 @@ import {
   ArrowDownToLine,
   Check,
   GitBranch,
+  Cloud,
+  HardDrive,
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import { getWorkspaceToken } from '@/services/articleWorkspace'
@@ -75,18 +77,18 @@ const wsMenuVisible = ref(false)
 const wsMenuStyle = ref<Record<string, string>>({})
 const wsTriggerRef = ref<HTMLElement | null>(null)
 
-/** 当前模式下的工作区列表（未配置仓库/Token 的 github 工作区不展示） */
+/**
+ * 工作区列表：云端仓库 + 本地文件夹一起展示（按配置过滤）。
+ * - github 工作区需已配置仓库且 Token 才可展示/切换
+ * - local 工作区始终展示（桌面端磁盘始终可用）
+ * 排序：github 在前、local 在后，各自的顺序保持 workspaces 中的相对顺序。
+ */
 const kindWorkspaceList = computed(() => {
-  const githubMode = articleStorageMode.value !== 'local'
-  return workspaces.value.filter((w) => {
-    const isLocalKind = w.kind === 'local'
-    if (isLocalKind !== !githubMode) return false
-    // github 工作区需已配置仓库且 Token 才可展示/切换
-    if (githubMode) {
-      return !!w.repo && !!w.repo.includes('/') && !!getWorkspaceToken(w.id)
-    }
-    return true
-  })
+  const githubs = workspaces.value.filter(
+    (w) => w.kind === 'github' && !!w.repo && w.repo.includes('/') && !!getWorkspaceToken(w.id),
+  )
+  const locals = workspaces.value.filter((w) => w.kind === 'local')
+  return [...githubs, ...locals]
 })
 
 /** 工作区显示名：只展示最后一段（仓库不显示用户名 / 本地目录只显示最后一个文件夹） */
@@ -1204,6 +1206,8 @@ function onSettingChanged(e: Event) {
           :style="{ color: 'var(--text-primary)' }"
           @click="onSwitchWorkspace(ws)"
         >
+          <Cloud v-if="ws.kind === 'github'" :size="13" class="shrink-0" style="color: var(--text-secondary)" />
+          <HardDrive v-else :size="13" class="shrink-0" style="color: var(--text-secondary)" />
           <BaseTooltip :text="workspaceFullLabel(ws)" :delay="2000">
             <span class="flex-1 truncate">{{ workspaceDisplayName(ws) }}</span>
           </BaseTooltip>

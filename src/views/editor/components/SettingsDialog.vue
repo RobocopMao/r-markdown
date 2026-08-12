@@ -68,12 +68,14 @@ const selectChevronStyle = {
 // ── 设置 tab ──
 const settingsTab = ref('basic')
 
-// 当对话框打开时，若指定了 initialTab 则自动切换
+// 当对话框打开时，若指定了 initialTab 则自动切换；并刷新存储位置激活态
+// （用户在树下拉中切换工作区时会持久化 articleStorageMode，需在此同步回显）
 watch(
   () => props.visible,
   (isVisible) => {
-    if (isVisible && props.initialTab) {
-      settingsTab.value = props.initialTab
+    if (isVisible) {
+      if (props.initialTab) settingsTab.value = props.initialTab
+      articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
     }
   },
 )
@@ -411,6 +413,14 @@ const deleteWorkspaceName = computed(() => {
   return ws.dir ? `「${ws.dir}」` : ''
 })
 
+/** 删除确认文案：按工作区类型区分远程/本地 */
+const deleteWorkspaceMessage = computed(() => {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return ''
+  const kindLabel = target.kind === 'github' ? '远程' : '本地'
+  return `确定删除该工作区${deleteWorkspaceName.value}？删除后其 tree.json 缓存将被清除，但${kindLabel}数据文件不会被删除。`
+})
+
 async function confirmDeleteWorkspace() {
   const target = pendingDeleteWorkspace.value
   if (!target) return
@@ -478,8 +488,23 @@ async function removeCloudWorkspace(id: string) {
     } else {
       // 删光所有仓库 → 视为未配置
       if (getSetting<string>('cloudArticleRepo')) GitHubTreeService.clearRepo()
+      // 桌面端且仍有本地工作区：提示是否切到本地磁盘模式，避免树结构空置
+      if (isTauri && localWorkspaces.value.length > 0) {
+        switchToLocalPromptVisible.value = true
+      }
     }
   }
+}
+
+/** 删光 github 仓库后，询问是否切换到本地磁盘模式的弹窗 */
+const switchToLocalPromptVisible = ref(false)
+
+async function confirmSwitchToLocal() {
+  const primary = localWorkspaces.value[0]
+  if (primary) await switchToWorkspace('local', primary.id)
+  // 同步设置弹窗内的存储位置高亮（本地工作区「设为当前」由共享 ref 自动更新）
+  articleStorageMode.value = 'local'
+  switchToLocalPromptVisible.value = false
 }
 
 async function onAddLocalWorkspace() {
@@ -1689,13 +1714,23 @@ async function manualCheckUpdate() {
   <ConfirmDialog
     v-model:visible="deleteConfirmVisible"
     title="删除工作区"
-    :message="`确定删除该工作区${deleteWorkspaceName}？删除后其 tree.json 缓存将被清除，但本地/远程数据文件不会被删除。`"
+    :message="deleteWorkspaceMessage"
     confirm-text="删除"
     confirm-type="danger"
     :loading="deletingWorkspace"
     loading-text="正在删除..."
     @confirm="confirmDeleteWorkspace"
     @cancel="pendingDeleteWorkspace = null"
+  />
+
+  <!-- 删光云端仓库后，询问是否切换到本地磁盘模式 -->
+  <ConfirmDialog
+    v-model:visible="switchToLocalPromptVisible"
+    title="切换到本地磁盘"
+    message="已删除所有云端仓库，当前将停留在空的 GitHub 模式。是否切换到本地磁盘模式以继续使用文章树？"
+    confirm-text="切换到本地磁盘"
+    cancel-text="保持 GitHub 模式"
+    @confirm="confirmSwitchToLocal"
   />
 </template>
 

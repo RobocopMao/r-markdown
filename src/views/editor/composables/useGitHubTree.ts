@@ -3,7 +3,7 @@ import { GitHubTreeService, type TreeNode } from '@/services/GitHubTreeService'
 import { LocalTreeService } from '@/services/LocalTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
 import { getErrorMessage } from '@/utils/helpers'
-import { getSetting } from '@/config/settings'
+import { getSetting, setSetting } from '@/config/settings'
 import {
   workspaces,
   activeGithubWorkspaceId,
@@ -245,6 +245,8 @@ export function useGitHubTree() {
   function setArticleStorageMode(mode: ArticleStorageMode) {
     if (mode === articleStorageMode.value) return
     articleStorageMode.value = mode
+    // 持久化存储位置，使切换工作区后刷新仍停留在对应模式
+    setSetting('articleStorageMode', mode)
     // 清空旧模式的树状态（两种模式互相独立，避免错位）
     treeData.value = []
     selectedNode.value = null
@@ -707,6 +709,12 @@ export function useGitHubTree() {
   async function switchToWorkspace(kind: 'github' | 'local', id: string) {
     const ws = storeSetActive(kind, id)
     if (!ws) return
+
+    // 切换工作区同时修改存储位置（云端/本地），使二者可在下拉中并存并即时切换
+    if (articleStorageMode.value !== kind) {
+      articleStorageMode.value = kind
+      setSetting('articleStorageMode', kind)
+    }
 
     if (kind === 'github') {
       applyActiveWorkspace()
