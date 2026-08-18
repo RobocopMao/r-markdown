@@ -975,7 +975,9 @@ export function parseMarkdown(
     }
 
     if (/^```/.test(line)) {
-      const lang = line.replace(/^`+/, '').trim() || 'text'
+      const rawLang = line.replace(/^`+/, '').trim()
+      const hasLang = rawLang !== ''
+      const lang = rawLang || 'text'
       const codeStartLine = i
       i++
       const codeLines: string[] = []
@@ -996,9 +998,17 @@ export function parseMarkdown(
         const body = indent + hl || '&nbsp;'
         codeInner += `<section leaf="" style="white-space:nowrap">${body}</section>`
       }
+      // 语言头：代码图标 + 语言名，仅当 ``` 后写了语言时在头部左侧显示。
+      // 内层 inline-block 包装让宽度跟随最宽代码行：长代码横向滚动时，
+      // 语言头分隔线贯穿整个滚动宽度；头部用负外边距抵消包装内边距，
+      // 让分隔线左右通栏到暗色背景边缘，图标与代码文字仍对齐在 16px。
+      const header = hasLang
+        ? `<section style="display:flex;align-items:center;gap:8px;margin:0 -16px 12px;padding:0 16px 10px;border-bottom:1px solid rgba(255,255,255,0.12);font-size:12px;line-height:1;color:rgb(165,173,193);white-space:nowrap"><svg width="15" height="15" viewBox="0 0 15 15" fill="none" style="display:block"><path d="M4.5 3L1.5 7.5l3 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10.5 3l3 4.5-3 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 2.5L6.5 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><span leaf="" style="color:rgb(205,214,244);font-weight:600">${esc(rawLang)}</span></section>`
+        : ''
+      const content = `<section style="display:inline-block;min-width:100%;box-sizing:border-box;vertical-align:top;padding:14px 16px">${header}${codeInner}</section>`
       html += withSourceLine(
         codeStartLine,
-        `<section data-lang="${esc(lang)}" style="white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);padding:14px 16px;border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${codeInner}</section>`,
+        `<section data-lang="${esc(lang)}" style="white-space:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;background:rgb(30,30,46);color:rgb(205,214,244);border-radius:8px;margin:24px 0;font-size:12.5px;line-height:1.6;font-family:SFMono-Regular,Consolas,Monaco,monospace">${content}</section>`,
       )
       continue
     }
