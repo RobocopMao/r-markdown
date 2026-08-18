@@ -21,6 +21,8 @@ import {
 } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import { getWorkspaceToken } from '@/services/articleWorkspace'
+import { getArticleFilesDir } from '@/services/localArticlePath'
+import { invoke } from '@tauri-apps/api/core'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
 import BaseDialog from '@/components/BaseDialog.vue'
@@ -36,6 +38,8 @@ const emit = defineEmits<{
   (e: 'toast', message: string): void
   (e: 'clearEditor'): void
 }>()
+
+const isTauri = import.meta.env.VITE_TAURI === 'true'
 
 const {
   checkConfig,
@@ -394,6 +398,19 @@ function onCtxMenuAction(action: string, node: TreeNode) {
     startNewChild(node, 'folder')
   } else if (action === 'move') {
     startMove(node)
+  }
+}
+
+/** 在文件管理器中定位本地文章文件（仅桌面端 + 本地模式） */
+async function revealLocalFile(node: TreeNode) {
+  closeContextMenu()
+  if (!isTauri) return
+  try {
+    const dir = await getArticleFilesDir()
+    const path = `${dir}/${node.id}.md`
+    await invoke('show_in_folder', { path })
+  } catch {
+    emit('toast', '无法打开文件位置')
   }
 }
 
@@ -1029,6 +1046,17 @@ function onSettingChanged(e: Event) {
       >
         <!-- article 右键菜单 -->
         <template v-if="contextMenu.node.type === 'article'">
+          <button
+            v-if="isTauri && articleStorageMode === 'local'"
+            class="ctx-item"
+            @click="revealLocalFile(contextMenu.node!)"
+          >
+            跳转本地文件
+          </button>
+          <div
+            v-if="isTauri && articleStorageMode === 'local'"
+            style="border-top: 1px solid var(--border-color, #e5e5e5); margin: 2px 0"
+          />
           <button class="ctx-item" @click="onCtxMenuAction('rename', contextMenu.node!)">
             重命名
           </button>
