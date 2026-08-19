@@ -157,6 +157,14 @@ function saveCompressQuality(val: number) {
   setSetting('compressQuality', val)
 }
 
+// ── 磁盘图片上传名称规则 ──
+const diskImageNaming = ref(getSetting<string>('diskImageNaming'))
+
+function saveDiskImageNaming(val: string) {
+  diskImageNaming.value = val
+  setSetting('diskImageNaming', val)
+}
+
 // ── Minimap 缩略图 ──
 const minimapEnabled = ref(getSetting<boolean>('minimapEnabled'))
 watch(minimapEnabled, (val) => setSetting('minimapEnabled', val))
@@ -1074,13 +1082,13 @@ async function manualCheckUpdate() {
           本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
           磁盘存储：图片保存到文章存储目录下的
           <code class="text-[var(--accent)]">images/</code>
-          子目录，保留原文件名，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
+          子目录，文件名规则可在下方配置，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
           GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
           乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
         </p>
 
         <!-- 默认图床（工具栏上传按钮使用） -->
-        <div class="mt-4">
+        <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
             默认图床
           </h3>
@@ -1126,9 +1134,9 @@ async function manualCheckUpdate() {
         </div>
 
         <!-- 压缩质量 -->
-        <div class="mt-4">
+        <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">压缩质量</label>
+            <label class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">压缩质量</label>
             <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
               >{{ compressQuality }}%</span
             >
@@ -1150,6 +1158,23 @@ async function manualCheckUpdate() {
             对应 JPEG
             压缩质量，值越高图片越清晰，体积越大。压缩比100%时，不会对图片做任何处理。压缩后图片将统一转为
             JPEG 格式。
+          </p>
+        </div>
+
+        <!-- 磁盘图片上传名称 -->
+        <div v-if="isTauri" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">磁盘图片上传名称</h3>
+          <select
+            :value="diskImageNaming"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveDiskImageNaming(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="original">原图名称</option>
+            <option value="datetime">按日期时间（年月日时分秒）</option>
+          </select>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+            磁盘存储模式下，上传图片的命名规则：原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如 20260818231010）。
           </p>
         </div>
 
