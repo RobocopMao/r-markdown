@@ -5,5 +5,5 @@
  * It prevents build errors for users without access to the extension repository.
  */
 export const Mermaid_DA01 = {
-  render: (_attrs: Record<string, string>, _body: string): string => '',
+  render: (..._args: unknown[]): string => '',
 }

@@ -13,9 +13,11 @@ export interface ComponentDef {
     key: string
     label: string
     required?: boolean
+    hidden?: boolean
     default?: string
     options?: string[]
     description?: string
+    inputType?: string
   }>
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   render: (attrs: any, body: any, t: any, ...rest: any[]) => string

@@ -5,6 +5,6 @@
  * It prevents build errors for users without access to the extension repository.
  */
 export const Cta_DA01 = {
-  render: (_attrs: Record<string, string>, _body: string, _t?: unknown): string => '',
+  render: (..._args: unknown[]): string => '',
 }
 export const CTA_DA01 = Cta_DA01
