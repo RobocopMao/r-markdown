@@ -5,6 +5,6 @@
  * It prevents build errors for users without access to the extension repository.
  */
 export const PTitle_DA01 = {
-  render: (_attrs: Record<string, string>, _body: string, _t?: unknown): string => '',
+  render: (..._args: unknown[]): string => '',
 }
 export const PTitle = PTitle_DA01
