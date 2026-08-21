@@ -1,13 +1,15 @@
 /**
  * 本地磁盘图片存储（仅桌面端 Tauri）
  *
- * 将图片保存到 <自定义根目录>/images/ 下，文件名保持原样
- * （重名时追加序号如 photo(1).png）。文章中以相对路径 `images/文件名` 引用。
+ * 将图片保存到 <自定义根目录>/images/ 下。文件名规则由设置 diskImageNaming 决定：
+ * 默认保留原文件名（重名时追加序号如 photo(1).png），可选按年月日时分秒命名
+ * （如 20260818231010.png，同一秒内重复时追加序号）。文章中以相对路径 `images/文件名` 引用。
  *
  * 预览渲染时通过 resolveDiskImages() 读取磁盘文件为 base64 dataURL 替换。
  */
 
 import { getImagesDir } from './localArticlePath'
+import { getSetting } from '@/config/settings'
 
 /** 确保目录存在 */
 async function ensureDir(dir: string): Promise<void> {
@@ -97,12 +99,25 @@ export const LocalImageDisk = {
   },
   /**
    * 保存图片到本地磁盘，返回用于文章引用的相对路径（如 `images/photo.png`）
-   * 不修改原始文件名，重名时追加序号。
+   * 文件名规则由设置 diskImageNaming 决定：
+   * - 'original' 保留原文件名，重名时追加序号（默认）
+   * - 'datetime' 按年月日时分秒命名（如 20260818231010），保留扩展名，重名时追加序号
    */
   async saveImage(file: File): Promise<string> {
     const dir = await getImagesDir()
     await ensureDir(dir)
-    const uniqueName = await resolveUniqueName(dir, file.name)
+    const naming = getSetting<string>('diskImageNaming')
+    let baseName = file.name
+    if (naming === 'datetime') {
+      const now = new Date()
+      const pad = (n: number) => String(n).padStart(2, '0')
+      const stamp =
+        `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}` +
+        `${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`
+      const dot = file.name.lastIndexOf('.')
+      baseName = `${stamp}${dot > 0 ? file.name.substring(dot) : ''}`
+    }
+    const uniqueName = await resolveUniqueName(dir, baseName)
     const absPath = `${dir}/${uniqueName}`
 
     const { writeFile } = await import('@tauri-apps/plugin-fs')

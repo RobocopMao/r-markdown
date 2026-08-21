@@ -39,6 +39,12 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   defaultHosting: { default: 'github' },
   /** 图片压缩质量 10-100，对应 JPEG quality 0.1-1.0 */
   compressQuality: { default: 100 },
+  /**
+   * 磁盘图片上传文件名规则（仅桌面端、磁盘存储生效）：
+   * - 'original' 保留原图片名称（默认），重名时追加序号
+   * - 'datetime' 按年月日时分秒命名（如 20260818231010）
+   */
+  diskImageNaming: { default: 'original', platforms: ['desktop'] },
   /** 普通段落字号（px） */
   paraFontSize: { default: 16 },
   /** 普通段落行高 */

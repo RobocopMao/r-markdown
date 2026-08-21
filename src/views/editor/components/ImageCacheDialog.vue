@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { ListChecks, CheckCheck, Pin, PinOff } from 'lucide-vue-next'
+import { ListChecks, CheckCheck, Pin, PinOff, Folder } from 'lucide-vue-next'
+import { invoke } from '@tauri-apps/api/core'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { LocalImageDisk, type DiskImageEntry } from '@/services/localImageDisk'
+import { getImagesDir } from '@/services/localArticlePath'
 import { useTheme } from '@/composables/useTheme'
 import { getSetting, setSetting } from '@/config/settings'
 
@@ -96,6 +98,17 @@ async function loadDiskPreview(item: DiskImageItem) {
 
 function toggleDisk(relPath: string) {
   diskSelected.value = diskSelected.value === relPath ? null : relPath
+}
+
+/** 在文件管理器中定位本地磁盘图片（仅桌面端） */
+async function revealDiskImage(item: DiskImageItem) {
+  if (!isTauri) return
+  try {
+    const dir = await getImagesDir()
+    await invoke('show_in_folder', { path: `${dir}/${item.name}` })
+  } catch {
+    /* 定位失败静默忽略 */
+  }
 }
 
 function handleInsert() {
@@ -393,7 +406,7 @@ defineExpose({ doCleanup })
         <div
           v-for="img in diskImages"
           :key="img.relPath"
-          class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
+          class="group relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
           :class="
             diskSelected === img.relPath
               ? 'cursor-pointer border-[var(--accent)]'
@@ -416,6 +429,20 @@ defineExpose({ doCleanup })
           >
             <span class="text-[13px] font-bold text-white">✓</span>
           </div>
+          <!-- Reveal in folder (hover) -->
+          <BaseTooltip
+            v-if="isTauri"
+            text="在文件管理器中显示"
+            placement="top"
+            class="absolute right-1.5 top-1.5 z-10"
+          >
+            <button
+              class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white opacity-0 transition-opacity hover:bg-[var(--accent)] group-hover:opacity-100"
+              @click.stop="revealDiskImage(img)"
+            >
+              <Folder :size="12" />
+            </button>
+          </BaseTooltip>
           <!-- Size label -->
           <div
             class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
