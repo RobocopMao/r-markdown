@@ -4,8 +4,8 @@ import { buildPdfPages, type PdfPrintDoc } from '@/utils/paginate'
 
 export const exportItems = [
   { label: '保存图片', icon: Image, action: 'saveImage' },
-  { label: 'PDF', icon: FileDown, action: 'export-pdf' },
   { label: '小红书图', icon: FileText, action: 'xhs' },
+  { label: 'PDF', icon: FileDown, action: 'export-pdf' },
   { label: 'HTML', icon: Braces, action: 'export-html' },
 ]
 
