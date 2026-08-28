@@ -125,6 +125,8 @@ function maskIgnoredRegions(src: string): string {
   // URL（markdown 链接/图片地址）与 idb:/data: 协议地址
   out = out.replace(/\b(?:https?:)?\/\/[^\s)"'<>]+/gi, (m) => mask(m))
   out = out.replace(/\b(?:idb|data):[^\s)"'<>]+/gi, (m) => mask(m))
+  // markdown 限高图尺寸后缀 ![alt](url)[宽 高]，如 [100% 120px]，仅遮罩尺寸块
+  out = out.replace(/(!\[[^\]]*\]\([^)]*\))(\[[^\]]*\])/g, (_m, head, dim) => head + mask(dim))
   return out
 }
 
