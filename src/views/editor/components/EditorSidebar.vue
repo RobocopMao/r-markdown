@@ -22,6 +22,7 @@ import {
   Library,
   BookMarked,
   Folder,
+  ShieldAlert,
 } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -65,6 +66,7 @@ const emit = defineEmits<{
   (e: 'exampleAction', action: 'load'): void
   (e: 'openImport'): void
   (e: 'openGallery'): void
+  (e: 'openBannedWords'): void
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
 }>()
@@ -333,6 +335,14 @@ function toggleCollapse() {
           </button>
         </div>
       </div>
+      <!-- 违禁词检测 button -->
+      <button
+        class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+        @click="emit('openBannedWords')"
+      >
+        <ShieldAlert :size="24" class="shrink-0" />
+        <span class="text-[10px] leading-tight">检测</span>
+      </button>
       <!-- 示例 button with popover -->
       <div
         class="relative w-full"

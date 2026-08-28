@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { useTheme } from '@/composables/useTheme'
@@ -77,6 +77,7 @@ import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
 import ThemePicker from './components/ThemePicker.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
+import BannedWordsDialog from './components/BannedWordsDialog.vue'
 import Dropdown from './components/Dropdown.vue'
 import MobileActionsMenu from './components/mobile/MobileActionsMenu.vue'
 import XhsExporter from './components/XhsExporter.vue'
@@ -291,6 +292,13 @@ function onPreviewClickLine(lineNo: number) {
   editorRef.value?.scrollToLineAndHighlight(lineNo)
 }
 
+/** 违禁词命中跳转：关闭弹窗 → 移动端切回编辑 Tab → 滚动定位并高亮 */
+function onBannedWordsJump(line: number) {
+  bannedWordsVisible.value = false
+  if (isMobile.value) mobileTab.value = 'editor'
+  nextTick(() => editorRef.value?.scrollToLineAndHighlight(line))
+}
+
 onMounted(() => {
   refreshDrafts()
   // 恢复云端文章关联（刷新后 selectedNode 为 null，但 ID 已持久化到 localStorage）
@@ -420,6 +428,7 @@ const xhsVisible = ref(false)
 const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
 const showGallery = ref(false)
+const bannedWordsVisible = ref(false)
 
 // ── 自动更新 ──
 const autoUpdateDialogVisible = ref(false)
@@ -948,6 +957,7 @@ function loadDemo() {
             @select="onSidebarSelect"
             @open-settings="settingsVisible = true"
             @open-gallery="showGallery = true"
+            @open-banned-words="bannedWordsVisible = true"
             @material-action="onMaterialAction"
             @open-components="$router.push('/components')"
             @open-drafts="draftListVisible = true"
@@ -1725,6 +1735,13 @@ function loadDemo() {
     :initial-tab="settingsInitialTab"
     @close="onSettingsClose"
     @toast="showToast"
+  />
+  <!-- 违禁词检测弹窗 -->
+  <BannedWordsDialog
+    :visible="bannedWordsVisible"
+    :markdown="markdown"
+    @close="bannedWordsVisible = false"
+    @jump="onBannedWordsJump"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"

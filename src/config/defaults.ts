@@ -102,4 +102,8 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   treeSidebarExpanded: { default: false },
   /** TreeSidebar 宽度（px） */
   treePanelWidth: { default: 278 },
+  /** 违禁词检测：用户自定义补充词库 */
+  bannedCustomWords: { default: [] },
+  /** 违禁词检测：白名单（命中的词直接忽略） */
+  bannedWhitelist: { default: [] },
 }
