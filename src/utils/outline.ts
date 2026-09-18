@@ -1,12 +1,21 @@
+import {
+  HEADING_LEVEL_MAX,
+  HEADING_LEVEL_MIN,
+  parseHeadingLevel,
+  type HeadingLevel,
+} from './headingLevels'
+
 /**
  * 从 Markdown 原文提取文档大纲：H1–H4 标题、<title> 主标题、<p-title> 段落标题。
  * 条目带 1-based 行号，供大纲面板点击后 scrollToLineAndHighlight 跳转。
  * 代码围栏内的 # 不参与解析；<title> 正文支持跨行。
+ *
+ * 层级上限与默认值统一来自 headingLevels.ts，避免与组件渲染侧漂移。
  */
 
 export interface OutlineItem {
   /** 层级：1 主标题，2 小节，3 子小节，4 次子小节 */
-  level: 1 | 2 | 3 | 4
+  level: HeadingLevel
   /** 显示文本（已剥离行内修饰语法） */
   text: string
   /** 1-based 行号 */
@@ -78,20 +87,26 @@ export function extractOutline(markdown: string): OutlineItem[] {
       const levelAttr = attrs.match(/\blevel="([^"]*)"/)
       const text = cleanInlineText(titleAttr?.[1] ?? '')
       if (text) {
-        // 与 PTitle_DA01/DA02 的默认值保持一致：未写 level 时按一级标题处理
-        const lv = parseInt(levelAttr?.[1] ?? '1', 10)
-        const level = (Number.isFinite(lv) ? Math.min(Math.max(lv, 1), 4) : 1) as 1 | 2 | 3 | 4
-        items.push({ level, text, line: i + 1, kind: 'ptitle', num: numAttr?.[1] })
+        // 与 PTitle_DA01/DA02 共用同一解析口径：未写 level 时按默认层级处理
+        items.push({
+          level: parseHeadingLevel(levelAttr?.[1]),
+          text,
+          line: i + 1,
+          kind: 'ptitle',
+          num: numAttr?.[1],
+        })
       }
       continue
     }
 
-    // Markdown 标题（仅 H1–H4）
-    const hMatch = trimmed.match(/^(#{1,4})\s+(.+)$/)
+    // Markdown 标题（H1–H4，上限取自共用常量）
+    const hMatch = trimmed.match(
+      new RegExp(`^(#{${HEADING_LEVEL_MIN},${HEADING_LEVEL_MAX}})\\s+(.+)$`),
+    )
     if (hMatch) {
       const text = cleanInlineText(hMatch[2].replace(/\s+#+\s*$/, ''))
       if (text) {
-        items.push({ level: hMatch[1].length as 1 | 2 | 3 | 4, text, line: i + 1, kind: 'heading' })
+        items.push({ level: hMatch[1].length as HeadingLevel, text, line: i + 1, kind: 'heading' })
       }
     }
   }

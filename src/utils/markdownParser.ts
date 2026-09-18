@@ -1,6 +1,12 @@
 import type { ThemeColors } from '@/composables/useTheme'
 import hljs from 'highlight.js/lib/common'
 import { leaf, esc, parseAttrs, parseAlignment, type Alignment } from './helpers'
+import {
+  HEADING_LEVEL_MAX,
+  HEADING_LEVEL_MIN,
+  HEADING_STYLE,
+  parseHeadingLevel,
+} from './headingLevels'
 import { inlineFormat } from './inlineFormat'
 import { renderMath, preloadMathJax } from './mathRenderer'
 import { parseCtaInline, parseCtaTag, parseCompare, parseCallout, parseGallery } from './components'
@@ -276,7 +282,7 @@ export function parseMarkdown(
     const ptMatch = lines[j].match(/^<p-title\b([^>]*)>([\s\S]*?)<\/p-title>/)
     if (ptMatch) {
       const attrs = parseAttrs(ptMatch[1])
-      const level = parseInt(attrs.level || '1', 10)
+      const level = parseHeadingLevel(attrs.level)
       if (level === 1) {
         const num = attrs.num || ''
         const title = attrs.title || ptMatch[2].trim()
@@ -858,45 +864,20 @@ export function parseMarkdown(
       continue
     }
 
-    // 标题 — Markdown 原生语法，不走 PTitle
-    const h1m = line.match(/^#\s+(.+)/)
-    if (h1m) {
-      html += withSourceLine(
-        i,
-        `<h1 style="margin:0px 0px 16px;font-size:24px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h1m[1], t, formulaMap)}</h1>`,
-      )
-      i++
-      continue
-    }
-
-    const h2m = line.match(/^##\s+(.+)/)
-    if (h2m) {
-      html += withSourceLine(
-        i,
-        `<h2 style="margin:28px 0px 12px;font-size:20px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h2m[1], t, formulaMap)}</h2>`,
-      )
-      i++
-      continue
-    }
-
-    const h3m = line.match(/^###\s+(.+)/)
-    if (h3m) {
-      html += withSourceLine(
-        i,
-        `<h3 style="margin:24px 0px 10px;font-size:17px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h3m[1], t, formulaMap)}</h3>`,
-      )
-      i++
-      continue
-    }
-
-    const h4m = line.match(/^####\s+(.+)/)
-    if (h4m) {
-      html += withSourceLine(
-        i,
-        `<h4 style="margin:20px 0px 8px;font-size:15px;font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(h4m[1], t, formulaMap)}</h4>`,
-      )
-      i++
-      continue
+    // 标题 — Markdown 原生语法，不走 PTitle。
+    // 层级范围来自 headingLevels.ts，新增层级只需补 HEADING_STYLE 条目
+    const hMatch = line.match(new RegExp(`^(#{${HEADING_LEVEL_MIN},${HEADING_LEVEL_MAX}})\\s+(.+)`))
+    if (hMatch) {
+      const lv = hMatch[1].length
+      const hs = HEADING_STYLE[lv]
+      if (hs) {
+        html += withSourceLine(
+          i,
+          `<h${lv} style="margin:${hs.margin};font-size:${hs.fontSize};font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(hMatch[2], t, formulaMap)}</h${lv}>`,
+        )
+        i++
+        continue
+      }
     }
 
     // 块级公式 $$...$$ — 优先取 formulaMap 中的预渲染 SVG
