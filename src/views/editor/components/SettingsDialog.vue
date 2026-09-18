@@ -169,6 +169,14 @@ function saveDiskImageNaming(val: string) {
 const minimapEnabled = ref(getSetting<boolean>('minimapEnabled'))
 watch(minimapEnabled, (val) => setSetting('minimapEnabled', val))
 
+// ── 文档大纲 ──
+const outlineEnabled = ref(getSetting<boolean>('outlineEnabled'))
+watch(outlineEnabled, (val) => setSetting('outlineEnabled', val))
+
+// ── 底部状态栏 ──
+const statusBarEnabled = ref(getSetting<boolean>('statusBarEnabled'))
+watch(statusBarEnabled, (val) => setSetting('statusBarEnabled', val))
+
 // ── 编辑器主题 ──
 const editorTheme = ref(getSetting<string>('editorTheme'))
 
@@ -928,6 +936,54 @@ async function manualCheckUpdate() {
         </div>
         <p class="text-[11px] text-[#999] dark:text-[#666]">
           开启后可在预览区右侧看到文档全貌缩略图，点击可快速跳转
+        </p>
+      </section>
+
+      <!-- 文档大纲 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">文档大纲</h3>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] text-[#666] dark:text-[#999]">启用编辑器右侧标题大纲</span>
+          <button
+            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+            :class="outlineEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+            role="switch"
+            :aria-checked="outlineEnabled"
+            @click="outlineEnabled = !outlineEnabled"
+          >
+            <span
+              class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+              :class="outlineEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+            />
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666]">
+          关闭后工具栏「大纲」按钮与右侧面板一起隐藏；开启后用工具栏按钮展开或收起
+        </p>
+      </section>
+
+      <!-- 底部状态栏 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+          底部状态栏
+        </h3>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] text-[#666] dark:text-[#999]">显示编辑器底部状态栏</span>
+          <button
+            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+            :class="statusBarEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+            role="switch"
+            :aria-checked="statusBarEnabled"
+            @click="statusBarEnabled = !statusBarEnabled"
+          >
+            <span
+              class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+              :class="statusBarEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+            />
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666]">
+          显示光标所在行列、选中字数、总字数与预估阅读时长
         </p>
       </section>
 

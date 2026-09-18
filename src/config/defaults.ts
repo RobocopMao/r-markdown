@@ -63,6 +63,12 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   wechatDefaultAuthor: { default: '' },
   /** 预览区 minimap 缩略图开关 */
   minimapEnabled: { default: false },
+  /** 编辑器右侧文档大纲导航开关（总开关，关闭后工具栏按钮与面板一起隐藏） */
+  outlineEnabled: { default: true },
+  /** 编辑器右侧大纲面板是否展开（界面状态，默认收起，点工具栏「大纲」按钮切换） */
+  outlinePanelVisible: { default: false },
+  /** 编辑器底部状态栏开关（显示光标行列、已选字数、总字数与预估阅读时长） */
+  statusBarEnabled: { default: true },
   /** 编辑器主题 */
   editorTheme: { default: 'default' },
   /** 云端文章 GitHub 仓库，格式 owner/repo */

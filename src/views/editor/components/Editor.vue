@@ -137,6 +137,9 @@ let isProgrammaticScroll = false
 
 // ── 光标位置状态 ──
 const isAtLineStart = ref(false)
+const cursorLine = ref(1)
+const cursorCol = ref(1)
+const selectedChars = ref(0)
 
 // ── 行内样式选中检测 ──
 const hasInlineSelection = ref(false)
@@ -588,6 +591,9 @@ onMounted(async () => {
       const sel = update.state.selection.main
       const line = update.state.doc.lineAt(sel.from)
       isAtLineStart.value = sel.from === line.from
+      cursorLine.value = line.number
+      cursorCol.value = sel.from - line.from + 1
+      selectedChars.value = sel.empty ? 0 : sel.to - sel.from
       isInsideTag.value = checkCursorInTag(update.state)
       checkTagSelection(update.state)
       checkInlineSelection(update.state)
@@ -745,7 +751,10 @@ function insertAtCursor(text: string) {
   })
 }
 
-function scrollToLineAndHighlight(lineNo: number) {
+function scrollToLineAndHighlight(
+  lineNo: number,
+  opts?: { syncPreview?: boolean; moveCursor?: boolean },
+) {
   if (!view) return
   const lines = view.state.doc.lines
   const targetLine = Math.min(Math.max(1, lineNo), lines)
@@ -753,15 +762,22 @@ function scrollToLineAndHighlight(lineNo: number) {
 
   isProgrammaticScroll = true
   view.dispatch({
+    ...(opts?.moveCursor ? { selection: { anchor: line.from } } : {}),
     effects: [
       highlightLineEffect.of(targetLine),
       EditorView.scrollIntoView(line.from, { y: 'center' }),
     ],
   })
 
-  // scrollIntoView 使用平滑滚动动画（约 120-150ms），动画结束后恢复标记
+  // scrollIntoView 使用平滑滚动动画（约 120-150ms），动画结束后恢复标记；
+  // 大纲等跳转场景在动画结束后上报滚动比例，供父组件同步预览位置
   setTimeout(() => {
     isProgrammaticScroll = false
+    if (opts?.syncPreview && view) {
+      const el = view.scrollDOM
+      const maxScroll = el.scrollHeight - el.clientHeight
+      if (maxScroll > 0) emit('scroll', el.scrollTop / maxScroll)
+    }
   }, 200)
 
   setTimeout(() => {
@@ -780,6 +796,9 @@ defineExpose({
   isInsideTag,
   applyInlineFormat,
   scrollToLineAndHighlight,
+  cursorLine,
+  cursorCol,
+  selectedChars,
 })
 </script>
 
@@ -796,11 +815,15 @@ defineExpose({
 
 .editor-container :deep(.cm-editor) {
   height: 100%;
-  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei', monospace !important;
+  font-family:
+    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei',
+    monospace !important;
 }
 
 .editor-container :deep(.cm-content) {
-  font-family: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei', monospace !important;
+  font-family:
+    ui-monospace, 'SF Mono', SFMono-Regular, Menlo, Consolas, 'Liberation Mono', 'Microsoft YaHei',
+    monospace !important;
 }
 
 .editor-container :deep(.cm-scroller) {

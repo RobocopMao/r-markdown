@@ -85,12 +85,21 @@ export const MAX_ROWS = 3
 
 export interface EditorExposed {
   insertAtCursor: (text: string) => void
-  scrollToLineAndHighlight: (lineNo: number) => void
+  scrollToLineAndHighlight: (
+    lineNo: number,
+    opts?: { syncPreview?: boolean; moveCursor?: boolean },
+  ) => void
   isAtLineStart: boolean
   hasInlineSelection: boolean
   isInsideTag: boolean
   applyInlineFormat: (syntax: string, wrapType?: 'delim' | 'tag') => void
   replaceRange: (from: number, to: number, text: string) => void
+  /** 光标所在行号（1-based） */
+  cursorLine: number
+  /** 光标所在列号（1-based） */
+  cursorCol: number
+  /** 当前选中的字符数，无选区时为 0 */
+  selectedChars: number
 }
 
 export interface TagInfo {

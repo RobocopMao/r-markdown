@@ -40,6 +40,8 @@ import {
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
 import { DEMO_CONTENT } from '@/data/demoContent'
 import { extractTitle } from '@/utils/extractTitle'
+import { extractOutline } from '@/utils/outline'
+import { countChars } from '@/utils/charCount'
 import Editor from './components/Editor.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
@@ -68,6 +70,7 @@ import {
   Layers,
   Cloud,
   HardDrive,
+  ListTree,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -75,6 +78,7 @@ import { getErrorMessage } from '@/utils/helpers'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
+import OutlinePanel from './components/OutlinePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
@@ -301,6 +305,10 @@ function onBannedWordsJump(line: number) {
 
 onMounted(() => {
   refreshDrafts()
+  // 左侧目录收起时 TreeSidebar 不挂载，isConfigured 永远不会被初始化，
+  // 工具栏「仓库/本地」按钮就会消失；此时由这里主动同步一次配置状态。
+  // 目录展开时 TreeSidebar 自己的 init() 已经处理，无需重复触发加载。
+  if (!treePanelVisible.value) useGitHubTree().checkConfig()
   // 恢复云端文章关联（刷新后 selectedNode 为 null，但 ID 已持久化到 localStorage）
   const { id: storedCloudId } = restoreCloudArticlePersistence()
   if (storedCloudId) {
@@ -345,6 +353,36 @@ const {
   onMinimapNavigate,
   resetMinimap,
 } = useScrollSync(isMobile, mobileTab, nearBottom)
+
+// ── 文档大纲 ──
+/** 设置项：大纲总开关。关闭后工具栏按钮与右侧面板一起隐藏，只能在设置里重新开启。 */
+const outlineEnabled = useSetting<boolean>('outlineEnabled')
+/**
+ * 面板显隐：持久化的界面状态（与 treeSidebarExpanded 同类），默认收起。
+ * 工具栏按钮只切换它，避免「点一下把总开关关掉、按钮自己跟着消失」，
+ * 也避免刷新后大纲面板自行展开。
+ */
+const outlinePanelVisible = useSetting<boolean>('outlinePanelVisible')
+const outlineVisible = computed(() => outlineEnabled.value && outlinePanelVisible.value)
+const outlineItems = computed(() => (outlineVisible.value ? extractOutline(markdown.value) : []))
+
+function onToggleOutline() {
+  setSetting('outlinePanelVisible', !outlinePanelVisible.value)
+}
+
+/** 大纲条目跳转：滚动编辑器并移动光标，动画结束后同步预览 */
+function onOutlineJump(line: number) {
+  editorRef.value?.scrollToLineAndHighlight(line, { syncPreview: true, moveCursor: true })
+}
+
+// ── 字数统计状态栏 ──
+/** 与 <title> 组件保持同一口径：都排除标题块的文字，避免两处「字数」对不上 */
+const statusStats = computed(() => countChars(markdown.value, { excludeTitle: true }))
+const editorCursorLine = computed(() => editorRef.value?.cursorLine ?? 1)
+const editorCursorCol = computed(() => editorRef.value?.cursorCol ?? 1)
+const editorSelectedChars = computed(() => editorRef.value?.selectedChars ?? 0)
+/** 底部状态栏总开关，可在设置里关闭 */
+const statusBarEnabled = useSetting<boolean>('statusBarEnabled')
 
 let startX = 0
 let startWidth = 0
@@ -1022,10 +1060,10 @@ function loadDemo() {
           }"
         >
           <div
-            class="panel-header hidden md:flex items-center justify-between px-2 py-2 border-b text-xs font-semibold shrink-0"
+            class="panel-header hidden md:flex flex-wrap items-center gap-x-2 gap-y-1 px-2 py-2 border-b text-xs font-semibold shrink-0"
             style="background: var(--bg-primary)"
           >
-            <span class="flex flex-wrap items-center gap-2">
+            <span class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
               <!-- 操作按钮组：图标+文字 -->
               <span class="flex flex-wrap items-center gap-1">
                 <!-- 基础语法 -->
@@ -1521,7 +1559,9 @@ function loadDemo() {
                 </BaseTooltip>
               </span>
             </span>
-            <span class="flex flex-col lg:flex-row lg:items-center gap-1">
+            <span
+              class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center lg:justify-end gap-1 ml-auto"
+            >
               <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
                 <button
                   class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
@@ -1574,6 +1614,24 @@ function loadDemo() {
                     :style="{ color: colors.accent }"
                   />
                   <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
+                </button>
+              </BaseTooltip>
+              <BaseTooltip
+                v-if="outlineEnabled"
+                :text="outlinePanelVisible ? '隐藏大纲' : '显示大纲'"
+              >
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="onToggleOutline"
+                >
+                  <ListTree
+                    :size="14"
+                    class="w-3.5 h-3.5"
+                    :style="outlinePanelVisible ? { color: colors.accent } : undefined"
+                  />
+                  <span :style="outlinePanelVisible ? { color: colors.accent } : undefined"
+                    >大纲</span
+                  >
                 </button>
               </BaseTooltip>
             </span>
@@ -1645,6 +1703,31 @@ function loadDemo() {
               @close="onTagDialogClose"
               @update="onTagDialogUpdate"
             />
+            <OutlinePanel
+              v-if="outlineVisible && !isMobile"
+              :items="outlineItems"
+              :active-line="editorCursorLine"
+              @jump="onOutlineJump"
+            />
+          </div>
+          <!-- 字数统计状态栏 -->
+          <div
+            v-if="statusBarEnabled"
+            class="hidden md:flex items-center justify-between px-3 h-7 shrink-0 border-t border-[var(--border-color)] text-[11px]"
+            style="background: var(--bg-primary); color: var(--text-secondary)"
+          >
+            <span class="opacity-70">行 {{ editorCursorLine }}，列 {{ editorCursorCol }}</span>
+            <span class="flex items-center gap-3">
+              <span
+                v-if="editorSelectedChars > 0"
+                class="font-medium"
+                :style="{ color: colors.accent }"
+              >
+                已选 {{ editorSelectedChars }} 字
+              </span>
+              <span class="opacity-70">字数 {{ statusStats.chars }}</span>
+              <span class="opacity-70">约 {{ statusStats.minutes }} 分钟读完</span>
+            </span>
           </div>
         </div>
 
