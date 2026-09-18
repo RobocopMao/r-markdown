@@ -17,6 +17,7 @@ import {
   GripHorizontal,
 } from 'lucide-vue-next'
 import { shortcut } from '@/utils/platform'
+import BaseTooltip from '@/components/BaseTooltip.vue'
 
 export interface FindSpec {
   search: string
@@ -268,13 +269,11 @@ defineExpose({ open, seed, resetHighlights, focus: () => searchInput.value?.focu
         </button>
 
         <!-- 拖拽手柄：提示可以拖动改变位置 -->
-        <span
-          class="find-drag-handle shrink-0"
-          @pointerdown="onDragStart"
-          @dblclick="resetPosition"
-        >
-          <GripHorizontal :size="14" />
-        </span>
+        <BaseTooltip text="拖动移动面板 · 双击复位" :delay="300" class="shrink-0">
+          <span class="find-drag-handle" @pointerdown="onDragStart" @dblclick="resetPosition">
+            <GripHorizontal :size="14" />
+          </span>
+        </BaseTooltip>
 
         <Search :size="14" class="shrink-0" style="color: var(--text-muted)" />
 
