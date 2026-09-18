@@ -71,14 +71,17 @@ import {
   Cloud,
   HardDrive,
   ListTree,
+  Search,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
+import { findShortcutLabel, replaceShortcutLabel } from '@/utils/platform'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
 import OutlinePanel from './components/OutlinePanel.vue'
+import FindReplacePanel, { type FindSpec } from './components/FindReplacePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
@@ -375,6 +378,80 @@ function onOutlineJump(line: number) {
   editorRef.value?.scrollToLineAndHighlight(line, { syncPreview: true, moveCursor: true })
 }
 
+// ── 查找替换 ──
+const findVisible = ref(false)
+const findPanelRef = ref<InstanceType<typeof FindReplacePanel> | null>(null)
+/** 面板回传的匹配数/当前序号相对编辑器真实状态略有延迟，但对展示足够 */
+const findTotal = ref(0)
+const findCurrent = ref(0)
+const findInvalid = ref(false)
+
+function openFind(withReplace = false) {
+  // 有选中文字就带过来当查找词，和常见编辑器一致
+  const selected = editorRef.value?.getSelectedText?.() ?? ''
+  findVisible.value = true
+  nextTick(() => {
+    findPanelRef.value?.open(withReplace)
+    if (selected) findPanelRef.value?.seed(selected)
+  })
+}
+
+function onFindChange(spec: FindSpec) {
+  editorRef.value?.applyFindSpec?.({ ...spec })
+  findTotal.value = editorRef.value?.findTotal ?? 0
+  findCurrent.value = editorRef.value?.findCurrent ?? 0
+  findInvalid.value = editorRef.value?.findInvalid ?? false
+}
+
+function onFindNext() {
+  editorRef.value?.findNext?.()
+  syncFindCounters()
+}
+
+function onFindPrev() {
+  editorRef.value?.findPrevious?.()
+  syncFindCounters()
+}
+
+function syncFindCounters() {
+  findTotal.value = editorRef.value?.findTotal ?? 0
+  findCurrent.value = editorRef.value?.findCurrent ?? 0
+  findInvalid.value = editorRef.value?.findInvalid ?? false
+}
+
+function onFindReplaceOne() {
+  editorRef.value?.replaceCurrent?.()
+  syncFindCounters()
+}
+
+function onFindReplaceAll() {
+  const n = editorRef.value?.replaceAllMatches?.() ?? 0
+  syncFindCounters()
+  if (n > 0) showToast(`已替换 ${n} 处`)
+  else showToast('没有可替换的内容')
+}
+
+function closeFind() {
+  findVisible.value = false
+  editorRef.value?.applyFindSpec?.({
+    search: '',
+    replace: '',
+    caseSensitive: false,
+    wholeWord: false,
+    regexp: false,
+  })
+  syncFindCounters()
+  editorRef.value?.focusEditor?.()
+}
+
+/**
+ * 工具栏「查找」按钮：已打开时再点则关闭，未打开时打开。
+ * 快捷键（⌘F）仍走 openFind，保持「按快捷键总是打开并聚焦」的常见行为。
+ */
+function toggleFind() {
+  findVisible.value ? closeFind() : openFind(false)
+}
+
 // ── 字数统计状态栏 ──
 /** 与 <title> 组件保持同一口径：都排除标题块的文字，避免两处「字数」对不上 */
 const statusStats = computed(() => countChars(markdown.value, { excludeTitle: true }))
@@ -383,6 +460,14 @@ const editorCursorCol = computed(() => editorRef.value?.cursorCol ?? 1)
 const editorSelectedChars = computed(() => editorRef.value?.selectedChars ?? 0)
 /** 底部状态栏总开关，可在设置里关闭 */
 const statusBarEnabled = useSetting<boolean>('statusBarEnabled')
+
+/**
+ * 查找替换的提示文案。快捷键显示名按平台区分（macOS 用 ⌘/⌥，其余用 Ctrl/Alt），
+ * 判断逻辑集中在 utils/platform.ts，这里只负责组装文案。
+ */
+const findReplaceTooltip = computed(
+  () => `查找替换（${findShortcutLabel()} 查找，${replaceShortcutLabel()} 展开替换）`,
+)
 
 let startX = 0
 let startWidth = 0
@@ -1060,10 +1145,10 @@ function loadDemo() {
           }"
         >
           <div
-            class="panel-header hidden md:flex flex-wrap items-center gap-x-2 gap-y-1 px-2 py-2 border-b text-xs font-semibold shrink-0"
+            class="panel-header hidden md:flex items-center gap-x-2 px-2 py-2 border-b text-xs font-semibold shrink-0"
             style="background: var(--bg-primary)"
           >
-            <span class="flex flex-wrap items-center gap-2 flex-1 min-w-0">
+            <span class="flex flex-wrap items-center gap-2 flex-auto min-w-0">
               <!-- 操作按钮组：图标+文字 -->
               <span class="flex flex-wrap items-center gap-1">
                 <!-- 基础语法 -->
@@ -1560,7 +1645,7 @@ function loadDemo() {
               </span>
             </span>
             <span
-              class="flex flex-col lg:flex-row lg:flex-wrap lg:items-center lg:justify-end gap-1 ml-auto"
+              class="flex flex-row flex-wrap items-center justify-end gap-1 ml-auto shrink min-w-[152px]"
             >
               <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
                 <button
@@ -1616,6 +1701,15 @@ function loadDemo() {
                   <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
                 </button>
               </BaseTooltip>
+              <BaseTooltip :text="findVisible ? '关闭查找' : findReplaceTooltip">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="toggleFind"
+                >
+                  <Search :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span :style="findVisible ? { color: colors.accent } : undefined">查找</span>
+                </button>
+              </BaseTooltip>
               <BaseTooltip
                 v-if="outlineEnabled"
                 :text="outlinePanelVisible ? '隐藏大纲' : '显示大纲'"
@@ -1624,11 +1718,7 @@ function loadDemo() {
                   class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
                   @click="onToggleOutline"
                 >
-                  <ListTree
-                    :size="14"
-                    class="w-3.5 h-3.5"
-                    :style="outlinePanelVisible ? { color: colors.accent } : undefined"
-                  />
+                  <ListTree :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                   <span :style="outlinePanelVisible ? { color: colors.accent } : undefined"
                     >大纲</span
                   >
@@ -1652,7 +1742,8 @@ function loadDemo() {
               />
             </div>
           </div>
-          <div class="flex flex-1 overflow-hidden relative">
+          <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
+          <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
             <Editor
               ref="editorRef"
               class="flex-1"
@@ -1667,6 +1758,7 @@ function loadDemo() {
               @drop-image="handleDropImage"
               @drop-multiple-images="handleDropMultipleImages"
               @drop-non-image="handleDropNonImage"
+              @open-find="openFind"
             />
             <input
               ref="imageInputRef"
@@ -1708,6 +1800,20 @@ function loadDemo() {
               :items="outlineItems"
               :active-line="editorCursorLine"
               @jump="onOutlineJump"
+            />
+            <!-- 查找替换面板：浮在编辑器右上角 -->
+            <FindReplacePanel
+              ref="findPanelRef"
+              :visible="findVisible"
+              :total="findTotal"
+              :current="findCurrent"
+              :invalid="findInvalid"
+              @change="onFindChange"
+              @next="onFindNext"
+              @prev="onFindPrev"
+              @replace-one="onFindReplaceOne"
+              @replace-all="onFindReplaceAll"
+              @close="closeFind"
             />
           </div>
           <!-- 字数统计状态栏 -->

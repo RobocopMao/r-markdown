@@ -11,6 +11,7 @@ import {
   ViewPlugin,
   ViewUpdate,
   WidgetType,
+  type DecorationSet,
 } from '@codemirror/view'
 import {
   EditorState,
@@ -18,6 +19,7 @@ import {
   StateEffect,
   StateField,
   Compartment,
+  Prec,
 } from '@codemirror/state'
 import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
@@ -30,7 +32,19 @@ import {
 } from '@codemirror/language'
 import { tags } from '@lezer/highlight'
 import { lineNumbers, highlightActiveLine, highlightActiveLineGutter } from '@codemirror/view'
-import { searchKeymap, highlightSelectionMatches } from '@codemirror/search'
+import {
+  highlightSelectionMatches,
+  selectNextOccurrence,
+  selectSelectionMatches,
+  gotoLine,
+} from '@codemirror/search'
+import {
+  findMatches,
+  expandReplacement,
+  FIND_MATCH_LIMIT,
+  type FindMatch,
+} from '@/utils/findReplace'
+import type { FindSpec } from './FindReplacePanel.vue'
 import { autocompletion, closeBrackets } from '@codemirror/autocomplete'
 import { rectangularSelection } from '@codemirror/view'
 import { oneDarkHighlightStyle } from '@codemirror/theme-one-dark'
@@ -64,6 +78,225 @@ const highlightLineField = StateField.define({
   provide: (f) => EditorView.decorations.from(f),
 })
 
+// ── 查找替换 ──
+/**
+ * CodeMirror 自带高亮只在它自己的搜索面板打开时渲染（源码里 `if (!panel) return
+ * Decoration.none`）。我们用自定义面板，所以匹配高亮要自己维护。
+ *
+ * 这里只把匹配区间存进 StateField，装饰通过 Facet.compute 依赖 selection 派生，
+ * 这样移动光标/切换命中项时无需重新派发事务即可刷新「当前项」样式。
+ */
+const setFindMatches = StateEffect.define<{ from: number; to: number }[]>()
+const findMatchMark = Decoration.mark({ class: 'cm-find-match' })
+const findMatchActiveMark = Decoration.mark({ class: 'cm-find-match cm-find-match-active' })
+
+/** 全部匹配区间（升序），由 setFindMatches 写入 */
+const findMatchesField = StateField.define<{ from: number; to: number }[]>({
+  create() {
+    return []
+  },
+  update(matches, tr) {
+    for (const e of tr.effects) {
+      if (e.is(setFindMatches)) return e.value
+    }
+    return matches
+  },
+})
+
+/** 由匹配集合 + 当前选区派生高亮，当前命中项用更醒目的样式 */
+const findHighlight = EditorView.decorations.compute([findMatchesField, 'selection'], (state) => {
+  const matches = state.field(findMatchesField)
+  if (matches.length === 0) return Decoration.none
+  const sel = state.selection.main
+  const builder = new RangeSetBuilder<Decoration>()
+  for (const m of matches) {
+    const isActive = m.from === sel.from && m.to === sel.to
+    builder.add(m.from, m.to, isActive ? findMatchActiveMark : findMatchMark)
+  }
+  return builder.finish()
+})
+
+// 查找状态：供父组件读取匹配数与当前序号
+const findTotal = ref(0)
+const findCurrent = ref(0)
+const findInvalid = ref(false)
+
+/** 最近一次查找条件（含替换串），next/prev/替换复用 */
+let findSpec: FindSpec & { replace: string } = {
+  search: '',
+  replace: '',
+  caseSensitive: false,
+  wholeWord: false,
+  regexp: false,
+}
+
+/** 按当前条件算出全部匹配 */
+function computeMatches(text: string): FindMatch[] {
+  return findMatches(
+    text,
+    findSpec.search,
+    {
+      caseSensitive: findSpec.caseSensitive,
+      wholeWord: findSpec.wholeWord,
+      regexp: findSpec.regexp,
+    },
+    FIND_MATCH_LIMIT,
+  ).matches
+}
+
+/** 查找条件变化：重算匹配、更新高亮与计数 */
+function applyFindSpec(spec: FindSpec & { replace: string }) {
+  if (!view) return
+  findSpec = spec
+
+  const doc = view.state.doc.toString()
+  const res = findMatches(
+    doc,
+    spec.search,
+    {
+      caseSensitive: spec.caseSensitive,
+      wholeWord: spec.wholeWord,
+      regexp: spec.regexp,
+    },
+    FIND_MATCH_LIMIT,
+  )
+  findInvalid.value = res.invalid
+  const matches = res.matches
+  findTotal.value = matches.length
+
+  const sel = view.state.selection.main
+  const idx = matches.findIndex((m) => m.from === sel.from && m.to === sel.to)
+  findCurrent.value = idx >= 0 ? idx + 1 : 0
+
+  view.dispatch({ effects: setFindMatches.of(matches) })
+}
+
+/** 跳到第 index 个匹配（0-based，自动环绕），并把选区移过去 */
+function gotoMatch(index: number) {
+  if (!view || findTotal.value === 0) return
+  const matches = computeMatches(view.state.doc.toString())
+  if (matches.length === 0) return
+  const wrapped = ((index % matches.length) + matches.length) % matches.length
+  const target = matches[wrapped]
+
+  findCurrent.value = wrapped + 1
+  view.dispatch({
+    selection: { anchor: target.from, head: target.to },
+    effects: [EditorView.scrollIntoView(target.from, { y: 'center' })],
+  })
+}
+
+function findNext() {
+  if (!view || findTotal.value === 0) return
+  if (findCurrent.value === 0) {
+    // 还没落在任何匹配上：从光标处往后找第一个
+    const matches = computeMatches(view.state.doc.toString())
+    const cur = view.state.selection.main.from
+    const i = matches.findIndex((m) => m.from >= cur)
+    gotoMatch(i < 0 ? 0 : i)
+    return
+  }
+  gotoMatch(findCurrent.value)
+}
+
+function findPrevious() {
+  if (!view || findTotal.value === 0) return
+  if (findCurrent.value === 0) {
+    const matches = computeMatches(view.state.doc.toString())
+    const cur = view.state.selection.main.from
+    let i = -1
+    for (let k = matches.length - 1; k >= 0; k--) {
+      if (matches[k].to <= cur) {
+        i = k
+        break
+      }
+    }
+    gotoMatch(i < 0 ? matches.length - 1 : i)
+    return
+  }
+  gotoMatch(findCurrent.value - 2)
+}
+
+/** 替换当前命中项，然后跳到下一个。返回是否发生了替换 */
+function replaceCurrent(): boolean {
+  if (!view || findTotal.value === 0) return false
+  const sel = view.state.selection.main
+  const matches = computeMatches(view.state.doc.toString())
+  const hit = matches.find((m) => m.from === sel.from && m.to === sel.to)
+  if (!hit) {
+    // 当前光标不在匹配上：先跳到下一个，避免误替换
+    findNext()
+    return false
+  }
+  const text = expandReplacement(findSpec.replace, hit, findSpec.regexp)
+  // 记录替换起点，替换后从这里往后找下一个匹配（与常见编辑器一致：替换即前进）
+  const resumeAt = hit.from + text.length
+  view.dispatch({
+    changes: { from: hit.from, to: hit.to, insert: text },
+    selection: { anchor: resumeAt },
+  })
+
+  // 文档已变，重算匹配与计数；并把光标停到下一个匹配上，方便连续点击「替换」
+  const rest = computeMatches(view.state.doc.toString())
+  findTotal.value = rest.length
+  const nextIdx = rest.findIndex((m) => m.from >= resumeAt)
+  findCurrent.value = nextIdx >= 0 ? nextIdx + 1 : 0
+  view.dispatch({ effects: setFindMatches.of(rest) })
+  if (nextIdx >= 0) {
+    const n = rest[nextIdx]
+    view.dispatch({
+      selection: { anchor: n.from, head: n.to },
+      effects: EditorView.scrollIntoView(n.from, { y: 'center' }),
+    })
+  }
+  return true
+}
+
+/** 全部替换，返回替换次数 */
+function replaceAllMatches(): number {
+  if (!view || findTotal.value === 0) return 0
+  const docText = view.state.doc.toString()
+  const matches = computeMatches(docText)
+  if (matches.length === 0) return 0
+
+  // 正则模式下要按原文重新取捕获组，这里 matches 已带 groups，直接展开
+  const changes = matches.map((m) => ({
+    from: m.from,
+    to: m.to,
+    insert: expandReplacement(findSpec.replace, m, findSpec.regexp),
+  }))
+  view.dispatch({ changes })
+  const n = matches.length
+
+  // 替换后原匹配已失效，清空高亮并重算（替换文本可能又构成新匹配）
+  findTotal.value = 0
+  findCurrent.value = 0
+  view.dispatch({ effects: setFindMatches.of([]) })
+  return n
+}
+
+/** 把编辑器当前选中的文字作为查找词回传给面板 */
+function getSelectedText(): string {
+  if (!view) return ''
+  const sel = view.state.selection.main
+  if (sel.empty) return ''
+  const t = view.state.sliceDoc(sel.from, sel.to)
+  // 单行且不太长时才有意义
+  return t.includes('\n') || t.length > 100 ? '' : t
+}
+
+/** 快捷键：打开查找面板（CursorMove 命令要求返回 boolean） */
+function openFindPanel(): boolean {
+  emit('openFind', false)
+  return true
+}
+
+/** 快捷键：打开查找面板并展开替换行 */
+function openReplacePanel(): boolean {
+  emit('openFind', true)
+  return true
+}
+
 const props = defineProps<{
   modelValue: string
 }>()
@@ -87,6 +320,8 @@ const emit = defineEmits<{
   dropImage: [file: File, from: number]
   dropMultipleImages: []
   dropNonImage: []
+  /** 请求打开查找替换面板（快捷键触发），参数为是否展开替换行 */
+  openFind: [withReplace: boolean]
 }>()
 
 const editorRef = ref<HTMLDivElement>()
@@ -614,7 +849,19 @@ onMounted(async () => {
       rectangularSelection(),
       highlightSelectionMatches(),
       history(),
-      keymap.of([...defaultKeymap, ...historyKeymap, ...searchKeymap, indentWithTab]),
+      // 查找相关快捷键交给自定义面板（Prec.high 覆盖 CodeMirror 自带的英文面板）
+      Prec.high(
+        keymap.of([
+          { key: 'Mod-f', run: openFindPanel },
+          // Cmd/Ctrl+Alt+F 展开替换行（不用 Mod-h：macOS 上 Cmd+H 被系统「隐藏应用」占用）
+          { key: 'Mod-Alt-f', run: openReplacePanel },
+          // 保留 CodeMirror 好用的多选/跳行能力
+          { key: 'Mod-d', run: selectNextOccurrence, preventDefault: true },
+          { key: 'Mod-Shift-l', run: selectSelectionMatches },
+          { key: 'Mod-Alt-g', run: gotoLine },
+        ]),
+      ),
+      keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       markdown({ codeLanguages: languages }),
       warmEditorTheme,
       themeCompartment.of(themeExtension(editorTheme.value)),
@@ -623,6 +870,8 @@ onMounted(async () => {
       EditorView.lineWrapping,
       collapseBase64,
       highlightLineField,
+      findMatchesField,
+      findHighlight,
     ],
   })
 
@@ -799,6 +1048,17 @@ defineExpose({
   cursorLine,
   cursorCol,
   selectedChars,
+  // 查找替换
+  applyFindSpec,
+  findNext,
+  findPrevious,
+  replaceCurrent,
+  replaceAllMatches,
+  getSelectedText,
+  findTotal,
+  findCurrent,
+  findInvalid,
+  focusEditor: () => view?.focus(),
 })
 </script>
 
@@ -849,6 +1109,25 @@ defineExpose({
 
 .editor-container :deep(.cm-locate-flash) {
   animation: locate-flash-light 3s ease-out;
+}
+
+/* ── 查找替换高亮 ── */
+.editor-container :deep(.cm-find-match) {
+  background: rgba(255, 196, 0, 0.35);
+  border-radius: 2px;
+}
+
+.editor-container :deep(.cm-find-match-active) {
+  background: rgba(255, 145, 0, 0.72);
+  outline: 1px solid rgba(255, 145, 0, 0.9);
+}
+
+[data-theme='dark'] .editor-container :deep(.cm-find-match) {
+  background: rgba(255, 196, 0, 0.28);
+}
+
+[data-theme='dark'] .editor-container :deep(.cm-find-match-active) {
+  background: rgba(255, 145, 0, 0.6);
 }
 
 [data-theme='dark'] .editor-container :deep(.cm-locate-flash) {
