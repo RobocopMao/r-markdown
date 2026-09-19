@@ -29,6 +29,20 @@ export function altKeyLabel(): string {
   return isMac() ? '⌥' : 'Alt'
 }
 
+/** Control 键的显示名：macOS 是 ⌃，其余平台是 Ctrl */
+export function ctrlKeyLabel(): string {
+  return isMac() ? '⌃' : 'Ctrl'
+}
+
+/**
+ * 「需包含…之一」这类提示里列出的修饰键。
+ *
+ * Windows 上 Ctrl 就是主修饰键，所以不重复列出；macOS 的 ⌘ / ⌃ / ⌥ 三个都可单独用。
+ */
+export function modifierKeyList(): string {
+  return isMac() ? '⌘ / ⌃ / ⌥' : 'Ctrl / Alt'
+}
+
 /** Shift 键的显示名：macOS 是 ⇧，其余平台是 Shift */
 export function shiftKeyLabel(): string {
   return isMac() ? '⇧' : 'Shift'

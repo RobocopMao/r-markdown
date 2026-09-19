@@ -3,6 +3,7 @@
  * initSettings() 会自动为旧用户补上缺失的默认值。
  * platforms 不传表示全平台适用。
  */
+import { DEFAULT_PALETTE_SHORTCUT } from '@/utils/commandPalette'
 
 export interface SettingDef {
   default: unknown
@@ -71,6 +72,11 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   statusBarEnabled: { default: true },
   /** 编辑器主题 */
   editorTheme: { default: 'default' },
+  /**
+   * 命令面板快捷键（类 Spotlight 的全局检索：草稿/云文章/本地文章/素材）。
+   * Mod 表示平台主修饰键（macOS 的 Cmd、其余平台的 Ctrl），与 CodeMirror 语义一致。
+   */
+  commandPaletteShortcut: { default: DEFAULT_PALETTE_SHORTCUT },
   /** 云端文章 GitHub 仓库，格式 owner/repo */
   cloudArticleRepo: { default: '' },
   /** 云端文章 GitHub 仓库分支 */

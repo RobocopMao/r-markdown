@@ -77,6 +77,19 @@ import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
 import { findShortcutLabel, replaceShortcutLabel } from '@/utils/platform'
+import { isMac, modKeyLabel, ctrlKeyLabel, altKeyLabel, shiftKeyLabel } from '@/utils/platform'
+import {
+  parseShortcut,
+  matchShortcut,
+  shortcutDisplay,
+  DEFAULT_PALETTE_SHORTCUT,
+  type ShortcutSpec,
+  type PaletteItem,
+  type PaletteKind,
+} from '@/utils/commandPalette'
+import { DraftStorage } from '@/services/DraftStorage'
+import { MaterialStorage } from '@/services/materialStorage'
+import CommandPalette from './components/CommandPalette.vue'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
@@ -331,6 +344,8 @@ onMounted(() => {
   // 异步匹配草稿：根据当前标题查找已有同名草稿
   setTimeout(() => matchExistingDraft(), 300)
   window.addEventListener('resize', onResize)
+  // 命令面板快捷键：window 级监听，编辑器/预览/侧栏聚焦时都能唤起
+  window.addEventListener('keydown', onPaletteGlobalKeydown)
   // 恢复页面缩放
   if (import.meta.env.VITE_TAURI === 'true') {
     const val = getSetting<number>('pageZoom')
@@ -341,6 +356,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('keydown', onPaletteGlobalKeydown)
 })
 
 // ── 拖动调整宽度 ──
@@ -619,6 +635,7 @@ const {
   clearCloudArticlePersistence,
   articleStorageMode,
   isConfigured: cloudTreeConfigured,
+  selectNode: selectTreeNode,
 } = useGitHubTree()
 
 // 是否已配置（local 模式始终 true，github 模式需要 token+repo）
@@ -708,6 +725,189 @@ const {
   handleCancelMaterialOverwrite,
   handleInsertMaterial,
 } = useMaterial(markdown, showToast, editorRef)
+
+// ── 命令面板（⌘K）：检索草稿 / 云文章 / 本地文章 / 素材 ──
+const paletteVisible = ref(false)
+const paletteLoading = ref(false)
+const paletteShortcut = useSetting<string>('commandPaletteShortcut')
+
+/** 四类数据的统一结果集，打开时重建 */
+const paletteItems = ref<PaletteItem[]>([])
+
+/** 提示条右侧显示的快捷键文案（按平台渲染） */
+const paletteShortcutText = computed(() => displayPaletteShortcut(paletteShortcut.value))
+
+/**
+ * 解析配置里的快捷键，失败时回退默认值。
+ *
+ * 旧版本在 macOS 上会把 Option 组合字符（`˚`）存进配置，
+ * parseShortcut 判定为无效，这里统一兜底成默认快捷键，避免面板唤不起来。
+ */
+function resolvePaletteShortcut(raw: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(DEFAULT_PALETTE_SHORTCUT)
+}
+
+function displayPaletteShortcut(raw: string): string {
+  const spec = resolvePaletteShortcut(raw)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+/**
+ * 汇总四类数据源。
+ *
+ * 文章（云/本地）都取当前树结构里的节点 —— 树数据由 useGitHubTree 按
+ * articleStorageMode 决定指向 GitHub 还是本地，所以这里只需读 treeData。
+ * 全部按标题检索，不读正文。
+ *
+ * 只在用户首次输入关键词时才调用（见 onPaletteSearch）：打开面板本身
+ * 不加载数据，避免每次唤起都读一遍 IndexedDB。
+ */
+async function loadPaletteItems() {
+  paletteLoading.value = true
+  const items: PaletteItem[] = []
+
+  try {
+    // 本地草稿
+    const drafts = await DraftStorage.list()
+    for (const d of drafts) {
+      if (d.id === undefined) continue
+      items.push({
+        kind: 'draft',
+        id: String(d.id),
+        title: d.title || '未命名草稿',
+        meta: formatPaletteDate(d.updatedAt),
+        updatedAt: d.updatedAt,
+      })
+    }
+  } catch (e) {
+    console.error('[palette] 载入草稿失败', getErrorMessage(e))
+  }
+
+  try {
+    // 素材
+    const materials = await MaterialStorage.list()
+    for (const m of materials) {
+      items.push({
+        kind: 'material',
+        id: m.id,
+        title: m.name || '未命名素材',
+        meta: m.category,
+        updatedAt: m.updatedAt,
+      })
+    }
+  } catch (e) {
+    console.error('[palette] 载入素材失败', getErrorMessage(e))
+  }
+
+  // 文章：云 / 本地取决于当前存储方式
+  const articleKind: PaletteKind = articleStorageMode.value === 'local' ? 'local' : 'cloud'
+  for (const node of treeData.value) {
+    if (node.type !== 'article') continue
+    items.push({
+      kind: articleKind,
+      id: node.id,
+      title: node.title || '未命名文章',
+      meta: findPaletteParentTitle(node.parentId),
+      updatedAt: node.updatedAt,
+    })
+  }
+
+  paletteItems.value = items
+  paletteLoading.value = false
+}
+
+/** 用父节点标题作为次要信息，方便区分同名文章 */
+function findPaletteParentTitle(parentId: string | null): string | undefined {
+  if (!parentId) return undefined
+  return treeData.value.find((n) => n.id === parentId)?.title
+}
+
+function formatPaletteDate(v: string | number | undefined): string | undefined {
+  if (v === undefined) return undefined
+  const t = typeof v === 'number' ? v : Date.parse(v)
+  if (!Number.isFinite(t)) return undefined
+  const d = new Date(t)
+  return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 打开面板：不加载数据，只显示输入框、分类筛选与最近搜索 */
+function openPalette() {
+  paletteVisible.value = true
+}
+
+function closePalette() {
+  paletteVisible.value = false
+}
+
+/**
+ * 用户首次输入关键词时才拉取数据，拉过一次就复用缓存。
+ * 每次打开面板会清空缓存（见下方 watch），保证数据不会长期过期。
+ */
+let paletteLoaded = false
+async function onPaletteSearch() {
+  if (paletteLoaded) return
+  await loadPaletteItems()
+  paletteLoaded = true
+}
+
+// 每次打开都重置缓存，下次输入时重新拉取
+watch(paletteVisible, (v) => {
+  if (v) paletteLoaded = false
+})
+
+/** 执行结果项：文章/草稿走「编辑」，素材走「插入」 */
+async function onPaletteActivate(item: PaletteItem) {
+  closePalette()
+
+  if (item.kind === 'material') {
+    const material = await MaterialStorage.get(item.id)
+    if (material) handleInsertMaterial(material)
+    else showToast('素材已不存在')
+    return
+  }
+
+  if (item.kind === 'draft') {
+    // 复用草稿列表的「重新编辑」确认流程，避免直接覆盖未保存内容
+    onDraftConfirmLoad({ draftId: Number(item.id), title: item.title })
+    return
+  }
+
+  // 云 / 本地文章：与文章树点击一致，先取正文再走统一的加载确认
+  const node = treeData.value.find((n) => n.id === item.id)
+  if (!node) {
+    showToast('文章已不存在')
+    return
+  }
+  const content = await selectTreeNode(node)
+  if (content === null) {
+    showToast('加载文章失败')
+    return
+  }
+  onTreeEditArticle(content, node)
+}
+
+/**
+ * 全局快捷键监听。
+ *
+ * CodeMirror 的 keymap 只在编辑器聚焦时生效，而命令面板需要在
+ * 编辑器、预览区、侧栏任意位置都能唤起，所以用 window 级监听。
+ */
+function onPaletteGlobalKeydown(e: KeyboardEvent) {
+  const spec = resolvePaletteShortcut(paletteShortcut.value)
+  if (!spec) return
+  if (!matchShortcut(spec, e, isMac())) return
+  e.preventDefault()
+  // 已打开时再按一次关闭，与查找面板的切换手感一致
+  paletteVisible.value ? closePalette() : openPalette()
+}
 
 // ── Toolbar（表格插入、布局插入、组件对话框、标签解析）──
 const {
@@ -2042,6 +2242,17 @@ function loadDemo() {
     @close="draftListVisible = false"
     @confirm-load="onDraftConfirmLoad"
     @confirm-delete="onDraftConfirmDelete"
+  />
+
+  <!-- 命令面板（⌘K）：统一检索草稿 / 云文章 / 本地文章 / 素材 -->
+  <CommandPalette
+    :visible="paletteVisible"
+    :items="paletteItems"
+    :loading="paletteLoading"
+    :shortcut-text="paletteShortcutText"
+    @close="closePalette"
+    @activate="onPaletteActivate"
+    @search="onPaletteSearch"
   />
 
   <!-- 保存草稿弹窗 -->
