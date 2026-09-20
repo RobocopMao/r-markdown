@@ -40,6 +40,8 @@ import {
 import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
 import { DEMO_CONTENT } from '@/data/demoContent'
 import { extractTitle } from '@/utils/extractTitle'
+import { extractOutline } from '@/utils/outline'
+import { countChars } from '@/utils/charCount'
 import Editor from './components/Editor.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import { inlineFormatOptions } from '@/utils/inlineFormat'
@@ -68,13 +70,31 @@ import {
   Layers,
   Cloud,
   HardDrive,
+  ListTree,
+  Search,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
+import { findShortcutLabel, replaceShortcutLabel } from '@/utils/platform'
+import { isMac, modKeyLabel, ctrlKeyLabel, altKeyLabel, shiftKeyLabel } from '@/utils/platform'
+import {
+  parseShortcut,
+  matchShortcut,
+  shortcutDisplay,
+  DEFAULT_PALETTE_SHORTCUT,
+  type ShortcutSpec,
+  type PaletteItem,
+  type PaletteKind,
+} from '@/utils/commandPalette'
+import { DraftStorage } from '@/services/DraftStorage'
+import { MaterialStorage } from '@/services/materialStorage'
+import CommandPalette from './components/CommandPalette.vue'
 
 import Preview from './components/Preview.vue'
 import Minimap from './components/Minimap.vue'
+import OutlinePanel from './components/OutlinePanel.vue'
+import FindReplacePanel, { type FindSpec } from './components/FindReplacePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
@@ -301,6 +321,10 @@ function onBannedWordsJump(line: number) {
 
 onMounted(() => {
   refreshDrafts()
+  // 左侧目录收起时 TreeSidebar 不挂载，isConfigured 永远不会被初始化，
+  // 工具栏「仓库/本地」按钮就会消失；此时由这里主动同步一次配置状态。
+  // 目录展开时 TreeSidebar 自己的 init() 已经处理，无需重复触发加载。
+  if (!treePanelVisible.value) useGitHubTree().checkConfig()
   // 恢复云端文章关联（刷新后 selectedNode 为 null，但 ID 已持久化到 localStorage）
   const { id: storedCloudId } = restoreCloudArticlePersistence()
   if (storedCloudId) {
@@ -320,6 +344,8 @@ onMounted(() => {
   // 异步匹配草稿：根据当前标题查找已有同名草稿
   setTimeout(() => matchExistingDraft(), 300)
   window.addEventListener('resize', onResize)
+  // 命令面板快捷键：window 级监听，编辑器/预览/侧栏聚焦时都能唤起
+  window.addEventListener('keydown', onPaletteGlobalKeydown)
   // 恢复页面缩放
   if (import.meta.env.VITE_TAURI === 'true') {
     const val = getSetting<number>('pageZoom')
@@ -330,6 +356,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('keydown', onPaletteGlobalKeydown)
 })
 
 // ── 拖动调整宽度 ──
@@ -345,6 +372,118 @@ const {
   onMinimapNavigate,
   resetMinimap,
 } = useScrollSync(isMobile, mobileTab, nearBottom)
+
+// ── 文档大纲 ──
+/** 设置项：大纲总开关。关闭后工具栏按钮与右侧面板一起隐藏，只能在设置里重新开启。 */
+const outlineEnabled = useSetting<boolean>('outlineEnabled')
+/**
+ * 面板显隐：持久化的界面状态（与 treeSidebarExpanded 同类），默认收起。
+ * 工具栏按钮只切换它，避免「点一下把总开关关掉、按钮自己跟着消失」，
+ * 也避免刷新后大纲面板自行展开。
+ */
+const outlinePanelVisible = useSetting<boolean>('outlinePanelVisible')
+const outlineVisible = computed(() => outlineEnabled.value && outlinePanelVisible.value)
+const outlineItems = computed(() => (outlineVisible.value ? extractOutline(markdown.value) : []))
+
+function onToggleOutline() {
+  setSetting('outlinePanelVisible', !outlinePanelVisible.value)
+}
+
+/** 大纲条目跳转：滚动编辑器并移动光标，动画结束后同步预览 */
+function onOutlineJump(line: number) {
+  editorRef.value?.scrollToLineAndHighlight(line, { syncPreview: true, moveCursor: true })
+}
+
+// ── 查找替换 ──
+const findVisible = ref(false)
+const findPanelRef = ref<InstanceType<typeof FindReplacePanel> | null>(null)
+/** 面板回传的匹配数/当前序号相对编辑器真实状态略有延迟，但对展示足够 */
+const findTotal = ref(0)
+const findCurrent = ref(0)
+const findInvalid = ref(false)
+
+function openFind(withReplace = false) {
+  // 有选中文字就带过来当查找词，和常见编辑器一致
+  const selected = editorRef.value?.getSelectedText?.() ?? ''
+  findVisible.value = true
+  nextTick(() => {
+    findPanelRef.value?.open(withReplace)
+    if (selected) findPanelRef.value?.seed(selected)
+  })
+}
+
+function onFindChange(spec: FindSpec) {
+  editorRef.value?.applyFindSpec?.({ ...spec })
+  findTotal.value = editorRef.value?.findTotal ?? 0
+  findCurrent.value = editorRef.value?.findCurrent ?? 0
+  findInvalid.value = editorRef.value?.findInvalid ?? false
+}
+
+function onFindNext() {
+  editorRef.value?.findNext?.()
+  syncFindCounters()
+}
+
+function onFindPrev() {
+  editorRef.value?.findPrevious?.()
+  syncFindCounters()
+}
+
+function syncFindCounters() {
+  findTotal.value = editorRef.value?.findTotal ?? 0
+  findCurrent.value = editorRef.value?.findCurrent ?? 0
+  findInvalid.value = editorRef.value?.findInvalid ?? false
+}
+
+function onFindReplaceOne() {
+  editorRef.value?.replaceCurrent?.()
+  syncFindCounters()
+}
+
+function onFindReplaceAll() {
+  const n = editorRef.value?.replaceAllMatches?.() ?? 0
+  syncFindCounters()
+  if (n > 0) showToast(`已替换 ${n} 处`)
+  else showToast('没有可替换的内容')
+}
+
+function closeFind() {
+  findVisible.value = false
+  editorRef.value?.applyFindSpec?.({
+    search: '',
+    replace: '',
+    caseSensitive: false,
+    wholeWord: false,
+    regexp: false,
+  })
+  syncFindCounters()
+  editorRef.value?.focusEditor?.()
+}
+
+/**
+ * 工具栏「查找」按钮：已打开时再点则关闭，未打开时打开。
+ * 快捷键（⌘F）仍走 openFind，保持「按快捷键总是打开并聚焦」的常见行为。
+ */
+function toggleFind() {
+  findVisible.value ? closeFind() : openFind(false)
+}
+
+// ── 字数统计状态栏 ──
+/** 与 <title> 组件保持同一口径：都排除标题块的文字，避免两处「字数」对不上 */
+const statusStats = computed(() => countChars(markdown.value, { excludeTitle: true }))
+const editorCursorLine = computed(() => editorRef.value?.cursorLine ?? 1)
+const editorCursorCol = computed(() => editorRef.value?.cursorCol ?? 1)
+const editorSelectedChars = computed(() => editorRef.value?.selectedChars ?? 0)
+/** 底部状态栏总开关，可在设置里关闭 */
+const statusBarEnabled = useSetting<boolean>('statusBarEnabled')
+
+/**
+ * 查找替换的提示文案。快捷键显示名按平台区分（macOS 用 ⌘/⌥，其余用 Ctrl/Alt），
+ * 判断逻辑集中在 utils/platform.ts，这里只负责组装文案。
+ */
+const findReplaceTooltip = computed(
+  () => `查找替换（${findShortcutLabel()} 查找，${replaceShortcutLabel()} 展开替换）`,
+)
 
 let startX = 0
 let startWidth = 0
@@ -496,6 +635,7 @@ const {
   clearCloudArticlePersistence,
   articleStorageMode,
   isConfigured: cloudTreeConfigured,
+  selectNode: selectTreeNode,
 } = useGitHubTree()
 
 // 是否已配置（local 模式始终 true，github 模式需要 token+repo）
@@ -585,6 +725,189 @@ const {
   handleCancelMaterialOverwrite,
   handleInsertMaterial,
 } = useMaterial(markdown, showToast, editorRef)
+
+// ── 命令面板（⌘K）：检索草稿 / 云文章 / 本地文章 / 素材 ──
+const paletteVisible = ref(false)
+const paletteLoading = ref(false)
+const paletteShortcut = useSetting<string>('commandPaletteShortcut')
+
+/** 四类数据的统一结果集，打开时重建 */
+const paletteItems = ref<PaletteItem[]>([])
+
+/** 提示条右侧显示的快捷键文案（按平台渲染） */
+const paletteShortcutText = computed(() => displayPaletteShortcut(paletteShortcut.value))
+
+/**
+ * 解析配置里的快捷键，失败时回退默认值。
+ *
+ * 旧版本在 macOS 上会把 Option 组合字符（`˚`）存进配置，
+ * parseShortcut 判定为无效，这里统一兜底成默认快捷键，避免面板唤不起来。
+ */
+function resolvePaletteShortcut(raw: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(DEFAULT_PALETTE_SHORTCUT)
+}
+
+function displayPaletteShortcut(raw: string): string {
+  const spec = resolvePaletteShortcut(raw)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+/**
+ * 汇总四类数据源。
+ *
+ * 文章（云/本地）都取当前树结构里的节点 —— 树数据由 useGitHubTree 按
+ * articleStorageMode 决定指向 GitHub 还是本地，所以这里只需读 treeData。
+ * 全部按标题检索，不读正文。
+ *
+ * 只在用户首次输入关键词时才调用（见 onPaletteSearch）：打开面板本身
+ * 不加载数据，避免每次唤起都读一遍 IndexedDB。
+ */
+async function loadPaletteItems() {
+  paletteLoading.value = true
+  const items: PaletteItem[] = []
+
+  try {
+    // 本地草稿
+    const drafts = await DraftStorage.list()
+    for (const d of drafts) {
+      if (d.id === undefined) continue
+      items.push({
+        kind: 'draft',
+        id: String(d.id),
+        title: d.title || '未命名草稿',
+        meta: formatPaletteDate(d.updatedAt),
+        updatedAt: d.updatedAt,
+      })
+    }
+  } catch (e) {
+    console.error('[palette] 载入草稿失败', getErrorMessage(e))
+  }
+
+  try {
+    // 素材
+    const materials = await MaterialStorage.list()
+    for (const m of materials) {
+      items.push({
+        kind: 'material',
+        id: m.id,
+        title: m.name || '未命名素材',
+        meta: m.category,
+        updatedAt: m.updatedAt,
+      })
+    }
+  } catch (e) {
+    console.error('[palette] 载入素材失败', getErrorMessage(e))
+  }
+
+  // 文章：云 / 本地取决于当前存储方式
+  const articleKind: PaletteKind = articleStorageMode.value === 'local' ? 'local' : 'cloud'
+  for (const node of treeData.value) {
+    if (node.type !== 'article') continue
+    items.push({
+      kind: articleKind,
+      id: node.id,
+      title: node.title || '未命名文章',
+      meta: findPaletteParentTitle(node.parentId),
+      updatedAt: node.updatedAt,
+    })
+  }
+
+  paletteItems.value = items
+  paletteLoading.value = false
+}
+
+/** 用父节点标题作为次要信息，方便区分同名文章 */
+function findPaletteParentTitle(parentId: string | null): string | undefined {
+  if (!parentId) return undefined
+  return treeData.value.find((n) => n.id === parentId)?.title
+}
+
+function formatPaletteDate(v: string | number | undefined): string | undefined {
+  if (v === undefined) return undefined
+  const t = typeof v === 'number' ? v : Date.parse(v)
+  if (!Number.isFinite(t)) return undefined
+  const d = new Date(t)
+  return `${d.getMonth() + 1}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 打开面板：不加载数据，只显示输入框、分类筛选与最近搜索 */
+function openPalette() {
+  paletteVisible.value = true
+}
+
+function closePalette() {
+  paletteVisible.value = false
+}
+
+/**
+ * 用户首次输入关键词时才拉取数据，拉过一次就复用缓存。
+ * 每次打开面板会清空缓存（见下方 watch），保证数据不会长期过期。
+ */
+let paletteLoaded = false
+async function onPaletteSearch() {
+  if (paletteLoaded) return
+  await loadPaletteItems()
+  paletteLoaded = true
+}
+
+// 每次打开都重置缓存，下次输入时重新拉取
+watch(paletteVisible, (v) => {
+  if (v) paletteLoaded = false
+})
+
+/** 执行结果项：文章/草稿走「编辑」，素材走「插入」 */
+async function onPaletteActivate(item: PaletteItem) {
+  closePalette()
+
+  if (item.kind === 'material') {
+    const material = await MaterialStorage.get(item.id)
+    if (material) handleInsertMaterial(material)
+    else showToast('素材已不存在')
+    return
+  }
+
+  if (item.kind === 'draft') {
+    // 复用草稿列表的「重新编辑」确认流程，避免直接覆盖未保存内容
+    onDraftConfirmLoad({ draftId: Number(item.id), title: item.title })
+    return
+  }
+
+  // 云 / 本地文章：与文章树点击一致，先取正文再走统一的加载确认
+  const node = treeData.value.find((n) => n.id === item.id)
+  if (!node) {
+    showToast('文章已不存在')
+    return
+  }
+  const content = await selectTreeNode(node)
+  if (content === null) {
+    showToast('加载文章失败')
+    return
+  }
+  onTreeEditArticle(content, node)
+}
+
+/**
+ * 全局快捷键监听。
+ *
+ * CodeMirror 的 keymap 只在编辑器聚焦时生效，而命令面板需要在
+ * 编辑器、预览区、侧栏任意位置都能唤起，所以用 window 级监听。
+ */
+function onPaletteGlobalKeydown(e: KeyboardEvent) {
+  const spec = resolvePaletteShortcut(paletteShortcut.value)
+  if (!spec) return
+  if (!matchShortcut(spec, e, isMac())) return
+  e.preventDefault()
+  // 已打开时再按一次关闭，与查找面板的切换手感一致
+  paletteVisible.value ? closePalette() : openPalette()
+}
 
 // ── Toolbar（表格插入、布局插入、组件对话框、标签解析）──
 const {
@@ -1022,10 +1345,10 @@ function loadDemo() {
           }"
         >
           <div
-            class="panel-header hidden md:flex items-center justify-between px-2 py-2 border-b text-xs font-semibold shrink-0"
+            class="panel-header hidden md:flex items-center gap-x-2 px-2 py-2 border-b text-xs font-semibold shrink-0"
             style="background: var(--bg-primary)"
           >
-            <span class="flex flex-wrap items-center gap-2">
+            <span class="flex flex-wrap items-center gap-2 flex-auto min-w-0">
               <!-- 操作按钮组：图标+文字 -->
               <span class="flex flex-wrap items-center gap-1">
                 <!-- 基础语法 -->
@@ -1521,7 +1844,9 @@ function loadDemo() {
                 </BaseTooltip>
               </span>
             </span>
-            <span class="flex flex-col lg:flex-row lg:items-center gap-1">
+            <span
+              class="flex flex-row flex-wrap items-center justify-end gap-1 ml-auto shrink min-w-[152px]"
+            >
               <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
                 <button
                   class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
@@ -1576,6 +1901,29 @@ function loadDemo() {
                   <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
                 </button>
               </BaseTooltip>
+              <BaseTooltip :text="findVisible ? '关闭查找' : findReplaceTooltip">
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="toggleFind"
+                >
+                  <Search :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span :style="findVisible ? { color: colors.accent } : undefined">查找</span>
+                </button>
+              </BaseTooltip>
+              <BaseTooltip
+                v-if="outlineEnabled"
+                :text="outlinePanelVisible ? '隐藏大纲' : '显示大纲'"
+              >
+                <button
+                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                  @click="onToggleOutline"
+                >
+                  <ListTree :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                  <span :style="outlinePanelVisible ? { color: colors.accent } : undefined"
+                    >大纲</span
+                  >
+                </button>
+              </BaseTooltip>
             </span>
           </div>
           <!-- 图床上传进度 -->
@@ -1594,7 +1942,8 @@ function loadDemo() {
               />
             </div>
           </div>
-          <div class="flex flex-1 overflow-hidden relative">
+          <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
+          <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
             <Editor
               ref="editorRef"
               class="flex-1"
@@ -1609,6 +1958,7 @@ function loadDemo() {
               @drop-image="handleDropImage"
               @drop-multiple-images="handleDropMultipleImages"
               @drop-non-image="handleDropNonImage"
+              @open-find="openFind"
             />
             <input
               ref="imageInputRef"
@@ -1645,6 +1995,45 @@ function loadDemo() {
               @close="onTagDialogClose"
               @update="onTagDialogUpdate"
             />
+            <OutlinePanel
+              v-if="outlineVisible && !isMobile"
+              :items="outlineItems"
+              :active-line="editorCursorLine"
+              @jump="onOutlineJump"
+            />
+            <!-- 查找替换面板：浮在编辑器右上角 -->
+            <FindReplacePanel
+              ref="findPanelRef"
+              :visible="findVisible"
+              :total="findTotal"
+              :current="findCurrent"
+              :invalid="findInvalid"
+              @change="onFindChange"
+              @next="onFindNext"
+              @prev="onFindPrev"
+              @replace-one="onFindReplaceOne"
+              @replace-all="onFindReplaceAll"
+              @close="closeFind"
+            />
+          </div>
+          <!-- 字数统计状态栏 -->
+          <div
+            v-if="statusBarEnabled"
+            class="hidden md:flex items-center justify-between px-3 h-7 shrink-0 border-t border-[var(--border-color)] text-[11px]"
+            style="background: var(--bg-primary); color: var(--text-secondary)"
+          >
+            <span class="opacity-70">行 {{ editorCursorLine }}，列 {{ editorCursorCol }}</span>
+            <span class="flex items-center gap-3">
+              <span
+                v-if="editorSelectedChars > 0"
+                class="font-medium"
+                :style="{ color: colors.accent }"
+              >
+                已选 {{ editorSelectedChars }} 字
+              </span>
+              <span class="opacity-70">字数 {{ statusStats.chars }}</span>
+              <span class="opacity-70">约 {{ statusStats.minutes }} 分钟读完</span>
+            </span>
           </div>
         </div>
 
@@ -1853,6 +2242,17 @@ function loadDemo() {
     @close="draftListVisible = false"
     @confirm-load="onDraftConfirmLoad"
     @confirm-delete="onDraftConfirmDelete"
+  />
+
+  <!-- 命令面板（⌘K）：统一检索草稿 / 云文章 / 本地文章 / 素材 -->
+  <CommandPalette
+    :visible="paletteVisible"
+    :items="paletteItems"
+    :loading="paletteLoading"
+    :shortcut-text="paletteShortcutText"
+    @close="closePalette"
+    @activate="onPaletteActivate"
+    @search="onPaletteSearch"
   />
 
   <!-- 保存草稿弹窗 -->

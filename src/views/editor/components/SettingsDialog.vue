@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
@@ -28,6 +28,22 @@ import { useTheme } from '@/composables/useTheme'
 import ImageCacheDialog from './ImageCacheDialog.vue'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
 import { getErrorMessage } from '@/utils/helpers'
+import {
+  isMac,
+  modKeyLabel,
+  ctrlKeyLabel,
+  altKeyLabel,
+  shiftKeyLabel,
+  modifierKeyList,
+} from '@/utils/platform'
+import {
+  parseShortcut,
+  formatShortcutSpec,
+  specFromEvent,
+  shortcutDisplay,
+  DEFAULT_PALETTE_SHORTCUT,
+  type ShortcutSpec,
+} from '@/utils/commandPalette'
 import {
   activeGithubWorkspaceId,
   activeLocalWorkspaceId,
@@ -169,9 +185,72 @@ function saveDiskImageNaming(val: string) {
 const minimapEnabled = ref(getSetting<boolean>('minimapEnabled'))
 watch(minimapEnabled, (val) => setSetting('minimapEnabled', val))
 
+// ── 文档大纲 ──
+const outlineEnabled = ref(getSetting<boolean>('outlineEnabled'))
+watch(outlineEnabled, (val) => setSetting('outlineEnabled', val))
+
+// ── 底部状态栏 ──
+const statusBarEnabled = ref(getSetting<boolean>('statusBarEnabled'))
+watch(statusBarEnabled, (val) => setSetting('statusBarEnabled', val))
+
+// ── 命令面板 ──
+/** 持久化的是 'Mod+K' 这类描述串，展示时按平台渲染 */
+const commandPaletteShortcut = ref(getSetting<string>('commandPaletteShortcut'))
+const shortcutRecording = ref(false)
+const shortcutButtonRef = ref<HTMLButtonElement | null>(null)
+
+const commandPaletteShortcutText = computed(() => displayShortcut(commandPaletteShortcut.value))
+
+/** 解析配置里的快捷键，失败（如旧版存的 Option 组合字符）时回退默认值 */
+function resolveShortcut(raw: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(DEFAULT_PALETTE_SHORTCUT)
+}
+
+function displayShortcut(raw: string): string {
+  const spec = resolveShortcut(raw)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+function startShortcutRecording() {
+  shortcutRecording.value = true
+  // keydown 需要焦点，点击后主动聚焦按钮本身（否则按键会落到别处）
+  nextTick(() => shortcutButtonRef.value?.focus())
+}
+
+/**
+ * 录制新的快捷键。
+ * Esc 恢复默认；按下合法组合则保存；其余按键一律拦截，避免误触其他控件。
+ */
+function onShortcutKeydown(e: KeyboardEvent) {
+  if (!shortcutRecording.value) return
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (e.key === 'Escape') {
+    shortcutRecording.value = false
+    commandPaletteShortcut.value = DEFAULT_PALETTE_SHORTCUT
+    setSetting('commandPaletteShortcut', DEFAULT_PALETTE_SHORTCUT)
+    return
+  }
+
+  const spec = specFromEvent(e, isMac())
+  if (!spec) return // 仅按修饰键或无修饰键，继续等待
+  shortcutRecording.value = false
+  const text = formatShortcutSpec(spec)
+  commandPaletteShortcut.value = text
+  setSetting('commandPaletteShortcut', text)
+}
+
 // ── 编辑器主题 ──
 const editorTheme = ref(getSetting<string>('editorTheme'))
-
 function saveEditorTheme(theme: string) {
   editorTheme.value = theme
   setSetting('editorTheme', theme)
@@ -931,6 +1010,79 @@ async function manualCheckUpdate() {
         </p>
       </section>
 
+      <!-- 文档大纲 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">文档大纲</h3>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] text-[#666] dark:text-[#999]">启用编辑器右侧标题大纲</span>
+          <button
+            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+            :class="outlineEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+            role="switch"
+            :aria-checked="outlineEnabled"
+            @click="outlineEnabled = !outlineEnabled"
+          >
+            <span
+              class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+              :class="outlineEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+            />
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666]">
+          关闭后工具栏「大纲」按钮与右侧面板一起隐藏；开启后用工具栏按钮展开或收起
+        </p>
+      </section>
+
+      <!-- 底部状态栏 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+          底部状态栏
+        </h3>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] text-[#666] dark:text-[#999]">显示编辑器底部状态栏</span>
+          <button
+            class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+            :class="statusBarEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+            role="switch"
+            :aria-checked="statusBarEnabled"
+            @click="statusBarEnabled = !statusBarEnabled"
+          >
+            <span
+              class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+              :class="statusBarEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+            />
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666]">
+          显示光标所在行列、选中字数、总字数与预估阅读时长
+        </p>
+      </section>
+
+      <!-- 命令面板 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">命令面板</h3>
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[12px] text-[#666] dark:text-[#999]">快捷键</span>
+          <button
+            ref="shortcutButtonRef"
+            class="min-w-[112px] rounded-lg border px-3 py-1.5 text-[12px] cursor-pointer transition-colors"
+            :class="
+              shortcutRecording
+                ? 'border-[var(--accent)] text-[var(--accent)]'
+                : 'border-[#e5e5e5] text-[#333] dark:border-[#444] dark:text-[#e5e5e5]'
+            "
+            @click="startShortcutRecording"
+            @keydown="onShortcutKeydown"
+          >
+            {{ shortcutRecording ? '请按下快捷键…' : commandPaletteShortcutText }}
+          </button>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666]">
+          用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
+          {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
+        </p>
+      </section>
+
       <!-- 编辑器主题 -->
       <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
@@ -1136,7 +1288,9 @@ async function manualCheckUpdate() {
         <!-- 压缩质量 -->
         <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <div class="flex items-center justify-between mb-1">
-            <label class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">压缩质量</label>
+            <label class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]"
+              >压缩质量</label
+            >
             <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
               >{{ compressQuality }}%</span
             >
@@ -1163,7 +1317,9 @@ async function manualCheckUpdate() {
 
         <!-- 磁盘图片上传名称 -->
         <div v-if="isTauri" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">磁盘图片上传名称</h3>
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            磁盘图片上传名称
+          </h3>
           <select
             :value="diskImageNaming"
             class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
@@ -1174,7 +1330,8 @@ async function manualCheckUpdate() {
             <option value="datetime">按日期时间（年月日时分秒）</option>
           </select>
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
-            磁盘存储模式下，上传图片的命名规则：原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如 20260818231010）。
+            磁盘存储模式下，上传图片的命名规则：原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如
+            20260818231010）。
           </p>
         </div>
 
@@ -1373,12 +1530,11 @@ async function manualCheckUpdate() {
           </p>
 
           <!-- 本地存储目录管理（仅 local 模式） -->
-          <div
-            v-if="articleStorageMode === 'local'"
-            class="mt-4 rounded-lg"
-          >
+          <div v-if="articleStorageMode === 'local'" class="mt-4 rounded-lg">
             <div class="flex items-center justify-between mb-2">
-              <label class="text-[12px] text-[#666] dark:text-[#999] block">本地工作区（多目录）</label>
+              <label class="text-[12px] text-[#666] dark:text-[#999] block"
+                >本地工作区（多目录）</label
+              >
               <span class="text-[11px]" style="color: var(--text-secondary)"
                 >{{ localWorkspaces.length }} 个</span
               >
@@ -1402,7 +1558,10 @@ async function manualCheckUpdate() {
                 <span
                   v-if="isLocalActive(ws.id)"
                   class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                  style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
+                  style="
+                    background: var(--accent-light, rgba(77, 166, 255, 0.12));
+                    color: var(--accent);
+                  "
                   >当前</span
                 >
                 <span class="ml-auto flex items-center gap-1">
@@ -1470,7 +1629,8 @@ async function manualCheckUpdate() {
               添加工作区
             </button>
             <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
-              新增工作区只需选择目录（不存在时自动创建 tree.json / articles / images），移除仅从列表移出，不会删除任何文件。
+              新增工作区只需选择目录（不存在时自动创建 tree.json / articles /
+              images），移除仅从列表移出，不会删除任何文件。
             </p>
             <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
               {{ dirError }}
@@ -1481,8 +1641,9 @@ async function manualCheckUpdate() {
         <!-- GitHub 仓库配置（仅 github 模式显示） -->
         <template v-if="articleStorageMode === 'github'">
           <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
-            GitHub 私有仓库（文章仓库存储），支持多个仓库/分支/账号，<strong>每个仓库单独配置</strong
-            >Personal Access Token（<code class="text-[var(--accent)]">repo</code>
+            GitHub
+            私有仓库（文章仓库存储），支持多个仓库/分支/账号，<strong>每个仓库单独配置</strong>Personal
+            Access Token（<code class="text-[var(--accent)]">repo</code>
             scope）。
           </p>
 
@@ -1496,7 +1657,8 @@ async function manualCheckUpdate() {
               color: #b08017;
             "
           >
-            由于v0.3.9版本文章存储升级为工作区（可绑定多个仓库）。若你刚从旧版本升级，旧仓库 和 Token 可能未自动迁移，请在下方填补对应仓库 和 Token。
+            由于v0.3.9版本文章存储升级为工作区（可绑定多个仓库）。若你刚从旧版本升级，旧仓库 和
+            Token 可能未自动迁移，请在下方填补对应仓库 和 Token。
           </div>
 
           <!-- 仓库工作区列表 -->
@@ -1518,7 +1680,10 @@ async function manualCheckUpdate() {
                 <span
                   v-if="isCloudActive(ws.id)"
                   class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                  style="background: var(--accent-light, rgba(77,166,255,0.12)); color: var(--accent)"
+                  style="
+                    background: var(--accent-light, rgba(77, 166, 255, 0.12));
+                    color: var(--accent);
+                  "
                   >当前</span
                 >
                 <span class="ml-auto flex items-center gap-1">
@@ -1628,9 +1793,7 @@ async function manualCheckUpdate() {
         </svg>
         <BaseTooltip placement="bottom" :delay="300" :content-width="300">
           <span class="relative inline-block">
-            <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">
-              R-Markdown
-            </h3>
+            <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">R-Markdown</h3>
             <span class="sponsor-bubble">
               <span
                 class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
@@ -1675,9 +1838,7 @@ async function manualCheckUpdate() {
           </svg>
           GitHub 仓库
         </button>
-        <p class="m-0 mt-2 text-[11px] text-[#bbb] dark:text-[#555]">
-          Copyright © 2026 R-Markdown
-        </p>
+        <p class="m-0 mt-2 text-[11px] text-[#bbb] dark:text-[#555]">Copyright © 2026 R-Markdown</p>
       </section>
 
       <!-- 版本更新 -->

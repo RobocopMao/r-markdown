@@ -1,4 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
+import type { FindSpec } from '@/views/editor/components/FindReplacePanel.vue'
 import {
   Highlighter,
   Sparkles,
@@ -85,12 +86,39 @@ export const MAX_ROWS = 3
 
 export interface EditorExposed {
   insertAtCursor: (text: string) => void
-  scrollToLineAndHighlight: (lineNo: number) => void
+  scrollToLineAndHighlight: (
+    lineNo: number,
+    opts?: { syncPreview?: boolean; moveCursor?: boolean },
+  ) => void
   isAtLineStart: boolean
   hasInlineSelection: boolean
   isInsideTag: boolean
   applyInlineFormat: (syntax: string, wrapType?: 'delim' | 'tag') => void
   replaceRange: (from: number, to: number, text: string) => void
+  /** 光标所在行号（1-based） */
+  cursorLine: number
+  /** 光标所在列号（1-based） */
+  cursorCol: number
+  /** 当前选中的字符数，无选区时为 0 */
+  selectedChars: number
+  /** 取编辑器当前选中的单行文字，供查找面板预填（无有效选区时返回 ''） */
+  getSelectedText: () => string
+  /** 应用查找条件并重算匹配高亮 */
+  applyFindSpec: (spec: FindSpec) => void
+  findNext: () => void
+  findPrevious: () => void
+  /** 替换当前命中项，返回是否发生替换 */
+  replaceCurrent: () => boolean
+  /** 全部替换，返回替换次数 */
+  replaceAllMatches: () => number
+  /** 匹配总数 */
+  findTotal: number
+  /** 当前命中序号（1-based，0 表示未落在匹配上） */
+  findCurrent: number
+  /** 查找条件非法（如正则语法错误） */
+  findInvalid: boolean
+  /** 把焦点交还编辑器 */
+  focusEditor: () => void
 }
 
 export interface TagInfo {
