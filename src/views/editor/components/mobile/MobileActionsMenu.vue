@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
       class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + AI排版示例 + 加载示例 -->
+      <!-- 编辑模式：扩展组件 + AI排版skill + 加载示例 -->
       <template v-if="mode === 'editor'">
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -91,7 +91,7 @@ onBeforeUnmount(() => {
           @click.prevent="handleAction(openAiDemo)"
         >
           <Bot :size="14" />
-          AI排版示例
+          AI排版skill
         </a>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
