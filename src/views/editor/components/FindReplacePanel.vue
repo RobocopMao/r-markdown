@@ -73,13 +73,40 @@ const panelStyle = computed(() => {
   return { left: '50%', top: '72px' }
 })
 
-/** 把面板夹在视口内（四周留 8px 余量），保证永远可见可点 */
+/**
+ * 页面缩放比（客户端 Tauri `setPageZoom` 会改变它，浏览器下通常为 1）。
+ *
+ * 为什么需要：`getBoundingClientRect()` 返回**缩放后**的坐标，
+ * 而元素行内 `left/top` 用的是**未缩放**的 CSS px。二者在缩放下相差一个比例，
+ * 直接互用会让面板落到视口外（客户端表现为「跑到窗口底部」）。
+ *
+ * 实测方式：同一元素的 rect 宽度与布局宽度（offsetWidth）之比即为缩放比，
+ * 两者都是自身的量，不受面板实际尺寸影响；浏览器下为 1，逻辑自动退化为原行为。
+ */
+function getZoomRatio(): number {
+  const panel = panelRef.value
+  if (!panel || !panel.offsetWidth) return 1
+  const ratio = panel.getBoundingClientRect().width / panel.offsetWidth
+  return Number.isFinite(ratio) && ratio > 0 ? ratio : 1
+}
+
+/**
+ * 把 getBoundingClientRect 得到的视口坐标，换算成行内 left/top 所需的 CSS px。
+ * 缩放为 1 时原样返回，故浏览器行为完全不变。
+ */
+function toInlinePx(rectValue: number, ratio: number): number {
+  return ratio === 1 ? rectValue : rectValue / ratio
+}
+
+/** 把面板夹在视口内（四周留 8px 余量），保证永远可见可点。入参与返回均为 CSS px */
 function clampToViewport(x: number, y: number) {
   const panel = panelRef.value
   if (!panel) return { x, y }
+  const ratio = getZoomRatio()
   const w = panel.offsetWidth || 420
   const h = panel.offsetHeight || 80
   const margin = 8
+  // innerWidth/innerHeight 是未缩放 CSS px，与行内 left/top 同一空间
   const maxX = Math.max(margin, window.innerWidth - w - margin)
   const maxY = Math.max(margin, window.innerHeight - h - margin)
   return {
@@ -97,14 +124,17 @@ function onDragStart(e: PointerEvent) {
   e.preventDefault()
   e.stopPropagation()
 
-  // 指针相对面板左上角的偏移，拖动时保持不跳变
+  // 指针相对面板左上角的偏移（视口坐标，缩放后）
   const rect = panel.getBoundingClientRect()
   const offsetX = e.clientX - rect.left
   const offsetY = e.clientY - rect.top
 
   const onMove = (ev: PointerEvent) => {
-    const next = clampToViewport(ev.clientX - offsetX, ev.clientY - offsetY)
-    pos.value = next
+    // clientX/Y 与 rect 同属「缩放后视口坐标」，先算出视口坐标再换算成行内 CSS px
+    const ratio = getZoomRatio()
+    const rawX = ev.clientX - offsetX
+    const rawY = ev.clientY - offsetY
+    pos.value = clampToViewport(toInlinePx(rawX, ratio), toInlinePx(rawY, ratio))
   }
 
   const onUp = () => {
@@ -115,8 +145,9 @@ function onDragStart(e: PointerEvent) {
   }
 
   dragging.value = true
-  // 立即把当前位置固化为视口坐标，避免首次移动时瞬移
-  pos.value = clampToViewport(rect.left, rect.top)
+  // 立即把当前位置固化为行内坐标，避免首次移动时瞬移
+  const ratio = getZoomRatio()
+  pos.value = clampToViewport(toInlinePx(rect.left, ratio), toInlinePx(rect.top, ratio))
   window.addEventListener('pointermove', onMove)
   window.addEventListener('pointerup', onUp)
   window.addEventListener('pointercancel', onUp)
@@ -127,15 +158,23 @@ function resetPosition() {
   pos.value = null
 }
 
-/** 计算默认锚点：编辑器容器右上角；容器不可用时退回页面右上角 */
+/**
+ * 计算默认锚点：编辑器容器右上角；容器不可用时退回页面右上角。
+ *
+ * 必须在面板**可见且尺寸已确定**时调用：v-show 隐藏时 offsetWidth 为 0，
+ * 会退化成 fallback 宽度，算出偏移量并把面板夹到视口边缘（客户端页面缩放
+ * 下尤其明显，表现为面板跑到窗口底部）。
+ */
 function computeAnchor() {
   const panel = panelRef.value
   // Teleport 到 body 后 offsetParent 为 body，需通过父组件传入的选择器定位编辑器区域
   const host = document.querySelector('[data-find-anchor]') as HTMLElement | null
+  const ratio = getZoomRatio()
   const w = panel?.offsetWidth || 420
   if (host) {
     const r = host.getBoundingClientRect()
-    return clampToViewport(r.right - w - 12, r.top + 12)
+    // rect 是缩放后视口坐标，换算成行内 left/top 所需的 CSS px
+    return clampToViewport(toInlinePx(r.right, ratio) - w - 12, toInlinePx(r.top, ratio) + 12)
   }
   return clampToViewport(window.innerWidth - w - 12, 72)
 }
@@ -158,14 +197,43 @@ function onWindowResize() {
   resizeTimer = setTimeout(reclamp, 120)
 }
 
+/**
+ * 面板可见后再定位。
+ *
+ * 不能只在 onMounted 里算一次：
+ * - onMounted 时面板仍是 v-show 隐藏的，offsetWidth 为 0，宽度取到 fallback
+ * - 客户端有页面缩放（Tauri setPageZoom），父组件在 onMounted 里才下发缩放，
+ *   子组件 onMounted 早于父组件，此时坐标仍是缩放前的
+ * 参考 BaseTooltip：它在每次显示时才 getBoundingClientRect，所以一直正常。
+ */
+let syncTimer: ReturnType<typeof setTimeout> | null = null
+
+async function syncPosition() {
+  if (dragging.value) return
+  // 等 DOM 更新后 v-show 才真正显示，此时才能量到真实尺寸
+  await nextTick()
+  const measure = () => {
+    const panel = panelRef.value
+    if (!panel || !panel.offsetWidth) return
+    // 拖动过的面板尊重用户位置，不再重算
+    if (pos.value) return
+    anchor.value = computeAnchor()
+  }
+  // 先用 rAF 让浏览器完成一次布局，再量一次；随后延迟补测，
+  // 覆盖客户端页面缩放/字体加载等导致布局稍后稳定的情况。
+  requestAnimationFrame(measure)
+  if (syncTimer) clearTimeout(syncTimer)
+  syncTimer = setTimeout(measure, 120)
+}
+
 onMounted(() => {
-  anchor.value = computeAnchor()
   window.addEventListener('resize', onWindowResize)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onWindowResize)
   if (resizeTimer) clearTimeout(resizeTimer)
+  if (syncTimer) clearTimeout(syncTimer)
   dragging.value = false
 })
 
@@ -181,6 +249,19 @@ function currentSpec(): FindSpec {
 
 // 任一条件变化即同步给编辑器
 watch([search, replace, caseSensitive, wholeWord, regexp], () => emit('change', currentSpec()))
+
+/**
+ * 每次显示时重新定位。
+ *
+ * 覆盖不走 open() 的入口（如工具栏按钮直接切 visible），并保证在页面缩放、
+ * 布局变化之后重新量取真实坐标。拖动过的面板（pos 有值）不重算，尊重用户位置。
+ */
+watch(
+  () => props.visible,
+  (v) => {
+    if (v && !pos.value) void syncPosition()
+  },
+)
 
 /** 计数文案：正则非法 > 未输入 > 无结果 > 第 n/m 项 */
 const counterText = computed(() => {
@@ -216,6 +297,7 @@ function onReplaceKeydown(e: KeyboardEvent) {
 async function open(withReplace = false) {
   if (withReplace) showReplace.value = true
   await nextTick()
+  await syncPosition()
   searchInput.value?.focus()
   searchInput.value?.select()
 }
