@@ -256,6 +256,16 @@ function saveEditorTheme(theme: string) {
   setSetting('editorTheme', theme)
 }
 
+// ── 编辑区字号（仅影响编辑器显示，不影响预览与导出排版）──
+const editorFontSize = ref(getSetting<number>('editorFontSize'))
+function saveEditorFontSize(val: number) {
+  editorFontSize.value = val
+  setSetting('editorFontSize', val)
+}
+function resetEditorFontSize() {
+  saveEditorFontSize(13)
+}
+
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
 function saveParaFontSize(val: number) {
   paraFontSize.value = val
@@ -1080,6 +1090,42 @@ async function manualCheckUpdate() {
         <p class="text-[11px] text-[#999] dark:text-[#666]">
           用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
           {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
+        </p>
+      </section>
+
+      <!-- 编辑区字号 -->
+      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">编辑区字号</h3>
+          <button
+            class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+            @click="resetEditorFontSize"
+          >
+            恢复默认
+          </button>
+        </div>
+        <div class="flex items-center justify-between mb-1">
+          <label class="text-[12px] text-[#666] dark:text-[#999]">字号</label>
+          <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+            >{{ editorFontSize }}px</span
+          >
+        </div>
+        <input
+          type="range"
+          min="11"
+          max="20"
+          step="1"
+          :value="editorFontSize"
+          class="compress-slider w-full cursor-pointer"
+          @input="saveEditorFontSize(Number(($event.target as HTMLInputElement).value))"
+        />
+        <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+          <span>11px</span>
+          <span>20px</span>
+        </div>
+        <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
+          仅调整左侧编辑区（Markdown
+          输入区）的显示字号，不影响预览效果与导出排版。行距会随字号等比放大。
         </p>
       </section>
 

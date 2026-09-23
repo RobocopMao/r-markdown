@@ -73,6 +73,11 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   /** 编辑器主题 */
   editorTheme: { default: 'default' },
   /**
+   * 编辑区字号（px），仅影响 CodeMirror 输入区的显示，
+   * 与「普通段落」的 paraFontSize（预览/导出的排版字号）相互独立。
+   */
+  editorFontSize: { default: 13 },
+  /**
    * 命令面板快捷键（类 Spotlight 的全局检索：草稿/云文章/本地文章/素材）。
    * Mod 表示平台主修饰键（macOS 的 Cmd、其余平台的 Ctrl），与 CodeMirror 语义一致。
    */
