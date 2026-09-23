@@ -919,6 +919,7 @@ const {
   rowGridHovered,
   isColCellActive,
   isRowCellActive,
+  resetGridSelection,
   insertColumnLayout,
   insertColumnStack,
   insertRowStack,
@@ -1379,6 +1380,7 @@ function loadDemo() {
                         :class="
                           editorRef?.isAtLineStart ? 'group/table' : 'cursor-not-allowed opacity-40'
                         "
+                        @mouseenter="resetGridSelection"
                       >
                         <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none">
                           <component
@@ -1430,7 +1432,11 @@ function loadDemo() {
                           <div
                             class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
                           >
-                            {{ tableGridHovered.rows }} 行 × {{ tableGridHovered.cols }} 列
+                            {{
+                              tableGridHovered.rows === 0
+                                ? '选择行列'
+                                : `${tableGridHovered.rows} 行 × ${tableGridHovered.cols} 列`
+                            }}
                           </div>
                         </div>
                       </div>
@@ -1477,6 +1483,7 @@ function loadDemo() {
                       :class="
                         editorRef?.isAtLineStart ? 'group/col' : 'cursor-not-allowed opacity-40'
                       "
+                      @mouseenter="resetGridSelection"
                     >
                       <div
                         class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
@@ -1519,7 +1526,7 @@ function loadDemo() {
                         <div
                           class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
                         >
-                          {{ colGridHovered }} 列均分
+                          {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列均分` }}
                         </div>
                       </div>
                     </div>
@@ -1531,6 +1538,7 @@ function loadDemo() {
                           ? 'group/colstack'
                           : 'cursor-not-allowed opacity-40'
                       "
+                      @mouseenter="resetGridSelection"
                     >
                       <div
                         class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
@@ -1573,7 +1581,7 @@ function loadDemo() {
                         <div
                           class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
                         >
-                          {{ colGridHovered }} 列独立
+                          {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列独立` }}
                         </div>
                       </div>
                     </div>
@@ -1583,6 +1591,7 @@ function loadDemo() {
                       :class="
                         editorRef?.isAtLineStart ? 'group/row' : 'cursor-not-allowed opacity-40'
                       "
+                      @mouseenter="resetGridSelection"
                     >
                       <div
                         class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
@@ -1625,7 +1634,7 @@ function loadDemo() {
                         <div
                           class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
                         >
-                          {{ rowGridHovered }} 行纵向堆叠
+                          {{ rowGridHovered === 0 ? '选择行数' : `${rowGridHovered} 行纵向堆叠` }}
                         </div>
                       </div>
                     </div>
