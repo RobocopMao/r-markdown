@@ -25,6 +25,7 @@ import {
 import { testConnection } from '@/services/githubUploader'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { useTheme } from '@/composables/useTheme'
+import { useIsMobileWeb } from '@/composables/useIsMobile'
 import ImageCacheDialog from './ImageCacheDialog.vue'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
 import { getErrorMessage } from '@/utils/helpers'
@@ -75,6 +76,8 @@ const emit = defineEmits<{
 const ZOOM_PRESETS = [50, 75, 80, 90, 100, 110, 125, 150, 175, 200]
 const SAVE_INTERVAL_PRESETS = [0.5, 1, 2, 3, 5, 8, 10]
 const isTauri = import.meta.env.VITE_TAURI === 'true'
+/** 移动端 Web：无本地存储，图片相关只提供 GitHub/乐塔图床（桌面客户端不受影响） */
+const isMobile = useIsMobileWeb()
 const { colors } = useTheme()
 
 const selectChevronStyle = {
@@ -149,7 +152,7 @@ function saveLetuStorageId(val: string) {
   letaTestError.value = ''
 }
 
-// ── 粘贴/拖拽上传方式 ──
+// ── 粘贴/拖拽上传方式（移动端固定走 GitHub 图床，此项不展示）──
 const pasteDropMode = ref(getSetting<string>('pasteDropMode'))
 
 function savePasteDropMode(val: string) {
@@ -736,7 +739,7 @@ async function manualCheckUpdate() {
     @close="emit('close')"
   >
     <template #header>
-      <div class="flex gap-1">
+      <div class="settings-tabs flex shrink-0 gap-1">
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
           :class="
@@ -993,8 +996,8 @@ async function manualCheckUpdate() {
         </div>
       </section>
 
-      <!-- Minimap 缩略图 -->
-      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+      <!-- Minimap 缩略图（移动端预览区不显示缩略图） -->
+      <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
           预览缩略图
         </h3>
@@ -1020,8 +1023,8 @@ async function manualCheckUpdate() {
         </p>
       </section>
 
-      <!-- 文档大纲 -->
-      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+      <!-- 文档大纲（移动端不显示右侧大纲面板） -->
+      <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">文档大纲</h3>
         <div class="flex items-center justify-between mb-2">
           <span class="text-[12px] text-[#666] dark:text-[#999]">启用编辑器右侧标题大纲</span>
@@ -1043,8 +1046,8 @@ async function manualCheckUpdate() {
         </p>
       </section>
 
-      <!-- 底部状态栏 -->
-      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+      <!-- 底部状态栏（移动端不显示状态栏） -->
+      <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
           底部状态栏
         </h3>
@@ -1068,8 +1071,8 @@ async function manualCheckUpdate() {
         </p>
       </section>
 
-      <!-- 命令面板 -->
-      <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+      <!-- 命令面板（移动端无物理键盘，快捷键设置无意义） -->
+      <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
         <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">命令面板</h3>
         <div class="flex items-center justify-between mb-2">
           <span class="text-[12px] text-[#666] dark:text-[#999]">快捷键</span>
@@ -1201,89 +1204,91 @@ async function manualCheckUpdate() {
       </div>
 
       <section v-if="hostingTab === 'upload'">
-        <!-- 上传方式 -->
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-          {{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}
-        </h3>
-        <div class="flex gap-2">
-          <label
-            class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="
-              pasteDropMode === 'local'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-            "
-          >
-            <input
-              type="radio"
-              class="sr-only"
-              value="local"
-              :checked="pasteDropMode === 'local'"
-              @change="savePasteDropMode('local')"
-            />
-            本地存储
-          </label>
-          <label
-            v-if="isTauri"
-            class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="
-              pasteDropMode === 'disk'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-            "
-          >
-            <input
-              type="radio"
-              class="sr-only"
-              value="disk"
-              :checked="pasteDropMode === 'disk'"
-              @change="savePasteDropMode('disk')"
-            />
-            磁盘存储
-          </label>
-          <label
-            class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="
-              pasteDropMode === 'github'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-            "
-          >
-            <input
-              type="radio"
-              class="sr-only"
-              value="github"
-              :checked="pasteDropMode === 'github'"
-              @change="savePasteDropMode('github')"
-            />
-            GitHub 图床
-          </label>
-          <label
-            class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-            :class="
-              pasteDropMode === 'leta'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-            "
-          >
-            <input
-              type="radio"
-              class="sr-only"
-              value="leta"
-              :checked="pasteDropMode === 'leta'"
-              @change="savePasteDropMode('leta')"
-            />
-            乐塔图床
-          </label>
-        </div>
-        <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
-          本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
-          磁盘存储：图片保存到文章存储目录下的
-          <code class="text-[var(--accent)]">images/</code>
-          子目录，文件名规则可在下方配置，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
-          GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
-          乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
-        </p>
+        <!-- 上传方式（移动端固定走 GitHub 图床，无需展示） -->
+        <template v-if="!isMobile">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            {{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}
+          </h3>
+          <div class="flex gap-2">
+            <label
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
+                pasteDropMode === 'local'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
+            >
+              <input
+                type="radio"
+                class="sr-only"
+                value="local"
+                :checked="pasteDropMode === 'local'"
+                @change="savePasteDropMode('local')"
+              />
+              本地存储
+            </label>
+            <label
+              v-if="isTauri"
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
+                pasteDropMode === 'disk'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
+            >
+              <input
+                type="radio"
+                class="sr-only"
+                value="disk"
+                :checked="pasteDropMode === 'disk'"
+                @change="savePasteDropMode('disk')"
+              />
+              磁盘存储
+            </label>
+            <label
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
+                pasteDropMode === 'github'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
+            >
+              <input
+                type="radio"
+                class="sr-only"
+                value="github"
+                :checked="pasteDropMode === 'github'"
+                @change="savePasteDropMode('github')"
+              />
+              GitHub 图床
+            </label>
+            <label
+              class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+              :class="
+                pasteDropMode === 'leta'
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+              "
+            >
+              <input
+                type="radio"
+                class="sr-only"
+                value="leta"
+                :checked="pasteDropMode === 'leta'"
+                @change="savePasteDropMode('leta')"
+              />
+              乐塔图床
+            </label>
+          </div>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+            本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
+            磁盘存储：图片保存到文章存储目录下的
+            <code class="text-[var(--accent)]">images/</code>
+            子目录，文件名规则可在下方配置，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
+            GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
+            乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
+          </p>
+        </template>
 
         <!-- 默认图床（工具栏上传按钮使用） -->
         <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
@@ -1381,8 +1386,8 @@ async function manualCheckUpdate() {
           </p>
         </div>
 
-        <!-- 清理图片缓存 -->
-        <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+        <!-- 清理图片缓存（移动端无本地图片缓存） -->
+        <div v-if="!isMobile" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             @click="showImageCache = true"
@@ -1967,6 +1972,29 @@ async function manualCheckUpdate() {
 </template>
 
 <style scoped>
+/* 窄屏收紧标签间距与内边距，保证「设置」标题 + 全部标签 + 关闭按钮同行不重叠 */
+@media (max-width: 639px) {
+  .settings-tabs {
+    gap: 2px;
+  }
+  .settings-tabs > button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* 超窄屏（≤360px）进一步缩小字号，让全部标签无需滚动即可完整显示 */
+@media (max-width: 360px) {
+  .settings-tabs {
+    gap: 1px;
+  }
+  .settings-tabs > button {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 11px;
+  }
+}
+
 .compress-slider {
   -webkit-appearance: none;
   appearance: none;

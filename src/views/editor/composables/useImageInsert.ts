@@ -145,8 +145,18 @@ export function useImageInsert(
   editorRef: Ref<EditorExposed | undefined>,
   showToast: (msg: string) => void,
   markdown: Ref<string>,
+  isMobile?: Ref<boolean>,
 ) {
   markdownInComposable = markdown
+
+  /**
+   * 解析粘贴/拖拽使用的上传方式。
+   * 移动端没有本地存储与本地磁盘，强制走 GitHub 图床。
+   */
+  function resolvePasteDropMode(): string {
+    if (isMobile?.value) return 'github'
+    return getSetting<string>('pasteDropMode') || 'local'
+  }
 
   const imageInputRef = ref<HTMLInputElement>()
   const persistImageInputRef = ref<HTMLInputElement>()
@@ -262,7 +272,7 @@ export function useImageInsert(
       return
     }
 
-    const mode = getSetting<string>('pasteDropMode') || 'local'
+    const mode = resolvePasteDropMode()
 
     if (mode === 'github') {
       const repo = getSetting<string>('githubRepo')

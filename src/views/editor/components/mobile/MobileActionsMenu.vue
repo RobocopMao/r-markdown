@@ -2,7 +2,18 @@
 import { onMounted, onBeforeUnmount, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
-import { Braces, Copy, EllipsisVertical, FileText, Image, LayoutGrid, Bot } from 'lucide-vue-next'
+import {
+  Braces,
+  Copy,
+  EllipsisVertical,
+  FileText,
+  Image,
+  LayoutGrid,
+  Bot,
+  Cloud,
+  ImageUp,
+  Settings,
+} from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const router = useRouter()
@@ -33,6 +44,9 @@ const emit = defineEmits<{
   'copy-rich-text': []
   'export-xhs': []
   'go-components': []
+  'save-to-repo': []
+  'upload-image': []
+  'open-settings': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -75,7 +89,7 @@ onBeforeUnmount(() => {
       class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + AI排版skill + 加载示例 -->
+      <!-- 编辑模式：扩展组件 + AI排版skill + 加载示例 + 仓库/图床/设置 -->
       <template v-if="mode === 'editor'">
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -83,6 +97,20 @@ onBeforeUnmount(() => {
         >
           <LayoutGrid :size="14" />
           扩展组件
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('save-to-repo'))"
+        >
+          <Cloud :size="14" />
+          保存到仓库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('upload-image'))"
+        >
+          <ImageUp :size="14" />
+          上传图片(Github)
         </button>
         <a
           :href="aiDemoHref"
@@ -99,6 +127,13 @@ onBeforeUnmount(() => {
         >
           <FileText :size="14" />
           加载示例
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-settings'))"
+        >
+          <Settings :size="14" />
+          设置
         </button>
       </template>
       <!-- 预览模式：显示其他三个 -->

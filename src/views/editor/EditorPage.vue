@@ -6,6 +6,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
 import { getSetting, setSetting } from '@/config/settings'
 import { useSetting } from '@/composables/useSetting'
+import { useIsMobileWeb } from '@/composables/useIsMobile'
 import { useScrollSync } from './composables/useScrollSync'
 import { useExport, exportItems } from './composables/useExport'
 import { useAutoSave, STORAGE_KEY, SAVE_TIME_KEY } from './composables/useAutoSave'
@@ -301,6 +302,11 @@ function doLoadArticle(content: string) {
 // ── 移动端 Tab 切换 ──
 const mobileTab = ref<'editor' | 'preview'>('editor')
 const isMobile = ref(window.innerWidth < 768)
+/**
+ * 移动端 Web（窄屏且非桌面客户端）：无本地存储，图片粘贴/拖拽强制走 GitHub。
+ * 与 isMobile 区分——isMobile 只管布局，桌面客户端缩窄窗口时仍算桌面。
+ */
+const isMobileWeb = useIsMobileWeb()
 const router = useRouter()
 const nearBottom = ref(false)
 
@@ -970,7 +976,7 @@ const {
   onGithubImageSelected,
   handleUploadToDisk,
   onDiskImageSelected,
-} = useImageInsert(editorRef, showToast, markdown)
+} = useImageInsert(editorRef, showToast, markdown, isMobileWeb)
 
 const imageMenuOpen = ref(false)
 let imageMenuTimer: ReturnType<typeof setTimeout> | undefined
@@ -1127,7 +1133,6 @@ function loadDemo() {
             <span class="opacity-60">for 公众号</span>
             <span class="opacity-50">v{{ pkg.version }}</span>
           </span>
-          <span class="sm:hidden">R-Markdown</span>
         </router-link>
         <span class="hidden sm:inline text-[11px] opacity-50 ml-1.5 shrink-0">{{ saveHint }}</span>
         <CircleCheck
@@ -1222,6 +1227,9 @@ function loadDemo() {
           @copy-rich-text="handleCopyRichText"
           @export-xhs="xhsVisible = true"
           @go-components="$router.push('/components')"
+          @save-to-repo="pushCloudVisible = true"
+          @upload-image="handleUploadToGitHub"
+          @open-settings="settingsVisible = true"
         />
         <ThemePicker
           :themes="themes"
