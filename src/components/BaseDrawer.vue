@@ -71,23 +71,23 @@ onBeforeUnmount(() => {
         class="drawer-overlay absolute inset-0 bg-black/40 backdrop-blur-sm"
         @mousedown="emit('close')"
       />
-      <!-- 抽屉面板 -->
+      <!-- 抽屉面板：移动端占满宽度，避免头部按钮与标题挤压重叠 -->
       <div
         class="drawer-panel relative flex h-full flex-col overflow-hidden rounded-l-2xl bg-white shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:bg-[#1a1a1a] dark:shadow-[0_8px_30px_rgba(0,0,0,0.5)]"
-        :style="{ width: width || '340px' }"
+        :style="{ '--drawer-width': width || '340px' }"
         @mousedown.stop
         @click.stop
       >
         <!-- Header -->
         <div
-          class="flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]"
+          class="drawer-header flex shrink-0 items-center gap-3 border-b border-[#f0f0f0] px-5 py-3.5 dark:border-[#333]"
         >
           <span
             v-if="title"
             class="text-base font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] shrink-0"
             >{{ title }}</span
           >
-          <div class="flex min-w-0 flex-1 items-center gap-2">
+          <div class="drawer-header-slot flex min-w-0 flex-1 items-center gap-2">
             <slot name="header" />
           </div>
           <button
@@ -119,6 +119,38 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/* 宽度：默认用调用方传入值；窄屏（<640px）占满整屏宽度 */
+.drawer-panel {
+  width: var(--drawer-width, 340px);
+  max-width: 100%;
+}
+
+@media (max-width: 639px) {
+  .drawer-panel {
+    width: 100%;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+  }
+
+  /* 窄屏收紧头部间距，给标签留出更多横向空间 */
+  .drawer-header {
+    gap: 0.5rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+  }
+}
+
+/* 头部插槽：窄屏允许横向滚动，避免与右侧关闭按钮重叠 */
+@media (max-width: 639px) {
+  .drawer-header-slot {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .drawer-header-slot::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* 入场：遮罩淡入 + 抽屉从右滑入 */
 .animate-drawer-enter .drawer-overlay {
   animation: drawer-overlay-in 0.2s ease-out both;

@@ -169,6 +169,17 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
     return i <= rowGridHovered.value
   }
 
+  /**
+   * 重置方格选择状态。三个下拉（基础-表格、容器-列/列堆叠/行）的面板是纯 CSS
+   * hover 显隐的，组件不会卸载，所以选中值会跨次残留。每次面板将要显示时调用，
+   * 保证打开即是从 0 开始，不保留上次选择的行列。
+   */
+  function resetGridSelection() {
+    tableGridHovered.value = { rows: 0, cols: 0 }
+    colGridHovered.value = 0
+    rowGridHovered.value = 0
+  }
+
   function insertColumnLayout(cols: number) {
     if (!editorRef.value || cols < 1 || cols > MAX_COLS) return
     const colBlocks = Array.from({ length: cols }, () => '<column flex="1">\n内容\n</column>').join(
@@ -264,6 +275,7 @@ export function useToolbar(editorRef: Ref<EditorExposed | undefined>) {
     rowGridHovered,
     isColCellActive,
     isRowCellActive,
+    resetGridSelection,
     insertColumnLayout,
     insertColumnStack,
     insertRowStack,

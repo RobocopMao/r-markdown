@@ -1,5 +1,6 @@
 <script setup vapor lang="ts">
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
+import { useRouter } from 'vue-router'
 import { MasonryWall } from '@yeger/vue-masonry-wall'
 import { SquarePen, Home } from 'lucide-vue-next'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
@@ -17,6 +18,7 @@ import { components } from '@/extension'
 const { mode: darkMode, setMode: setDarkMode } = useDarkMode()
 const { colors } = useTheme()
 const { renderAll } = useMermaid()
+const router = useRouter()
 const visible = ref(false)
 
 // 分类定义
@@ -217,8 +219,8 @@ function onWindowResize() {
           class="ml-auto sm:ml-0"
           @click="
             (key: string) => {
-              if (key === 'home') $router.push('/')
-              else if (key === 'editor') $router.push('/editor')
+              if (key === 'home') router.push('/')
+              else if (key === 'editor') router.push('/editor')
             }
           "
         />

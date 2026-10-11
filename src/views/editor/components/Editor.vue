@@ -327,7 +327,22 @@ const emit = defineEmits<{
 const editorRef = ref<HTMLDivElement>()
 const { colors } = useTheme()
 const editorTheme = useSetting<string>('editorTheme')
+const editorFontSize = useSetting<number>('editorFontSize')
 const themeCompartment = new Compartment()
+/** 字号独立 compartment：改字号只重配这一块，不重建编辑器状态 */
+const fontSizeCompartment = new Compartment()
+
+/**
+ * 编辑区字号扩展。行高在 warmEditorTheme 里是相对的 1.6，
+ * 会随字号自动等比放大，所以这里只覆盖字号一项。
+ */
+function fontSizeExtension(size: number) {
+  return EditorView.theme({
+    '&': {
+      fontSize: `${size}px`,
+    },
+  })
+}
 
 // ── 第三方主题 HighlightStyle ──
 const githubLightHighlight = HighlightStyle.define(githubLightStyle)
@@ -668,7 +683,7 @@ const warmEditorTheme = EditorView.theme(
     '&': {
       backgroundColor: 'var(--bg-editor)',
       color: 'var(--text-primary)',
-      fontSize: '13px',
+      // 字号由 fontSizeCompartment 动态注入（设置项 editorFontSize），此处不再写死
       fontFamily:
         'ui-monospace, SF Mono, SFMono-Regular, Menlo, Consolas, "Liberation Mono", "Microsoft YaHei", monospace',
       lineHeight: '1.6',
@@ -740,7 +755,7 @@ const warmSyntaxTheme = EditorView.theme(
       color: '#f472b6',
       padding: '2px 6px',
       borderRadius: '4px',
-      fontSize: '13px',
+      // 字号跟随 fontSizeCompartment 动态注入，与正文保持一致
     },
     '.cm-blockquote': {
       color: '#9ca3af',
@@ -864,6 +879,7 @@ onMounted(async () => {
       keymap.of([...defaultKeymap, ...historyKeymap, indentWithTab]),
       markdown({ codeLanguages: languages }),
       warmEditorTheme,
+      fontSizeCompartment.of(fontSizeExtension(editorFontSize.value)),
       themeCompartment.of(themeExtension(editorTheme.value)),
       ph('在此输入 Markdown...'),
       updateListener,
@@ -885,6 +901,14 @@ onMounted(async () => {
     if (!view) return
     view.dispatch({
       effects: themeCompartment.reconfigure(themeExtension(newTheme)),
+    })
+  })
+
+  // 监听字号切换：只重配字号扩展，保留光标、选区与滚动位置
+  watch(editorFontSize, (newSize) => {
+    if (!view) return
+    view.dispatch({
+      effects: fontSizeCompartment.reconfigure(fontSizeExtension(newSize)),
     })
   })
 

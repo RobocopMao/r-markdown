@@ -384,7 +384,7 @@ function toggleCollapse() {
             @click.prevent="openAiDemo"
           >
             <Bot :size="14" class="shrink-0" />
-            AI排版示例
+            AI排版skill
           </a>
         </div>
       </div>
