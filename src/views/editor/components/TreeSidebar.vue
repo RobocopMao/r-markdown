@@ -22,6 +22,7 @@ import {
 import { useGitHubTree } from '../composables/useGitHubTree'
 import { getWorkspaceToken } from '@/services/articleWorkspace'
 import { getArticleFilesDir } from '@/services/localArticlePath'
+import { resolveArticleFileBase } from '@/utils/articleNaming'
 import { invoke } from '@tauri-apps/api/core'
 import type { TreeNode } from '@/services/GitHubTreeService'
 import PromptDialog from '@/components/PromptDialog.vue'
@@ -407,7 +408,8 @@ async function revealLocalFile(node: TreeNode) {
   if (!isTauri) return
   try {
     const dir = await getArticleFilesDir()
-    const path = `${dir}/${node.id}.md`
+    // 文件名可能已按「文章名-短哈希」命名，需按节点实际基名定位
+    const path = `${dir}/${resolveArticleFileBase(node)}.md`
     await invoke('show_in_folder', { path })
   } catch {
     emit('toast', '无法打开文件位置')

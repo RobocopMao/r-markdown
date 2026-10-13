@@ -10,7 +10,13 @@
  */
 
 import type { TreeNode, TreeData } from './GitHubTreeService'
-import { getArticlesDir, getArticleFilesDir, getTreeFilePath } from './localArticlePath'
+import { getArticleFilesDir, getTreeFilePath } from './localArticlePath'
+import {
+  buildArticleFileBase,
+  isTitleNamingEnabled,
+  resolveArticleFileBase,
+  uniqueArticleFileBase,
+} from '@/utils/articleNaming'
 
 // 路径解析已抽到 localArticlePath.ts，统一支持用户自定义存储目录
 
@@ -55,6 +61,60 @@ async function removeFile(path: string): Promise<void> {
   }
 }
 
+/** 文件是否存在 */
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    const { exists } = await import('@tauri-apps/plugin-fs')
+    return await exists(path)
+  } catch {
+    return false
+  }
+}
+
+/** 收集当前树中所有节点已占用的文件基名（文章优先取其实际 file，缺省回退 id） */
+function collectTakenFileBases(nodes: TreeNode[]): Set<string> {
+  const taken = new Set<string>()
+  for (const n of nodes) {
+    if (n.type === 'article') taken.add(n.file || n.id)
+    else taken.add(n.id)
+  }
+  return taken
+}
+
+/**
+ * 写入新文章文件。
+ * 开启「用文章名命名文件」时用「文章名-短哈希」并写入 node.file；
+ * 否则沿用 `{id}.md`（与改动前完全一致）。
+ *
+ * 目录里可能残留树中不存在的孤儿文件，因此落盘前用 exists 探测冲突并换名重试。
+ */
+async function createLocalArticleFile(
+  tree: TreeData,
+  node: TreeNode,
+  content: string,
+): Promise<void> {
+  const dir = await getArticleFilesDir()
+  if (!isTitleNamingEnabled()) {
+    await writeTextFile(`${dir}/${node.id}.md`, content)
+    return
+  }
+  const taken = collectTakenFileBases(tree.nodes)
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const fileBase = uniqueArticleFileBase(
+      node.title,
+      attempt === 0 ? node.id : `${node.id}-${attempt}`,
+      taken,
+    )
+    if (!(await fileExists(`${dir}/${fileBase}.md`))) {
+      await writeTextFile(`${dir}/${fileBase}.md`, content)
+      node.file = fileBase
+      return
+    }
+    taken.add(fileBase)
+  }
+  throw new Error('无法为文章生成唯一文件名，请重试')
+}
+
 export const LocalTreeService = {
   // ── 树操作 ──
 
@@ -84,21 +144,34 @@ export const LocalTreeService = {
 
   // ── 文章操作 ──
 
-  async fetchArticle(id: string): Promise<string> {
+  /**
+   * 读取文章内容。
+   * @param id 节点 id（唯一索引）
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 读取，兼容旧命名
+   */
+  async fetchArticle(id: string, fileBase?: string): Promise<string> {
     const dir = await getArticleFilesDir()
-    const raw = await readTextFile(`${dir}/${id}.md`)
-    if (raw === null) throw new Error(`文章不存在: ${id}`)
+    const raw = await readTextFile(`${dir}/${fileBase || id}.md`)
+    if (raw === null) throw new Error(`文章不存在: ${fileBase || id}`)
     return raw
   },
 
-  async saveArticle(id: string, content: string): Promise<void> {
+  /**
+   * 保存（覆盖）文章内容，保留文件现有位置。
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 读写，兼容旧命名
+   */
+  async saveArticle(id: string, content: string, fileBase?: string): Promise<void> {
     const dir = await getArticleFilesDir()
-    await writeTextFile(`${dir}/${id}.md`, content)
+    await writeTextFile(`${dir}/${fileBase || id}.md`, content)
   },
 
-  async deleteArticle(id: string): Promise<void> {
+  /**
+   * 删除文章文件（文件不存在时静默）。
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 删除，兼容旧命名
+   */
+  async deleteArticle(id: string, fileBase?: string): Promise<void> {
     const dir = await getArticleFilesDir()
-    await removeFile(`${dir}/${id}.md`)
+    await removeFile(`${dir}/${fileBase || id}.md`)
   },
 
   // ── 原子操作 ──
@@ -128,7 +201,7 @@ export const LocalTreeService = {
       updatedAt: now,
     }
 
-    await this.saveArticle(id, content)
+    await createLocalArticleFile(tree, node, content)
     tree.nodes.push(node)
     await this.saveTree(tree.nodes)
     return node
@@ -170,11 +243,11 @@ export const LocalTreeService = {
     }
     collect(id)
 
-    // 删除所有 article 的文件
+    // 删除所有 article 的文件（按节点实际文件基名，兼容新旧两种命名）
     const articleNodes = tree.nodes.filter((n) => idsToDelete.has(n.id) && n.type === 'article')
     for (const article of articleNodes) {
       try {
-        await this.deleteArticle(article.id)
+        await this.deleteArticle(article.id, resolveArticleFileBase(article))
       } catch {
         // 文件可能不存在，忽略
       }
@@ -184,13 +257,86 @@ export const LocalTreeService = {
     await this.saveTree(tree.nodes)
   },
 
-  async renameNode(id: string, newTitle: string): Promise<void> {
+  /**
+   * 重命名节点。
+   *
+   * 开启「用文章名命名文件」时，文章文件会同步改名为「新文章名-短哈希」，
+   * 老文章（art-xxxx.md）也在此时完成迁移；顺序为
+   * 先写新文件 → 再落 tree.json → 最后删旧文件，保证中途失败不丢内容。
+   *
+   * @returns 更新后的节点（含新的 file 基名），供调用方就地刷新本地树
+   */
+  async renameNode(id: string, newTitle: string): Promise<TreeNode> {
     const tree = await this.fetchTree()
     const node = tree.nodes.find((n) => n.id === id)
     if (!node) throw new Error(`节点不存在: ${id}`)
+
+    const oldBase = resolveArticleFileBase(node)
     node.title = newTitle
     node.updatedAt = new Date().toISOString()
-    await this.saveTree(tree.nodes)
+
+    // 非文章节点，或未开启文章名命名 → 只改标题（与改动前行为一致）
+    if (node.type !== 'article' || !isTitleNamingEnabled()) {
+      await this.saveTree(tree.nodes)
+      return node
+    }
+
+    const newBase = buildArticleFileBase(newTitle, id)
+    if (newBase === oldBase) {
+      // 文件名不变（例如只改了大小写/同样净化结果），无需迁移文件
+      await this.saveTree(tree.nodes)
+      return node
+    }
+
+    const dir = await getArticleFilesDir()
+
+    // 1. 读取旧内容（旧文件可能不存在——例如历史孤儿，此时以空内容兜底新建）
+    let content = ''
+    try {
+      content = (await readTextFile(`${dir}/${oldBase}.md`)) ?? ''
+    } catch {
+      content = ''
+    }
+
+    // 2. 写入新文件（不覆盖已存在文件）
+    const taken = collectTakenFileBases(tree.nodes)
+    taken.delete(oldBase)
+    taken.delete(id)
+    let actualBase = newBase
+    let wrote = false
+    for (let attempt = 0; attempt < 4 && !wrote; attempt++) {
+      const candidate =
+        attempt === 0 && !taken.has(newBase)
+          ? newBase
+          : uniqueArticleFileBase(newTitle, `${id}-${attempt}`, taken)
+      // 防御：候选名若恰好等于旧基名，第 4 步会把刚写入的新文件当旧文件删掉
+      if (candidate === oldBase) {
+        taken.add(candidate)
+        continue
+      }
+      if (await fileExists(`${dir}/${candidate}.md`)) {
+        taken.add(candidate)
+        continue
+      }
+      await writeTextFile(`${dir}/${candidate}.md`, content)
+      actualBase = candidate
+      wrote = true
+    }
+    if (!wrote) throw new Error('无法为文章生成唯一文件名，请重试')
+    node.file = actualBase
+
+    // 3. 落 tree.json（失败则删除刚建的新文件回滚，避免留下孤儿）
+    try {
+      await this.saveTree(tree.nodes)
+    } catch (e) {
+      await removeFile(`${dir}/${actualBase}.md`)
+      throw e
+    }
+
+    // 4. 删除旧文件（失败仅留孤儿文件，不影响一致性）
+    await removeFile(`${dir}/${oldBase}.md`)
+
+    return node
   },
 
   async moveNode(

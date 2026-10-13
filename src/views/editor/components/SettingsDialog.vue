@@ -59,6 +59,7 @@ import {
   setActiveWorkspace,
 } from '@/services/articleWorkspace'
 import { useGitHubTree } from '../composables/useGitHubTree'
+import { ARTICLE_NAMING_ID, ARTICLE_NAMING_TITLE } from '@/utils/articleNaming'
 
 const { switchToWorkspace } = useGitHubTree()
 ensureWorkspaces()
@@ -95,6 +96,8 @@ watch(
     if (isVisible) {
       if (props.initialTab) settingsTab.value = props.initialTab
       articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
+      // 同步回显文章文件命名开关（可能被其他入口或磁盘配置改动）
+      articleTitleNaming.value = getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE
     }
   },
 )
@@ -390,6 +393,15 @@ function saveArticleStorageMode(mode: 'github' | 'local') {
   setSetting('articleStorageMode', mode)
 }
 
+// ── 文章文件命名方式（桌面端 / Web 端均适用）──
+/** 是否用「菜单树文章名 + 短哈希」命名文章文件，默认关闭 */
+const articleTitleNaming = ref<boolean>(
+  getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE,
+)
+watch(articleTitleNaming, (val) =>
+  setSetting('articleFileNaming', val ? ARTICLE_NAMING_TITLE : ARTICLE_NAMING_ID),
+)
+
 // ── 本地存储目录（仅桌面端、local 模式）──
 const articleStorageDir = ref<string>(getSetting<string>('articleStorageDir'))
 const dirChanging = ref(false)
@@ -537,13 +549,6 @@ async function confirmDeleteWorkspace() {
     deleteConfirmVisible.value = false
   }
 }
-
-/** 是否所有工作区都未配置 Token（仅在用户完全没填过 Token 时提示） */
-const hasMissingToken = computed(
-  () =>
-    githubWorkspaces.value.length > 0 &&
-    githubWorkspaces.value.every((ws) => !getWorkspaceToken(ws.id)),
-)
 
 function isCloudActive(id: string): boolean {
   return activeGithubWorkspaceId.value === id
@@ -1698,20 +1703,6 @@ async function manualCheckUpdate() {
             scope）。
           </p>
 
-          <!-- Token 缺失提示 -->
-          <div
-            v-if="hasMissingToken"
-            class="mb-3 rounded-lg border px-3 py-2 text-[12px] leading-relaxed"
-            style="
-              background: rgba(255, 193, 7, 0.1);
-              border-color: rgba(255, 193, 7, 0.4);
-              color: #b08017;
-            "
-          >
-            由于v0.3.9版本文章存储升级为工作区（可绑定多个仓库）。若你刚从旧版本升级，旧仓库 和
-            Token 可能未自动迁移，请在下方填补对应仓库 和 Token。
-          </div>
-
           <!-- 仓库工作区列表 -->
           <div class="mb-3 space-y-2">
             <div
@@ -1822,6 +1813,39 @@ async function manualCheckUpdate() {
             添加工作区
           </button>
         </template>
+
+        <!-- 文章文件命名（两种存储模式、桌面端与 Web 端均适用；
+             放在 section 最末尾，保证各平台显示位置一致） -->
+        <div class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">文章文件命名</label>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">用菜单树中的文章名命名文件</span>
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="articleTitleNaming ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="articleTitleNaming"
+              @click="articleTitleNaming = !articleTitleNaming"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="articleTitleNaming ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <p class="text-[11px] leading-relaxed" style="color: var(--text-secondary)">
+            <template v-if="articleTitleNaming">
+              开启后，新建文章的存储文件名为「文章名-短哈希」，例如
+              <code class="text-[var(--accent)]">公众号排版技巧-k3f9a2b1.md</code
+              >；短哈希用于避免同名文章的文件名冲突。重命名文章时，文件名会同步修改，已有文章也在此时自动迁移为新命名。
+            </template>
+            <template v-else>
+              关闭时沿用内部编号命名（如
+              <code class="text-[var(--accent)]">art-m3k2x9-a1b2c3.md</code
+              >），与历史版本一致。开启后仅影响新建与重命名的文章，已有文章不会自动改名。
+            </template>
+          </p>
+        </div>
       </section>
     </template>
 
