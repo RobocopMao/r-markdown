@@ -4,6 +4,7 @@ import { LocalTreeService } from '@/services/LocalTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
 import { getErrorMessage } from '@/utils/helpers'
 import { getSetting, setSetting } from '@/config/settings'
+import { resolveArticleFileBase } from '@/utils/articleNaming'
 import {
   workspaces,
   activeGithubWorkspaceId,
@@ -339,12 +340,13 @@ export function useGitHubTree() {
 
     loading.value = true
     try {
+      const fileBase = resolveArticleFileBase(node)
       // 先看缓存
       const cached = await GitHubArticleCache.getArticle(cacheNs.value, node.id)
       if (cached) {
         // 后台更新
         treeService.value
-          .fetchArticle(node.id)
+          .fetchArticle(node.id, fileBase)
           .then((remote) => {
             if (remote !== cached) {
               GitHubArticleCache.setArticle(cacheNs.value, node.id, remote)
@@ -355,7 +357,7 @@ export function useGitHubTree() {
       }
 
       // 没缓存，直接请求
-      const content = await treeService.value.fetchArticle(node.id)
+      const content = await treeService.value.fetchArticle(node.id, fileBase)
       await GitHubArticleCache.setArticle(cacheNs.value, node.id, content)
       return content
     } catch (e: unknown) {
@@ -449,11 +451,21 @@ export function useGitHubTree() {
   }
 
   async function renameNode(id: string, newTitle: string): Promise<void> {
-    await treeService.value.renameNode(id, newTitle)
+    // 服务层可能同步迁移文章文件（开启「用文章名命名文件」时），
+    // 返回的节点带有新的 file 基名，需就地回写到本地树，避免后续读写落到旧文件名。
+    const updated = await treeService.value.renameNode(id, newTitle)
     // 本地立即更新 treeData，避免依赖 loadTree() 回读
     const idx = treeData.value.findIndex((n) => n.id === id)
     if (idx !== -1) {
-      treeData.value[idx] = { ...treeData.value[idx], title: newTitle }
+      treeData.value[idx] = { ...treeData.value[idx], ...updated, title: newTitle }
+    }
+    // 同步关联文章标题（编辑器标题栏显示的是节点标题）
+    if (selectedNode.value?.id === id) {
+      selectedNode.value = { ...selectedNode.value, ...updated, title: newTitle }
+    }
+    if (currentCloudArticleId.value === id) {
+      persistedCloudTitle.value = newTitle
+      persistCloudArticle(id, newTitle)
     }
     try {
       await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))
@@ -671,8 +683,14 @@ export function useGitHubTree() {
   ): Promise<TreeNode> {
     if (existingArticleId) {
       // 更新已有文章
-      await treeService.value.saveArticle(existingArticleId, content)
-      await treeService.value.renameNode(existingArticleId, title)
+      const existing = treeData.value.find((n) => n.id === existingArticleId)
+      // 按节点当前实际文件基名写入，避免开启「用文章名命名文件」后写到 id 旧文件上
+      await treeService.value.saveArticle(
+        existingArticleId,
+        content,
+        existing ? resolveArticleFileBase(existing) : undefined,
+      )
+      const renamed = await treeService.value.renameNode(existingArticleId, title)
       try {
         await treeService.value.updateNodeUpdatedAt(existingArticleId)
       } catch {
@@ -681,7 +699,12 @@ export function useGitHubTree() {
       // 本地立即更新 treeData，避免依赖 API 回读（GitHub 内容 API 有短暂缓存延迟）
       const idx = treeData.value.findIndex((n) => n.id === existingArticleId)
       if (idx !== -1) {
-        treeData.value[idx] = { ...treeData.value[idx], title, updatedAt: new Date().toISOString() }
+        treeData.value[idx] = {
+          ...treeData.value[idx],
+          ...renamed,
+          title,
+          updatedAt: new Date().toISOString(),
+        }
       }
       try {
         await GitHubArticleCache.setTreeCache(cacheNs.value, JSON.stringify({ nodes: treeData.value }))

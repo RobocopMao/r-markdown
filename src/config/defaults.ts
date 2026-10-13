@@ -115,6 +115,14 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
    * 用户可在设置中修改，修改后原有文章文件夹会被剪切移动到新目录。
    */
   articleStorageDir: { default: '', platforms: ['desktop'] },
+  /**
+   * 文章文件命名方式（GitHub 仓库 / 本地磁盘两种模式均适用，桌面端与 Web 端一致）：
+   * - 'id'    沿用内部 id 命名，文件名形如 art-xxxx.md（默认，向后兼容）
+   * - 'title' 用「菜单树文章名 + 短哈希」命名，形如 公众号排版技巧-k3f9a2b1.md；
+   *           哈希取自节点 id，用于避免同名文章的文件名冲突
+   * 仅影响「新建」与「重命名」时的文件名；已有文章在重命名时才会迁移到新命名。
+   */
+  articleFileNaming: { default: 'id' },
   /** TreeSidebar 初始展开状态 */
   treeSidebarExpanded: { default: false },
   /** TreeSidebar 宽度（px） */

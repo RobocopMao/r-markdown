@@ -6,6 +6,12 @@
  */
 
 import { getSetting, setSetting } from '@/config/settings'
+import {
+  buildArticleFileBase,
+  isTitleNamingEnabled,
+  resolveArticleFileBase,
+  uniqueArticleFileBase,
+} from '@/utils/articleNaming'
 
 export interface TreeNode {
   id: string
@@ -17,6 +23,11 @@ export interface TreeNode {
   createdAt?: string
   /** ISO 8601 最后编辑时间 */
   updatedAt?: string
+  /**
+   * 文章文件基名（不含 .md），仅「用文章名命名文件」方案写入。
+   * 缺省表示沿用旧命名 `{id}.md`；读取一律走 resolveArticleFileBase 回退。
+   */
+  file?: string
 }
 
 export interface TreeData {
@@ -73,6 +84,134 @@ async function request(url: string, token: string, options: RequestInit = {}): P
     throw new Error(`GitHub API ${res.status}: ${body}`)
   }
   return res
+}
+
+/**
+ * 文章文件基名 → 仓库内相对路径（含 .md）。
+ * 基名可能含中文/空格（用文章名命名时），URL 必须逐段编码；
+ * 净化阶段已剔除 `/`，不会出现 %2F 破坏路径层级的情况。
+ */
+function articlePath(fileBase: string): string {
+  return `articles/${encodeURIComponent(fileBase)}.md`
+}
+
+/**
+ * 写入文章文件。
+ * sha 为空表示「仅创建」——目标路径已存在时 GitHub 会返回 422（提示缺少 sha），
+ * 调用方据此换一个不冲突的文件名重试，而不是静默覆盖。
+ */
+async function putArticleFile(
+  cfg: CloudConfig,
+  path: string,
+  content: string,
+  sha: string | null,
+): Promise<Response> {
+  const body: Record<string, unknown> = {
+    message: `保存文章: ${path}`,
+    content: b64(content),
+    branch: cfg.branch,
+  }
+  if (sha) body.sha = sha
+
+  return fetch(`${apiBase(cfg.owner, cfg.repo)}/${path}`, {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${cfg.token}`,
+      Accept: 'application/vnd.github.v3+json',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  })
+}
+
+/**
+ * 解释「仅创建」PUT 的结果：
+ * - 成功 → true
+ * - 422 且原因是未提供 sha（目标已存在）→ false，交由调用方换名重试
+ * - 其他错误 → 抛错
+ */
+async function interpretCreateOnly(putRes: Response): Promise<boolean> {
+  if (putRes.ok) return true
+  const errBody = await putRes.text()
+  if (putRes.status === 422 && /sha/i.test(errBody)) return false
+  throw new Error(`GitHub API ${putRes.status}: ${errBody}`)
+}
+
+/** 收集当前树中所有文章已占用的文件基名（含旧命名 id、新命名 file 与文件夹 id） */
+function collectTakenFileBases(nodes: TreeNode[]): Set<string> {
+  const taken = new Set<string>()
+  for (const n of nodes) {
+    if (n.type === 'article') taken.add(n.file || n.id)
+    // 文件夹 id 也纳入：避免文章基名与（理论上可能同名的）其他标识混淆
+    else taken.add(n.id)
+  }
+  return taken
+}
+
+/**
+ * 按「文章名-短哈希」创建文章文件（仅创建，不覆盖）。
+ * 若目标路径已存在（孤儿文件或哈希碰撞），依次加长哈希重试。
+ * @returns 实际写入的文件基名（不含 .md）
+ */
+async function createArticleFile(
+  cfg: CloudConfig,
+  tree: TreeData,
+  id: string,
+  title: string,
+  content: string,
+): Promise<string> {
+  const taken = collectTakenFileBases(tree.nodes)
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const fileBase =
+      attempt === 0
+        ? uniqueArticleFileBase(title, id, taken)
+        : uniqueArticleFileBase(title, `${id}-${attempt}`, taken)
+    const ok = await interpretCreateOnly(
+      await putArticleFile(cfg, articlePath(fileBase), content, null),
+    )
+    if (ok) return fileBase
+    taken.add(fileBase)
+  }
+  throw new Error('无法为文章生成唯一文件名，请重试')
+}
+
+/**
+ * 改名迁移：把文章内容写到新基名（仅创建，不覆盖），返回实际使用的基名。
+ *
+ * 与 renameNode 配合保证任一中间态都不丢数据：先建新 → 再落 tree → 最后删旧。
+ * 最坏情况只是仓库里多出一个孤儿文件，而 tree.json 指向的文件始终存在。
+ */
+async function putRenamedArticleFile(
+  cfg: CloudConfig,
+  tree: TreeData,
+  nodeId: string,
+  oldBase: string,
+  newTitle: string,
+  content: string,
+): Promise<string> {
+  // 排除自身的旧基名与 id：改名不应与自己冲突
+  const taken = collectTakenFileBases(tree.nodes)
+  taken.delete(oldBase)
+  taken.delete(nodeId)
+
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const canonical = buildArticleFileBase(newTitle, nodeId)
+    const fileBase =
+      attempt === 0 && !taken.has(canonical)
+        ? canonical
+        : uniqueArticleFileBase(newTitle, `${nodeId}-${attempt}`, taken)
+    // 防御：候选名若恰好等于旧基名，第 4 步会把刚写入的新文件当旧文件删掉
+    if (fileBase === oldBase) {
+      taken.add(fileBase)
+      continue
+    }
+    const ok = await interpretCreateOnly(
+      await putArticleFile(cfg, articlePath(fileBase), content, null),
+    )
+    if (ok) return fileBase
+    taken.add(fileBase)
+  }
+  throw new Error('无法为文章生成唯一文件名，请重试')
 }
 
 export const GitHubTreeService = {
@@ -232,21 +371,30 @@ export const GitHubTreeService = {
 
   // ── 文章操作 ──
 
-  async fetchArticle(id: string): Promise<string> {
+  /**
+   * 读取文章内容。
+   * @param id 节点 id（唯一索引）
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 读取，兼容旧命名
+   */
+  async fetchArticle(id: string, fileBase?: string): Promise<string> {
     const cfg = this.getConfig()
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
-    const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md?ref=${encodeURIComponent(
-      cfg.branch,
-    )}`
+    const path = articlePath(fileBase || id)
+    const url = `${apiBase(cfg.owner, cfg.repo)}/${path}?ref=${encodeURIComponent(cfg.branch)}`
     const res = await request(url, cfg.token, { cache: 'no-cache' })
     const data: GitHubContentResponse = await res.json()
     return fromB64(data.content)
   },
 
-  async saveArticle(id: string, content: string): Promise<void> {
+  /**
+   * 保存（覆盖）文章内容，保留文件现有位置。
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 读写，兼容旧命名
+   */
+  async saveArticle(id: string, content: string, fileBase?: string): Promise<void> {
     const cfg = this.getConfig()
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
-    const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md`
+    const path = articlePath(fileBase || id)
+    const url = `${apiBase(cfg.owner, cfg.repo)}/${path}`
 
     // 先获取已有 sha（更新时）
     let existingSha: string | null = null
@@ -260,37 +408,34 @@ export const GitHubTreeService = {
       // 新文件
     }
 
-    const body: any = {
-      message: `保存文章: ${id}`,
-      content: b64(content),
-      branch: cfg.branch,
-    }
-    if (existingSha) body.sha = existingSha
-
-    const putRes = await fetch(url, {
-      method: 'PUT',
-      headers: {
-        Authorization: `Bearer ${cfg.token}`,
-        Accept: 'application/vnd.github.v3+json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    })
+    const putRes = await putArticleFile(cfg, path, content, existingSha)
     if (!putRes.ok) {
       const errBody = await putRes.text()
       throw new Error(`GitHub API ${putRes.status}: ${errBody}`)
     }
   },
 
-  async deleteArticle(id: string): Promise<void> {
+  /**
+   * 删除文章文件（文件不存在时静默）。
+   * @param fileBase 文件基名（不含 .md）；缺省时按 id 删除，兼容旧命名
+   */
+  async deleteArticle(id: string, fileBase?: string): Promise<void> {
     const cfg = this.getConfig()
     if (!cfg) throw new Error('未配置 GitHub 云端文章')
-    const url = `${apiBase(cfg.owner, cfg.repo)}/articles/${id}.md`
+    const path = articlePath(fileBase || id)
+    const url = `${apiBase(cfg.owner, cfg.repo)}/${path}`
 
-    const getRes = await request(`${url}?ref=${encodeURIComponent(cfg.branch)}`, cfg.token, {
-      cache: 'no-cache',
-    })
-    const data: GitHubContentResponse = await getRes.json()
+    let sha: string
+    try {
+      const getRes = await request(`${url}?ref=${encodeURIComponent(cfg.branch)}`, cfg.token, {
+        cache: 'no-cache',
+      })
+      const data: GitHubContentResponse = await getRes.json()
+      sha = data.sha
+    } catch {
+      // 文件不存在（或节点已无对应文件）：无需删除
+      return
+    }
 
     const delRes = await fetch(url, {
       method: 'DELETE',
@@ -300,8 +445,8 @@ export const GitHubTreeService = {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        message: `删除文章: ${id}`,
-        sha: data.sha,
+        message: `删除文章: ${path}`,
+        sha,
         branch: cfg.branch,
       }),
     })
@@ -373,8 +518,12 @@ export const GitHubTreeService = {
       updatedAt: now,
     }
 
-    // 3. 写入文章文件
-    await this.saveArticle(id, content)
+    // 3. 写入文章文件（开启「用文章名命名文件」时用「文章名-短哈希」）
+    if (isTitleNamingEnabled()) {
+      node.file = await createArticleFile(cfg, tree, id, title, content)
+    } else {
+      await this.saveArticle(id, content)
+    }
 
     // 4. 更新 tree.json
     tree.nodes.push(node)
@@ -439,11 +588,11 @@ export const GitHubTreeService = {
     }
     collect(id)
 
-    // 删除所有 article 的文件
+    // 删除所有 article 的文件（按节点实际文件基名，兼容新旧两种命名）
     const articleNodes = tree.nodes.filter((n) => idsToDelete.has(n.id) && n.type === 'article')
     for (const article of articleNodes) {
       try {
-        await this.deleteArticle(article.id)
+        await this.deleteArticle(article.id, resolveArticleFileBase(article))
       } catch {
         // 文件可能不存在，忽略
       }
@@ -454,13 +603,72 @@ export const GitHubTreeService = {
     await this.saveTree(tree.nodes)
   },
 
-  async renameNode(id: string, newTitle: string): Promise<void> {
+  /**
+   * 重命名节点。
+   *
+   * 开启「用文章名命名文件」时，文章文件会同步改名为「新文章名-短哈希」，
+   * 老文章（art-xxxx.md）也在此时完成迁移；顺序为
+   * 先写新文件 → 再落 tree.json → 最后删旧文件，保证中途失败不丢内容。
+   *
+   * @returns 更新后的节点（含新的 file 基名），供调用方就地刷新本地树
+   */
+  async renameNode(id: string, newTitle: string): Promise<TreeNode> {
     const tree = await this.fetchTree()
     const node = tree.nodes.find((n) => n.id === id)
     if (!node) throw new Error(`节点不存在: ${id}`)
+
+    const oldBase = resolveArticleFileBase(node)
     node.title = newTitle
     node.updatedAt = new Date().toISOString()
-    await this.saveTree(tree.nodes)
+
+    // 非文章节点，或未开启文章名命名 → 只改标题（与改动前行为一致）
+    if (node.type !== 'article' || !isTitleNamingEnabled()) {
+      await this.saveTree(tree.nodes)
+      return node
+    }
+
+    const cfg = this.getConfig()
+    if (!cfg) throw new Error('未配置 GitHub 云端文章')
+
+    const newBase = buildArticleFileBase(newTitle, id)
+    if (newBase === oldBase) {
+      // 文件名不变（例如只改了大小写/同样净化结果），无需迁移文件
+      await this.saveTree(tree.nodes)
+      return node
+    }
+
+    // 1. 读取旧内容（旧文件可能不存在——例如历史孤儿，此时以空内容兜底新建）
+    let content = ''
+    try {
+      content = await this.fetchArticle(id, oldBase)
+    } catch {
+      content = ''
+    }
+
+    // 2. 写入新文件（仅创建，不覆盖已存在文件）
+    const actualBase = await putRenamedArticleFile(cfg, tree, id, oldBase, newTitle, content)
+    node.file = actualBase
+
+    // 3. 落 tree.json（失败则删除刚建的新文件回滚，避免留下孤儿）
+    try {
+      await this.saveTree(tree.nodes)
+    } catch (e) {
+      try {
+        await this.deleteArticle(id, actualBase)
+      } catch {
+        // 回滚失败仅留孤儿文件，不影响 tree 一致性
+      }
+      throw e
+    }
+
+    // 4. 删除旧文件（失败仅留孤儿文件，不影响一致性）
+    try {
+      await this.deleteArticle(id, oldBase)
+    } catch {
+      // 忽略：tree 已指向新文件
+    }
+
+    return node
   },
 
   async moveNode(

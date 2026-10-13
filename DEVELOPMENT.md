@@ -82,6 +82,7 @@ src/
 ├── styles/              # 全局样式
 │   └── style.css
 ├── utils/               # 工具函数
+│   ├── articleNaming.ts     # 文章文件命名（文章名净化 / 短哈希 / 唯一基名解析）
 │   ├── bannedWords.ts       # 违禁词词库与扫描（含代码块/URL 遮罩）
 │   ├── charCount.ts         # 字数统计与预估阅读时长
 │   ├── colorUtils.ts        # 颜色处理
@@ -598,11 +599,12 @@ pnpm preview
 7. **多语句内联 handler**：Vue 模板中 `@click="a = 1; b = 2"` 这类带分号的多行内联 handler 会被 Prettier（`"semi": false`）移除分号导致 rolldown 解析失败。多语句 handler 一律提取为具名函数（参考 `EditorPage.vue` 的 `onTagDialogClose` / `onSettingsClose`）
 8. **标题层级只改一处**：`#` 与 `<p-title level="N">` 的上限与默认值统一来自 `src/utils/headingLevels.ts`，不要在其他文件硬编码（历史上已漂移过一次）
 9. **字数统计不要用正则粗暴匹配 `---`**：正文里的水平分割线也是 `---`，`charCount.ts` 只把首个非空行是 `---` 的情况当作 front-matter
-10. **Tauri 开发**：
+10. **文章文件名不要直接拼 `node.id`**：`node.id` 是唯一索引（被 IndexedDB 缓存 key、`cloudArticleId`、命令面板持久化引用，**必须保持稳定**），实际文件名可能已按设置 `articleFileNaming` 改为「文章名-短哈希」。凡是要读写文章文件的地方，一律走 `resolveArticleFileBase(node)`（`src/utils/articleNaming.ts`）并把它作为 `fileBase` 参数传给 `fetchArticle` / `saveArticle` / `deleteArticle`；GitHub 侧路径还需 `encodeURIComponent`（中文标题必需）。tree.json 的可选字段 `node.file` 记录实际文件名，缺省即回退 `{id}.md`（兼容旧数据）
+11. **Tauri 开发**：
     - 前端代码中的 Tauri API 调用须通过 `import.meta.env.VITE_TAURI === 'true'` 守卫，确保 Web 版不受影响
     - 修改 `Cargo.toml` 中 `[lib] name` 后须同步修改 `src-tauri/src/main.rs` 中的 crate 引用
     - 首次构建桌面端需安装 Rust 工具链（[rustup.rs](https://rustup.rs)）
-11. **Node 版本**：项目要求 Node.js >= 24，使用 nvm 管理版本：
+12. **Node 版本**：项目要求 Node.js >= 24，使用 nvm 管理版本：
     ```bash
     nvm install 24
     nvm use 24
