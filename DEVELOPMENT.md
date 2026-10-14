@@ -32,6 +32,7 @@ src/
 ├── components/          # 公用组件
 │   ├── BaseDialog.vue       # 通用弹窗
 │   ├── BaseDrawer.vue       # 通用抽屉
+│   ├── BaseCheckbox.vue     # 通用勾选框（自绘样式，项目内不要用原生 checkbox）
 │   ├── BaseTooltip.vue      # 通用 tooltip
 │   ├── ConfirmDialog.vue    # 确认弹窗
 │   ├── DarkModeToggle.vue   # 深色模式切换
@@ -55,13 +56,15 @@ src/
 │   ├── defaults.ts          # 全部设置项与默认值（唯一来源，新增设置只改这里）
 │   └── settings.ts          # 设置读写（带 AES-GCM-256 加密敏感项）
 ├── data/                # 静态数据
-│   └── demoContent.ts       # 编辑器示例内容
+│   ├── demoContent.ts       # 编辑器示例内容
+│   └── ai/format-spec.md    # AI 排版用的组件规范（与 r-markdown-formatter skill 同源，手动同步）
 ├── extension/           # 排版组件库（git 子模块，闭源；缺失时自动复制 stubs）
 ├── extension-stubs/     # 排版组件空桩（extension 不可用时的 fallback）
 ├── router/              # 路由配置
 │   └── index.ts
 ├── services/            # 业务服务层
 │   ├── DraftStorage.ts      # IndexedDB 草稿存储
+│   ├── aiFormat.ts          # AI 排版：OpenAI 兼容 /chat/completions 调用（流式 SSE / 超时 / 错误中文映射）
 │   ├── GitHubArticleCache.ts# GitHub 文章本地缓存（IndexedDB）
 │   ├── GitHubTreeService.ts # GitHub 仓库文章树 CRUD
 │   ├── LocalTreeService.ts  # 本地磁盘文章树 CRUD（与 GitHub 版同签名）
@@ -83,6 +86,7 @@ src/
 │   └── style.css
 ├── utils/               # 工具函数
 │   ├── articleNaming.ts     # 文章文件命名（文章名净化 / 短哈希 / 唯一基名解析）
+│   ├── aiFormatPrompt.ts    # AI 排版：prompt 组装、图片占位符遮罩/还原、输出清洗与标签校验（纯逻辑）
 │   ├── bannedWords.ts       # 违禁词词库与扫描（含代码块/URL 遮罩）
 │   ├── charCount.ts         # 字数统计与预估阅读时长
 │   ├── colorUtils.ts        # 颜色处理
@@ -99,6 +103,7 @@ src/
 │   ├── outline.ts           # 文档大纲提取（标题 + <title> + <p-title>）
 │   ├── paginate.ts          # PDF 导出 DOM 测量装箱分页
 │   ├── platform.ts          # 平台判断与快捷键文案（显示用，不用于按键分支）
+│   ├── textDiff.ts          # 行级文本差异（LCS + hunk 折叠，供 AI 排版结果对照，纯逻辑）
 │   └── xhsCards.ts          # 小红书卡片生成
 ├── views/               # 页面视图
 │   ├── 404/
@@ -140,7 +145,7 @@ scripts/
 | `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                             |
 | `Minimap.vue`                                                          | 预览区缩略图                                                               |
 | `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                             |
-| `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / 关于）                         |
+| `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / AI 排版 / 关于）               |
 | `ThemePicker.vue`                                                      | 主题色选择                                                                 |
 | `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                         |
 | `ImageCacheDialog.vue`                                                 | 图库弹窗（本地 / 磁盘图片）                                                |
@@ -150,23 +155,24 @@ scripts/
 | `MaterialLibraryPanel.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 素材面板与卡片                                                             |
 | `XhsExporter.vue`                                                      | 小红书图导出（首图 + 正文卡片，桌面端打包 ZIP）                            |
 | `FinalizeDialog.vue`                                                   | 定稿（本地导出 Markdown）                                                  |
+| `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果）    |
 | `Dropdown.vue`                                                         | 通用下拉                                                                   |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单                                                             |
+| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 排版入口）                                           |
 
 ### 编辑器组合式函数（`src/views/editor/composables/`）
 
-| 文件                  | 用途                               |
-| --------------------- | ---------------------------------- |
-| `useAutoSave.ts`      | 自动保存（间隔可配）               |
-| `useDraft.ts`         | 草稿关联与匹配                     |
-| `useExport.ts`        | 导出（图片 / 小红书 / PDF / HTML） |
-| `useGitHubTree.ts`    | 文章树（GitHub 与本地磁盘切换）    |
-| `useImageInsert.ts`   | 粘贴 / 拖拽图片插入与上传          |
-| `useImport.ts`        | 导入 `.md` / `.txt` / `.docx`      |
-| `useMaterial.ts`      | 素材保存与插入                     |
-| `useScrollSync.ts`    | 编辑器与预览滚动同步               |
-| `useToolbar.ts`       | 工具栏按钮与插入语法定义           |
-| `useWechatPublish.ts` | 微信公众号发布                     |
+| 文件                  | 用途                                                                      |
+| --------------------- | ------------------------------------------------------------------------- |
+| `useAutoSave.ts`      | 自动保存（间隔可配）                                                      |
+| `useDraft.ts`         | 草稿关联与匹配                                                            |
+| `useExport.ts`        | 导出（图片 / 小红书 / PDF / HTML）                                        |
+| `useGitHubTree.ts`    | 文章树（GitHub 与本地磁盘切换）                                           |
+| `useImageInsert.ts`   | 粘贴 / 拖拽图片插入与上传                                                 |
+| `useImport.ts`        | 导入 `.md` / `.txt` / `.docx`（导出 `pickDocumentFile()` 供 AI 排版复用） |
+| `useMaterial.ts`      | 素材保存与插入                                                            |
+| `useScrollSync.ts`    | 编辑器与预览滚动同步                                                      |
+| `useToolbar.ts`       | 工具栏按钮与插入语法定义                                                  |
+| `useWechatPublish.ts` | 微信公众号发布                                                            |
 
 ## 开发环境搭建
 
@@ -594,7 +600,7 @@ pnpm preview
 2. **不要提交 `src/**/\*.js`文件**：TypeScript / Vue 编译产物，已在`.gitignore` 中排除
 3. **修改行内格式化语法后**：同步更新本文档的语法对照表
 4. **新增组件后**：同步更新本文档的目录结构、组件语法表，并补进 `src/extension-stubs/index.ts` 的 `components[]`（当前缺 `Stack_DA01` / `Positioned_DA01`）
-5. **新增设置项后**：只需在 `src/config/defaults.ts` 加一行，`initSettings()` 会自动为旧用户补默认值；敏感字段记得加进 `settings.ts` 的 `SENSITIVE_KEYS`
+5. **新增设置项后**：只需在 `src/config/defaults.ts` 加一行，`initSettings()` 会自动为旧用户补默认值；敏感字段（如 `aiApiKey`）记得加进 `settings.ts` 的 `SENSITIVE_KEYS`
 6. **构建前确认**：确保 `pnpm check` 通过，无 ESLint/Prettier 错误
 7. **多语句内联 handler**：Vue 模板中 `@click="a = 1; b = 2"` 这类带分号的多行内联 handler 会被 Prettier（`"semi": false`）移除分号导致 rolldown 解析失败。多语句 handler 一律提取为具名函数（参考 `EditorPage.vue` 的 `onTagDialogClose` / `onSettingsClose`）
 8. **标题层级只改一处**：`#` 与 `<p-title level="N">` 的上限与默认值统一来自 `src/utils/headingLevels.ts`，不要在其他文件硬编码（历史上已漂移过一次）
@@ -609,3 +615,4 @@ pnpm preview
     nvm install 24
     nvm use 24
     ```
+13. **AI 排版的组件规范**：`src/data/ai/format-spec.md` 是 prompt 中的「唯一排版标准」，与 `r-markdown-formatter` skill 同源。更新规范时手动重拷该文件并保留顶部来源注释块（读取方 `aiFormatPrompt.loadFormatSpec()` 会剥离注释，正文需与源文件逐字节一致）；可用组件白名单以 `@/extension` 的 `components[]` 与 `markdownParser` 的实际分支为准，不要只改规范文档

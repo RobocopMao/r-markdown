@@ -73,11 +73,12 @@ import {
   HardDrive,
   ListTree,
   Search,
+  Bot,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
-import { findShortcutLabel, replaceShortcutLabel } from '@/utils/platform'
+import { findShortcutLabel, replaceShortcutLabel, undoShortcutLabel } from '@/utils/platform'
 import { isMac, modKeyLabel, ctrlKeyLabel, altKeyLabel, shiftKeyLabel } from '@/utils/platform'
 import {
   parseShortcut,
@@ -107,6 +108,7 @@ import ComponentPickerDialog from './components/ComponentPickerDialog.vue'
 import SaveDraftDialog from './components/SaveDraftDialog.vue'
 import DraftListDialog from './components/DraftListDialog.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
+import AiFormatDialog from './components/AiFormatDialog.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
 import TreeSidebar from './components/TreeSidebar.vue'
 import PushToCloudDialog from './components/PushToCloudDialog.vue'
@@ -574,6 +576,7 @@ const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
 const showGallery = ref(false)
 const bannedWordsVisible = ref(false)
+const aiFormatVisible = ref(false)
 
 // ── 自动更新 ──
 const autoUpdateDialogVisible = ref(false)
@@ -1032,6 +1035,25 @@ function onSettingsClose() {
   useGitHubTree().checkConfig()
 }
 
+// ── AI 排版 ──
+/** 应用 AI 排版结果：替换编辑器内容并立即落盘，保留草稿/文章关联（同一篇改版） */
+function onAiFormatApply(text: string) {
+  markdown.value = text
+  saveContent(text, true)
+  aiFormatVisible.value = false
+  nextTick(() => editorRef.value?.focusEditor())
+  // 移动端没有物理键盘与撤销按钮，不提示撤销快捷键
+  showToast(
+    isMobileWeb.value ? '已应用排版结果' : `已应用排版结果，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/** 从 AI 排版面板跳转设置：直接落到 AI 排版 tab */
+function onAiOpenSettings() {
+  aiFormatVisible.value = false
+  onSettingsOpen('ai')
+}
+
 function onPasteText() {
   // currentDraftId.value = null
   // currentCloudArticleId.value = null
@@ -1197,6 +1219,13 @@ function loadDemo() {
           @select="(action: string) => onDropdownSelect('export', action)"
         />
         <button
+          class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
+          @click="aiFormatVisible = true"
+        >
+          <Bot :size="14" />
+          AI 排版
+        </button>
+        <button
           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
           @click="handleOpenSaveMaterial"
         >
@@ -1230,6 +1259,7 @@ function loadDemo() {
           @save-to-repo="pushCloudVisible = true"
           @upload-image="handleUploadToGitHub"
           @open-settings="settingsVisible = true"
+          @open-ai-format="aiFormatVisible = true"
         />
         <ThemePicker
           :themes="themes"
@@ -1290,6 +1320,7 @@ function loadDemo() {
             @open-settings="settingsVisible = true"
             @open-gallery="showGallery = true"
             @open-banned-words="bannedWordsVisible = true"
+            @open-ai-format="aiFormatVisible = true"
             @material-action="onMaterialAction"
             @open-components="$router.push('/components')"
             @open-drafts="draftListVisible = true"
@@ -2148,6 +2179,14 @@ function loadDemo() {
     :markdown="markdown"
     @close="bannedWordsVisible = false"
     @jump="onBannedWordsJump"
+  />
+  <!-- AI 排版面板 -->
+  <AiFormatDialog
+    :visible="aiFormatVisible"
+    :markdown="markdown"
+    @close="aiFormatVisible = false"
+    @apply="onAiFormatApply"
+    @open-settings="onAiOpenSettings"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"

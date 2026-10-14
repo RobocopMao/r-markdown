@@ -131,4 +131,31 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   bannedCustomWords: { default: [] },
   /** 违禁词检测：白名单（命中的词直接忽略） */
   bannedWhitelist: { default: [] },
+  /**
+   * AI 排版：OpenAI 兼容接口基址（必填，无默认值）。
+   * 可填 https://api.deepseek.com 这类裸域名，缺失版本段时自动补 /v1。
+   */
+  aiBaseUrl: { default: '' },
+  /** AI 排版：API Key（敏感字段，加密存储；必填，无默认值） */
+  aiApiKey: { default: '' },
+  /** AI 排版：模型名（必填，无默认值；可在设置中查询接口模型列表后选择） */
+  aiModel: { default: '' },
+  /** AI 排版：采样温度，排版任务取较低值以稳定输出 */
+  aiTemperature: { default: 0.3 },
+  /** AI 排版：单次输出 token 上限，长文被截断时可调大 */
+  aiMaxTokens: { default: 8192 },
+  /** AI 排版：是否流式输出（边生成边显示） */
+  aiStream: { default: true },
+  /** AI 排版：单次请求超时（秒） */
+  aiTimeoutSec: { default: 180 },
+  /** AI 排版：默认力度档位，minimal | standard | rich */
+  aiStylePreset: { default: 'standard' },
+  /** AI 排版：默认补充指令（每次排版自动附加，可留空） */
+  aiExtraInstruction: { default: '' },
+  /**
+   * AI 排版：常用补充要求清单，供面板勾选复用。
+   * 每项 { id, text, enabled }：enabled 为 true 时该条会拼进本次请求的补充要求。
+   * 勾选状态随条目一起持久化，下次打开面板无需重复勾选。
+   */
+  aiExtraPresets: { default: [] },
 }

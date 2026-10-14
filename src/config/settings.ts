@@ -19,6 +19,7 @@ const SENSITIVE_KEYS: Set<string> = new Set([
   'letaToken',
   'wechatAppId',
   'wechatAppSecret',
+  'aiApiKey',
 ])
 
 /** 桌面端：setSetting 后异步同步到磁盘。写丢不管，下次存新值时覆盖。 */

@@ -5,6 +5,7 @@ import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
 import { Check, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseCheckbox from '@/components/BaseCheckbox.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
@@ -24,6 +25,8 @@ import {
 } from '@/composables/useParagraphSettings'
 import { testConnection } from '@/services/githubUploader'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
+import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
+import { AI_STYLE_PRESETS, type AiStylePreset } from '@/utils/aiFormatPrompt'
 import { useTheme } from '@/composables/useTheme'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
 import ImageCacheDialog from './ImageCacheDialog.vue'
@@ -270,6 +273,107 @@ function saveEditorFontSize(val: number) {
 }
 function resetEditorFontSize() {
   saveEditorFontSize(13)
+}
+
+// ── AI 排版（接口地址 / Key / 模型名均无默认值，需用户填写）──
+const aiBaseUrl = ref(getSetting<string>('aiBaseUrl'))
+const aiApiKey = ref(getSetting<string>('aiApiKey'))
+const aiModel = ref(getSetting<string>('aiModel'))
+const aiTemperature = ref(getSetting<number>('aiTemperature'))
+const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
+const aiStream = ref(getSetting<boolean>('aiStream'))
+const aiStylePreset = ref<AiStylePreset>(getSetting<AiStylePreset>('aiStylePreset'))
+
+/** 模型列表查询状态 */
+const modelList = ref<string[]>([])
+const modelListLoading = ref(false)
+const modelListError = ref('')
+
+/** 连接测试状态 */
+const aiTesting = ref(false)
+const aiTestResult = ref<'ok' | 'fail' | ''>('')
+const aiTestError = ref('')
+/** 测试/查询后展示的提示信息 */
+const aiHint = ref('')
+
+function resetAiTestState() {
+  aiTestResult.value = ''
+  aiTestError.value = ''
+  aiHint.value = ''
+}
+
+function saveAiBaseUrl(val: string) {
+  aiBaseUrl.value = val
+  setSetting('aiBaseUrl', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+function saveAiApiKey(val: string) {
+  aiApiKey.value = val
+  setSetting('aiApiKey', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+function saveAiModel(val: string) {
+  aiModel.value = val
+  setSetting('aiModel', val)
+  resetAiTestState()
+}
+
+function saveAiTemperature(val: number) {
+  aiTemperature.value = val
+  setSetting('aiTemperature', val)
+}
+
+function saveAiMaxTokens(val: number) {
+  aiMaxTokens.value = val
+  setSetting('aiMaxTokens', val)
+}
+
+function saveAiStream(val: boolean) {
+  aiStream.value = val
+  setSetting('aiStream', val)
+}
+
+function saveAiStylePreset(val: AiStylePreset) {
+  aiStylePreset.value = val
+  setSetting('aiStylePreset', val)
+}
+
+/** 查询接口可用模型列表 */
+async function handleFetchModels() {
+  if (!aiBaseUrl.value || !aiApiKey.value) {
+    modelListError.value = '请先填写接口地址与 API Key'
+    modelList.value = []
+    return
+  }
+  modelListLoading.value = true
+  modelListError.value = ''
+  modelList.value = []
+  try {
+    modelList.value = await listModels(resolveAiConfig())
+    aiHint.value = `已获取 ${modelList.value.length} 个模型`
+  } catch (e: unknown) {
+    modelListError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    modelListLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestAiConnection() {
+  aiTesting.value = true
+  resetAiTestState()
+  try {
+    await testAiConnection(resolveAiConfig())
+    aiTestResult.value = 'ok'
+  } catch (e: unknown) {
+    aiTestResult.value = 'fail'
+    aiTestError.value = getErrorMessage(e, '连接失败')
+  }
+  aiTesting.value = false
 }
 
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
@@ -793,6 +897,17 @@ async function manualCheckUpdate() {
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
           :class="
+            settingsTab === 'ai'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
+          @click="settingsTab = 'ai'"
+        >
+          AI 排版
+        </button>
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+          :class="
             settingsTab === 'other'
               ? 'bg-[var(--accent)] text-white'
               : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
@@ -1166,6 +1281,176 @@ async function manualCheckUpdate() {
         <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
           仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
         </p>
+      </section>
+    </template>
+
+    <!-- AI 排版设置 -->
+    <template v-if="settingsTab === 'ai'">
+      <section>
+        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 排版</h3>
+        <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+          填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
+          排版」。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
+          加密后仅保存在本地。
+        </p>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">接口地址</label>
+          <input
+            :value="aiBaseUrl"
+            placeholder="https://api.deepseek.com/v1"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiBaseUrl(($event.target as HTMLInputElement).value)"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            兼容 /chat/completions 的地址；省略版本段时会自动补 /v1。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+          <input
+            :value="aiApiKey"
+            type="password"
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiApiKey(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="modelListLoading"
+              @click="handleFetchModels"
+            >
+              {{ modelListLoading ? '查询中…' : '获取模型列表' }}
+            </button>
+          </div>
+          <!-- 已获取列表：下拉选择；未获取：手填输入框 -->
+          <select
+            v-if="modelList.length > 0"
+            :value="aiModel"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveAiModel(($event.target as HTMLSelectElement).value)"
+          >
+            <!-- 已保存的模型若不在列表里（手填或列表已变），保留为一个选项避免丢失 -->
+            <option v-if="aiModel && !modelList.includes(aiModel)" :value="aiModel">
+              {{ aiModel }}（当前值）
+            </option>
+            <option v-for="id in modelList" :key="id" :value="id">{{ id }}</option>
+          </select>
+          <input
+            v-else
+            :value="aiModel"
+            placeholder="deepseek-chat"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiModel(($event.target as HTMLInputElement).value)"
+          />
+          <p v-if="modelListError" class="text-[10px] text-[#e74c3c] mt-1">
+            {{ modelListError }}
+          </p>
+          <p v-else-if="modelList.length > 0" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            已获取 {{ modelList.length }} 个模型，从下拉中选择。
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 mb-3">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
+            @click="handleTestAiConnection"
+          >
+            {{ aiTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span v-if="aiTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="aiTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+            aiTestError
+          }}</span>
+          <span v-else-if="aiHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+            aiHint
+          }}</span>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">排版力度</label>
+          <div class="flex gap-1.5">
+            <button
+              v-for="preset in AI_STYLE_PRESETS"
+              :key="preset.value"
+              class="flex-1 cursor-pointer rounded-lg border px-2 py-1.5 text-[11px] transition-colors"
+              :class="
+                aiStylePreset === preset.value
+                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                  : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+              "
+              :title="preset.hint"
+              @click="saveAiStylePreset(preset.value)"
+            >
+              {{ preset.label }}
+            </button>
+          </div>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            {{
+              AI_STYLE_PRESETS.find((p) => p.value === aiStylePreset)?.hint ||
+              '排版时使用的组件丰富程度'
+            }}
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+              aiTemperature
+            }}</span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="1"
+            step="0.1"
+            :value="aiTemperature"
+            class="compress-slider w-full cursor-pointer"
+            @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ aiMaxTokens }} tokens</span
+            >
+          </div>
+          <input
+            type="range"
+            min="1024"
+            max="32768"
+            step="1024"
+            :value="aiMaxTokens"
+            class="compress-slider w-full cursor-pointer"
+            @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            长文排版结果被截断时调大此值。
+          </p>
+        </div>
+
+        <BaseCheckbox
+          size="sm"
+          :checked="aiStream"
+          label="流式输出（边生成边显示）"
+          @change="saveAiStream"
+        />
       </section>
     </template>
 

@@ -69,6 +69,7 @@ const emit = defineEmits<{
   (e: 'openBannedWords'): void
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
+  (e: 'openAiFormat'): void
 }>()
 
 const showExamples = ref(false)
@@ -275,6 +276,14 @@ function toggleCollapse() {
       >
         <Import :size="24" class="shrink-0" />
         <span class="text-[10px] leading-tight">导入</span>
+      </button>
+      <!-- AI 排版 button -->
+      <button
+        class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+        @click="emit('openAiFormat')"
+      >
+        <Bot :size="24" class="shrink-0" />
+        <span class="text-[10px] leading-tight">AI 排版</span>
       </button>
       <!-- 扩展组件 button -->
       <button

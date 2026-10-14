@@ -82,3 +82,8 @@ export function findShortcutLabel(): string {
 export function replaceShortcutLabel(): string {
   return shortcut('mod', 'alt', 'F')
 }
+
+/** 撤销的快捷键文案（macOS 显示 ⌘Z，Windows/Linux 显示 Ctrl+Z） */
+export function undoShortcutLabel(): string {
+  return shortcut('mod', 'Z')
+}

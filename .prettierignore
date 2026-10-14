@@ -1,0 +1,4 @@
+# AI 排版用的组件规范：与 r-markdown-formatter skill 同源，
+# 必须与其源文件逐字节一致（aiFormatPrompt.loadFormatSpec 会剥离顶部注释后送进 prompt），
+# 因此禁止被 prettier --write 重新格式化。
+src/data/ai/format-spec.md
