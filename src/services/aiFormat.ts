@@ -8,7 +8,9 @@
  */
 
 import { getSetting } from '@/config/settings'
-import { getErrorMessage } from '@/utils/helpers'
+import { normalizeBaseUrl, describeHttpError, isAbortError, withTimeout } from '@/services/apiBase'
+
+export { normalizeBaseUrl }
 
 export interface AiFormatConfig {
   /** 归一化后的接口基址，形如 https://api.deepseek.com/v1 */
@@ -38,15 +40,6 @@ export interface FormatResult {
   finishReason: string
 }
 
-/** 去掉尾部多余的 `/`；若结尾没有版本段则补 /v1 */
-export function normalizeBaseUrl(raw: string): string {
-  let url = raw.trim().replace(/\/+$/, '')
-  if (!url) return ''
-  // 已带版本段（/v1、/v1beta、/compatible-mode/v1 等）则不补
-  if (!/\/v\d+[a-z]*$/i.test(url)) url += '/v1'
-  return url
-}
-
 export function resolveAiConfig(): AiFormatConfig {
   return {
     baseUrl: normalizeBaseUrl(getSetting<string>('aiBaseUrl') || ''),
@@ -73,62 +66,6 @@ export function assertConfigured(cfg: AiFormatConfig): void {
   if (!cfg.model) missing.push('模型名')
   if (missing.length > 0) {
     throw new Error(`尚未配置 AI 排版：请先在设置中填写${missing.join('、')}`)
-  }
-}
-
-/** 把 HTTP 状态码与网络异常翻译成可读中文 */
-function describeHttpError(status: number, bodyText: string): string {
-  const detail = extractApiError(bodyText)
-  const suffix = detail ? `（${detail}）` : ''
-  switch (status) {
-    case 401:
-    case 403:
-      return `API Key 无效或无权限${suffix}`
-    case 404:
-      return `接口地址或模型名不正确${suffix}`
-    case 422:
-      return `请求参数不被接受${suffix}`
-    case 429:
-      return `请求过于频繁或额度不足${suffix}`
-    default:
-      if (status >= 500) return `服务端错误（HTTP ${status}）${suffix}`
-      return `请求失败（HTTP ${status}）${suffix}`
-  }
-}
-
-/** 从错误响应体里尝试提取供应商给出的说明 */
-function extractApiError(bodyText: string): string {
-  if (!bodyText) return ''
-  try {
-    const data = JSON.parse(bodyText)
-    const msg = data?.error?.message || data?.message || data?.error
-    if (typeof msg === 'string') return msg.slice(0, 200)
-  } catch {
-    // 非 JSON，退回截断的原文
-  }
-  const trimmed = bodyText.trim()
-  return trimmed ? trimmed.slice(0, 200) : ''
-}
-
-function isAbortError(e: unknown): boolean {
-  return e instanceof DOMException ? e.name === 'AbortError' : getErrorMessage(e).includes('abort')
-}
-
-/** 组合外部 signal 与超时，返回清理函数 */
-function withTimeout(timeoutSec: number, external?: AbortSignal) {
-  const controller = new AbortController()
-  const timer = setTimeout(
-    () => controller.abort(new DOMException('请求超时', 'AbortError')),
-    Math.max(1, timeoutSec) * 1000,
-  )
-  const onAbort = () => controller.abort()
-  external?.addEventListener('abort', onAbort)
-  return {
-    signal: controller.signal,
-    cleanup: () => {
-      clearTimeout(timer)
-      external?.removeEventListener('abort', onAbort)
-    },
   }
 }
 

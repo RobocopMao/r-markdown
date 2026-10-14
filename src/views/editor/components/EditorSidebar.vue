@@ -8,6 +8,7 @@ import {
   Paperclip,
   FilePlus,
   Bot,
+  ImagePlus,
   Import,
   Images,
   Sun,
@@ -69,7 +70,7 @@ const emit = defineEmits<{
   (e: 'openBannedWords'): void
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
-  (e: 'openAiFormat'): void
+  (e: 'aiAction', action: 'format' | 'image'): void
 }>()
 
 const showExamples = ref(false)
@@ -161,6 +162,47 @@ function cancelExampleHide() {
     clearTimeout(exampleHideTimer)
     exampleHideTimer = null
   }
+}
+
+const showAi = ref(false)
+const aiRef = ref<HTMLElement | null>(null)
+const aiBtnRef = ref<HTMLElement | null>(null)
+const aiPopoverPos = ref({ top: '0px', left: '0px' })
+let aiHideTimer: ReturnType<typeof setTimeout> | null = null
+
+async function showAiPopover() {
+  if (aiHideTimer) {
+    clearTimeout(aiHideTimer)
+    aiHideTimer = null
+  }
+  if (showAi.value) return
+  showAi.value = true
+  if (aiBtnRef.value) {
+    await nextTick()
+    const rect = aiBtnRef.value.getBoundingClientRect()
+    aiPopoverPos.value = {
+      top: rect.top + 'px',
+      left: rect.right + 4 + 'px',
+    }
+  }
+}
+
+function hideAiPopover() {
+  aiHideTimer = setTimeout(() => {
+    showAi.value = false
+  }, 150)
+}
+
+function cancelAiHide() {
+  if (aiHideTimer) {
+    clearTimeout(aiHideTimer)
+    aiHideTimer = null
+  }
+}
+
+function selectAiAction(action: 'format' | 'image') {
+  showAi.value = false
+  emit('aiAction', action)
 }
 
 async function showMaterialsPopover() {
@@ -277,14 +319,48 @@ function toggleCollapse() {
         <Import :size="24" class="shrink-0" />
         <span class="text-[10px] leading-tight">导入</span>
       </button>
-      <!-- AI 排版 button -->
-      <button
-        class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
-        @click="emit('openAiFormat')"
-      >
-        <Bot :size="24" class="shrink-0" />
-        <span class="text-[10px] leading-tight">AI 排版</span>
-      </button>
+      <!--
+        AI button with popover：排版与配图同属「AI 能力」，合成一个入口，
+        二级菜单里再分。悬停展开，与「素材 / 示例」的交互保持一致。
+      -->
+      <div class="relative w-full" @mouseenter="showAiPopover" @mouseleave="hideAiPopover">
+        <button
+          ref="aiBtnRef"
+          class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+        >
+          <Bot :size="24" class="shrink-0" />
+          <span class="text-[10px] leading-tight">AI</span>
+        </button>
+        <!-- AI popover -->
+        <div
+          v-if="showAi"
+          ref="aiRef"
+          class="examples-popover fixed rounded-xl z-50 p-1.5 min-w-[120px]"
+          :style="{
+            background: 'white',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            top: aiPopoverPos.top,
+            left: aiPopoverPos.left,
+          }"
+          @mouseenter="cancelAiHide"
+          @mouseleave="hideAiPopover"
+        >
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            @click="selectAiAction('format')"
+          >
+            <Bot :size="14" class="shrink-0" />
+            AI 排版
+          </button>
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            @click="selectAiAction('image')"
+          >
+            <ImagePlus :size="14" class="shrink-0" />
+            AI 配图
+          </button>
+        </div>
+      </div>
       <!-- 扩展组件 button -->
       <button
         class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"

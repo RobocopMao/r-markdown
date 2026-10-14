@@ -26,7 +26,16 @@ import {
 import { testConnection } from '@/services/githubUploader'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
-import { AI_STYLE_PRESETS, type AiStylePreset } from '@/utils/aiFormatPrompt'
+import {
+  IMAGE_PROVIDERS,
+  getActiveProviderId,
+  getImageProvider,
+  getProviderConfig,
+  setActiveProviderId,
+  setProviderConfig,
+  type ImageGenProviderConfig,
+} from '@/services/imageProviders'
+import { listImageModels, testImageConnection } from '@/services/imageGen'
 import { useTheme } from '@/composables/useTheme'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
 import ImageCacheDialog from './ImageCacheDialog.vue'
@@ -91,13 +100,27 @@ const selectChevronStyle = {
 // ── 设置 tab ──
 const settingsTab = ref('basic')
 
+/**
+ * 「AI 排版」tab 内的二级子页：format（排版）| image（配图）。
+ * 配图配置挂在同一个 tab 下而不是新开 tab —— 两者是同一类「AI 能力」配置。
+ */
+const aiPane = ref<'format' | 'image'>('format')
+
 // 当对话框打开时，若指定了 initialTab 则自动切换；并刷新存储位置激活态
 // （用户在树下拉中切换工作区时会持久化 articleStorageMode，需在此同步回显）
 watch(
   () => props.visible,
   (isVisible) => {
     if (isVisible) {
-      if (props.initialTab) settingsTab.value = props.initialTab
+      // 'ai-image' 是「打开 AI tab 且停在配图子页」的入口约定
+      if (props.initialTab === 'ai-image') {
+        settingsTab.value = 'ai'
+        aiPane.value = 'image'
+      } else if (props.initialTab) {
+        settingsTab.value = props.initialTab
+        if (props.initialTab === 'ai') aiPane.value = 'format'
+      }
+      refreshImageConfig()
       articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
       // 同步回显文章文件命名开关（可能被其他入口或磁盘配置改动）
       articleTitleNaming.value = getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE
@@ -282,7 +305,6 @@ const aiModel = ref(getSetting<string>('aiModel'))
 const aiTemperature = ref(getSetting<number>('aiTemperature'))
 const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
 const aiStream = ref(getSetting<boolean>('aiStream'))
-const aiStylePreset = ref<AiStylePreset>(getSetting<AiStylePreset>('aiStylePreset'))
 
 /** 模型列表查询状态 */
 const modelList = ref<string[]>([])
@@ -337,9 +359,116 @@ function saveAiStream(val: boolean) {
   setSetting('aiStream', val)
 }
 
-function saveAiStylePreset(val: AiStylePreset) {
-  aiStylePreset.value = val
-  setSetting('aiStylePreset', val)
+// ── AI 配图（按厂商配置；各家参数不一致，字段由厂商注册表驱动）──
+/** 当前厂商 id（响应式，用于切换厂商时刷新配置回显） */
+const imageProviderId = ref(getActiveProviderId())
+/** 当前厂商的能力描述 */
+const imageDef = computed(() => getImageProvider(imageProviderId.value))
+/** 当前厂商的配置（写回时按厂商分开存储） */
+const imageConfig = ref<ImageGenProviderConfig>(getProviderConfig(imageProviderId.value))
+
+/** 模型列表查询状态 */
+const imageModelList = ref<string[]>([])
+const imageModelLoading = ref(false)
+const imageModelError = ref('')
+/** 连接测试状态 */
+const imageTesting = ref(false)
+const imageTestResult = ref<'ok' | 'fail' | ''>('')
+const imageTestError = ref('')
+const imageHint = ref('')
+
+function resetImageTestState() {
+  imageTestResult.value = ''
+  imageTestError.value = ''
+  imageHint.value = ''
+}
+
+/** 从设置里重新读取当前厂商配置（面板打开、切换厂商时调用） */
+function refreshImageConfig() {
+  imageProviderId.value = getActiveProviderId()
+  imageConfig.value = getProviderConfig(imageProviderId.value)
+  imageModelList.value = []
+  imageModelError.value = ''
+  resetImageTestState()
+}
+
+function patchImageConfig(patch: Partial<ImageGenProviderConfig>) {
+  imageConfig.value = { ...imageConfig.value, ...patch }
+  setProviderConfig(imageProviderId.value, patch)
+}
+
+function switchImageProvider(id: string) {
+  setActiveProviderId(id)
+  refreshImageConfig()
+}
+
+function saveImageBaseUrl(val: string) {
+  patchImageConfig({ baseUrl: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+function saveImageApiKey(val: string) {
+  patchImageConfig({ apiKey: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+function saveImageModel(val: string) {
+  patchImageConfig({ model: val })
+  resetImageTestState()
+}
+
+function saveImageTimeout(val: number) {
+  patchImageConfig({ timeoutSec: val })
+}
+
+/** 查询该厂商的可用图像模型（/models 后按模型名规则筛选） */
+async function handleFetchImageModels() {
+  if (!imageConfig.value.baseUrl || !imageConfig.value.apiKey) {
+    imageModelError.value = '请先填写接口地址与 API Key'
+    imageModelList.value = []
+    return
+  }
+  imageModelLoading.value = true
+  imageModelError.value = ''
+  imageModelList.value = []
+  try {
+    imageModelList.value = await listImageModels(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+    )
+    imageHint.value = `已获取 ${imageModelList.value.length} 个图像模型`
+  } catch (e: unknown) {
+    imageModelError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    imageModelLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestImageConnection() {
+  imageTesting.value = true
+  resetImageTestState()
+  try {
+    await testImageConnection(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+    )
+    imageTestResult.value = 'ok'
+  } catch (e: unknown) {
+    imageTestResult.value = 'fail'
+    imageTestError.value = getErrorMessage(e, '连接失败')
+  }
+  imageTesting.value = false
 }
 
 /** 查询接口可用模型列表 */
@@ -903,7 +1032,7 @@ async function manualCheckUpdate() {
           "
           @click="settingsTab = 'ai'"
         >
-          AI 排版
+          AI 设置
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
@@ -1284,10 +1413,34 @@ async function manualCheckUpdate() {
       </section>
     </template>
 
-    <!-- AI 排版设置 -->
+    <!-- AI 排版设置（内部再分「排版 / 配图」两个子页，共用同一个设置 tab） -->
     <template v-if="settingsTab === 'ai'">
-      <section>
-        <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 排版</h3>
+      <div class="flex gap-1.5 mb-4">
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+          :class="
+            aiPane === 'format'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
+          @click="aiPane = 'format'"
+        >
+          AI 排版
+        </button>
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+          :class="
+            aiPane === 'image'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
+          @click="aiPane = 'image'"
+        >
+          AI 配图
+        </button>
+      </div>
+
+      <section v-if="aiPane === 'format'">
         <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
           填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
           排版」。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
@@ -1378,32 +1531,6 @@ async function manualCheckUpdate() {
         </div>
 
         <div class="mb-3">
-          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">排版力度</label>
-          <div class="flex gap-1.5">
-            <button
-              v-for="preset in AI_STYLE_PRESETS"
-              :key="preset.value"
-              class="flex-1 cursor-pointer rounded-lg border px-2 py-1.5 text-[11px] transition-colors"
-              :class="
-                aiStylePreset === preset.value
-                  ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                  : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-              "
-              :title="preset.hint"
-              @click="saveAiStylePreset(preset.value)"
-            >
-              {{ preset.label }}
-            </button>
-          </div>
-          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-            {{
-              AI_STYLE_PRESETS.find((p) => p.value === aiStylePreset)?.hint ||
-              '排版时使用的组件丰富程度'
-            }}
-          </p>
-        </div>
-
-        <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
             <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
@@ -1451,6 +1578,161 @@ async function manualCheckUpdate() {
           label="流式输出（边生成边显示）"
           @change="saveAiStream"
         />
+      </section>
+
+      <!-- AI 配图（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
+      <section v-if="aiPane === 'image'">
+        <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">{{ imageDef.intro }}</p>
+
+        <!-- 厂商下拉常显：即便当前只有一家，也让「配置按厂商分开存」这件事可见 -->
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">厂商</label>
+          <select
+            :value="imageProviderId"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="switchImageProvider(($event.target as HTMLSelectElement).value)"
+          >
+            <option v-for="p in IMAGE_PROVIDERS" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            各厂商参数不同，配置按厂商分开保存；当前可选：{{
+              IMAGE_PROVIDERS.map((p) => p.name).join('、')
+            }}。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">接口地址</label>
+            <button
+              v-for="alt in imageDef.altBaseUrls"
+              :key="alt.url"
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="imageConfig.baseUrl === alt.url"
+              @click="saveImageBaseUrl(alt.url)"
+            >
+              {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
+            </button>
+          </div>
+          <input
+            :value="imageConfig.baseUrl"
+            :placeholder="imageDef.baseUrl"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
+            >；省略版本段时会自动补 /v1。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+          <input
+            :value="imageConfig.apiKey"
+            type="password"
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="imageModelLoading"
+              @click="handleFetchImageModels"
+            >
+              {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
+            </button>
+          </div>
+          <select
+            v-if="imageModelList.length > 0"
+            :value="imageConfig.model"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveImageModel(($event.target as HTMLSelectElement).value)"
+          >
+            <option
+              v-if="imageConfig.model && !imageModelList.includes(imageConfig.model)"
+              :value="imageConfig.model"
+            >
+              {{ imageConfig.model }}（当前值）
+            </option>
+            <option v-for="id in imageModelList" :key="id" :value="id">{{ id }}</option>
+          </select>
+          <input
+            v-else
+            :value="imageConfig.model"
+            :placeholder="imageDef.defaultModel"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageModel(($event.target as HTMLInputElement).value)"
+          />
+          <p v-if="imageModelError" class="text-[10px] text-[#e74c3c] mt-1">
+            {{ imageModelError }}
+          </p>
+          <p
+            v-else-if="imageModelList.length > 0"
+            class="text-[10px] text-[#999] dark:text-[#666] mt-1"
+          >
+            已获取 {{ imageModelList.length }} 个图像模型，从下拉中选择。
+          </p>
+          <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            {{ imageDef.modelHint }}
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">单次超时</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ imageConfig.timeoutSec }}s</span
+            >
+          </div>
+          <input
+            type="range"
+            :min="imageDef.minTimeoutSec"
+            :max="imageDef.maxTimeoutSec"
+            step="10"
+            :value="imageConfig.timeoutSec"
+            class="compress-slider w-full cursor-pointer"
+            @input="saveImageTimeout(Number(($event.target as HTMLInputElement).value))"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
+            秒；复杂提示词与大尺寸 需要更久。
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 mb-3">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
+            @click="handleTestImageConnection"
+          >
+            {{ imageTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span
+            v-if="imageTestResult === 'ok'"
+            class="text-[12px]"
+            :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+            imageTestError
+          }}</span>
+          <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+            imageHint
+          }}</span>
+        </div>
+
+        <p class="text-[10px] text-[#999] dark:text-[#666]">
+          生成结果不会上传到别处：插入时按「图片设置 →
+          粘贴/拖拽上传方式」保存（本地存储、本地磁盘、GitHub 图床或乐塔图床）。
+        </p>
       </section>
     </template>
 

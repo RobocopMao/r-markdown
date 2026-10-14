@@ -12,6 +12,7 @@ import {
   Bot,
   Cloud,
   ImageUp,
+  ImagePlus,
   Settings,
 } from 'lucide-vue-next'
 
@@ -48,6 +49,7 @@ const emit = defineEmits<{
   'upload-image': []
   'open-settings': []
   'open-ai-format': []
+  'open-ai-image': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -119,6 +121,13 @@ onBeforeUnmount(() => {
         >
           <Bot :size="14" />
           AI 排版
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-image'))"
+        >
+          <ImagePlus :size="14" />
+          AI 配图
         </button>
         <a
           :href="aiDemoHref"

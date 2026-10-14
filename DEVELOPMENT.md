@@ -65,6 +65,9 @@ src/
 ├── services/            # 业务服务层
 │   ├── DraftStorage.ts      # IndexedDB 草稿存储
 │   ├── aiFormat.ts          # AI 排版：OpenAI 兼容 /chat/completions 调用（流式 SSE / 超时 / 错误中文映射）
+│   ├── imageGen.ts          # AI 配图：OpenAI 兼容 /images/generations 调用（取图 / base64 解码 / 错误中文映射）
+│   ├── imageProviders.ts    # AI 配图厂商注册表（接口·尺寸·请求体差异的数据化描述 + 按厂商配置读写）
+│   ├── apiBase.ts           # 基址归一化、HTTP 错误中文映射、超时与中止（AI 排版与 AI 配图共用）
 │   ├── GitHubArticleCache.ts# GitHub 文章本地缓存（IndexedDB）
 │   ├── GitHubTreeService.ts # GitHub 仓库文章树 CRUD
 │   ├── LocalTreeService.ts  # 本地磁盘文章树 CRUD（与 GitHub 版同签名）
@@ -103,6 +106,7 @@ src/
 │   ├── outline.ts           # 文档大纲提取（标题 + <title> + <p-title>）
 │   ├── paginate.ts          # PDF 导出 DOM 测量装箱分页
 │   ├── platform.ts          # 平台判断与快捷键文案（显示用，不用于按键分支）
+│   ├── saveFile.ts          # 保存文件到本地（桌面端原生保存对话框 / 浏览器 a.download）
 │   ├── textDiff.ts          # 行级文本差异（LCS + hunk 折叠，供 AI 排版结果对照，纯逻辑）
 │   └── xhsCards.ts          # 小红书卡片生成
 ├── views/               # 页面视图
@@ -134,45 +138,46 @@ scripts/
 
 ### 编辑器组件一览（`src/views/editor/components/`）
 
-| 组件                                                                   | 用途                                                                       |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                          |
-| `Preview.vue`                                                          | 预览区渲染与复制                                                           |
-| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助 |
-| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单）                                         |
-| `OutlinePanel.vue`                                                     | 文档大纲面板                                                               |
-| `FindReplacePanel.vue`                                                 | 查找替换面板                                                               |
-| `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                             |
-| `Minimap.vue`                                                          | 预览区缩略图                                                               |
-| `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                             |
-| `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / AI 排版 / 关于）               |
-| `ThemePicker.vue`                                                      | 主题色选择                                                                 |
-| `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                         |
-| `ImageCacheDialog.vue`                                                 | 图库弹窗（本地 / 磁盘图片）                                                |
-| `DraftListDialog.vue` `SaveDraftDialog.vue`                            | 草稿列表与保存草稿                                                         |
-| `PushToCloudDialog.vue` `PushToCloudTree.vue`                          | 推送到云端文章树                                                           |
-| `PublishToWechatDialog.vue`                                            | 发布到公众号                                                               |
-| `MaterialLibraryPanel.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 素材面板与卡片                                                             |
-| `XhsExporter.vue`                                                      | 小红书图导出（首图 + 正文卡片，桌面端打包 ZIP）                            |
-| `FinalizeDialog.vue`                                                   | 定稿（本地导出 Markdown）                                                  |
-| `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果）    |
-| `Dropdown.vue`                                                         | 通用下拉                                                                   |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 排版入口）                                           |
+| 组件                                                                   | 用途                                                                                                                                                       |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                                                                                                          |
+| `Preview.vue`                                                          | 预览区渲染与复制                                                                                                                                           |
+| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 排版 / AI 配图） |
+| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单）                                                                                                                         |
+| `OutlinePanel.vue`                                                     | 文档大纲面板                                                                                                                                               |
+| `FindReplacePanel.vue`                                                 | 查找替换面板                                                                                                                                               |
+| `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                                                                                                             |
+| `Minimap.vue`                                                          | 预览区缩略图                                                                                                                                               |
+| `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                                                                                                             |
+| `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / AI〔排版·配图〕 / 关于）                                                                                       |
+| `ThemePicker.vue`                                                      | 主题色选择                                                                                                                                                 |
+| `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                                                                                                         |
+| `ImageCacheDialog.vue`                                                 | 图库弹窗（本地 / 磁盘图片）                                                                                                                                |
+| `DraftListDialog.vue` `SaveDraftDialog.vue`                            | 草稿列表与保存草稿                                                                                                                                         |
+| `PushToCloudDialog.vue` `PushToCloudTree.vue`                          | 推送到云端文章树                                                                                                                                           |
+| `PublishToWechatDialog.vue`                                            | 发布到公众号                                                                                                                                               |
+| `MaterialLibraryPanel.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 素材面板与卡片                                                                                                                                             |
+| `XhsExporter.vue`                                                      | 小红书图导出（首图 + 正文卡片，桌面端打包 ZIP）                                                                                                            |
+| `FinalizeDialog.vue`                                                   | 定稿（本地导出 Markdown）                                                                                                                                  |
+| `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果）                                                                                    |
+| `AiImageDialog.vue`                                                    | AI 配图（提示词 / 尺寸档位·宽高比 / 出图预览与下载 / 插入编辑器）                                                                                          |
+| `Dropdown.vue`                                                         | 通用下拉                                                                                                                                                   |
+| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 排版、AI 配图入口）                                                                                                                  |
 
 ### 编辑器组合式函数（`src/views/editor/composables/`）
 
-| 文件                  | 用途                                                                      |
-| --------------------- | ------------------------------------------------------------------------- |
-| `useAutoSave.ts`      | 自动保存（间隔可配）                                                      |
-| `useDraft.ts`         | 草稿关联与匹配                                                            |
-| `useExport.ts`        | 导出（图片 / 小红书 / PDF / HTML）                                        |
-| `useGitHubTree.ts`    | 文章树（GitHub 与本地磁盘切换）                                           |
-| `useImageInsert.ts`   | 粘贴 / 拖拽图片插入与上传                                                 |
-| `useImport.ts`        | 导入 `.md` / `.txt` / `.docx`（导出 `pickDocumentFile()` 供 AI 排版复用） |
-| `useMaterial.ts`      | 素材保存与插入                                                            |
-| `useScrollSync.ts`    | 编辑器与预览滚动同步                                                      |
-| `useToolbar.ts`       | 工具栏按钮与插入语法定义                                                  |
-| `useWechatPublish.ts` | 微信公众号发布                                                            |
+| 文件                  | 用途                                                                            |
+| --------------------- | ------------------------------------------------------------------------------- |
+| `useAutoSave.ts`      | 自动保存（间隔可配）                                                            |
+| `useDraft.ts`         | 草稿关联与匹配                                                                  |
+| `useExport.ts`        | 导出（图片 / 小红书 / PDF / HTML）                                              |
+| `useGitHubTree.ts`    | 文章树（GitHub 与本地磁盘切换）                                                 |
+| `useImageInsert.ts`   | 粘贴 / 拖拽图片插入与上传（导出 `processImageInsert()` 供 AI 配图复用落盘链路） |
+| `useImport.ts`        | 导入 `.md` / `.txt` / `.docx`（导出 `pickDocumentFile()` 供 AI 排版复用）       |
+| `useMaterial.ts`      | 素材保存与插入                                                                  |
+| `useScrollSync.ts`    | 编辑器与预览滚动同步                                                            |
+| `useToolbar.ts`       | 工具栏按钮与插入语法定义                                                        |
+| `useWechatPublish.ts` | 微信公众号发布                                                                  |
 
 ## 开发环境搭建
 
@@ -616,3 +621,7 @@ pnpm preview
     nvm use 24
     ```
 13. **AI 排版的组件规范**：`src/data/ai/format-spec.md` 是 prompt 中的「唯一排版标准」，与 `r-markdown-formatter` skill 同源。更新规范时手动重拷该文件并保留顶部来源注释块（读取方 `aiFormatPrompt.loadFormatSpec()` 会剥离注释，正文需与源文件逐字节一致）；可用组件白名单以 `@/extension` 的 `components[]` 与 `markdownParser` 的实际分支为准，不要只改规范文档
+14. **新增 AI 配图厂商只改一处**：各厂商参数不一致（尺寸是档位还是像素、宽高比是否独立字段、返回 url 还是 base64），差异全部收在 `src/services/imageProviders.ts` 的 `IMAGE_PROVIDERS` 里——加一条 `ImageProviderDef`（含 `buildBody` / `parseResponse`）即可，设置页与配图面板的字段由该描述渲染，调用层不得出现 `if (厂商 === 'xxx')`。配置按厂商存于设置 `imageGenProviders`（敏感字段，整体加密）；读取一律走 `getProviderConfig()`，不要直接读设置对象，否则拿不到默认值合并与非法值纠正
+15. **AI 配图的图片落地不另起一套**：生成结果只产出 `File` 并交给 `useImageInsert`；`processImageInsert()` 按「图片设置 → 粘贴/拖拽上传方式」走本地存储 / 本地磁盘 / GitHub / 乐塔四条既有链路，`uploadImageToHosting()` 走图床那条。不要在配图面板里判断存储方式、压缩或上传，否则两处行为会漂移
+16. **Agnes 生图必须用 `return_base64: true`，不要用 URL 返回**：`response_format: 'url'` 给出的地址指向 `storage.googleapis.com/agnes-aigc/…`，**该存储域不返回 CORS 头**，浏览器里 `fetch` 它必被拦（网络面板显示 CORS error；`<img>` 能显示但 JS 读不到字节）。用 `return_base64: true` 让图片数据随同一次响应回来，就没有第二个请求。改厂商 def 的 `buildBody` 时注意别退回 URL 模式
+17. **保存文件统一走 `src/utils/saveFile.ts`**：桌面端（Tauri）的 WebView 对 blob URL 的 `<a download>` **不生效且不报错**，必须用原生保存对话框（`plugin-dialog` 的 `save()` + `plugin-fs` 的 `writeFile()`）。该工具已封装「桌面端优先、用户取消即返回、插件异常才降级浏览器下载」；新增导出/保存功能一律用它，不要各处再抄一遍（HTML 导出 / 定稿 / 小红书导出三处仍是各自实现，改到时可一并收编）

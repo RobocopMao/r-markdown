@@ -158,4 +158,15 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
    * 勾选状态随条目一起持久化，下次打开面板无需重复勾选。
    */
   aiExtraPresets: { default: [] },
+  /**
+   * AI 配图：当前选中的厂商 id（对应 services/imageProviders.ts 的注册表，
+   * 目前只有 'agnes'）。各厂商参数不一致，故配置按厂商分开存放。
+   */
+  imageGenProvider: { default: 'agnes' },
+  /**
+   * AI 配图：按厂商的配置表（敏感字段，整体加密存储）。
+   * 形如 { agnes: { apiKey, baseUrl, model, size, ratio, timeoutSec } }；
+   * 读取一律走 imageProviders.getProviderConfig()，缺失字段会自动回退厂商默认值。
+   */
+  imageGenProviders: { default: {} },
 }

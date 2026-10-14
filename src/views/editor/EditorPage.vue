@@ -73,7 +73,6 @@ import {
   HardDrive,
   ListTree,
   Search,
-  Bot,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -109,6 +108,7 @@ import SaveDraftDialog from './components/SaveDraftDialog.vue'
 import DraftListDialog from './components/DraftListDialog.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
 import AiFormatDialog from './components/AiFormatDialog.vue'
+import AiImageDialog from './components/AiImageDialog.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
 import TreeSidebar from './components/TreeSidebar.vue'
 import PushToCloudDialog from './components/PushToCloudDialog.vue'
@@ -577,6 +577,7 @@ const settingsInitialTab = ref('')
 const showGallery = ref(false)
 const bannedWordsVisible = ref(false)
 const aiFormatVisible = ref(false)
+const aiImageVisible = ref(false)
 
 // ── 自动更新 ──
 const autoUpdateDialogVisible = ref(false)
@@ -979,6 +980,8 @@ const {
   onGithubImageSelected,
   handleUploadToDisk,
   onDiskImageSelected,
+  processImageInsert,
+  uploadImageToHosting,
 } = useImageInsert(editorRef, showToast, markdown, isMobileWeb)
 
 const imageMenuOpen = ref(false)
@@ -1048,10 +1051,47 @@ function onAiFormatApply(text: string) {
   )
 }
 
+/** 左侧栏「AI」二级菜单：分派到排版或配图面板 */
+function onSidebarAiAction(action: 'format' | 'image') {
+  if (action === 'format') aiFormatVisible.value = true
+  else aiImageVisible.value = true
+}
+
 /** 从 AI 排版面板跳转设置：直接落到 AI 排版 tab */
 function onAiOpenSettings() {
   aiFormatVisible.value = false
   onSettingsOpen('ai')
+}
+
+// ── AI 配图 ──
+/**
+ * 插入 AI 生成的图片。
+ * 复用 useImageInsert 的落盘链路：按「图片设置 → 粘贴/拖拽上传方式」走
+ * 本地 IndexedDB / 本地磁盘 / GitHub 图床 / 乐塔图床，与手动粘贴一张图片完全一致。
+ */
+function onAiImageInsert(file: File) {
+  aiImageVisible.value = false
+  void processImageInsert(file)
+}
+
+/**
+ * AI 配图的「上传图床并插入」：复用编辑器既有的图床上传链路
+ * （按「图片设置 → 日常上传默认图床」走 GitHub 或乐塔），上传成功后关面板。
+ * 上传期间不关面板，让全局进度浮层可见；失败时保留面板，用户可重试或改用「插入编辑器」。
+ */
+async function onAiImageUpload(file: File) {
+  try {
+    await uploadImageToHosting(file)
+    aiImageVisible.value = false
+  } catch {
+    // uploadImageToHosting 内已 showToast 提示，面板保持打开
+  }
+}
+
+/** 从 AI 配图面板跳转设置：落到「AI 排版 → AI 配图」子页 */
+function onAiImageOpenSettings() {
+  aiImageVisible.value = false
+  onSettingsOpen('ai-image')
 }
 
 function onPasteText() {
@@ -1219,13 +1259,6 @@ function loadDemo() {
           @select="(action: string) => onDropdownSelect('export', action)"
         />
         <button
-          class="hidden md:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
-          @click="aiFormatVisible = true"
-        >
-          <Bot :size="14" />
-          AI 排版
-        </button>
-        <button
           class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 border-none rounded-md text-[13px] font-medium cursor-pointer transition-all duration-150 bg-[var(--accent-light)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white active:scale-[0.97]"
           @click="handleOpenSaveMaterial"
         >
@@ -1260,6 +1293,7 @@ function loadDemo() {
           @upload-image="handleUploadToGitHub"
           @open-settings="settingsVisible = true"
           @open-ai-format="aiFormatVisible = true"
+          @open-ai-image="aiImageVisible = true"
         />
         <ThemePicker
           :themes="themes"
@@ -1320,7 +1354,7 @@ function loadDemo() {
             @open-settings="settingsVisible = true"
             @open-gallery="showGallery = true"
             @open-banned-words="bannedWordsVisible = true"
-            @open-ai-format="aiFormatVisible = true"
+            @ai-action="onSidebarAiAction"
             @material-action="onMaterialAction"
             @open-components="$router.push('/components')"
             @open-drafts="draftListVisible = true"
@@ -2187,6 +2221,16 @@ function loadDemo() {
     @close="aiFormatVisible = false"
     @apply="onAiFormatApply"
     @open-settings="onAiOpenSettings"
+  />
+  <!-- AI 配图面板 -->
+  <AiImageDialog
+    :visible="aiImageVisible"
+    :markdown="markdown"
+    :uploading="githubUploading"
+    @close="aiImageVisible = false"
+    @insert="onAiImageInsert"
+    @upload="onAiImageUpload"
+    @open-settings="onAiImageOpenSettings"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"
