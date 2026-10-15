@@ -41,6 +41,9 @@ import {
 import { formatArticle, resolveAiConfig } from '@/services/aiFormat'
 import { diffLines, toHunks, type DiffHunk } from '@/utils/textDiff'
 import { pickDocumentFile } from '../composables/useImport'
+import { useSessionCountdown } from '@/composables/useSessionCountdown'
+import { expiresAtFrom, isExpiredAt } from '@/utils/aiSession'
+import { clearRecord, loadRecord, saveRecord } from '@/services/aiSessionStore'
 
 const props = defineProps<{
   visible: boolean
@@ -206,6 +209,18 @@ const warnings = ref<string[]>([])
 /** 严重错误 */
 const errorMsg = ref('')
 
+/** 结果保留倒计时（用排版面板自己的保留时长设置项） */
+const { now, remainingText, currentHours, startTicker, stopTicker, syncText } =
+  useSessionCountdown('aiFormatSessionHours')
+
+/** 本次结果的过期时刻（null = 还没有结果）；倒计时与过期判定都读它 */
+const resultExpiresAt = ref<number | null>(null)
+
+/** 结果是否已过期（过期后本地记录已失效，重开面板会从空白开始） */
+const resultExpired = computed(
+  () => resultExpiresAt.value != null && isExpiredAt(resultExpiresAt.value, now.value),
+)
+
 /**
  * 配置状态必须走响应式 ref：
  * isAiConfigured() 只读 localStorage（非响应式），若直接放进 computed，
@@ -275,8 +290,9 @@ watch(
   () => props.visible,
   async (v) => {
     if (!v) {
-      // 关闭时中止进行中的请求并清空状态
-      resetAll()
+      // 关闭时只中止进行中的请求；结果留在内存与本地，下次打开可继续用
+      abort()
+      stopTicker()
       return
     }
     preset.value = getSetting<AiStylePreset>('aiStylePreset') || 'standard'
@@ -289,6 +305,16 @@ watch(
     // 预热规范并估算固定开销
     const spec = await getSpec()
     specTokens.value = estimateTokens(buildSystemPrompt(spec, preset.value))
+
+    // 没有内存态结果时，尝试恢复上次未过期的结果（关了面板再打开不该丢）
+    if (!resultText.value) {
+      const restored = await restoreResult()
+      if (restored) await nextTick(() => recomputeDiff())
+    }
+    if (resultExpiresAt.value) {
+      syncText(resultExpiresAt.value)
+      startTicker(() => resultExpiresAt.value)
+    }
   },
 )
 
@@ -326,9 +352,16 @@ async function onGenerate() {
   elapsedSec.value = 0
   resultView.value = 'diff'
 
+  // 发起请求即续期：保留时长按「最后一次请求」算，倒计时回满
+  const lastActiveAt = Date.now()
+  resultExpiresAt.value = expiresAtFrom(lastActiveAt, currentHours())
+  syncText(resultExpiresAt.value)
+  startTicker(() => resultExpiresAt.value)
+
   const cfg = resolveAiConfig()
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) {
-    errorMsg.value = '尚未配置 AI 排版：请先在设置中填写接口地址、API Key 与模型名'
+    errorMsg.value =
+      '尚未配置 AI 文本：请先在「设置 → AI 设置 → AI 文本」填写接口地址、API Key 与模型名'
     return
   }
 
@@ -408,7 +441,79 @@ function finalize(raw: string, finishReason: string) {
   }
   streamingText.value = ''
   warnings.value = w
+  void persistResult()
 }
+
+// ── 结果保留（本地 IndexedDB + 滑动续期）──
+/**
+ * 排版结果是整篇长文，关掉面板就丢会很浪费（可能要重跑一次几十秒的请求）。
+ * 所以把它连同「保留到什么时候」一起存本地，下次打开面板若还没过期就恢复。
+ *
+ * 存储形状：{ resultText, baseText, fileLabel, warnings }。
+ * 不算「本次生成实际送出的原文」（baseText）就恢复不了 diff 视图。
+ */
+const RESULT_KEY = 'format'
+
+async function persistResult() {
+  if (!resultText.value) return
+  const lastActiveAt = Date.now()
+  try {
+    await saveRecord(
+      RESULT_KEY,
+      {
+        resultText: resultText.value,
+        baseText: baseText.value,
+        fileLabel: fileLabel.value,
+        warnings: warnings.value,
+        elapsedSec: elapsedSec.value,
+      },
+      lastActiveAt,
+      currentHours(),
+    )
+    resultExpiresAt.value = expiresAtFrom(lastActiveAt, currentHours())
+    syncText(resultExpiresAt.value)
+  } catch {
+    // 落盘失败只影响「下次打开能否恢复」，不打断本次生成
+  }
+}
+
+/** 恢复上次未过期的结果；返回是否恢复成功 */
+async function restoreResult(): Promise<boolean> {
+  const rec = await loadRecord<{
+    resultText?: string
+    baseText?: string
+    fileLabel?: string
+    warnings?: string[]
+    elapsedSec?: number
+  }>(RESULT_KEY, Date.now())
+
+  if (!rec?.payload?.resultText) return false
+  resultText.value = rec.payload.resultText
+  baseText.value = rec.payload.baseText || ''
+  fileLabel.value = rec.payload.fileLabel || ''
+  warnings.value = Array.isArray(rec.payload.warnings) ? rec.payload.warnings : []
+  elapsedSec.value = Number(rec.payload.elapsedSec) || 0
+  resultView.value = 'diff'
+  resultExpiresAt.value = Number(rec.expiresAt)
+  return true
+}
+
+/** 清空结果：内存 + 本地记录一起清掉 */
+async function onClearResult() {
+  if (!resultText.value && !streamingText.value) return
+  clearConfirmVisible.value = true
+}
+
+async function doClearResult() {
+  clearConfirmVisible.value = false
+  abort()
+  resetAll()
+  resultExpiresAt.value = null
+  remainingText.value = ''
+  await clearRecord(RESULT_KEY)
+}
+
+const clearConfirmVisible = ref(false)
 
 /** 本次生成使用的图片占位符表（原文中被替换掉的部分） */
 let lastTokens: string[] = []
@@ -512,6 +617,29 @@ onBeforeUnmount(() => {
     no-body-padding
     @close="emit('close')"
   >
+    <!-- 头部：结果保留倒计时 + 清空结果 -->
+    <template #header>
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <span
+          v-if="resultText"
+          class="shrink-0 rounded-full px-2 py-[3px] text-[11px]"
+          :class="
+            resultExpired
+              ? 'bg-[#fdecec] text-[#c0392b] dark:bg-[#3a1f1f] dark:text-[#e57373]'
+              : 'bg-[#f0f0f0] text-[#666] dark:bg-[#2a2a2a] dark:text-[#999]'
+          "
+        >
+          {{ resultExpired ? '结果已过期' : `结果保留 ${remainingText}` }}
+        </span>
+        <button
+          v-if="resultText"
+          class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[#c0392b] hover:text-[#c0392b] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+          @click="onClearResult"
+        >
+          清空结果
+        </button>
+      </div>
+    </template>
     <!--
       h-full + min-h-0：抽屉 body 有确定高度，这里撑满它，
       再让「结果容器」以 flex-1 吃掉剩余空间（内部各自滚动），
@@ -987,5 +1115,16 @@ onBeforeUnmount(() => {
     confirm-text="继续应用"
     @confirm="doApply"
     @cancel="confirmApplyVisible = false"
+  />
+
+  <!-- 清空结果确认 -->
+  <ConfirmDialog
+    v-model:visible="clearConfirmVisible"
+    title="清空结果"
+    message="清空后本次排版结果将不再保留（可从编辑器重新排版）。确定清空吗？"
+    cancel-text="取消"
+    confirm-text="清空"
+    @confirm="doClearResult"
+    @cancel="clearConfirmVisible = false"
   />
 </template>

@@ -159,6 +159,51 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
    */
   aiExtraPresets: { default: [] },
   /**
+   * 注：写作与排版共用「AI 文本」的接口地址 / API Key / 模型名
+   * （aiBaseUrl / aiApiKey / aiModel），因此这里不再有模型覆盖项。
+   * 下面是写作与排版**不同**的那几项。
+   */
+  /** AI 写作：采样温度。写作需要比排版更高的发散度 */
+  aiWriteTemperature: { default: 0.7 },
+  /** AI 写作：单次输出 token 上限。公众号长文 4000-8000 字，需要比排版的 8192 更大 */
+  aiWriteMaxTokens: { default: 16384 },
+  /**
+   * AI 写作：文章原型档位。
+   * auto 由模型自行判断；其余对应 khazix-writer skill 的五种原型。
+   */
+  aiWriteArchetype: { default: 'auto' },
+  /** AI 写作：目标字数档位，auto 交给 skill 自己的「4000-8000 字」口径 */
+  aiWriteLength: { default: 'auto' },
+  /**
+   * AI 写作：是否启用「卡兹克写作技能」（默认开启）。
+   *
+   * 一个开关管三件事，因为它们本来就是同一套技能的组成部分：
+   * 1. 载入技能本体 `src/data/ai/khazix/SKILL.md`；
+   * 2. 连参考资料一起载入（同目录 `references/` 的风格示例 + 内容方法论，约 +6900 tokens）；
+   * 3. 出稿后按技能第四节「四层自检体系」再跑一次质检。
+   *
+   * 关掉即整篇技能都不进 prompt，模型自由发挥（仍保留输出格式约定）。
+   * 默认开启：这是这个功能的核心卖点，不该让用户先去设置里打开。
+   */
+  aiWriteUseSkill: { default: true },
+  /**
+   * AI 各面板的结果保留时长（小时）——**三个面板各自独立设置**。
+   *
+   * 口径都是「从**最后一次请求**算起」的滑动续期：一直在用就一直留得住，
+   * 停手超过这个时长后，下一次请求从空白开始。
+   *
+   * 为什么分开：三个面板的使用节奏完全不同——写作往往一次聊很久（一次成稿要几十分钟），
+   * 排版/配图多是「生成一次就用掉」。共用一个值会逼用户在两种节奏间折中，
+   * 所以各给各的（都默认 24 小时）。键名沿用 aiWriteSessionHours 保持向后兼容。
+   */
+  aiWriteSessionHours: { default: 24 },
+  /** AI 排版：结果保留时长（小时） */
+  aiFormatSessionHours: { default: 24 },
+  /** AI 配图：结果保留时长（小时） */
+  aiImageSessionHours: { default: 24 },
+  /** AI 写作：长期补充要求，每次写作都拼进 system prompt（可留空） */
+  aiWriteExtraInstruction: { default: '' },
+  /**
    * AI 配图：当前选中的厂商 id（对应 services/imageProviders.ts 的注册表，
    * 目前只有 'agnes'）。各厂商参数不一致，故配置按厂商分开存放。
    */

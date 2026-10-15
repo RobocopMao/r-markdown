@@ -107,6 +107,7 @@ import ComponentPickerDialog from './components/ComponentPickerDialog.vue'
 import SaveDraftDialog from './components/SaveDraftDialog.vue'
 import DraftListDialog from './components/DraftListDialog.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
+import AiWriteDialog from './components/AiWriteDialog.vue'
 import AiFormatDialog from './components/AiFormatDialog.vue'
 import AiImageDialog from './components/AiImageDialog.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
@@ -576,6 +577,7 @@ const settingsVisible = ref(false)
 const settingsInitialTab = ref('')
 const showGallery = ref(false)
 const bannedWordsVisible = ref(false)
+const aiWriteVisible = ref(false)
 const aiFormatVisible = ref(false)
 const aiImageVisible = ref(false)
 
@@ -981,6 +983,7 @@ const {
   handleUploadToDisk,
   onDiskImageSelected,
   processImageInsert,
+  insertImageToDisk,
   uploadImageToHosting,
 } = useImageInsert(editorRef, showToast, markdown, isMobileWeb)
 
@@ -1051,13 +1054,36 @@ function onAiFormatApply(text: string) {
   )
 }
 
-/** 左侧栏「AI」二级菜单：分派到排版或配图面板 */
-function onSidebarAiAction(action: 'format' | 'image') {
-  if (action === 'format') aiFormatVisible.value = true
+/**
+ * 应用 AI 写作的稿件：替换编辑器内容并立即落盘。
+ *
+ * 与 onAiFormatApply 同语义——这是「同一篇文章的改版」，草稿与文章关联都保留，
+ * 桌面端可按 ⌘Z 撤销整个替换。
+ */
+function onAiWriteApply(text: string) {
+  markdown.value = text
+  saveContent(text, true)
+  aiWriteVisible.value = false
+  nextTick(() => editorRef.value?.focusEditor())
+  showToast(
+    isMobileWeb.value ? '已应用写作稿件' : `已应用写作稿件，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/** 从 AI 写作面板跳转设置：落到「AI 设置 → AI 文本」子页（写作与排版共用该子页） */
+function onAiWriteOpenSettings() {
+  aiWriteVisible.value = false
+  onSettingsOpen('ai-write')
+}
+
+/** 左侧栏「AI」二级菜单：分派到写作、排版或配图面板 */
+function onSidebarAiAction(action: 'write' | 'format' | 'image') {
+  if (action === 'write') aiWriteVisible.value = true
+  else if (action === 'format') aiFormatVisible.value = true
   else aiImageVisible.value = true
 }
 
-/** 从 AI 排版面板跳转设置：直接落到 AI 排版 tab */
+/** 从 AI 排版面板跳转设置：落到「AI 设置 → AI 文本」子页 */
 function onAiOpenSettings() {
   aiFormatVisible.value = false
   onSettingsOpen('ai')
@@ -1088,7 +1114,19 @@ async function onAiImageUpload(file: File) {
   }
 }
 
-/** 从 AI 配图面板跳转设置：落到「AI 排版 → AI 配图」子页 */
+/**
+ * AI 配图的「保存磁盘并插入」：复用编辑器既有的本地磁盘落盘链路。
+ *
+ * 只走磁盘这一条（不看「粘贴/拖拽上传方式」设置）——用户点这个按钮就是要存本地，
+ * 压缩参数、大小上限、img 标签格式都由 insertImageToDisk 统一处理，与其他入口一致。
+ * 仅桌面端会显示该按钮。
+ */
+function onAiImageSaveDisk(file: File) {
+  aiImageVisible.value = false
+  void insertImageToDisk(file)
+}
+
+/** 从 AI 配图面板跳转设置：落到「AI 设置 → AI 图片」子页 */
 function onAiImageOpenSettings() {
   aiImageVisible.value = false
   onSettingsOpen('ai-image')
@@ -1292,6 +1330,7 @@ function loadDemo() {
           @save-to-repo="pushCloudVisible = true"
           @upload-image="handleUploadToGitHub"
           @open-settings="settingsVisible = true"
+          @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
         />
@@ -2214,6 +2253,14 @@ function loadDemo() {
     @close="bannedWordsVisible = false"
     @jump="onBannedWordsJump"
   />
+  <!-- AI 写作面板（对话模式，输入框固定在抽屉底部） -->
+  <AiWriteDialog
+    :visible="aiWriteVisible"
+    :markdown="markdown"
+    @close="aiWriteVisible = false"
+    @apply="onAiWriteApply"
+    @open-settings="onAiWriteOpenSettings"
+  />
   <!-- AI 排版面板 -->
   <AiFormatDialog
     :visible="aiFormatVisible"
@@ -2230,6 +2277,7 @@ function loadDemo() {
     @close="aiImageVisible = false"
     @insert="onAiImageInsert"
     @upload="onAiImageUpload"
+    @save-disk="onAiImageSaveDisk"
     @open-settings="onAiImageOpenSettings"
   />
   <PushToCloudDialog

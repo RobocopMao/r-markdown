@@ -10,11 +10,22 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Loader2, Sparkles, Settings2, Download, RefreshCw, Wand2, Sparkle } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useTheme } from '@/composables/useTheme'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
 import { getErrorMessage } from '@/utils/helpers'
 import { extractTitle } from '@/utils/extractTitle'
 import { saveBinaryFile, blobToBytes } from '@/utils/saveFile'
+import { useSessionCountdown } from '@/composables/useSessionCountdown'
+import { expiresAtFrom, isExpiredAt } from '@/utils/aiSession'
+import {
+  clearAllBlobs,
+  clearRecord,
+  loadBlob,
+  loadRecord,
+  saveBlob,
+  saveRecord,
+} from '@/services/aiSessionStore'
 import {
   generateImage,
   toImageBlob,
@@ -49,7 +60,9 @@ const emit = defineEmits<{
   insert: [file: File]
   /** 上传图床并插入：走编辑器的图床上传（GitHub / 乐塔），上传期间面板不关闭 */
   upload: [file: File]
-  /** 跳转设置（落到「AI 排版 → AI 配图」子页） */
+  /** 保存磁盘并插入：仅桌面端显示，复用编辑器既有的本地磁盘落盘链路 */
+  saveDisk: [file: File]
+  /** 跳转设置（落到「AI 设置 → AI 图片」子页） */
   openSettings: []
 }>()
 
@@ -133,8 +146,20 @@ const generating = ref(false)
 const elapsedSec = ref(0)
 const errorMsg = ref('')
 const current = ref<GeneratedImage | null>(null)
-/** 本次会话生成的图片（内存态，不落盘；切换面板或关闭即释放） */
+/** 本次生成的图片；内存 + 本地 IndexedDB（按保留时长自动作废） */
 const history = ref<GeneratedImage[]>([])
+
+/** 结果保留倒计时（用配图面板自己的保留时长设置项） */
+const { now, remainingText, currentHours, startTicker, stopTicker, syncText } =
+  useSessionCountdown('aiImageSessionHours')
+
+/** 本次结果的过期时刻（null = 还没有结果）；倒计时与过期判定都读它 */
+const resultExpiresAt = ref<number | null>(null)
+
+/** 结果是否已过期 */
+const resultExpired = computed(
+  () => resultExpiresAt.value != null && isExpiredAt(resultExpiresAt.value, now.value),
+)
 
 let controller: AbortController | null = null
 let timer: ReturnType<typeof setInterval> | null = null
@@ -168,17 +193,115 @@ function resetAll() {
   history.value = []
 }
 
+/**
+ * 把生成的图片与元信息存本地，下次打开面板若还没过期就恢复。
+ *
+ * 图片本体（Blob）另存 `blobs` store，元信息（提示词、尺寸、文件大小）走 JSON 记录：
+ * Blob 不能进 JSON，而元信息也没必要塞进 blob store。
+ */
+const HISTORY_KEY = 'image-history'
+/** 保留的历史条数上限（与内存态一致） */
+const MAX_HISTORY = 8
+
+async function persistHistory() {
+  const lastActiveAt = Date.now()
+  try {
+    // 先存图片二进制，再存元信息（元信息里带 id，恢复时按 id 取回 blob）
+    for (const img of history.value) {
+      await saveBlob(img.id, img.file)
+    }
+    await saveRecord(
+      HISTORY_KEY,
+      history.value.map((img) => ({
+        id: img.id,
+        sizeLabel: img.sizeLabel,
+        sizeText: img.sizeText,
+        revisedPrompt: img.revisedPrompt,
+        prompt: img.prompt,
+      })),
+      lastActiveAt,
+      currentHours(),
+    )
+    resultExpiresAt.value = expiresAtFrom(lastActiveAt, currentHours())
+    syncText(resultExpiresAt.value)
+  } catch {
+    // 落盘失败只影响「下次打开能否恢复」，不打断本次生成
+  }
+}
+
+/** 恢复上次未过期的生成结果；返回是否恢复成功 */
+async function restoreHistory(): Promise<boolean> {
+  const rec = await loadRecord<
+    { id: string; sizeLabel: string; sizeText: string; revisedPrompt: string; prompt: string }[]
+  >(HISTORY_KEY, Date.now())
+
+  const items = rec?.payload
+  if (!Array.isArray(items) || items.length === 0) return false
+
+  const restored: GeneratedImage[] = []
+  for (const it of items) {
+    if (!it?.id) continue
+    const blob = await loadBlob(it.id)
+    if (!blob) continue // 图片本体已丢（比如被清过），跳过这一条
+    const ext = extFromMime(blob.type)
+    const file = new File([blob], `ai-image-${it.id}.${ext}`, {
+      type: blob.type || 'image/png',
+    })
+    restored.push({
+      id: it.id,
+      previewUrl: URL.createObjectURL(blob),
+      file,
+      sizeLabel: it.sizeLabel || '',
+      sizeText: it.sizeText || '',
+      revisedPrompt: it.revisedPrompt || '',
+      prompt: it.prompt || '',
+    })
+  }
+  if (restored.length === 0) return false
+
+  history.value = restored
+  current.value = restored[0]
+  resultExpiresAt.value = Number(rec!.expiresAt)
+  return true
+}
+
+/** 清空生成的图片：内存 + 本地缓存一起清 */
+function onClearHistory() {
+  if (history.value.length === 0) return
+  clearConfirmVisible.value = true
+}
+
+async function doClearHistory() {
+  clearConfirmVisible.value = false
+  abort()
+  resetAll()
+  resultExpiresAt.value = null
+  remainingText.value = ''
+  await clearRecord(HISTORY_KEY)
+  await clearAllBlobs()
+}
+
+const clearConfirmVisible = ref(false)
+
 watch(
   () => props.visible,
-  (v) => {
+  async (v) => {
     if (!v) {
-      // 关闭时中止进行中的请求并释放预览地址
-      resetAll()
+      // 关闭时只中止进行中的请求；**结果留在内存与本地**，下次打开可继续用
+      abort()
+      stopTicker()
       return
     }
     refreshConfig()
     refreshAiReady()
     errorMsg.value = ''
+
+    // 没有内存态结果时，尝试恢复上次未过期的生成结果
+    if (history.value.length === 0) await restoreHistory()
+    if (resultExpiresAt.value) {
+      syncText(resultExpiresAt.value)
+      startTicker(() => resultExpiresAt.value)
+    }
   },
 )
 
@@ -204,6 +327,10 @@ async function onGenerate() {
 
   generating.value = true
   elapsedSec.value = 0
+  // 发起请求即续期：保留时长按「最后一次请求」算，倒计时回满
+  resultExpiresAt.value = expiresAtFrom(Date.now(), currentHours())
+  syncText(resultExpiresAt.value)
+  startTicker(() => resultExpiresAt.value)
   const startedAt = Date.now()
   timer = setInterval(() => {
     elapsedSec.value = Math.round((Date.now() - startedAt) / 1000)
@@ -227,7 +354,8 @@ async function onGenerate() {
     const blob = await toImageBlob(result, Math.min(cfg.value.timeoutSec, 120), controller.signal)
     const img = buildImage(blob, result, text)
     current.value = img
-    history.value = [img, ...history.value].slice(0, 8)
+    history.value = [img, ...history.value].slice(0, MAX_HISTORY)
+    await persistHistory()
   } catch (e: unknown) {
     if (isAbort(e)) return
     errorMsg.value = getErrorMessage(e, '生成失败')
@@ -299,6 +427,20 @@ function onUploadToHosting() {
   emit('upload', img.file)
 }
 
+/**
+ * 保存磁盘并插入：交给编辑器既有的本地磁盘落盘链路（与「粘贴/拖拽上传方式 = 本地磁盘」同一条）。
+ * 仅桌面端有意义——Web 版没有本地文件系统。
+ */
+function onSaveToDisk() {
+  const img = current.value
+  if (!img) return
+  emit('saveDisk', img.file)
+  emit('close')
+}
+
+/** 是否桌面客户端（本地磁盘保存只在客户端可用） */
+const isDesktop = import.meta.env.VITE_TAURI === 'true'
+
 /** 按钮文案带上目标图床名，让用户知道会上传到哪 */
 const uploadButtonLabel = computed(() =>
   getSetting<string>('defaultHosting') === 'leta' ? '上传乐塔图床并插入' : '上传 GitHub 图床并插入',
@@ -355,7 +497,7 @@ function extOf(name: string): string {
 }
 
 /**
- * 是否可「优化提示词」：取决于「AI 排版」接口是否配置齐全
+ * 是否可「优化提示词」：取决于「AI 文本」接口是否配置齐全
  * （地址 + Key + 模型名）。配了就借用那个对话模型扩写，没配则整个按钮不出现。
  *
  * 必须走响应式 ref：isAiConfigured() 只读 localStorage，直接放进 computed
@@ -383,7 +525,8 @@ async function onOptimizePrompt() {
     return
   }
   if (!aiReady.value) {
-    errorMsg.value = '尚未配置 AI 排版接口：请先在设置中填写接口地址、API Key 与模型名'
+    errorMsg.value =
+      '尚未配置 AI 文本接口：请先在「设置 → AI 设置 → AI 文本」填写接口地址、API Key 与模型名'
     return
   }
 
@@ -445,6 +588,29 @@ onBeforeUnmount(() => {
     no-body-padding
     @close="emit('close')"
   >
+    <!-- 头部：结果保留倒计时 + 清空结果 -->
+    <template #header>
+      <div class="flex min-w-0 flex-1 items-center gap-2">
+        <span
+          v-if="history.length > 0"
+          class="shrink-0 rounded-full px-2 py-[3px] text-[11px]"
+          :class="
+            resultExpired
+              ? 'bg-[#fdecec] text-[#c0392b] dark:bg-[#3a1f1f] dark:text-[#e57373]'
+              : 'bg-[#f0f0f0] text-[#666] dark:bg-[#2a2a2a] dark:text-[#999]'
+          "
+        >
+          {{ resultExpired ? '结果已过期' : `结果保留 ${remainingText}` }}
+        </span>
+        <button
+          v-if="history.length > 0"
+          class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[#c0392b] hover:text-[#c0392b] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+          @click="onClearHistory"
+        >
+          清空结果
+        </button>
+      </div>
+    </template>
     <div class="flex h-full min-h-0 flex-col gap-2 p-3">
       <!-- 未配置引导 -->
       <div
@@ -563,7 +729,7 @@ onBeforeUnmount(() => {
               </BaseTooltip>
               <BaseTooltip
                 v-if="aiReady"
-                text="调用「AI 排版」配置的大模型，把描述扩写成完整提示词"
+                text="调用「AI 文本」配置的大模型，把描述扩写成完整提示词"
                 placement="bottom"
               >
                 <button
@@ -719,14 +885,34 @@ onBeforeUnmount(() => {
       >
         {{ uploading ? '上传中…' : uploadButtonLabel }}
       </button>
+      <!-- 保存磁盘并插入：仅桌面客户端（Web 版没有本地文件系统） -->
+      <button
+        v-if="isDesktop"
+        class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-5 py-2 text-[13px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[var(--accent)]"
+        :disabled="uploading"
+        @click="onSaveToDisk"
+      >
+        保存磁盘并插入
+      </button>
       <button
         class="cursor-pointer rounded-lg border-0 px-5 py-2 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
         :style="{ backgroundColor: colors.accent }"
         :disabled="uploading"
         @click="onInsert"
       >
-        本地插入编辑器
+        插入编辑器
       </button>
     </template>
   </BaseDrawer>
+
+  <!-- 清空结果确认 -->
+  <ConfirmDialog
+    v-model:visible="clearConfirmVisible"
+    title="清空结果"
+    message="清空后这些图片将不再保留（已插入编辑器的图片不受影响）。确定清空吗？"
+    cancel-text="取消"
+    confirm-text="清空"
+    @confirm="doClearHistory"
+    @cancel="clearConfirmVisible = false"
+  />
 </template>

@@ -72,6 +72,13 @@ import {
 } from '@/services/articleWorkspace'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import { ARTICLE_NAMING_ID, ARTICLE_NAMING_TITLE } from '@/utils/articleNaming'
+import { MAX_SESSION_HOURS, MIN_SESSION_HOURS, normalizeHours } from '@/utils/aiWriteSession'
+import {
+  DEFAULT_WRITE_MAX_TOKENS,
+  DEFAULT_WRITE_TEMPERATURE,
+  MAX_WRITE_MAX_TOKENS,
+  MIN_WRITE_MAX_TOKENS,
+} from '@/services/aiWrite'
 
 const { switchToWorkspace } = useGitHubTree()
 ensureWorkspaces()
@@ -101,10 +108,11 @@ const selectChevronStyle = {
 const settingsTab = ref('basic')
 
 /**
- * 「AI 排版」tab 内的二级子页：format（排版）| image（配图）。
- * 配图配置挂在同一个 tab 下而不是新开 tab —— 两者是同一类「AI 能力」配置。
+ * 「AI 设置」tab 内的二级子页：text（文本：写作 + 排版共用一份接口配置）| image（图片）。
+ * 写作与排版共用同一个接口地址 / API Key / 模型名，所以合并成一个子页；
+ * 两者不同的采样参数在 text 子页内分区展示。
  */
-const aiPane = ref<'format' | 'image'>('format')
+const aiPane = ref<'text' | 'image'>('text')
 
 // 当对话框打开时，若指定了 initialTab 则自动切换；并刷新存储位置激活态
 // （用户在树下拉中切换工作区时会持久化 articleStorageMode，需在此同步回显）
@@ -112,15 +120,21 @@ watch(
   () => props.visible,
   (isVisible) => {
     if (isVisible) {
-      // 'ai-image' 是「打开 AI tab 且停在配图子页」的入口约定
-      if (props.initialTab === 'ai-image') {
+      // 'ai-write' / 'ai-format' / 'ai-image' 是「打开 AI tab 且停在某个子页」的入口约定。
+      // 写作与排版现在同属「AI 文本」，两个入口都落到 text 子页。
+      if (
+        props.initialTab === 'ai-write' ||
+        props.initialTab === 'ai-format' ||
+        props.initialTab === 'ai-image'
+      ) {
         settingsTab.value = 'ai'
-        aiPane.value = 'image'
+        aiPane.value = props.initialTab === 'ai-image' ? 'image' : 'text'
       } else if (props.initialTab) {
         settingsTab.value = props.initialTab
-        if (props.initialTab === 'ai') aiPane.value = 'format'
+        if (props.initialTab === 'ai') aiPane.value = 'text'
       }
       refreshImageConfig()
+      refreshWriteConfig()
       articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
       // 同步回显文章文件命名开关（可能被其他入口或磁盘配置改动）
       articleTitleNaming.value = getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE
@@ -298,13 +312,39 @@ function resetEditorFontSize() {
   saveEditorFontSize(13)
 }
 
-// ── AI 排版（接口地址 / Key / 模型名均无默认值，需用户填写）──
+// ── AI 文本（写作与排版共用一份接口配置，只有采样参数分开）──
+/**
+ * 「AI 文本」= 写作 + 排版。两者用同一个接口地址、API Key、模型名，
+ * 因此这三项在这里只出现一次（原来写作子页那份「模型覆盖」已去掉）。
+ * 与任务性质相关的采样温度 / 最大输出分开存、分区展示。
+ */
 const aiBaseUrl = ref(getSetting<string>('aiBaseUrl'))
 const aiApiKey = ref(getSetting<string>('aiApiKey'))
 const aiModel = ref(getSetting<string>('aiModel'))
 const aiTemperature = ref(getSetting<number>('aiTemperature'))
 const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
 const aiStream = ref(getSetting<boolean>('aiStream'))
+
+/**
+ * 结果保留时长（小时）——**三个面板各自独立**。
+ * 口径都是「从最后一次请求算起」的滑动续期：一直在用就一直留得住。
+ *
+ * 分开是因为使用节奏不同：写作一次常聊几十分钟，排版/配图多是「生成一次就用掉」。
+ */
+const aiWriteSessionHours = ref(getSetting<number>('aiWriteSessionHours'))
+const aiFormatSessionHours = ref(getSetting<number>('aiFormatSessionHours'))
+const aiImageSessionHours = ref(getSetting<number>('aiImageSessionHours'))
+
+type SessionHoursSettingKey = 'aiWriteSessionHours' | 'aiFormatSessionHours' | 'aiImageSessionHours'
+
+/** 三个面板共用一个写回实现，避免三段重复代码；收敛逻辑与面板侧一致 */
+function saveSessionHours(key: SessionHoursSettingKey, val: number) {
+  const n = normalizeHours(val)
+  if (key === 'aiWriteSessionHours') aiWriteSessionHours.value = n
+  else if (key === 'aiFormatSessionHours') aiFormatSessionHours.value = n
+  else aiImageSessionHours.value = n
+  setSetting(key, n)
+}
 
 /** 模型列表查询状态 */
 const modelList = ref<string[]>([])
@@ -503,6 +543,40 @@ async function handleTestAiConnection() {
     aiTestError.value = getErrorMessage(e, '连接失败')
   }
   aiTesting.value = false
+}
+
+// ── AI 写作（写作与排版共用「AI 文本」的地址 / Key / 模型，这里只放写作专属项）──
+/**
+ * 与「AI 文本」公共配置不同的部分：采样温度、最大输出，以及写作独有的长期补充要求。
+ *
+ * 「附带参考资料」不在这里——它和「四层自检」一样是「这一轮怎么写」的开关，
+ * 已挪到 AI 写作面板的参数行（排在四层自检后面），开关值仍存在同一个设置项里。
+ * 「结果保留时长」是三个面板**各自独立**的，写作那份见 aiWriteSessionHours。
+ */
+const writeTemperature = ref(getSetting<number>('aiWriteTemperature'))
+const writeMaxTokens = ref(getSetting<number>('aiWriteMaxTokens'))
+const writeExtraInstruction = ref(getSetting<string>('aiWriteExtraInstruction'))
+
+/** 面板打开时重新读取（可能被其他标签页或磁盘配置改动） */
+function refreshWriteConfig() {
+  writeTemperature.value = getSetting<number>('aiWriteTemperature')
+  writeMaxTokens.value = getSetting<number>('aiWriteMaxTokens')
+  writeExtraInstruction.value = getSetting<string>('aiWriteExtraInstruction')
+}
+
+function saveWriteTemperature(val: number) {
+  writeTemperature.value = val
+  setSetting('aiWriteTemperature', val)
+}
+
+function saveWriteMaxTokens(val: number) {
+  writeMaxTokens.value = val
+  setSetting('aiWriteMaxTokens', val)
+}
+
+function saveWriteExtraInstruction(val: string) {
+  writeExtraInstruction.value = val
+  setSetting('aiWriteExtraInstruction', val)
 }
 
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
@@ -1413,19 +1487,19 @@ async function manualCheckUpdate() {
       </section>
     </template>
 
-    <!-- AI 排版设置（内部再分「排版 / 配图」两个子页，共用同一个设置 tab） -->
+    <!-- AI 设置（内部再分「AI 文本 / AI 图片」两个子页，共用同一个设置 tab） -->
     <template v-if="settingsTab === 'ai'">
       <div class="flex gap-1.5 mb-4">
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
           :class="
-            aiPane === 'format'
+            aiPane === 'text'
               ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
               : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
           "
-          @click="aiPane = 'format'"
+          @click="aiPane = 'text'"
         >
-          AI 排版
+          AI 文本
         </button>
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
@@ -1436,15 +1510,23 @@ async function manualCheckUpdate() {
           "
           @click="aiPane = 'image'"
         >
-          AI 配图
+          AI 图片
         </button>
       </div>
 
-      <section v-if="aiPane === 'format'">
+      <!--
+        AI 文本 = 写作 + 排版。
+        接口地址 / API Key / 模型名三项是两者共用的，只出现一次；
+        「AI 排版」「AI 写作」两个小节只放与任务相关、两边取值不同的采样参数。
+      -->
+      <section v-if="aiPane === 'text'">
         <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-          填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
-          排版」。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
-          加密后仅保存在本地。
+          「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
+          排版」（把文章转成 R-Markdown 排版稿）与「AI
+          写作」（用内置的卡兹克写作技能以对话方式出长文）。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
+          加密后仅保存在本地。但请注意：<span class="text-[#666] dark:text-[#999]"
+            >你发的内容会发送给你配置的模型服务商</span
+          >。
         </p>
 
         <div class="mb-3">
@@ -1509,9 +1591,12 @@ async function manualCheckUpdate() {
           <p v-else-if="modelList.length > 0" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
             已获取 {{ modelList.length }} 个模型，从下拉中选择。
           </p>
+          <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            写作与排版共用这一个模型，换模型两边一起生效。
+          </p>
         </div>
 
-        <div class="flex items-center gap-3 mb-3">
+        <div class="flex items-center gap-3 mb-4">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
@@ -1530,57 +1615,186 @@ async function manualCheckUpdate() {
           }}</span>
         </div>
 
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
-              aiTemperature
-            }}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            :value="aiTemperature"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
-          />
-          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
-          </p>
-        </div>
-
-        <div class="mb-3">
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-              >{{ aiMaxTokens }} tokens</span
-            >
-          </div>
-          <input
-            type="range"
-            min="1024"
-            max="32768"
-            step="1024"
-            :value="aiMaxTokens"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
-          />
-          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            长文排版结果被截断时调大此值。
-          </p>
-        </div>
-
         <BaseCheckbox
+          class="mb-5"
           size="sm"
           :checked="aiStream"
           label="流式输出（边生成边显示）"
           @change="saveAiStream"
         />
+
+        <!-- ── 以下是两边取值不同的采样参数，按用途分区 ── -->
+        <section class="pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 排版</h3>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+            把文章按组件规范重排。任务确定性高，温度与输出上限都比写作低。
+          </p>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+                aiTemperature
+              }}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              :value="aiTemperature"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ aiMaxTokens }} tokens</span
+              >
+            </div>
+            <input
+              type="range"
+              min="1024"
+              max="32768"
+              step="1024"
+              :value="aiMaxTokens"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              长文排版结果被截断时调大此值。
+            </p>
+          </div>
+
+          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ aiFormatSessionHours }} 小时
+              </span>
+            </div>
+            <input
+              type="range"
+              :min="MIN_SESSION_HOURS"
+              :max="MAX_SESSION_HOURS"
+              step="1"
+              :value="aiFormatSessionHours"
+              class="compress-slider w-full cursor-pointer"
+              @input="
+                saveSessionHours(
+                  'aiFormatSessionHours',
+                  Number(($event.target as HTMLInputElement).value),
+                )
+              "
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              排版结果的面板保留时长，从最后一次请求算起；到期后不再恢复。
+            </p>
+          </div>
+        </section>
+
+        <section class="mt-5 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 写作</h3>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+            用内置的卡兹克写作技能（khazix-writer）以对话方式出公众号长文。长文更吃发散度与输出余量。
+          </p>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ writeTemperature.toFixed(1) }}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1.5"
+              step="0.1"
+              :value="writeTemperature"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveWriteTemperature(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              默认 {{ DEFAULT_WRITE_TEMPERATURE }}。写作需要比排版更高的发散度；调太低会写得很平。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ writeMaxTokens }} tokens</span
+              >
+            </div>
+            <input
+              type="range"
+              :min="MIN_WRITE_MAX_TOKENS"
+              :max="MAX_WRITE_MAX_TOKENS"
+              step="1024"
+              :value="writeMaxTokens"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveWriteMaxTokens(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              单次输出上限（token），默认 {{ DEFAULT_WRITE_MAX_TOKENS }}。公众号长文 4000-8000
+              字，比排版需要更大余量；结果被截断时调大。
+            </p>
+          </div>
+
+          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ aiWriteSessionHours }} 小时
+              </span>
+            </div>
+            <input
+              type="range"
+              :min="MIN_SESSION_HOURS"
+              :max="MAX_SESSION_HOURS"
+              step="1"
+              :value="aiWriteSessionHours"
+              class="compress-slider w-full cursor-pointer"
+              @input="
+                saveSessionHours(
+                  'aiWriteSessionHours',
+                  Number(($event.target as HTMLInputElement).value),
+                )
+              "
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              写作对话与稿件的面板保留时长，从最后一次请求算起；到期后打开面板会开启新会话。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">
+              长期补充要求（可留空）
+            </label>
+            <textarea
+              :value="writeExtraInstruction"
+              rows="3"
+              placeholder="例如：结尾不要行动呼吁 / 不要出现「我」/ 每篇开头先讲一个具体场景"
+              class="w-full resize-y rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveWriteExtraInstruction(($event.target as HTMLTextAreaElement).value)"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
+            </p>
+          </div>
+        </section>
       </section>
 
-      <!-- AI 配图（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
+      <!-- AI 图片（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
       <section v-if="aiPane === 'image'">
         <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">{{ imageDef.intro }}</p>
 
@@ -1704,6 +1918,33 @@ async function manualCheckUpdate() {
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
             官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
             秒；复杂提示词与大尺寸 需要更久。
+          </p>
+        </div>
+
+        <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+              {{ aiImageSessionHours }} 小时
+            </span>
+          </div>
+          <input
+            type="range"
+            :min="MIN_SESSION_HOURS"
+            :max="MAX_SESSION_HOURS"
+            step="1"
+            :value="aiImageSessionHours"
+            class="compress-slider w-full cursor-pointer"
+            @input="
+              saveSessionHours(
+                'aiImageSessionHours',
+                Number(($event.target as HTMLInputElement).value),
+              )
+            "
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
           </p>
         </div>
 

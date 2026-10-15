@@ -10,6 +10,7 @@ import {
   Image,
   LayoutGrid,
   Bot,
+  Feather,
   Cloud,
   ImageUp,
   ImagePlus,
@@ -48,6 +49,7 @@ const emit = defineEmits<{
   'save-to-repo': []
   'upload-image': []
   'open-settings': []
+  'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
 }>()
@@ -114,6 +116,13 @@ onBeforeUnmount(() => {
         >
           <ImageUp :size="14" />
           上传图片(Github)
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-write'))"
+        >
+          <Feather :size="14" />
+          AI 写作
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"

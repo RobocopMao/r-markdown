@@ -261,6 +261,49 @@ export function useImageInsert(
     input.value = ''
   }
 
+  /**
+   * 保存到本地磁盘并插入（仅桌面端有效）。
+   *
+   * 抽成独立函数是因为有三个入口要走同一条链路：
+   * 粘贴/拖拽（pasteDropMode === 'disk'）、图库选图（onDiskImageSelected）、
+   * AI 配图的「保存磁盘并插入」。压缩参数、大小上限、插入的 img 标签格式必须完全一致，
+   * 各写一份迟早会漂移。
+   */
+  async function insertImageToDisk(file: File, insertAt: number | null = null) {
+    if (editorRef.value?.isInsideTag) {
+      showToast('不能在组件标签内插入图片')
+      return
+    }
+
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      showToast('正在压缩图片...')
+      finalFile = await compressImage(file, 10000, quality)
+      if (finalFile.size > 10 * 1024 * 1024) {
+        showToast('图片压缩后仍超过 10MB')
+        return
+      }
+    } else if (file.size > 10 * 1024 * 1024) {
+      showToast('图片不能超过 10MB')
+      return
+    }
+
+    try {
+      const relPath = await LocalImageDisk.saveImage(finalFile)
+      const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
+      if (insertAt !== null) {
+        editorRef.value?.replaceRange(insertAt, insertAt, tag)
+      } else {
+        editorRef.value?.insertAtCursor(tag)
+      }
+      showToast('已保存到本地磁盘')
+      await nextTick()
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e, '保存图片失败'))
+    }
+  }
+
   async function processImageInsert(file: File, insertAt: number | null = null) {
     if (editorRef.value?.isInsideTag) {
       showToast('不能在组件标签内插入图片')
@@ -368,32 +411,7 @@ export function useImageInsert(
 
     if (mode === 'disk') {
       // 本地磁盘存储模式（仅桌面端）
-      const quality = (getSetting<number>('compressQuality') || 100) / 100
-      let finalFile = file
-      if (quality < 1.0) {
-        showToast('正在压缩图片...')
-        finalFile = await compressImage(file, 10000, quality)
-        if (finalFile.size > 10 * 1024 * 1024) {
-          showToast('图片压缩后仍超过 10MB')
-          return
-        }
-      } else if (file.size > 10 * 1024 * 1024) {
-        showToast('图片不能超过 10MB')
-        return
-      }
-      try {
-        const relPath = await LocalImageDisk.saveImage(finalFile)
-        const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
-        if (insertAt !== null) {
-          editorRef.value?.replaceRange(insertAt, insertAt, tag)
-        } else {
-          editorRef.value?.insertAtCursor(tag)
-        }
-        showToast('已保存到本地磁盘')
-        await nextTick()
-      } catch (e: unknown) {
-        showToast(getErrorMessage(e, '保存图片失败'))
-      }
+      await insertImageToDisk(file, insertAt)
       return
     }
 
@@ -550,32 +568,7 @@ export function useImageInsert(
       return
     }
 
-    const quality = (getSetting<number>('compressQuality') || 100) / 100
-    let finalFile = file
-    if (quality < 1.0) {
-      showToast('正在压缩图片...')
-      finalFile = await compressImage(file, 10000, quality)
-      if (finalFile.size > 10 * 1024 * 1024) {
-        showToast('图片压缩后仍超过 10MB')
-        input.value = ''
-        return
-      }
-    } else if (file.size > 10 * 1024 * 1024) {
-      showToast('图片不能超过 10MB')
-      input.value = ''
-      return
-    }
-
-    try {
-      const relPath = await LocalImageDisk.saveImage(finalFile)
-      editorRef.value?.insertAtCursor(
-        `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`,
-      )
-      showToast('已保存到本地磁盘')
-      await nextTick()
-    } catch (err: unknown) {
-      showToast(getErrorMessage(err, '保存图片失败'))
-    }
+    await insertImageToDisk(file)
     input.value = ''
   }
 
@@ -602,6 +595,8 @@ export function useImageInsert(
     onDiskImageSelected,
     /** 供 AI 配图等「手上已有 File」的场景复用同一条落地链路（压缩 / 图床 / 磁盘 / 本地存储） */
     processImageInsert,
+    /** 供 AI 配图的「保存磁盘并插入」复用（仅桌面端；压缩与 img 标签格式与粘贴一致） */
+    insertImageToDisk,
     /** 供 AI 配图的「上传图床并插入」复用（按 defaultHosting 走 GitHub 或乐塔） */
     uploadImageToHosting,
   }

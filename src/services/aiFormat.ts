@@ -126,9 +126,12 @@ function parseSseData(raw: string): { delta: string; finish: string } | null {
 }
 
 /**
- * 执行排版请求。流式模式下每个增量经 opts.onDelta 回传。
+ * 执行一次 OpenAI 兼容的 /chat/completions 请求。流式模式下每个增量经 opts.onDelta 回传。
+ *
+ * 这是本应用「调用大语言模型」的唯一实现：AI 排版、AI 写作（services/aiWrite.ts）
+ * 与 AI 配图的提示词优化都走它，超时、错误中文映射、SSE 解析只有这一份，不会各处漂移。
  */
-export async function formatArticle(
+export async function chatCompletion(
   cfg: AiFormatConfig,
   messages: ChatMessage[],
   opts: FormatOptions = {},
@@ -201,6 +204,18 @@ export async function formatArticle(
     cleanup()
   }
 }
+
+/**
+ * AI 排版的调用入口。
+ *
+ * 名称沿革：这个函数原名 formatArticle，是「AI 排版」专用的名字，但实现本就是通用的
+ * chat/completions 调用。抽出 chatCompletion 之后保留本别名，AI 排版面板与
+ * imageGen.optimizeImagePrompt 的动态导入都无需改动，行为完全一致。
+ */
+export const formatArticle = chatCompletion
+
+/** 对话调用的配置类型别名，供 AI 写作等服务复用 */
+export type ChatConfig = AiFormatConfig
 
 /** 非流式兜底：从原始 SSE 文本中拼接全部增量 */
 function collectFromRawSse(raw: string): string {

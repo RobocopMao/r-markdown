@@ -1,7 +1,7 @@
 /**
  * AI 排版的 prompt 组装与模型输出清洗（纯逻辑，无网络、无 Vue 依赖）。
  *
- * 排版规范来自 src/data/ai/format-spec.md（与 r-markdown-formatter skill 同源），
+ * 排版规范来自 src/data/ai/r-markdown-formatter/format-spec.md（与 r-markdown-formatter skill 同源），
  * 由 loadFormatSpec() 剥掉顶部来源注释后整篇作为 system prompt 的规范部分。
  */
 
@@ -27,14 +27,14 @@ export const AI_STYLE_PRESETS: { value: AiStylePreset; label: string; hint: stri
   },
 ]
 
-/** 图片来源注释块剥离（src/data/ai/format-spec.md 顶部说明不进入 prompt） */
+/** 图片来源注释块剥离（规范文件顶部说明不进入 prompt） */
 export function stripSpecComment(spec: string): string {
   return spec.replace(/^\s*<!--[\s\S]*?-->\s*/, '')
 }
 
 /** 动态导入规范原文并剥离来源注释。单独成 chunk，不撑大主包。 */
 export async function loadFormatSpec(): Promise<string> {
-  const mod = await import('@/data/ai/format-spec.md?raw')
+  const mod = await import('@/data/ai/r-markdown-formatter/format-spec.md?raw')
   return stripSpecComment(mod.default as string)
 }
 

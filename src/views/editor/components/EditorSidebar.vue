@@ -8,6 +8,7 @@ import {
   Paperclip,
   FilePlus,
   Bot,
+  Feather,
   ImagePlus,
   Import,
   Images,
@@ -70,7 +71,7 @@ const emit = defineEmits<{
   (e: 'openBannedWords'): void
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
-  (e: 'aiAction', action: 'format' | 'image'): void
+  (e: 'aiAction', action: 'write' | 'format' | 'image'): void
 }>()
 
 const showExamples = ref(false)
@@ -200,7 +201,7 @@ function cancelAiHide() {
   }
 }
 
-function selectAiAction(action: 'format' | 'image') {
+function selectAiAction(action: 'write' | 'format' | 'image') {
   showAi.value = false
   emit('aiAction', action)
 }
@@ -320,7 +321,7 @@ function toggleCollapse() {
         <span class="text-[10px] leading-tight">导入</span>
       </button>
       <!--
-        AI button with popover：排版与配图同属「AI 能力」，合成一个入口，
+        AI button with popover：写作 / 排版 / 配图同属「AI 能力」，合成一个入口，
         二级菜单里再分。悬停展开，与「素材 / 示例」的交互保持一致。
       -->
       <div class="relative w-full" @mouseenter="showAiPopover" @mouseleave="hideAiPopover">
@@ -345,6 +346,13 @@ function toggleCollapse() {
           @mouseenter="cancelAiHide"
           @mouseleave="hideAiPopover"
         >
+          <button
+            class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+            @click="selectAiAction('write')"
+          >
+            <Feather :size="14" class="shrink-0" />
+            AI 写作
+          </button>
           <button
             class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
             @click="selectAiAction('format')"
