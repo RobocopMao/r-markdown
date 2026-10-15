@@ -19,6 +19,8 @@ const SENSITIVE_KEYS: Set<string> = new Set([
   'letaToken',
   'wechatAppId',
   'wechatAppSecret',
+  'aiApiKey',
+  'imageGenProviders',
 ])
 
 /** 桌面端：setSetting 后异步同步到磁盘。写丢不管，下次存新值时覆盖。 */
@@ -44,7 +46,7 @@ function appliesToCurrent(def: SettingDef): boolean {
  * 不适用当前平台的 key 会跳过初始化。应在 main.ts 最早时机调用。
  */
 export function initSettings(): void {
-  // 迁移旧 key 格式（wechat-md-* → r-markdown-*）
+  // 迁移旧 key 格式（wechat-md-* → r-markdown-*，以及改名过的设置项）
   const migrations: [string, string][] = [
     ['r-markdown-auto-update', PREFIX + 'autoUpdate'],
     ['editor-page-zoom', PREFIX + 'pageZoom'],
@@ -59,6 +61,22 @@ export function initSettings(): void {
       localStorage.setItem(newKey, localStorage.getItem(oldKey)!)
       localStorage.removeItem(oldKey)
     }
+  }
+
+  /*
+    保留时长曾经短暂地是「三个面板共用一个 aiSessionHours」，现已拆回各面板独立。
+    把那个共用值还给三个面板（用户当时只设过一个数，就按那个数继续用），再删掉旧 key。
+    没装过那个中间版本的用户不会有 aiSessionHours，这段自然跳过。
+  */
+  const sharedHours = localStorage.getItem(PREFIX + 'aiSessionHours')
+  if (sharedHours !== null) {
+    const targets = ['aiWriteSessionHours', 'aiFormatSessionHours', 'aiImageSessionHours']
+    for (const key of targets) {
+      if (localStorage.getItem(PREFIX + key) === null) {
+        localStorage.setItem(PREFIX + key, sharedHours)
+      }
+    }
+    localStorage.removeItem(PREFIX + 'aiSessionHours')
   }
 
   for (const [key, def] of Object.entries(DEFAULT_SETTINGS)) {

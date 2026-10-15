@@ -5,6 +5,7 @@ import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
 import { Check, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
+import BaseCheckbox from '@/components/BaseCheckbox.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
@@ -24,6 +25,17 @@ import {
 } from '@/composables/useParagraphSettings'
 import { testConnection } from '@/services/githubUploader'
 import { GitHubTreeService } from '@/services/GitHubTreeService'
+import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
+import {
+  IMAGE_PROVIDERS,
+  getActiveProviderId,
+  getImageProvider,
+  getProviderConfig,
+  setActiveProviderId,
+  setProviderConfig,
+  type ImageGenProviderConfig,
+} from '@/services/imageProviders'
+import { listImageModels, testImageConnection } from '@/services/imageGen'
 import { useTheme } from '@/composables/useTheme'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
 import ImageCacheDialog from './ImageCacheDialog.vue'
@@ -60,6 +72,13 @@ import {
 } from '@/services/articleWorkspace'
 import { useGitHubTree } from '../composables/useGitHubTree'
 import { ARTICLE_NAMING_ID, ARTICLE_NAMING_TITLE } from '@/utils/articleNaming'
+import { MAX_SESSION_HOURS, MIN_SESSION_HOURS, normalizeHours } from '@/utils/aiWriteSession'
+import {
+  DEFAULT_WRITE_MAX_TOKENS,
+  DEFAULT_WRITE_TEMPERATURE,
+  MAX_WRITE_MAX_TOKENS,
+  MIN_WRITE_MAX_TOKENS,
+} from '@/services/aiWrite'
 
 const { switchToWorkspace } = useGitHubTree()
 ensureWorkspaces()
@@ -88,13 +107,34 @@ const selectChevronStyle = {
 // ── 设置 tab ──
 const settingsTab = ref('basic')
 
+/**
+ * 「AI 设置」tab 内的二级子页：text（文本：写作 + 排版共用一份接口配置）| image（图片）。
+ * 写作与排版共用同一个接口地址 / API Key / 模型名，所以合并成一个子页；
+ * 两者不同的采样参数在 text 子页内分区展示。
+ */
+const aiPane = ref<'text' | 'image'>('text')
+
 // 当对话框打开时，若指定了 initialTab 则自动切换；并刷新存储位置激活态
 // （用户在树下拉中切换工作区时会持久化 articleStorageMode，需在此同步回显）
 watch(
   () => props.visible,
   (isVisible) => {
     if (isVisible) {
-      if (props.initialTab) settingsTab.value = props.initialTab
+      // 'ai-write' / 'ai-format' / 'ai-image' 是「打开 AI tab 且停在某个子页」的入口约定。
+      // 写作与排版现在同属「AI 文本」，两个入口都落到 text 子页。
+      if (
+        props.initialTab === 'ai-write' ||
+        props.initialTab === 'ai-format' ||
+        props.initialTab === 'ai-image'
+      ) {
+        settingsTab.value = 'ai'
+        aiPane.value = props.initialTab === 'ai-image' ? 'image' : 'text'
+      } else if (props.initialTab) {
+        settingsTab.value = props.initialTab
+        if (props.initialTab === 'ai') aiPane.value = 'text'
+      }
+      refreshImageConfig()
+      refreshWriteConfig()
       articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
       // 同步回显文章文件命名开关（可能被其他入口或磁盘配置改动）
       articleTitleNaming.value = getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE
@@ -270,6 +310,273 @@ function saveEditorFontSize(val: number) {
 }
 function resetEditorFontSize() {
   saveEditorFontSize(13)
+}
+
+// ── AI 文本（写作与排版共用一份接口配置，只有采样参数分开）──
+/**
+ * 「AI 文本」= 写作 + 排版。两者用同一个接口地址、API Key、模型名，
+ * 因此这三项在这里只出现一次（原来写作子页那份「模型覆盖」已去掉）。
+ * 与任务性质相关的采样温度 / 最大输出分开存、分区展示。
+ */
+const aiBaseUrl = ref(getSetting<string>('aiBaseUrl'))
+const aiApiKey = ref(getSetting<string>('aiApiKey'))
+const aiModel = ref(getSetting<string>('aiModel'))
+const aiTemperature = ref(getSetting<number>('aiTemperature'))
+const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
+const aiStream = ref(getSetting<boolean>('aiStream'))
+
+/**
+ * 结果保留时长（小时）——**三个面板各自独立**。
+ * 口径都是「从最后一次请求算起」的滑动续期：一直在用就一直留得住。
+ *
+ * 分开是因为使用节奏不同：写作一次常聊几十分钟，排版/配图多是「生成一次就用掉」。
+ */
+const aiWriteSessionHours = ref(getSetting<number>('aiWriteSessionHours'))
+const aiFormatSessionHours = ref(getSetting<number>('aiFormatSessionHours'))
+const aiImageSessionHours = ref(getSetting<number>('aiImageSessionHours'))
+
+type SessionHoursSettingKey = 'aiWriteSessionHours' | 'aiFormatSessionHours' | 'aiImageSessionHours'
+
+/** 三个面板共用一个写回实现，避免三段重复代码；收敛逻辑与面板侧一致 */
+function saveSessionHours(key: SessionHoursSettingKey, val: number) {
+  const n = normalizeHours(val)
+  if (key === 'aiWriteSessionHours') aiWriteSessionHours.value = n
+  else if (key === 'aiFormatSessionHours') aiFormatSessionHours.value = n
+  else aiImageSessionHours.value = n
+  setSetting(key, n)
+}
+
+/** 模型列表查询状态 */
+const modelList = ref<string[]>([])
+const modelListLoading = ref(false)
+const modelListError = ref('')
+
+/** 连接测试状态 */
+const aiTesting = ref(false)
+const aiTestResult = ref<'ok' | 'fail' | ''>('')
+const aiTestError = ref('')
+/** 测试/查询后展示的提示信息 */
+const aiHint = ref('')
+
+function resetAiTestState() {
+  aiTestResult.value = ''
+  aiTestError.value = ''
+  aiHint.value = ''
+}
+
+function saveAiBaseUrl(val: string) {
+  aiBaseUrl.value = val
+  setSetting('aiBaseUrl', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+function saveAiApiKey(val: string) {
+  aiApiKey.value = val
+  setSetting('aiApiKey', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+function saveAiModel(val: string) {
+  aiModel.value = val
+  setSetting('aiModel', val)
+  resetAiTestState()
+}
+
+function saveAiTemperature(val: number) {
+  aiTemperature.value = val
+  setSetting('aiTemperature', val)
+}
+
+function saveAiMaxTokens(val: number) {
+  aiMaxTokens.value = val
+  setSetting('aiMaxTokens', val)
+}
+
+function saveAiStream(val: boolean) {
+  aiStream.value = val
+  setSetting('aiStream', val)
+}
+
+// ── AI 配图（按厂商配置；各家参数不一致，字段由厂商注册表驱动）──
+/** 当前厂商 id（响应式，用于切换厂商时刷新配置回显） */
+const imageProviderId = ref(getActiveProviderId())
+/** 当前厂商的能力描述 */
+const imageDef = computed(() => getImageProvider(imageProviderId.value))
+/** 当前厂商的配置（写回时按厂商分开存储） */
+const imageConfig = ref<ImageGenProviderConfig>(getProviderConfig(imageProviderId.value))
+
+/** 模型列表查询状态 */
+const imageModelList = ref<string[]>([])
+const imageModelLoading = ref(false)
+const imageModelError = ref('')
+/** 连接测试状态 */
+const imageTesting = ref(false)
+const imageTestResult = ref<'ok' | 'fail' | ''>('')
+const imageTestError = ref('')
+const imageHint = ref('')
+
+function resetImageTestState() {
+  imageTestResult.value = ''
+  imageTestError.value = ''
+  imageHint.value = ''
+}
+
+/** 从设置里重新读取当前厂商配置（面板打开、切换厂商时调用） */
+function refreshImageConfig() {
+  imageProviderId.value = getActiveProviderId()
+  imageConfig.value = getProviderConfig(imageProviderId.value)
+  imageModelList.value = []
+  imageModelError.value = ''
+  resetImageTestState()
+}
+
+function patchImageConfig(patch: Partial<ImageGenProviderConfig>) {
+  imageConfig.value = { ...imageConfig.value, ...patch }
+  setProviderConfig(imageProviderId.value, patch)
+}
+
+function switchImageProvider(id: string) {
+  setActiveProviderId(id)
+  refreshImageConfig()
+}
+
+function saveImageBaseUrl(val: string) {
+  patchImageConfig({ baseUrl: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+function saveImageApiKey(val: string) {
+  patchImageConfig({ apiKey: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+function saveImageModel(val: string) {
+  patchImageConfig({ model: val })
+  resetImageTestState()
+}
+
+function saveImageTimeout(val: number) {
+  patchImageConfig({ timeoutSec: val })
+}
+
+/** 查询该厂商的可用图像模型（/models 后按模型名规则筛选） */
+async function handleFetchImageModels() {
+  if (!imageConfig.value.baseUrl || !imageConfig.value.apiKey) {
+    imageModelError.value = '请先填写接口地址与 API Key'
+    imageModelList.value = []
+    return
+  }
+  imageModelLoading.value = true
+  imageModelError.value = ''
+  imageModelList.value = []
+  try {
+    imageModelList.value = await listImageModels(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+    )
+    imageHint.value = `已获取 ${imageModelList.value.length} 个图像模型`
+  } catch (e: unknown) {
+    imageModelError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    imageModelLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestImageConnection() {
+  imageTesting.value = true
+  resetImageTestState()
+  try {
+    await testImageConnection(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+    )
+    imageTestResult.value = 'ok'
+  } catch (e: unknown) {
+    imageTestResult.value = 'fail'
+    imageTestError.value = getErrorMessage(e, '连接失败')
+  }
+  imageTesting.value = false
+}
+
+/** 查询接口可用模型列表 */
+async function handleFetchModels() {
+  if (!aiBaseUrl.value || !aiApiKey.value) {
+    modelListError.value = '请先填写接口地址与 API Key'
+    modelList.value = []
+    return
+  }
+  modelListLoading.value = true
+  modelListError.value = ''
+  modelList.value = []
+  try {
+    modelList.value = await listModels(resolveAiConfig())
+    aiHint.value = `已获取 ${modelList.value.length} 个模型`
+  } catch (e: unknown) {
+    modelListError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    modelListLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestAiConnection() {
+  aiTesting.value = true
+  resetAiTestState()
+  try {
+    await testAiConnection(resolveAiConfig())
+    aiTestResult.value = 'ok'
+  } catch (e: unknown) {
+    aiTestResult.value = 'fail'
+    aiTestError.value = getErrorMessage(e, '连接失败')
+  }
+  aiTesting.value = false
+}
+
+// ── AI 写作（写作与排版共用「AI 文本」的地址 / Key / 模型，这里只放写作专属项）──
+/**
+ * 与「AI 文本」公共配置不同的部分：采样温度、最大输出，以及写作独有的长期补充要求。
+ *
+ * 「附带参考资料」不在这里——它和「四层自检」一样是「这一轮怎么写」的开关，
+ * 已挪到 AI 写作面板的参数行（排在四层自检后面），开关值仍存在同一个设置项里。
+ * 「结果保留时长」是三个面板**各自独立**的，写作那份见 aiWriteSessionHours。
+ */
+const writeTemperature = ref(getSetting<number>('aiWriteTemperature'))
+const writeMaxTokens = ref(getSetting<number>('aiWriteMaxTokens'))
+const writeExtraInstruction = ref(getSetting<string>('aiWriteExtraInstruction'))
+
+/** 面板打开时重新读取（可能被其他标签页或磁盘配置改动） */
+function refreshWriteConfig() {
+  writeTemperature.value = getSetting<number>('aiWriteTemperature')
+  writeMaxTokens.value = getSetting<number>('aiWriteMaxTokens')
+  writeExtraInstruction.value = getSetting<string>('aiWriteExtraInstruction')
+}
+
+function saveWriteTemperature(val: number) {
+  writeTemperature.value = val
+  setSetting('aiWriteTemperature', val)
+}
+
+function saveWriteMaxTokens(val: number) {
+  writeMaxTokens.value = val
+  setSetting('aiWriteMaxTokens', val)
+}
+
+function saveWriteExtraInstruction(val: string) {
+  writeExtraInstruction.value = val
+  setSetting('aiWriteExtraInstruction', val)
 }
 
 // ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
@@ -793,6 +1100,17 @@ async function manualCheckUpdate() {
         <button
           class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
           :class="
+            settingsTab === 'ai'
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+          "
+          @click="settingsTab = 'ai'"
+        >
+          AI 设置
+        </button>
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+          :class="
             settingsTab === 'other'
               ? 'bg-[var(--accent)] text-white'
               : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
@@ -1165,6 +1483,496 @@ async function manualCheckUpdate() {
         </select>
         <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
           仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
+        </p>
+      </section>
+    </template>
+
+    <!-- AI 设置（内部再分「AI 文本 / AI 图片」两个子页，共用同一个设置 tab） -->
+    <template v-if="settingsTab === 'ai'">
+      <div class="flex gap-1.5 mb-4">
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+          :class="
+            aiPane === 'text'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
+          @click="aiPane = 'text'"
+        >
+          AI 文本
+        </button>
+        <button
+          class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+          :class="
+            aiPane === 'image'
+              ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+              : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+          "
+          @click="aiPane = 'image'"
+        >
+          AI 图片
+        </button>
+      </div>
+
+      <!--
+        AI 文本 = 写作 + 排版。
+        接口地址 / API Key / 模型名三项是两者共用的，只出现一次；
+        「AI 排版」「AI 写作」两个小节只放与任务相关、两边取值不同的采样参数。
+      -->
+      <section v-if="aiPane === 'text'">
+        <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+          「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
+          排版」（把文章转成 R-Markdown 排版稿）与「AI
+          写作」（用内置的卡兹克写作技能以对话方式出长文）。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
+          加密后仅保存在本地。但请注意：<span class="text-[#666] dark:text-[#999]"
+            >你发的内容会发送给你配置的模型服务商</span
+          >。
+        </p>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">接口地址</label>
+          <input
+            :value="aiBaseUrl"
+            placeholder="https://api.deepseek.com/v1"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiBaseUrl(($event.target as HTMLInputElement).value)"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            兼容 /chat/completions 的地址；省略版本段时会自动补 /v1。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+          <input
+            :value="aiApiKey"
+            type="password"
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiApiKey(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="modelListLoading"
+              @click="handleFetchModels"
+            >
+              {{ modelListLoading ? '查询中…' : '获取模型列表' }}
+            </button>
+          </div>
+          <!-- 已获取列表：下拉选择；未获取：手填输入框 -->
+          <select
+            v-if="modelList.length > 0"
+            :value="aiModel"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveAiModel(($event.target as HTMLSelectElement).value)"
+          >
+            <!-- 已保存的模型若不在列表里（手填或列表已变），保留为一个选项避免丢失 -->
+            <option v-if="aiModel && !modelList.includes(aiModel)" :value="aiModel">
+              {{ aiModel }}（当前值）
+            </option>
+            <option v-for="id in modelList" :key="id" :value="id">{{ id }}</option>
+          </select>
+          <input
+            v-else
+            :value="aiModel"
+            placeholder="deepseek-chat"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveAiModel(($event.target as HTMLInputElement).value)"
+          />
+          <p v-if="modelListError" class="text-[10px] text-[#e74c3c] mt-1">
+            {{ modelListError }}
+          </p>
+          <p v-else-if="modelList.length > 0" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            已获取 {{ modelList.length }} 个模型，从下拉中选择。
+          </p>
+          <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            写作与排版共用这一个模型，换模型两边一起生效。
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 mb-4">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
+            @click="handleTestAiConnection"
+          >
+            {{ aiTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span v-if="aiTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="aiTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+            aiTestError
+          }}</span>
+          <span v-else-if="aiHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+            aiHint
+          }}</span>
+        </div>
+
+        <BaseCheckbox
+          class="mb-5"
+          size="sm"
+          :checked="aiStream"
+          label="流式输出（边生成边显示）"
+          @change="saveAiStream"
+        />
+
+        <!-- ── 以下是两边取值不同的采样参数，按用途分区 ── -->
+        <section class="pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 排版</h3>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+            把文章按组件规范重排。任务确定性高，温度与输出上限都比写作低。
+          </p>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+                aiTemperature
+              }}</span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1"
+              step="0.1"
+              :value="aiTemperature"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ aiMaxTokens }} tokens</span
+              >
+            </div>
+            <input
+              type="range"
+              min="1024"
+              max="32768"
+              step="1024"
+              :value="aiMaxTokens"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              长文排版结果被截断时调大此值。
+            </p>
+          </div>
+
+          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ aiFormatSessionHours }} 小时
+              </span>
+            </div>
+            <input
+              type="range"
+              :min="MIN_SESSION_HOURS"
+              :max="MAX_SESSION_HOURS"
+              step="1"
+              :value="aiFormatSessionHours"
+              class="compress-slider w-full cursor-pointer"
+              @input="
+                saveSessionHours(
+                  'aiFormatSessionHours',
+                  Number(($event.target as HTMLInputElement).value),
+                )
+              "
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              排版结果的面板保留时长，从最后一次请求算起；到期后不再恢复。
+            </p>
+          </div>
+        </section>
+
+        <section class="mt-5 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">AI 写作</h3>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+            用内置的卡兹克写作技能（khazix-writer）以对话方式出公众号长文。长文更吃发散度与输出余量。
+          </p>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ writeTemperature.toFixed(1) }}
+              </span>
+            </div>
+            <input
+              type="range"
+              min="0"
+              max="1.5"
+              step="0.1"
+              :value="writeTemperature"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveWriteTemperature(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              默认 {{ DEFAULT_WRITE_TEMPERATURE }}。写作需要比排版更高的发散度；调太低会写得很平。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ writeMaxTokens }} tokens</span
+              >
+            </div>
+            <input
+              type="range"
+              :min="MIN_WRITE_MAX_TOKENS"
+              :max="MAX_WRITE_MAX_TOKENS"
+              step="1024"
+              :value="writeMaxTokens"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveWriteMaxTokens(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              单次输出上限（token），默认 {{ DEFAULT_WRITE_MAX_TOKENS }}。公众号长文 4000-8000
+              字，比排版需要更大余量；结果被截断时调大。
+            </p>
+          </div>
+
+          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ aiWriteSessionHours }} 小时
+              </span>
+            </div>
+            <input
+              type="range"
+              :min="MIN_SESSION_HOURS"
+              :max="MAX_SESSION_HOURS"
+              step="1"
+              :value="aiWriteSessionHours"
+              class="compress-slider w-full cursor-pointer"
+              @input="
+                saveSessionHours(
+                  'aiWriteSessionHours',
+                  Number(($event.target as HTMLInputElement).value),
+                )
+              "
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              写作对话与稿件的面板保留时长，从最后一次请求算起；到期后打开面板会开启新会话。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">
+              长期补充要求（可留空）
+            </label>
+            <textarea
+              :value="writeExtraInstruction"
+              rows="3"
+              placeholder="例如：结尾不要行动呼吁 / 不要出现「我」/ 每篇开头先讲一个具体场景"
+              class="w-full resize-y rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveWriteExtraInstruction(($event.target as HTMLTextAreaElement).value)"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
+            </p>
+          </div>
+        </section>
+      </section>
+
+      <!-- AI 图片（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
+      <section v-if="aiPane === 'image'">
+        <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">{{ imageDef.intro }}</p>
+
+        <!-- 厂商下拉常显：即便当前只有一家，也让「配置按厂商分开存」这件事可见 -->
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">厂商</label>
+          <select
+            :value="imageProviderId"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="switchImageProvider(($event.target as HTMLSelectElement).value)"
+          >
+            <option v-for="p in IMAGE_PROVIDERS" :key="p.id" :value="p.id">{{ p.name }}</option>
+          </select>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            各厂商参数不同，配置按厂商分开保存；当前可选：{{
+              IMAGE_PROVIDERS.map((p) => p.name).join('、')
+            }}。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">接口地址</label>
+            <button
+              v-for="alt in imageDef.altBaseUrls"
+              :key="alt.url"
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="imageConfig.baseUrl === alt.url"
+              @click="saveImageBaseUrl(alt.url)"
+            >
+              {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
+            </button>
+          </div>
+          <input
+            :value="imageConfig.baseUrl"
+            :placeholder="imageDef.baseUrl"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
+            >；省略版本段时会自动补 /v1。
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+          <input
+            :value="imageConfig.apiKey"
+            type="password"
+            placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
+          />
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              :disabled="imageModelLoading"
+              @click="handleFetchImageModels"
+            >
+              {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
+            </button>
+          </div>
+          <select
+            v-if="imageModelList.length > 0"
+            :value="imageConfig.model"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveImageModel(($event.target as HTMLSelectElement).value)"
+          >
+            <option
+              v-if="imageConfig.model && !imageModelList.includes(imageConfig.model)"
+              :value="imageConfig.model"
+            >
+              {{ imageConfig.model }}（当前值）
+            </option>
+            <option v-for="id in imageModelList" :key="id" :value="id">{{ id }}</option>
+          </select>
+          <input
+            v-else
+            :value="imageConfig.model"
+            :placeholder="imageDef.defaultModel"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+            @input="saveImageModel(($event.target as HTMLInputElement).value)"
+          />
+          <p v-if="imageModelError" class="text-[10px] text-[#e74c3c] mt-1">
+            {{ imageModelError }}
+          </p>
+          <p
+            v-else-if="imageModelList.length > 0"
+            class="text-[10px] text-[#999] dark:text-[#666] mt-1"
+          >
+            已获取 {{ imageModelList.length }} 个图像模型，从下拉中选择。
+          </p>
+          <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            {{ imageDef.modelHint }}
+          </p>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">单次超时</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ imageConfig.timeoutSec }}s</span
+            >
+          </div>
+          <input
+            type="range"
+            :min="imageDef.minTimeoutSec"
+            :max="imageDef.maxTimeoutSec"
+            step="10"
+            :value="imageConfig.timeoutSec"
+            class="compress-slider w-full cursor-pointer"
+            @input="saveImageTimeout(Number(($event.target as HTMLInputElement).value))"
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
+            秒；复杂提示词与大尺寸 需要更久。
+          </p>
+        </div>
+
+        <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+        <div class="mb-3">
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+              {{ aiImageSessionHours }} 小时
+            </span>
+          </div>
+          <input
+            type="range"
+            :min="MIN_SESSION_HOURS"
+            :max="MAX_SESSION_HOURS"
+            step="1"
+            :value="aiImageSessionHours"
+            class="compress-slider w-full cursor-pointer"
+            @input="
+              saveSessionHours(
+                'aiImageSessionHours',
+                Number(($event.target as HTMLInputElement).value),
+              )
+            "
+          />
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3 mb-3">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
+            @click="handleTestImageConnection"
+          >
+            {{ imageTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span
+            v-if="imageTestResult === 'ok'"
+            class="text-[12px]"
+            :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+            imageTestError
+          }}</span>
+          <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+            imageHint
+          }}</span>
+        </div>
+
+        <p class="text-[10px] text-[#999] dark:text-[#666]">
+          生成结果不会上传到别处：插入时按「图片设置 →
+          粘贴/拖拽上传方式」保存（本地存储、本地磁盘、GitHub 图床或乐塔图床）。
         </p>
       </section>
     </template>
