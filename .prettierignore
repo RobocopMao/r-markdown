@@ -1,0 +1,9 @@
+# AI 排版用的组件规范：与 r-markdown-formatter skill 同源，
+# 必须与其源文件逐字节一致（aiFormatPrompt.loadFormatSpec 会剥离顶部注释后送进 prompt），
+# 因此禁止被 prettier --write 重新格式化。
+src/data/ai/r-markdown-formatter/**
+
+# AI 写作用的技能全文与参考资料：与 khazix-writer skill 同源，
+# 同样必须与源文件逐字节一致（aiWritePrompt.loadSkillText / loadReferenceText 会剥离顶部注释），
+# 且技能文档里的表格与空行一旦被 prettier 重排就会与源文件漂移。
+src/data/ai/khazix/**

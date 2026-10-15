@@ -261,6 +261,49 @@ export function useImageInsert(
     input.value = ''
   }
 
+  /**
+   * 保存到本地磁盘并插入（仅桌面端有效）。
+   *
+   * 抽成独立函数是因为有三个入口要走同一条链路：
+   * 粘贴/拖拽（pasteDropMode === 'disk'）、图库选图（onDiskImageSelected）、
+   * AI 配图的「保存磁盘并插入」。压缩参数、大小上限、插入的 img 标签格式必须完全一致，
+   * 各写一份迟早会漂移。
+   */
+  async function insertImageToDisk(file: File, insertAt: number | null = null) {
+    if (editorRef.value?.isInsideTag) {
+      showToast('不能在组件标签内插入图片')
+      return
+    }
+
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      showToast('正在压缩图片...')
+      finalFile = await compressImage(file, 10000, quality)
+      if (finalFile.size > 10 * 1024 * 1024) {
+        showToast('图片压缩后仍超过 10MB')
+        return
+      }
+    } else if (file.size > 10 * 1024 * 1024) {
+      showToast('图片不能超过 10MB')
+      return
+    }
+
+    try {
+      const relPath = await LocalImageDisk.saveImage(finalFile)
+      const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
+      if (insertAt !== null) {
+        editorRef.value?.replaceRange(insertAt, insertAt, tag)
+      } else {
+        editorRef.value?.insertAtCursor(tag)
+      }
+      showToast('已保存到本地磁盘')
+      await nextTick()
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e, '保存图片失败'))
+    }
+  }
+
   async function processImageInsert(file: File, insertAt: number | null = null) {
     if (editorRef.value?.isInsideTag) {
       showToast('不能在组件标签内插入图片')
@@ -368,32 +411,7 @@ export function useImageInsert(
 
     if (mode === 'disk') {
       // 本地磁盘存储模式（仅桌面端）
-      const quality = (getSetting<number>('compressQuality') || 100) / 100
-      let finalFile = file
-      if (quality < 1.0) {
-        showToast('正在压缩图片...')
-        finalFile = await compressImage(file, 10000, quality)
-        if (finalFile.size > 10 * 1024 * 1024) {
-          showToast('图片压缩后仍超过 10MB')
-          return
-        }
-      } else if (file.size > 10 * 1024 * 1024) {
-        showToast('图片不能超过 10MB')
-        return
-      }
-      try {
-        const relPath = await LocalImageDisk.saveImage(finalFile)
-        const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
-        if (insertAt !== null) {
-          editorRef.value?.replaceRange(insertAt, insertAt, tag)
-        } else {
-          editorRef.value?.insertAtCursor(tag)
-        }
-        showToast('已保存到本地磁盘')
-        await nextTick()
-      } catch (e: unknown) {
-        showToast(getErrorMessage(e, '保存图片失败'))
-      }
+      await insertImageToDisk(file, insertAt)
       return
     }
 
@@ -449,6 +467,73 @@ export function useImageInsert(
     githubImageInputRef.value?.click()
   }
 
+  /**
+   * 把一张图片上传到图床并插入编辑器。
+   *
+   * 图床由设置 `defaultHosting` 决定（github | leta），压缩、大小上限、鉴权校验、
+   * 进度回显与插入标签的写法都与「工具栏 → 上传图片」完全一致
+   * —— 供 onGithubImageSelected() 与 AI 配图的「上传图床并插入」共用，
+   * 避免两处各写一遍而逐渐漂移。
+   *
+   * 失败时抛可读错误，由调用方决定怎么提示。
+   */
+  async function uploadFileToHosting(file: File): Promise<string> {
+    const hosting = getSetting<string>('defaultHosting') || 'github'
+    uploadHostingLabel.value = hosting === 'leta' ? '乐塔图床' : 'GitHub 图床'
+    const maxSize = hosting === 'leta' ? 10 : 5
+
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      finalFile = await compressImage(file, maxSize * 1000, quality)
+      if (finalFile.size > maxSize * 1024 * 1024) {
+        throw new Error(`图片压缩后仍超过 ${maxSize}MB`)
+      }
+    } else if (file.size > maxSize * 1024 * 1024) {
+      throw new Error(`图片不能超过 ${maxSize}MB`)
+    }
+
+    githubUploading.value = true
+    githubUploadProgress.value = 0
+    try {
+      if (hosting === 'leta') {
+        const token = getSetting<string>('letaToken')
+        const storageId = getSetting<string>('letaStorageId') || '1'
+        if (!token) throw new Error('请先在设置中配置乐塔图床 Token')
+        const result = await uploadToLeta(finalFile, { token, storageId }, (percent) => {
+          githubUploadProgress.value = percent
+        })
+        return result.url
+      }
+
+      const repo = getSetting<string>('githubRepo')
+      const token = getSetting<string>('githubToken')
+      const branch = getSetting<string>('githubBranch') || 'main'
+      if (!repo || !token) throw new Error('请先在设置中配置 GitHub 图床')
+      const result = await uploadToGitHub(finalFile, { repo, token, branch }, (percent) => {
+        githubUploadProgress.value = percent
+      })
+      return result.url
+    } finally {
+      githubUploading.value = false
+      githubUploadProgress.value = 0
+    }
+  }
+
+  /** 上传图床专用入口（供 AI 配图等已有 File 的场景调用） */
+  async function uploadImageToHosting(file: File): Promise<void> {
+    try {
+      const url = await uploadFileToHosting(file)
+      editorRef.value?.insertAtCursor(
+        `<img src="${url}" width="100%" height="auto" radius="8px" fit="cover" />`,
+      )
+      showToast('上传成功')
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e, '上传失败'))
+      throw e
+    }
+  }
+
   async function onGithubImageSelected(e: Event) {
     const input = e.target as HTMLInputElement
     const file = input.files?.[0]
@@ -460,78 +545,11 @@ export function useImageInsert(
       return
     }
 
-    const hosting = getSetting<string>('defaultHosting') || 'github'
-    uploadHostingLabel.value = hosting === 'leta' ? '乐塔图床' : 'GitHub 图床'
-    const maxSize = hosting === 'leta' ? 10 : 5
-
-    const quality = (getSetting<number>('compressQuality') || 100) / 100
-    let finalFile = file
-    if (quality < 1.0) {
-      showToast('正在压缩图片...')
-      finalFile = await compressImage(file, maxSize * 1000, quality)
-      if (finalFile.size > maxSize * 1024 * 1024) {
-        showToast(`图片压缩后仍超过 ${maxSize}MB`)
-        input.value = ''
-        return
-      }
-    } else if (file.size > maxSize * 1024 * 1024) {
-      showToast(`图片不能超过 ${maxSize}MB`)
-      input.value = ''
-      return
-    }
-
-    if (hosting === 'leta') {
-      const letaToken = getSetting<string>('letaToken')
-      const storageId = getSetting<string>('letaStorageId') || '1'
-      if (!letaToken) {
-        showToast('请先在设置中配置乐塔图床 Token')
-        input.value = ''
-        return
-      }
-      githubUploading.value = true
-      githubUploadProgress.value = 0
-      try {
-        const result = await uploadToLeta(finalFile, { token: letaToken, storageId }, (percent) => {
-          githubUploadProgress.value = percent
-        })
-        editorRef.value?.insertAtCursor(
-          `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
-        )
-        showToast('上传成功')
-      } catch (e: unknown) {
-        showToast(getErrorMessage(e, '上传失败'))
-      }
-      githubUploading.value = false
-      githubUploadProgress.value = 0
-      input.value = ''
-      return
-    }
-
-    const repo = getSetting<string>('githubRepo')
-    const token = getSetting<string>('githubToken')
-    const branch = getSetting<string>('githubBranch') || 'main'
-
-    if (!repo || !token) {
-      showToast('请先在设置中配置 GitHub 图床')
-      input.value = ''
-      return
-    }
-
-    githubUploading.value = true
-    githubUploadProgress.value = 0
     try {
-      const result = await uploadToGitHub(finalFile, { repo, token, branch }, (percent) => {
-        githubUploadProgress.value = percent
-      })
-      editorRef.value?.insertAtCursor(
-        `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`,
-      )
-      showToast('上传成功')
-    } catch (e: unknown) {
-      showToast(getErrorMessage(e, '上传失败'))
+      await uploadImageToHosting(file)
+    } catch {
+      // uploadImageToHosting 已提示，这里只需收尾
     }
-    githubUploading.value = false
-    githubUploadProgress.value = 0
     input.value = ''
   }
 
@@ -550,32 +568,7 @@ export function useImageInsert(
       return
     }
 
-    const quality = (getSetting<number>('compressQuality') || 100) / 100
-    let finalFile = file
-    if (quality < 1.0) {
-      showToast('正在压缩图片...')
-      finalFile = await compressImage(file, 10000, quality)
-      if (finalFile.size > 10 * 1024 * 1024) {
-        showToast('图片压缩后仍超过 10MB')
-        input.value = ''
-        return
-      }
-    } else if (file.size > 10 * 1024 * 1024) {
-      showToast('图片不能超过 10MB')
-      input.value = ''
-      return
-    }
-
-    try {
-      const relPath = await LocalImageDisk.saveImage(finalFile)
-      editorRef.value?.insertAtCursor(
-        `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`,
-      )
-      showToast('已保存到本地磁盘')
-      await nextTick()
-    } catch (err: unknown) {
-      showToast(getErrorMessage(err, '保存图片失败'))
-    }
+    await insertImageToDisk(file)
     input.value = ''
   }
 
@@ -600,5 +593,11 @@ export function useImageInsert(
     onGithubImageSelected,
     handleUploadToDisk,
     onDiskImageSelected,
+    /** 供 AI 配图等「手上已有 File」的场景复用同一条落地链路（压缩 / 图床 / 磁盘 / 本地存储） */
+    processImageInsert,
+    /** 供 AI 配图的「保存磁盘并插入」复用（仅桌面端；压缩与 img 标签格式与粘贴一致） */
+    insertImageToDisk,
+    /** 供 AI 配图的「上传图床并插入」复用（按 defaultHosting 走 GitHub 或乐塔） */
+    uploadImageToHosting,
   }
 }

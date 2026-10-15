@@ -542,6 +542,7 @@ const features = [
         </p>
         <p class="hero-desc text-base sm:text-[19px] leading-relaxed text-black/[0.55] m-0">
           左侧写 Markdown，右侧实时预览排版效果，<br class="hidden sm:block" />
+          AI 排版赋能，一键排版轻松搞定，<br class="hidden sm:block" />
           一键复制粘贴到公众号编辑器，告别繁琐排版。<br class="hidden sm:block" />
           <span class="text-[var(--accent)]">为你，也为每一个认真写内容的人。</span>
         </p>

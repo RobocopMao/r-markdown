@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
 import {
   Braces,
@@ -10,28 +9,12 @@ import {
   Image,
   LayoutGrid,
   Bot,
+  Feather,
   Cloud,
   ImageUp,
+  ImagePlus,
   Settings,
 } from 'lucide-vue-next'
-
-const isTauri = import.meta.env.VITE_TAURI === 'true'
-const router = useRouter()
-const aiDemoHref = computed(() =>
-  isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined,
-)
-
-function openAiDemo() {
-  if (isTauri) {
-    window.open(
-      'https://r-markdown.pages.dev/#/help/r-markdown-formatter',
-      '_blank',
-      'noopener,noreferrer',
-    )
-  } else {
-    router.push('/help/r-markdown-formatter')
-  }
-}
 
 const props = defineProps<{
   mode?: 'editor' | 'preview'
@@ -47,6 +30,9 @@ const emit = defineEmits<{
   'save-to-repo': []
   'upload-image': []
   'open-settings': []
+  'open-ai-write': []
+  'open-ai-format': []
+  'open-ai-image': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -89,7 +75,7 @@ onBeforeUnmount(() => {
       class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + AI排版skill + 加载示例 + 仓库/图床/设置 -->
+      <!-- 编辑模式：扩展组件 + 保存到仓库 + 上传图片 + AI 写作/排版/配图 + 加载示例 + 设置 -->
       <template v-if="mode === 'editor'">
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -110,17 +96,29 @@ onBeforeUnmount(() => {
           @click="handleAction(() => emit('upload-image'))"
         >
           <ImageUp :size="14" />
-          上传图片(Github)
+          上传图片
         </button>
-        <a
-          :href="aiDemoHref"
-          :target="isTauri ? '_blank' : undefined"
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5 no-underline"
-          @click.prevent="handleAction(openAiDemo)"
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-write'))"
+        >
+          <Feather :size="14" />
+          AI 写作
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-format'))"
         >
           <Bot :size="14" />
-          AI排版skill
-        </a>
+          AI 排版
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-image'))"
+        >
+          <ImagePlus :size="14" />
+          AI 配图
+        </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('load-demo'))"

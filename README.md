@@ -3,7 +3,7 @@
 > 专为微信公众号打造的 Markdown 排版工具，所见即所得，一键复制到公众号后台。
 > 同时提供 macOS / Windows 桌面客户端，本地离线使用。
 
-当前版本 **0.4.5**。
+当前版本 **0.4.6**。
 
 ## ✨ 功能特性
 
@@ -20,6 +20,9 @@
 - **文档大纲** — 右侧大纲面板汇总标题层级，点击跳转并高亮定位
 - **底部状态栏** — 显示光标行列、已选字数、总字数与预估阅读时长
 - **命令面板** — `⌘K` / `Ctrl+K` 统一检索草稿 / 云文章 / 本地文章 / 素材，含最近搜索
+- **AI 写作** — 内置 khazix-writer 写作技能（数字生命卡兹克的公众号长文写法），以**对话方式**从素材聊到成稿：输入框固定在面板底部，第一条消息即素材（brief / 链接 / 语音转文字 / 零散想法），支持「用当前文档」「选择文件」「填经历模板」三个快捷入口，素材不足时模型会先追问而不是硬写。出稿后按 Markdown 渲染为稿件卡，历次稿件都留在对话里可回看、可应用；输入框上方的参数行有一个「**卡兹克写作技能**」勾选框（默认开启），它一并控制技能本体、参考资料（风格示例 + 内容方法论，约 +6900 tokens）与**出稿后的四层自检**（L1 硬性规则 / L2 风格一致性 / L3 内容质量 / L4 活人感终审，报告可折叠，可一键「按自检意见改稿」）；取消勾选即整套技能都不下发，模型自由发挥。**单会话 + 保留时长滑动续期**（默认 24 小时，从最后一次请求算起，可单独调），对话与稿件存本地 IndexedDB，超时或点「新建会话」即清空。与「AI 排版」共用同一份接口配置（「设置 → AI 设置 → AI 文本」里的接口地址 / API Key / 模型名），另有写作专属的采样温度 / 最大输出 / 结果保留时长 / 长期补充要求。桌面端与移动端均可使用
+- **AI 排版** — 接入任意 OpenAI 兼容接口（自填地址 / API Key / 模型名），一键把文章转成 R-Markdown 排版稿；支持当前文档、粘贴文本、选择文件（`.md` / `.txt` / `.docx`）三种来源，结果以差异对比展示（桌面端左右双栏、移动端单栏逐行），**结果本地保留 24 小时**（时长可在设置里单独调，从最后一次请求算起，面板顶部显示倒计时，可随时清空），确认后再替换编辑器内容（可撤销）；「补充要求」可存为常用项勾选复用，勾选状态持久化，并带全选 / 全不选。桌面端与移动端均可使用
+- **AI 配图** — 提示词直接出配图，默认接入 Agnes（`agnes-image-2.5-flash`，当前免费）；支持 1K–4K 尺寸档位与 8 种宽高比，出图后可预览、下载、在历史里回看；**结果本地保留 24 小时**（时长可在设置里单独调，从最后一次请求算起，面板顶部显示倒计时，可随时清空）。可用「优化提示词」把一句话交给大模型扩写成完整提示词（复用「AI 文本」配置的接口），「用标题」取文章标题当起点。放图进文章有三条路：「本地插入编辑器」走「粘贴/拖拽上传方式」的同一条链路（本地存储 / 本地磁盘 / GitHub 图床 / 乐塔图床，与手动粘贴图片完全一致），「上传图床并插入」直接传到图床用公开链接，桌面客户端另有「保存磁盘并插入」一步存到文章目录并插入。配置按厂商分开存放，新增厂商只需在 `src/services/imageProviders.ts` 加一条描述
 - **违禁词检测** — 五类内置词库（极限用语 / 权威背书 / 医疗功效 / 金融风险 / 诱导互动），支持自定义词与白名单，命中可点击跳转定位
 - **可调面板** — 拖拽调整编辑器与预览区宽度，工具栏按可用宽度自适应换行
 - **组件展示** — 内置排版组件库，可视化浏览所有可用组件及效果
@@ -47,6 +50,10 @@
 ## 🎨 排版能力
 
 基于 [awesome-design-md](https://www.npmjs.com/package/awesome-design-md) 排版引擎，支持丰富的公众号扩展语法：
+
+> 内置的「AI 排版」所用的组件规范与 [R-Markdown Formatter Skill](https://r-markdown.pages.dev/#/help/r-markdown-formatter) 同源（`src/data/ai/r-markdown-formatter/`），因此 AI 生成的排版稿与手动排版结果遵循同一套组件标准。
+>
+> 内置的「AI 写作」所用的技能文本与 `khazix-writer` skill 同源（`src/data/ai/khazix/`），技能更新后手动重拷覆盖即可。
 
 ### 内联语法
 
@@ -226,7 +233,10 @@ r-markdown/
 │   │   ├── defaults.ts            # 全部设置项与默认值（新增设置只改这里）
 │   │   └── settings.ts            # 设置读写（敏感项 AES-GCM-256 加密）
 │   ├── data/                 # 静态数据
-│   │   └── demoContent.ts         # 示例内容
+│   │   ├── demoContent.ts         # 示例内容
+│   │   └── ai/                    # AI 能力用的技能/规范文本（与对应 skill 同源，手动同步）
+│   │       ├── r-markdown-formatter/  # AI 排版用的组件规范（format-spec.md）
+│   │       └── khazix/                # AI 写作用的内置技能（SKILL.md + references/）
 │   ├── extension/            # 排版组件库（git 子模块，闭源）
 │   ├── extension-stubs/      # 排版组件空桩（fallback）
 │   ├── router/               # 路由
@@ -247,6 +257,12 @@ r-markdown/
 │   │   ├── materialPublish.ts     # 素材发布
 │   │   ├── coverCache.ts          # 微信封面缓存
 │   │   ├── configPersistence.ts   # 配置持久化
+│   │   ├── aiFormat.ts            # AI 排版 / 通用 chat.completions 调用（chatCompletion）
+│   │   ├── aiWrite.ts             # AI 写作：在「AI 文本」共用配置上叠加写作专属采样参数
+│   │   ├── aiWriteSessionStore.ts # AI 写作会话持久化（IndexedDB，单条记录）
+│   │   ├── imageGen.ts            # AI 配图生图调用
+│   │   ├── imageProviders.ts      # AI 配图厂商注册表
+│   │   ├── apiBase.ts             # 基址归一化 / 错误中文映射 / 超时中止（AI 能力共用）
 │   │   ├── startupCheck.ts        # 启动配置恢复检查
 │   │   └── wechatPublisher.ts     # 微信公众号发布
 │   ├── styles/               # 全局样式
@@ -268,6 +284,8 @@ r-markdown/
 │   │   ├── helpers.ts             # 通用辅助（esc/leaf/hexToRgb/getErrorMessage 等）
 │   │   ├── imageDB.ts             # IndexedDB 图片存储
 │   │   ├── mathRenderer.ts        # MathJax 公式渲染
+│   │   ├── aiWritePrompt.ts       # AI 写作：prompt 组装与输出分类/清洗（纯逻辑）
+│   │   ├── aiWriteSession.ts      # AI 写作：会话模型、有效期与历史裁剪（纯逻辑）
 │   │   └── xhsCards.ts            # 小红书卡片
 │   ├── views/                # 页面视图
 │   │   ├── home/HomePage.vue          # 首页
