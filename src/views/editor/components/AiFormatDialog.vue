@@ -254,7 +254,6 @@ const sourceText = computed(() => {
 
 const sourceStats = computed(() => countChars(sourceText.value))
 const sourceTooLong = computed(() => sourceText.value.length > LONG_ARTICLE_CHARS)
-const specTokens = ref(0)
 
 // ── 请求中止 ──
 let controller: AbortController | null = null
@@ -302,9 +301,8 @@ watch(
     // 从设置面板返回后重新读取配置，避免仍显示上一次的「待配置」状态
     refreshAiConfig()
     errorMsg.value = ''
-    // 预热规范并估算固定开销
-    const spec = await getSpec()
-    specTokens.value = estimateTokens(buildSystemPrompt(spec, preset.value))
+    // 预热规范：getSpec() 是模块级缓存，这里先发起加载，真正点「开始排版」时就不必再等
+    await getSpec()
 
     // 没有内存态结果时，尝试恢复上次未过期的结果（关了面板再打开不该丢）
     if (!resultText.value) {
@@ -320,9 +318,6 @@ watch(
 
 watch(preset, (v) => {
   setSetting('aiStylePreset', v, true)
-  void getSpec().then((spec) => {
-    specTokens.value = estimateTokens(buildSystemPrompt(spec, v))
-  })
 })
 
 function onSourceTab(tab: SourceTab) {
@@ -790,13 +785,6 @@ onBeforeUnmount(() => {
                 </button>
               </BaseTooltip>
             </div>
-            <!-- 移动端：token 统计换到下一行，避免与输入框/添加按钮抢宽度 -->
-            <span
-              class="text-[10px] text-[#999] dark:text-[#666]"
-              :class="{ 'w-full': isMobileWeb }"
-            >
-              规范约 {{ specTokens }} tokens
-            </span>
           </div>
 
           <!-- 常用补充要求：勾选后每次自动拼接，勾选状态已记住 -->
