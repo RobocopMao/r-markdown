@@ -856,9 +856,14 @@ function onSkillChanged(e: Event) {
     no-body-padding
     @close="emit('close')"
   >
-    <!-- 头部：会话剩余时间 / 模型 / 新建会话 -->
+    <!--
+      头部：会话剩余时间 / 模型 / 新建会话。
+      这三样都依附于「已配好接口」这件事——没配就没有会话、没有模型可言，
+      显示出来只会是「会话剩余 undefined」「未设置模型」这类无效信息，
+      与正文里的「还没有配置 AI 接口」引导自相矛盾。所以整体跟着 configured 走。
+    -->
     <template #header>
-      <div class="flex min-w-0 flex-1 items-center gap-2">
+      <div v-if="configured" class="flex min-w-0 flex-1 items-center gap-2">
         <span
           class="shrink-0 rounded-full px-2 py-[3px] text-[11px]"
           :class="
