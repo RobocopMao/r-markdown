@@ -32,6 +32,17 @@ import BaseTooltip from '@/components/BaseTooltip.vue'
 import TreeNodeComponent from './TreeNode.vue'
 import PushToCloudTree from './PushToCloudTree.vue'
 
+defineProps<{
+  /**
+   * 移动端「文章」Tab 使用：隐藏内置标题栏。
+   * 手机屏幕窄，标题栏那排操作按钮（展开全部/工作区/排序/刷新/新建/搜索…）塞不下，
+   * 由顶栏三点菜单去调同一批方法（见下方 defineExpose），列表区就能占满整屏。
+   */
+  hideHeader?: boolean
+  /** 移动端传 true：去掉圆角与右侧留白，铺满屏幕 */
+  compact?: boolean
+}>()
+
 const emit = defineEmits<{
   (e: 'openSettings', tab: string): void
   (e: 'editArticle', content: string, node: TreeNode): void
@@ -80,6 +91,8 @@ const {
 const wsMenuVisible = ref(false)
 /** 弹层定位：基于触发按钮的 fixed 坐标（避开滚动容器裁切） */
 const wsMenuStyle = ref<Record<string, string>>({})
+/** 工作区弹层根元素，取实际宽度用于屏幕边界收拢 */
+const wsMenuRef = ref<HTMLElement | null>(null)
 const wsTriggerRef = ref<HTMLElement | null>(null)
 
 /**
@@ -125,16 +138,51 @@ async function onSwitchWorkspace(ws: (typeof workspaces.value)[number]) {
   await switchToWorkspace(ws.kind, ws.id)
 }
 
-/** 打开工作区菜单：把弹层定位到按钮下方（fixed，避免被滚动容器裁剪） */
-function toggleWsMenu() {
+/**
+ * 「管理工作区」：先关弹层再跳到设置页。
+ * 写成方法而不是内联两行——内联多语句会被 prettier 折成多行，
+ * 而 Vue 模板的表达式不支持换行分隔语句，会直接编译失败。
+ */
+function onManageWorkspace() {
+  wsMenuVisible.value = false
+  emit('openSettings', 'cloud')
+}
+
+/**
+ * 把 fixed 弹层定位到锚点下方，并夹在视口内。
+ * 手机上锚点常在右侧（顶栏三点按钮），弹层从左边缘展开会直接出屏，
+ * 所以 left 要在 [8, 视口宽 - 弹层宽 - 8] 之间收一下。
+ * 弹层宽度取实际渲染宽度（下一帧才有），拿不到就先按最小宽度估算。
+ */
+function placeFixedMenu(
+  el: HTMLElement,
+  menuEl: HTMLElement | null,
+  minWidth: number,
+): Record<string, string> {
+  const rect = el.getBoundingClientRect()
+  const width = menuEl?.offsetWidth || minWidth
+  const margin = 8
+  const maxLeft = Math.max(margin, window.innerWidth - width - margin)
+  return {
+    left: `${Math.min(Math.max(rect.left, margin), maxLeft)}px`,
+    top: `${rect.bottom + 4}px`,
+  }
+}
+
+/**
+ * 打开工作区菜单：把弹层定位到按钮下方（fixed，避免被滚动容器裁剪）。
+ * anchor 可传入外部触发按钮——移动端「文章」Tab 下标题栏被隐藏，
+ * 由顶栏三点菜单传入自己的按钮做锚点；不传则用标题栏内的默认按钮。
+ */
+function toggleWsMenu(anchor?: HTMLElement | null) {
   sortMenuVisible.value = false
   wsMenuVisible.value = !wsMenuVisible.value
-  if (wsMenuVisible.value && wsTriggerRef.value) {
-    const rect = wsTriggerRef.value.getBoundingClientRect()
-    wsMenuStyle.value = {
-      left: `${rect.left}px`,
-      top: `${rect.bottom + 4}px`,
-    }
+  const el = anchor ?? wsTriggerRef.value
+  if (wsMenuVisible.value && el) {
+    wsMenuStyle.value = placeFixedMenu(el, wsMenuRef.value, 180)
+    nextTick(() => {
+      if (el && wsMenuRef.value) wsMenuStyle.value = placeFixedMenu(el, wsMenuRef.value, 180)
+    })
   }
 }
 
@@ -282,6 +330,8 @@ const isSorting = ref(localStorage.getItem(SORT_ACTIVE_KEY) === 'true')
 const sortMenuVisible = ref(false)
 /** 排序弹层定位（fixed，避开滚动容器裁剪） */
 const sortMenuStyle = ref<Record<string, string>>({})
+/** 排序弹层根元素，取实际宽度用于屏幕边界收拢 */
+const sortMenuRef = ref<HTMLElement | null>(null)
 const sortTriggerRef = ref<HTMLElement | null>(null)
 
 function getSortModeLabel(): string {
@@ -302,15 +352,16 @@ function setSortMode(mode: SortMode) {
   sortMenuVisible.value = false
 }
 
-function toggleSortMenu() {
+/** 排序菜单定位，anchor 语义同 toggleWsMenu */
+function toggleSortMenu(anchor?: HTMLElement | null) {
   wsMenuVisible.value = false
   sortMenuVisible.value = !sortMenuVisible.value
-  if (sortMenuVisible.value && sortTriggerRef.value) {
-    const rect = sortTriggerRef.value.getBoundingClientRect()
-    sortMenuStyle.value = {
-      left: `${rect.left}px`,
-      top: `${rect.bottom + 4}px`,
-    }
+  const el = anchor ?? sortTriggerRef.value
+  if (sortMenuVisible.value && el) {
+    sortMenuStyle.value = placeFixedMenu(el, sortMenuRef.value, 140)
+    nextTick(() => {
+      if (el && sortMenuRef.value) sortMenuStyle.value = placeFixedMenu(el, sortMenuRef.value, 140)
+    })
   }
 }
 
@@ -795,6 +846,29 @@ provide('tree-currentCloudArticleId', currentCloudArticleId)
 provide('tree-dragNodeId', dragNodeId)
 provide('tree-reordering', reordering)
 
+// ── 滚动到底部留白 ──
+/**
+ * 与编辑器 / 预览保持一致：滚到接近底部时给列表补一段底部留白，
+ * 否则最后几条会被悬浮的底部胶囊 Tab 压住点不到。阈值 0.85、高度 80px
+ * 与 EditorPage 里 useScrollSync 的处理对齐。
+ *
+ * 注意别用「scrollTop / (scrollHeight - clientHeight)」判断：这段留白自身会把
+ * scrollHeight 撑大 80px，比例随之掉到阈值以下 → 撤掉留白 → 比例又回升 → 再补上，
+ * 结果在底部来回抖动。所以改用「距离底部还有多少像素」判断，
+ * 并把已经留出的那 80px 预先加回来（RESERVE），让判断基准始终是「没留白时」的位置。
+ */
+const nearBottom = ref(false)
+const BOTTOM_RESERVE = 80
+
+function onTreeScroll(e: Event) {
+  const el = e.currentTarget as HTMLElement
+  const reserve = nearBottom.value ? BOTTOM_RESERVE : 0
+  const distanceToBottom = el.scrollHeight - el.clientHeight - el.scrollTop - reserve
+  // 还剩不到「一屏的 15%」或不到预留高度时，就认为到底了
+  const threshold = Math.max(BOTTOM_RESERVE, el.clientHeight * 0.15)
+  nearBottom.value = el.scrollHeight > el.clientHeight && distanceToBottom < threshold
+}
+
 // ── 全部展开/收起 ──
 const isAllExpanded = computed(() => {
   const allFolders = treeData.value.filter((n) => n.type === 'folder')
@@ -851,16 +925,46 @@ function onSettingChanged(e: Event) {
     loadTree()
   }
 }
+
+/*
+ * 移动端「文章」Tab：标题栏被隐藏（hideHeader），那一排操作按钮改由顶栏三点菜单提供。
+ * 这里暴露同名方法 + 少量状态，让外部菜单复用完全相同的逻辑，
+ * 不要在外面另写一套——否则桌面/手机两条路径的行为迟早会分叉。
+ */
+defineExpose({
+  // 状态
+  isConfigured,
+  isAllExpanded,
+  searchVisible,
+  searchQuery,
+  newAtTop,
+  autoExpandEnabled,
+  isSorting,
+  sortMode,
+  // 操作
+  init,
+  loadTree,
+  toggleAllExpand,
+  toggleSearch,
+  toggleNewArticlePosition,
+  toggleAutoExpand,
+  refreshTree,
+  showNewRootArticle,
+  showNewRoot,
+  toggleWsMenu,
+  toggleSortMenu,
+})
 </script>
 
 <template>
   <div
-    class="tree-panel flex flex-col h-full overflow-hidden shrink-0 transition-all duration-290 rounded-xl mr-[10px]"
+    class="tree-panel flex flex-col h-full overflow-hidden shrink-0 transition-all duration-290"
+    :class="compact ? '' : 'rounded-xl mr-[10px]'"
     style="width: 100%; background: var(--bg-primary)"
   >
-    <!-- 标题栏 -->
+    <!-- 标题栏（移动端「文章」Tab 隐藏，改由顶栏三点菜单提供同名操作） -->
     <div
-      v-if="isConfigured"
+      v-if="isConfigured && !hideHeader"
       class="flex items-center justify-between px-3 py-2 shrink-0"
       :style="{ borderBottom: searchVisible ? 'none' : '1px solid var(--border-color, #e5e5e5)' }"
     >
@@ -879,7 +983,7 @@ function onSettingChanged(e: Event) {
             <button
               ref="wsTriggerRef"
               class="flex items-center justify-center h-7 w-7 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
-              @click.stop="toggleWsMenu"
+              @click.stop="toggleWsMenu()"
             >
               <GitBranch :size="14" class="shrink-0" />
             </button>
@@ -891,7 +995,7 @@ function onSettingChanged(e: Event) {
             <button
               ref="sortTriggerRef"
               class="flex items-center justify-center h-7 px-2 rounded-[5px] border-none cursor-pointer transition-all duration-150 panel-action-btn"
-              @click.stop="toggleSortMenu"
+              @click.stop="toggleSortMenu()"
             >
               <ArrowUpDown :size="14" :style="{ color: isSorting ? 'var(--accent)' : undefined }" />
             </button>
@@ -980,7 +1084,11 @@ function onSettingChanged(e: Event) {
     </div>
 
     <!-- 树形区域 -->
-    <div class="flex-1 overflow-auto py-1 scrollbar-hide">
+    <div
+      class="flex-1 overflow-auto py-1 scrollbar-hide"
+      :class="{ 'tree-near-bottom': nearBottom }"
+      @scroll="onTreeScroll"
+    >
       <!-- 未配置 -->
       <div v-if="!isConfigured" class="px-3 py-6 text-center">
         <p class="text-xs mb-2" style="color: var(--text-secondary)">尚未配置 GitHub 仓库</p>
@@ -1217,6 +1325,7 @@ function onSettingChanged(e: Event) {
     <Teleport to="body">
       <div
         v-if="wsMenuVisible"
+        ref="wsMenuRef"
         class="fixed rounded-lg py-1 min-w-[180px] z-[9999]"
         :style="{
           ...wsMenuStyle,
@@ -1226,7 +1335,11 @@ function onSettingChanged(e: Event) {
         }"
         @click.stop
       >
-        <div v-if="kindWorkspaceList.length === 0" class="px-3 py-1.5 text-xs" style="color: var(--text-secondary)">
+        <div
+          v-if="kindWorkspaceList.length === 0"
+          class="px-3 py-1.5 text-xs"
+          style="color: var(--text-secondary)"
+        >
           暂无工作区
         </div>
         <button
@@ -1236,7 +1349,12 @@ function onSettingChanged(e: Event) {
           :style="{ color: 'var(--text-primary)' }"
           @click="onSwitchWorkspace(ws)"
         >
-          <Cloud v-if="ws.kind === 'github'" :size="13" class="shrink-0" style="color: var(--text-secondary)" />
+          <Cloud
+            v-if="ws.kind === 'github'"
+            :size="13"
+            class="shrink-0"
+            style="color: var(--text-secondary)"
+          />
           <HardDrive v-else :size="13" class="shrink-0" style="color: var(--text-secondary)" />
           <BaseTooltip :text="workspaceFullLabel(ws)" :delay="2000">
             <span class="flex-1 truncate">{{ workspaceDisplayName(ws) }}</span>
@@ -1248,14 +1366,11 @@ function onSettingChanged(e: Event) {
             style="color: var(--accent)"
           />
         </button>
-        <div
-          class="my-1"
-          :style="{ borderTop: '1px solid var(--border-color, #e5e5e5)' }"
-        />
+        <div class="my-1" :style="{ borderTop: '1px solid var(--border-color, #e5e5e5)' }" />
         <button
           class="flex items-center w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left transition-colors duration-100 hover:bg-[var(--bg-hover)]"
           style="color: var(--text-secondary)"
-          @click="emit('openSettings', 'cloud'); wsMenuVisible = false"
+          @click="onManageWorkspace"
         >
           管理工作区
         </button>
@@ -1266,6 +1381,7 @@ function onSettingChanged(e: Event) {
     <Teleport to="body">
       <div
         v-if="sortMenuVisible"
+        ref="sortMenuRef"
         class="fixed rounded-lg py-1 min-w-[140px] z-[9999]"
         :style="{
           ...sortMenuStyle,
@@ -1280,10 +1396,8 @@ function onSettingChanged(e: Event) {
           :key="opt.value"
           class="flex items-center gap-2 w-full px-3 py-1.5 text-xs cursor-pointer border-none text-left hover:bg-[var(--bg-hover)] transition-colors duration-100"
           :style="{
-            color:
-              isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
-            background:
-              isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
+            color: isSorting && sortMode === opt.value ? 'var(--accent)' : 'var(--text-primary)',
+            background: isSorting && sortMode === opt.value ? 'var(--accent-light)' : 'transparent',
           }"
           @click="setSortMode(opt.value)"
         >
@@ -1334,5 +1448,17 @@ function onSettingChanged(e: Event) {
 }
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/*
+  移动端文章树滚到底部时补的空白，避免最后几条被底部胶囊 Tab 遮挡。
+  阈值(0.85)、高度(80px)与 EditorPage 里 useScrollSync 的 mobile-near-bottom 一致，
+  改的时候两边一起改，别让三个 Tab 的观感对不齐。
+  桌面端没有胶囊，不需要这段留白。
+*/
+@media (max-width: 767px) {
+  .tree-near-bottom {
+    padding-bottom: 80px;
+  }
 }
 </style>

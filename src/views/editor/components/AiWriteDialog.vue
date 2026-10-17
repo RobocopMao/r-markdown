@@ -882,7 +882,7 @@ function onSkillChanged(e: Event) {
               : 'bg-[#f0f0f0] text-[#666] dark:bg-[#2a2a2a] dark:text-[#999]'
           "
         >
-          {{ expired ? '会话已过期' : `会话剩余 ${remainingText}` }}
+          {{ expired ? '会话已过期' : `会话保留 ${remainingText}` }}
         </span>
         <button
           class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
