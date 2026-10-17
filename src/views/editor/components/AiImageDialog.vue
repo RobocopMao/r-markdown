@@ -21,7 +21,6 @@ import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useTheme } from '@/composables/useTheme'
-import { useIsMobileWeb } from '@/composables/useIsMobile'
 import { getErrorMessage } from '@/utils/helpers'
 import { extractTitle } from '@/utils/extractTitle'
 import { saveBinaryFile, blobToBytes } from '@/utils/saveFile'
@@ -76,7 +75,6 @@ const emit = defineEmits<{
 }>()
 
 const { colors } = useTheme()
-const isMobileWeb = useIsMobileWeb()
 
 /** 一次生成的结果（含本地预览地址与文件） */
 interface GeneratedImage {
@@ -728,10 +726,14 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
-            <span
-              class="text-[11px] text-[#999] dark:text-[#666]"
-              :class="{ 'w-full': isMobileWeb }"
-            >
+            <!--
+              输出尺寸提示跟在「尺寸 / 比例」后面同一行。
+              原来移动端加了 w-full 把它整条换到下一行，白白多占一行高度；
+              实测 390/360 宽都放得下（行内剩余 126px，最长的「输出 4K · 4096x4096」约 112px），
+              所以只在 320px 这种极窄屏会自然折行，不再强制。
+              whitespace-nowrap 保证「4K · 4096x4096」不被从中间劈开。
+            -->
+            <span class="whitespace-nowrap text-[11px] text-[#999] dark:text-[#666]">
               输出 {{ cfg.size }}
               <template v-if="outputSizeHint"> · {{ outputSizeHint }}</template>
             </span>
