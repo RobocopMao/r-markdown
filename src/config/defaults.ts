@@ -201,6 +201,14 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   aiFormatSessionHours: { default: 24 },
   /** AI 配图：结果保留时长（小时） */
   aiImageSessionHours: { default: 24 },
+  /**
+   * AI 配图：上一次用的提示词，重开面板/重启应用都还在。
+   *
+   * 为什么单独存：配图常常是「改几个字再生成一版」的迭代，每次重开都要
+   * 重新敲一遍长提示词很烦。面板上有「清空」按钮可手动清掉。
+   * 注意这是**提示词草稿**，不是生成结果，所以不受结果保留时长约束。
+   */
+  aiImagePrompt: { default: '' },
   /** AI 写作：长期补充要求，每次写作都拼进 system prompt（可留空） */
   aiWriteExtraInstruction: { default: '' },
   /**

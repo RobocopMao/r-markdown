@@ -209,8 +209,6 @@ function onSettingChanged(e: Event) {
   }
 }
 
-const modelLabel = computed(() => resolveWriteConfig().model || '未设置模型')
-
 // ── 参数（改动即持久化，下次沿用） ──
 const archetype = ref<WriteArchetype>(normalizeArchetype(getSetting<string>('aiWriteArchetype')))
 const length = ref<WriteLength>(normalizeLength(getSetting<string>('aiWriteLength')))
@@ -885,9 +883,6 @@ function onSkillChanged(e: Event) {
           "
         >
           {{ expired ? '会话已过期' : `会话剩余 ${remainingText}` }}
-        </span>
-        <span v-if="hasMessages" class="min-w-0 truncate text-[11px] text-[#999] dark:text-[#666]">
-          {{ modelLabel }}
         </span>
         <button
           class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
