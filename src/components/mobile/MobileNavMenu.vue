@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
       <EllipsisVertical :size="15" />
     </button>
     <div
-      class="mobile-nav-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-40"
+      class="mobile-nav-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-32"
       :class="{ show: isVisible }"
     >
       <template v-for="(item, idx) in items" :key="item.key">

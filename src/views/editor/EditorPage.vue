@@ -73,6 +73,7 @@ import {
   HardDrive,
   ListTree,
   Search,
+  Settings as SettingsIcon,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -97,6 +98,7 @@ import Minimap from './components/Minimap.vue'
 import OutlinePanel from './components/OutlinePanel.vue'
 import FindReplacePanel, { type FindSpec } from './components/FindReplacePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
+import ThemeModeToggle from './components/ThemeModeToggle.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
 import Dropdown from './components/Dropdown.vue'
@@ -1324,12 +1326,10 @@ function loadDemo() {
           @load-demo="confirmLoadVisible = true"
           @export-html="handleExportHTML"
           @save-image="handleSaveImage"
-          @copy-rich-text="handleCopyRichText"
           @export-xhs="xhsVisible = true"
           @go-components="$router.push('/components')"
           @save-to-repo="pushCloudVisible = true"
           @upload-image="handleUploadToGitHub"
-          @open-settings="settingsVisible = true"
           @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
@@ -1341,6 +1341,11 @@ function loadDemo() {
           @select="setTheme"
           @custom-select="setCustomTheme"
         />
+        <ThemeModeToggle />
+        <!-- 设置：PC 与移动端都常驻顶栏右上角，不要再加 hidden sm:flex 把它在移动端藏掉 -->
+        <button class="toolbar-round-btn flex" title="设置" @click="settingsVisible = true">
+          <SettingsIcon :size="18" />
+        </button>
       </div>
     </div>
 
@@ -1390,7 +1395,6 @@ function loadDemo() {
             :draft-count="draftCount"
             :tree-panel-visible="treePanelVisible"
             @select="onSidebarSelect"
-            @open-settings="settingsVisible = true"
             @open-gallery="showGallery = true"
             @open-banned-words="bannedWordsVisible = true"
             @ai-action="onSidebarAiAction"

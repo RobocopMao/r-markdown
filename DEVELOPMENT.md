@@ -151,7 +151,7 @@ scripts/
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                                                                                                                    |
 | `Preview.vue`                                                          | 预览区渲染与复制                                                                                                                                                     |
-| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图） |
+| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图）；底部只留「展开 / 收起」按钮（深色模式与设置已移到顶栏右上角） |
 | `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单）                                                                                                                                   |
 | `OutlinePanel.vue`                                                     | 文档大纲面板                                                                                                                                                         |
 | `FindReplacePanel.vue`                                                 | 查找替换面板                                                                                                                                                         |
@@ -159,7 +159,8 @@ scripts/
 | `Minimap.vue`                                                          | 预览区缩略图                                                                                                                                                         |
 | `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                                                                                                                       |
 | `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / AI〔AI 文本·AI 图片〕 / 关于）；「AI 文本」把写作与排版合并成一份公共接口配置，两者不同的采样参数在该子页内分区展示      |
-| `ThemePicker.vue`                                                      | 主题色选择                                                                                                                                                           |
+| `ThemePicker.vue`                                                      | 主题色选择（顶栏右上角，最右一组按钮：主题色 → 深色/浅色 → 设置）                                                                                                    |
+| `ThemeModeToggle.vue`                                                  | 深色 / 浅色 / 跟随系统切换（顶栏右上角，紧邻主题色选择；弹出菜单同 `ThemePicker` 的点击展开方式）                                                                    |
 | `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                                                                                                                   |
 | `ImageCacheDialog.vue`                                                 | 图库弹窗（本地 / 磁盘图片）                                                                                                                                          |
 | `DraftListDialog.vue` `SaveDraftDialog.vue`                            | 草稿列表与保存草稿                                                                                                                                                   |
@@ -172,7 +173,7 @@ scripts/
 | `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果 / 结果保留倒计时 + 清空）                                                                      |
 | `AiImageDialog.vue`                                                    | AI 配图（提示词 / 尺寸档位·宽高比 / 出图预览与下载 / 插入编辑器 · 上传图床 · 保存磁盘并插入〔仅桌面端〕 / 结果保留倒计时 + 清空）                                    |
 | `Dropdown.vue`                                                         | 通用下拉                                                                                                                                                             |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 写作、AI 排版、AI 配图入口）                                                                                                                   |
+| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 写作、AI 排版、AI 配图入口；宽度 `w-32`，与 `MobileNavMenu` 的 `w-32` 一致。设置常驻顶栏右上角、不在此菜单内）                                 |
 
 ### 编辑器组合式函数（`src/views/editor/composables/`）
 

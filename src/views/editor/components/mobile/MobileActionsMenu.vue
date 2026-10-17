@@ -3,7 +3,6 @@ import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
 import {
   Braces,
-  Copy,
   EllipsisVertical,
   FileText,
   Image,
@@ -13,7 +12,6 @@ import {
   Cloud,
   ImageUp,
   ImagePlus,
-  Settings,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -24,12 +22,10 @@ const emit = defineEmits<{
   'load-demo': []
   'export-html': []
   'save-image': []
-  'copy-rich-text': []
   'export-xhs': []
   'go-components': []
   'save-to-repo': []
   'upload-image': []
-  'open-settings': []
   'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
@@ -72,32 +68,11 @@ onBeforeUnmount(() => {
       <EllipsisVertical :size="15" />
     </button>
     <div
-      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
+      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-32"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + 保存到仓库 + 上传图片 + AI 写作/排版/配图 + 加载示例 + 设置 -->
+      <!-- 编辑模式：AI 写作/排版/配图 → 上传图片 → 保存到仓库 → 扩展组件 → 加载示例 -->
       <template v-if="mode === 'editor'">
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('go-components'))"
-        >
-          <LayoutGrid :size="14" />
-          扩展组件
-        </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('save-to-repo'))"
-        >
-          <Cloud :size="14" />
-          保存到仓库
-        </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('upload-image'))"
-        >
-          <ImageUp :size="14" />
-          上传图片
-        </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-write'))"
@@ -121,17 +96,31 @@ onBeforeUnmount(() => {
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('upload-image'))"
+        >
+          <ImageUp :size="14" />
+          上传图片
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('save-to-repo'))"
+        >
+          <Cloud :size="14" />
+          保存到仓库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('go-components'))"
+        >
+          <LayoutGrid :size="14" />
+          扩展组件
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('load-demo'))"
         >
           <FileText :size="14" />
           加载示例
-        </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('open-settings'))"
-        >
-          <Settings :size="14" />
-          设置
         </button>
       </template>
       <!-- 预览模式：显示其他三个 -->
@@ -157,16 +146,6 @@ onBeforeUnmount(() => {
           <FileText :size="14" />
           小红书图
         </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('copy-rich-text'))"
-        >
-          <Copy :size="14" />
-          复制到公众号
-        </button>
-        <div class="px-4 pb-1 text-[10px] opacity-40 leading-tight">
-          移动端复制到公众号会丢失样式，推荐在PC端操作
-        </div>
       </template>
     </div>
   </div>

@@ -72,11 +72,12 @@ async function copyCurrentColor() {
 <template>
   <div ref="pickerRef" class="relative">
     <button
-      class="theme-btn w-7 h-7 rounded-full cursor-pointer flex items-center justify-center p-0 shrink-0 transition-all duration-200 hover:scale-110"
+      class="toolbar-round-btn flex"
       :style="{ background: currentAccent, color: '#fff' }"
+      title="主题色"
       @click="toggle"
     >
-      <Palette :size="24" />
+      <Palette :size="18" />
     </button>
     <div
       class="theme-picker absolute top-full right-0 mt-2 p-3 rounded-xl z-10 w-50"
@@ -134,10 +135,6 @@ async function copyCurrentColor() {
 </template>
 
 <style scoped>
-.theme-btn {
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
 .theme-picker {
   display: none;
   background: var(--bg-primary);

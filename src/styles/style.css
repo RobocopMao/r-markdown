@@ -181,3 +181,34 @@ body {
   font-weight: 600;
   padding: 0 2px;
 }
+
+/*
+  顶栏右上角的圆形图标按钮（主题色 / 深色模式 / 设置 三颗共用一套外观）。
+
+  以最早的主题色按钮为基准：实心主题色底 + 白图标 + 半透明白描边。
+  此前深色模式与设置两个按钮各自写了「浅绿底 + 绿图标」，三颗看着不像一组，
+  故收成这一个类，新增同类按钮一律复用它，不要再各写各的。
+
+  注意：本文件是未分层的普通 CSS，优先级高于 Tailwind 的 utilities 层。所以这里
+  **不要写 display**：一旦写了 display:flex，使用方按钮上的 `hidden` / `hidden sm:flex`
+  就会整体失效，想在移动端隐藏的按钮会漏出来。显示与否一律交给使用方的 Tailwind 类
+  （常驻 → `flex`，桌面端才有 → `hidden sm:flex`）。这三颗按钮目前都是常驻顶栏的。
+*/
+.toolbar-round-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  background: var(--accent);
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toolbar-round-btn:hover {
+  transform: scale(1.1);
+}
