@@ -2,6 +2,25 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*
+  等宽字体的中文兜底。
+
+  为什么必须补：Tailwind 默认的 --font-mono 是一串**纯拉丁**等宽字体
+  （ui-monospace / SFMono-Regular / Menlo / Monaco / Consolas / … / monospace），
+  一个中文字体都没有。于是 font-mono 区域里的中文只能落到各平台 monospace 的兜底字形：
+  Windows 落**宋体**，macOS 落苹方——看起来像「字体用错了」，实际是「没有中文字体可选」。
+
+  这里保留那串等宽拉丁字体（代码、色值、标签仍需字符对齐），只在末尾追加中文字体：
+  ASCII 继续走等宽，中文由后面这几项接管（Windows 微软雅黑 / macOS 苹方 /
+  Linux 思源黑体），都没命中再落 sans-serif。
+*/
+@theme {
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    'Microsoft YaHei', 'PingFang SC', 'Hiragino Sans GB', 'Source Han Sans SC', 'Noto Sans CJK SC',
+    sans-serif, monospace;
+}
+
 /* ── Theme CSS Variables ── */
 :root {
   --accent: #27ae60;
