@@ -2144,6 +2144,8 @@ function loadDemo() {
             :uploading="githubUploading"
             :upload-label="uploadHostingLabel"
             :tag-available="!!tagInfo"
+            :can-undo="!!editorRef?.canUndo"
+            @undo="editorRef?.undo()"
             @inline-format="(s, w) => editorRef?.applyInlineFormat(s, w)"
             @insert-syntax="(s) => editorRef?.insertAtCursor(s)"
             @insert-table="(r, c) => insertTable(r, c)"

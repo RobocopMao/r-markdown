@@ -119,6 +119,10 @@ export interface EditorExposed {
   findInvalid: boolean
   /** 把焦点交还编辑器 */
   focusEditor: () => void
+  /** 历史栈里是否还有可撤销的改动（移动端工具栏的撤销按钮据此置灰） */
+  canUndo: boolean
+  /** 撤销一步，走 CodeMirror 的 undo 命令，与 Cmd/Ctrl+Z 同一条历史栈 */
+  undo: () => void
 }
 
 export interface TagInfo {

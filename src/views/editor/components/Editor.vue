@@ -21,7 +21,14 @@ import {
   Compartment,
   Prec,
 } from '@codemirror/state'
-import { defaultKeymap, indentWithTab, history, historyKeymap } from '@codemirror/commands'
+import {
+  defaultKeymap,
+  indentWithTab,
+  history,
+  historyKeymap,
+  undo,
+  undoDepth,
+} from '@codemirror/commands'
 import { markdown } from '@codemirror/lang-markdown'
 import { languages } from '@codemirror/language-data'
 import {
@@ -393,6 +400,13 @@ const selectedChars = ref(0)
 
 // ── 行内样式选中检测 ──
 const hasInlineSelection = ref(false)
+
+/**
+ * 历史栈里是否还有可撤销的改动。
+ * 移动端工具栏的「撤销」按钮据此置灰，避免连点时空转。
+ * 只在 docChanged 时重算：history 只随文档变动增长，光标移动不影响。
+ */
+const canUndo = ref(false)
 
 // ── 标签内检测 ──
 const isInsideTag = ref(false)
@@ -828,6 +842,7 @@ onMounted(async () => {
   const updateListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
       emit('update:modelValue', update.state.doc.toString())
+      canUndo.value = undoDepth(update.state) > 0
       // 检测撤销/重做
       const isUndoRedo = update.transactions.some(
         (tr) => tr.isUserEvent('undo') || tr.isUserEvent('redo'),
@@ -1083,6 +1098,13 @@ defineExpose({
   findCurrent,
   findInvalid,
   focusEditor: () => view?.focus(),
+  // 撤销：走 CodeMirror 的 undo 命令，与 Cmd/Ctrl+Z 同一条路径
+  canUndo,
+  undo: () => {
+    if (!view) return
+    undo(view)
+    canUndo.value = undoDepth(view.state) > 0
+  },
 })
 </script>
 
