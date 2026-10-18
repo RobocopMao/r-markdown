@@ -1047,6 +1047,21 @@ function closeImageMenu() {
   }, 150)
 }
 
+// ── 帮助文档 ──
+/**
+ * 移动端三点菜单的「帮助文档」。
+ * 与左侧栏那个「帮助」入口（EditorSidebar.vue 的 openHelp）保持同一口径：
+ * 桌面客户端是 Tauri 窗口，站内路由跳转会顶掉编辑器，所以另开浏览器窗口；
+ * Web 端直接走前端路由，保留编辑器返回栈。
+ */
+function onOpenHelp() {
+  if (isTauri) {
+    window.open('https://r-markdown.pages.dev/#/help', '_blank', 'noopener,noreferrer')
+  } else {
+    router.push('/help')
+  }
+}
+
 // ── 导入 ──
 const { onImportClick } = useImport(
   markdown,
@@ -1385,6 +1400,7 @@ function loadDemo() {
           @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
+          @open-help="onOpenHelp"
         />
         <ThemePicker
           :themes="themes"

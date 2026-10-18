@@ -17,6 +17,7 @@ import {
   Library,
   BookMarked,
   ShieldAlert,
+  HelpCircle,
 } from 'lucide-vue-next'
 
 defineProps<{
@@ -45,6 +46,7 @@ const emit = defineEmits<{
   'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
+  'open-help': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -174,6 +176,13 @@ onBeforeUnmount(() => {
         >
           <FileText :size="14" />
           加载示例
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-help'))"
+        >
+          <HelpCircle :size="14" />
+          帮助文档
         </button>
       </template>
       <!-- 预览模式：显示其他三个 -->
