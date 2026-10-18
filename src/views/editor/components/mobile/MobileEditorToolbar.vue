@@ -170,9 +170,15 @@ const ROW_ACTION = 'cursor-pointer active:bg-black/5 dark:active:bg-white/[0.08]
 /** 分区标题行（表格 / 列 / 列堆叠 / 行）：排版像一条列表项，但本身不可点 */
 const ROW_STATIC = 'cursor-default'
 
-/** 弹层里的方格：触屏没有 hover 预览，点第几格就是几行几列 */
+/**
+ * 弹层里的方格：触屏没有 hover 预览，点第几格就是几行几列。
+ * 边框不能直接用 var(--border-color)：深色下它只有 10% 白，叠在 #242426 的面板上
+ * 亮度差仅 +21，截图里几乎看不出格子。浅色对齐 PC 工具栏的 #d0d0d0，
+ * 深色用 25% 白（亮度差约 +55），与 PC 的 dark:border-white/15 同源但更重一档。
+ * active: 是靠 :active 伪类提高优先级压过 dark: 的，两者的层叠顺序不用操心。
+ */
 const CELL_BASE =
-  'cursor-pointer rounded-[3px] border border-[var(--border-color)] bg-transparent active:border-[var(--accent)] active:bg-[color-mix(in_srgb,var(--accent)_20%,transparent)]'
+  'cursor-pointer rounded-[3px] border border-[#d0d0d0] bg-transparent active:border-[var(--accent)] active:bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] dark:border-white/25'
 
 /** 图标条的圆角按钮 */
 const BAR_BTN =
@@ -341,12 +347,12 @@ const BAR_BTN =
                 </div>
                 <div
                   class="grid gap-0.5 px-2.5"
-                  :style="{ gridTemplateColumns: `repeat(${MAX_COLS}, 32px)` }"
+                  :style="{ gridTemplateColumns: `repeat(${MAX_COLS}, 22px)` }"
                 >
                   <button
                     v-for="i in MAX_COLS"
                     :key="i"
-                    :class="[CELL_BASE, 'h-8 w-8']"
+                    :class="[CELL_BASE, 'h-[22px] w-[22px]']"
                     :title="`${i} 列均分`"
                     @click="onColumn(i)"
                   />
@@ -360,12 +366,12 @@ const BAR_BTN =
                 </div>
                 <div
                   class="grid gap-0.5 px-2.5"
-                  :style="{ gridTemplateColumns: `repeat(${MAX_COLS}, 32px)` }"
+                  :style="{ gridTemplateColumns: `repeat(${MAX_COLS}, 22px)` }"
                 >
                   <button
                     v-for="i in MAX_COLS"
                     :key="i"
-                    :class="[CELL_BASE, 'h-8 w-8']"
+                    :class="[CELL_BASE, 'h-[22px] w-[22px]']"
                     :title="`${i} 列堆叠`"
                     @click="onColumnStack(i)"
                   />
@@ -377,11 +383,16 @@ const BAR_BTN =
                   <span class="text-[13px] font-medium text-[var(--text-primary)]">行</span>
                   <span class="ml-auto text-[11px] text-[var(--text-secondary)]">纵向堆叠</span>
                 </div>
-                <div class="grid gap-0.5 px-2.5" :style="{ gridTemplateColumns: 'repeat(3, 1fr)' }">
+                <!--
+                  「行」是纵向堆叠，所以三根横条要竖着叠起来（同 PC 的 flex-col）。
+                  宽度取 142px = 上面两行列方格的整宽（6×22 + 5×2 间隙），
+                  这样「列」和「行」两块左边缘对齐、右边缘也齐，视觉上是一组控件。
+                -->
+                <div class="flex flex-col gap-0.5 px-2.5">
                   <button
                     v-for="i in MAX_ROWS"
                     :key="i"
-                    :class="[CELL_BASE, 'h-[22px] w-full']"
+                    :class="[CELL_BASE, 'h-[22px] w-[142px]']"
                     :title="`${i} 行纵向堆叠`"
                     @click="onRow(i)"
                   />
