@@ -104,6 +104,7 @@ import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
 import Dropdown from './components/Dropdown.vue'
 import MobileActionsMenu from './components/mobile/MobileActionsMenu.vue'
+import MobileEditorToolbar from './components/mobile/MobileEditorToolbar.vue'
 import XhsExporter from './components/XhsExporter.vue'
 import TagPropsForm from './components/TagPropsForm.vue'
 import ComponentPickerDialog from './components/ComponentPickerDialog.vue'
@@ -2151,6 +2152,36 @@ function loadDemo() {
               />
             </div>
           </div>
+          <!--
+            移动端快捷工具栏：PC 那排按钮在标题栏里（hidden md:flex），触屏也没有 hover 展开
+            二级菜单，所以单做一条可横向滚动的图标条，同一套插入逻辑回传上来。
+          -->
+          <MobileEditorToolbar
+            v-if="isMobile"
+            :at-line-start="!!editorRef?.isAtLineStart"
+            :has-selection="!!editorRef?.hasInlineSelection"
+            :accent="colors.accent"
+            :is-tauri="isTauri"
+            :uploading="githubUploading"
+            :upload-label="uploadHostingLabel"
+            :tag-available="!!tagInfo"
+            @inline-format="(s, w) => editorRef?.applyInlineFormat(s, w)"
+            @insert-syntax="(s) => editorRef?.insertAtCursor(s)"
+            @insert-table="(r, c) => insertTable(r, c)"
+            @insert-column="(c) => insertColumnLayout(c)"
+            @insert-column-stack="(c) => insertColumnStack(c)"
+            @insert-row="(r) => insertRowStack(r)"
+            @insert-stack="insertStack()"
+            @insert-container="insertContainer()"
+            @insert-text="insertText()"
+            @insert-html="insertHtmlContainer()"
+            @image-temp="handleInsertImage()"
+            @image-persist="handleInsertImagePersist()"
+            @image-disk="handleUploadToDisk()"
+            @image-hosting="handleUploadToGitHub()"
+            @open-components="componentDialogVisible = true"
+            @open-tag="showTagDialog = true"
+          />
           <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
           <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
             <Editor
@@ -2198,8 +2229,9 @@ function loadDemo() {
               class="hidden"
               @change="onDiskImageSelected"
             />
+            <!-- 解析标签属性：移动端工具栏也有「解析」入口，所以这里不再排除 isMobile -->
             <TagPropsForm
-              :visible="showTagDialog && !isMobile"
+              :visible="showTagDialog"
               :tag-info="tagInfo"
               @close="onTagDialogClose"
               @update="onTagDialogUpdate"
