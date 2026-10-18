@@ -1428,7 +1428,7 @@ function loadDemo() {
       class="mobile-tab-bar md:hidden"
       :style="{
         '--accent': accent,
-        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.45)' : 'rgba(245, 245, 247, 0.65)',
+        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.65)' : 'rgba(245, 245, 247, 0.65)',
         '--pill-shadow': isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)',
         '--pill-shadow-sm': isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
         '--pill-inset': isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
