@@ -6,12 +6,14 @@ import {
   EllipsisVertical,
   FileText,
   Image,
+  Images,
   LayoutGrid,
   Bot,
   Feather,
   Cloud,
   ImageUp,
   ImagePlus,
+  Import,
   ChevronRight,
   ChevronDown,
   GitBranch,
@@ -23,6 +25,9 @@ import {
   FolderPlus,
   Search,
   Crosshair,
+  Library,
+  BookMarked,
+  ShieldAlert,
 } from 'lucide-vue-next'
 
 const props = defineProps<{
@@ -44,8 +49,13 @@ const emit = defineEmits<{
   'save-image': []
   'export-xhs': []
   'go-components': []
+  'open-gallery': []
+  'go-materials': []
+  'open-my-materials': []
+  'open-banned-words': []
   'save-to-repo': []
   'upload-image': []
+  'open-import': []
   'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
@@ -157,6 +167,13 @@ onBeforeUnmount(() => {
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-import'))"
+        >
+          <Import :size="14" />
+          导入
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('save-to-repo'))"
         >
           <Cloud :size="14" />
@@ -168,6 +185,35 @@ onBeforeUnmount(() => {
         >
           <LayoutGrid :size="14" />
           扩展组件
+        </button>
+        <!-- 素材/图库/检测：与桌面端左侧栏同源功能，避免移动端只能从别处绕进去 -->
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-gallery'))"
+        >
+          <Images :size="14" />
+          图库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('go-materials'))"
+        >
+          <Library :size="14" />
+          素材库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-my-materials'))"
+        >
+          <BookMarked :size="14" />
+          我的素材
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-banned-words'))"
+        >
+          <ShieldAlert :size="14" />
+          违禁词检测
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
