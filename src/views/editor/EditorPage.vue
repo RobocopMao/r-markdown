@@ -1428,7 +1428,7 @@ function loadDemo() {
       class="mobile-tab-bar md:hidden"
       :style="{
         '--accent': accent,
-        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.65)' : 'rgba(245, 245, 247, 0.65)',
+        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.45)' : 'rgba(245, 245, 247, 0.45)',
         '--pill-shadow': isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)',
         '--pill-shadow-sm': isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
         '--pill-inset': isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
@@ -2627,9 +2627,17 @@ function loadDemo() {
   gap: 2px;
   padding: 4px;
   border-radius: 9999px;
-  background: var(--pill-bg, rgba(245, 245, 247, 0.65));
-  backdrop-filter: blur(24px) saturate(1.8);
+  background: var(--pill-bg, rgba(245, 245, 247, 0.45));
+  /*
+    两行前缀顺序不能反！lightningcss（Vite 8 生产构建默认的 CSS 压缩器）会把
+    backdrop-filter 与 -webkit-backdrop-filter 判定为同一属性只保留**最后一条**。
+    写成「标准在前、webkit 在后」时，构建产物就只剩 -webkit- 那条，
+    而国产 Chromium 内核浏览器（小米/UC/QQ 等）只认无前缀的标准写法，
+    结果就是开发环境（Vite 不压缩 CSS）有毛玻璃、线上构建却完全没模糊。
+    必须 webkit 在前、标准在后，产物里两条才都在。
+  */
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
+  backdrop-filter: blur(24px) saturate(1.8);
   box-shadow:
     0 4px 24px var(--pill-shadow, rgba(0, 0, 0, 0.08)),
     0 1px 4px var(--pill-shadow-sm, rgba(0, 0, 0, 0.05)),
