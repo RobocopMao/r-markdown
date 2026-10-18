@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "node scripts/clean-artifacts.mjs",
     "dev": "pnpm clean && vite",
+    "dev:lan": "node scripts/dev-lan.mjs",
     "build": "pnpm clean && node scripts/ensure-extension-stubs.mjs && vue-tsc -b && vite build",
     "preview": "vite preview",
     "tauri": "tauri",

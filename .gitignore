@@ -28,3 +28,6 @@ Thumbs.db
 
 # Design docs
 output/
+
+# 局域网调试自签证书（scripts/dev-lan.mjs 生成，随网络变化重签）
+.dev-cert/

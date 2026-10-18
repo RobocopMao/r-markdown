@@ -142,6 +142,7 @@ functions/               # Cloudflare Pages Function：/api/leta 乐塔图床代
 
 scripts/
 ├── clean-artifacts.mjs        # 清理 src/**.js 编译产物（dev/build 前自动执行）
+├── dev-lan.mjs                # 局域网真机调试：自签证书 + HTTPS 启动 vite（pnpm dev:lan）
 └── ensure-extension-stubs.mjs # extension 子模块为空时复制 stubs（build 前自动执行）
 ```
 
@@ -203,6 +204,9 @@ pnpm sm:update        # 或 bash update-submodules.sh
 # 启动 Web 开发服务器（会先执行 pnpm clean 清理 .js 编译产物）
 pnpm dev
 
+# 启动局域网开发服务器，供手机/平板访问（HTTPS + 监听所有网卡）
+pnpm dev:lan
+
 # 启动 Tauri 桌面客户端开发模式（热更新）
 pnpm tauri:dev
 
@@ -223,6 +227,18 @@ pnpm clean
 
 > `pnpm dev` / `build` / `tauri:dev` / `tauri:build` 均会先自动执行 `pnpm clean`，避免旧的 `.js` 文件被 Vite 优先加载导致行为异常。
 > `pnpm build` 还会先执行 `ensure-extension-stubs.mjs`：`src/extension/` 为空时把 `src/extension-stubs/` 的 31 个 `.ts` 复制进去，保证 `vue-tsc -b` 与 `vite` 不报错。
+
+### 局域网真机调试（`pnpm dev:lan`）
+
+手机连同一个 Wi-Fi，访问终端打印的 `https://192.168.x.x:5177/`，首次会弹证书警告，点「高级 → 继续前往」即可。
+
+**必须走 HTTPS，不能用 HTTP**：`http://192.168.x.x` 不是安全上下文，浏览器会把 `crypto.subtle` 置为 `undefined`；`src/services/encryption.ts` 的 `initCrypto()` 依赖它生成 AES 密钥，而 `src/main.ts` 的 `boot()` 里 `await initEncryption()` 一旦抛错，Vue 根本不挂载 —— 表现为**完整白屏**，控制台只有一条 `Uncaught (in promise)`，堆栈指向 `encryption.ts`。HTTPS（哪怕用的是自签证书、点了「继续访问」）仍然算安全上下文，`crypto.subtle` 与 `navigator.clipboard` 都正常。
+
+实现：
+- `scripts/dev-lan.mjs` 检测局域网 IPv4（优先 `en0`，排除 utun/bridge/awdl 等虚拟网卡）→ 用 openssl 自签证书（SAN 含 `localhost`、`127.0.0.1` 与当前局域网 IP，有效期 365 天）→ 启动 `vite.lan.config.ts`。
+- 证书放 `.dev-cert/`（已 gitignore）。`meta.json` 记着签给哪个 IP，**换网络后自动重签**（IP 变了 SAN 就对不上，手机仍会拦）。
+- 端口默认 5177，可用 `RMD_LAN_PORT` 覆盖。
+- `vite.lan.config.ts` 用 `mergeConfig` 继承主配置，只覆盖 `server` 段；`mergeConfig` 会整体替换 `server.proxy`，所以 `/api/leta` 代理要在该文件里重写一遍。
 
 ## 代码规范
 
