@@ -153,7 +153,7 @@ scripts/
 | `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                                                                                                                    |
 | `Preview.vue`                                                          | 预览区渲染与复制                                                                                                                                                     |
 | `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图）；底部只留「展开 / 收起」按钮（深色模式与设置已移到顶栏右上角） |
-| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单）                                                                                                                                   |
+| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单；标题栏那排操作桌面/手机共用，手机上横向可滚动，**移动端「文章」Tab 直接用它，不再塞进三点菜单**）                                   |
 | `OutlinePanel.vue`                                                     | 文档大纲面板                                                                                                                                                         |
 | `FindReplacePanel.vue`                                                 | 查找替换面板                                                                                                                                                         |
 | `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                                                                                                                       |
@@ -174,7 +174,7 @@ scripts/
 | `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果 / 结果保留倒计时 + 清空）                                                                      |
 | `AiImageDialog.vue`                                                    | AI 配图（提示词 / 尺寸档位·宽高比 / 出图预览与下载 / 插入编辑器 · 上传图床 · 保存磁盘并插入〔仅桌面端〕 / 结果保留倒计时 + 清空）                                    |
 | `Dropdown.vue`                                                         | 通用下拉                                                                                                                                                             |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 写作、AI 排版、AI 配图入口；宽度 `w-32`，与 `MobileNavMenu` 的 `w-32` 一致。设置常驻顶栏右上角、不在此菜单内）                                 |
+| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（**只有编辑 / 预览两种模式**；文章 Tab 用文章树自带的标题栏工具栏，不再有这个菜单。宽度 `w-32`，与 `MobileNavMenu` 的 `w-32` 一致。设置常驻顶栏右上角、不在此菜单内） |
 | `mobile/MobileEditorToolbar.vue`                                       | 移动端编辑 Tab 快捷工具栏（PC 标题栏那排按钮在触屏没有 hover 二级菜单，故独立做一条可横向滚动的图标条：基础 / 容器 / 图片 / 组件 / 解析 + 13 个行内样式；前四类点开是底部 `Teleport` 面板） |
 
 ### 编辑器组合式函数（`src/views/editor/composables/`）

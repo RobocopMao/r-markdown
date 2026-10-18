@@ -149,20 +149,6 @@ function onToggleTreePanel() {
 }
 
 // ── 移动端文章树（底部「文章」Tab）──
-/** 移动端文章树实例，三点菜单的操作全部转发给它，逻辑与桌面端标题栏完全一致 */
-const mobileTreeRef = ref<InstanceType<typeof TreeSidebar> | null>(null)
-/** 三点菜单里「展开全部 / 排序 / 搜索」等项要显示当前态，这里做一层快照 */
-const mobileTreeStates = computed(() => {
-  const t = mobileTreeRef.value
-  return {
-    allExpanded: !!t?.isAllExpanded,
-    sorting: !!t?.isSorting,
-    searching: !!t?.searchVisible,
-    autoExpand: t ? !!t.autoExpandEnabled : true,
-    newAtTop: !!t?.newAtTop,
-  }
-})
-
 /**
  * 手机上从文章树点开一篇文章后，没有「又宽又高」的屏幕同时摆列表和编辑器，
  * 所以加载完直接切到编辑 Tab；桌面端保持原样（列表和编辑器并排）。
@@ -1376,10 +1362,14 @@ function loadDemo() {
           <Copy :size="14" />
           复制到公众号
         </button>
-        <!-- 移动端：下拉菜单（内容随底部 Tab 切换：文章树 / 编辑 / 预览） -->
+        <!--
+          移动端：下拉菜单（内容随底部 Tab 切换：编辑 / 预览）
+          文章 Tab 下不显示——那页直接用文章树自带的标题栏工具栏（可横向滚动），
+          比塞进三点列表更直接，也不需要为它影射一套菜单项。
+        -->
         <MobileActionsMenu
+          v-if="mobileTab !== 'articles'"
           :mode="mobileTab"
-          :tree-states="mobileTreeStates"
           @load-demo="confirmLoadVisible = true"
           @export-html="handleExportHTML"
           @save-image="handleSaveImage"
@@ -1395,15 +1385,6 @@ function loadDemo() {
           @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
-          @tree-toggle-expand="mobileTreeRef?.toggleAllExpand()"
-          @tree-workspace="(el: HTMLElement) => mobileTreeRef?.toggleWsMenu(el)"
-          @tree-sort="(el: HTMLElement) => mobileTreeRef?.toggleSortMenu(el)"
-          @tree-refresh="mobileTreeRef?.refreshTree()"
-          @tree-toggle-new-position="mobileTreeRef?.toggleNewArticlePosition()"
-          @tree-new-article="mobileTreeRef?.showNewRootArticle()"
-          @tree-new-folder="mobileTreeRef?.showNewRoot()"
-          @tree-toggle-search="mobileTreeRef?.toggleSearch()"
-          @tree-toggle-autoexpand="mobileTreeRef?.toggleAutoExpand()"
         />
         <ThemePicker
           :themes="themes"
@@ -1519,7 +1500,7 @@ function loadDemo() {
             </svg>
           </div>
         </div>
-        <!-- 移动端「文章」Tab：文章树铺满整屏，标题栏那排操作由顶栏三点菜单提供 -->
+        <!-- 移动端「文章」Tab：文章树铺满整屏，标题栏那排操作直接用文章树自带的（可横向滚动） -->
         <div
           v-if="isMobile && mobileTreeMounted"
           class="flex flex-col flex-1 min-w-0 overflow-hidden"
@@ -1527,8 +1508,6 @@ function loadDemo() {
           style="background: var(--bg-primary)"
         >
           <TreeSidebar
-            ref="mobileTreeRef"
-            hide-header
             compact
             @open-settings="onSettingsOpen"
             @edit-article="onMobileTreeEditArticle"

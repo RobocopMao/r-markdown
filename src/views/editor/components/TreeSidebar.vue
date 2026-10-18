@@ -33,12 +33,6 @@ import TreeNodeComponent from './TreeNode.vue'
 import PushToCloudTree from './PushToCloudTree.vue'
 
 defineProps<{
-  /**
-   * 移动端「文章」Tab 使用：隐藏内置标题栏。
-   * 手机屏幕窄，标题栏那排操作按钮（展开全部/工作区/排序/刷新/新建/搜索…）塞不下，
-   * 由顶栏三点菜单去调同一批方法（见下方 defineExpose），列表区就能占满整屏。
-   */
-  hideHeader?: boolean
   /** 移动端传 true：去掉圆角与右侧留白，铺满屏幕 */
   compact?: boolean
 }>()
@@ -927,9 +921,9 @@ function onSettingChanged(e: Event) {
 }
 
 /*
- * 移动端「文章」Tab：标题栏被隐藏（hideHeader），那一排操作按钮改由顶栏三点菜单提供。
- * 这里暴露同名方法 + 少量状态，让外部菜单复用完全相同的逻辑，
- * 不要在外面另写一套——否则桌面/手机两条路径的行为迟早会分叉。
+ * 暴露内部状态与方法，供外部（如测试或其他面板）复用同一套逻辑。
+ * 移动端「文章」Tab 不再走三点菜单，直接用这里的标题栏工具栏，
+ * 但 defineExpose 保留——外面若还要驱动文章树，不应另写一套实现。
  */
 defineExpose({
   // 状态
@@ -962,9 +956,9 @@ defineExpose({
     :class="compact ? '' : 'rounded-xl mr-[10px]'"
     style="width: 100%; background: var(--bg-primary)"
   >
-    <!-- 标题栏（移动端「文章」Tab 隐藏，改由顶栏三点菜单提供同名操作） -->
+    <!-- 标题栏（桌面侧栏与移动端「文章」Tab 共用，手机上这排可横向滚动） -->
     <div
-      v-if="isConfigured && !hideHeader"
+      v-if="isConfigured"
       class="flex items-center justify-between px-3 py-2 shrink-0"
       :style="{ borderBottom: searchVisible ? 'none' : '1px solid var(--border-color, #e5e5e5)' }"
     >
