@@ -1418,12 +1418,17 @@ function loadDemo() {
     </div>
 
     <!-- Main Layout -->
-    <!-- 移动端：底部悬浮胶囊 Tab（始终显示） -->
+    <!--
+      移动端：底部悬浮胶囊 Tab（始终显示）
+      胶囊的半透明底色、阴影、文字色都在这里通过 CSS 变量下发，.mobile-tab-pill 只负责消费。
+      注意：变量一旦在这里赋值，样式表里 var(--pill-bg, 兜底值) 的兜底值就永远不会生效，
+      想调透明度必须改这里，改样式表的 fallback 是没有效果的。
+    -->
     <div
       class="mobile-tab-bar md:hidden"
       :style="{
         '--accent': accent,
-        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.45)' : 'rgba(245, 245, 247, 0.45)',
+        '--pill-bg': isDark ? 'rgba(30, 30, 30, 0.45)' : 'rgba(245, 245, 247, 0.65)',
         '--pill-shadow': isDark ? 'rgba(0, 0, 0, 0.3)' : 'rgba(0, 0, 0, 0.08)',
         '--pill-shadow-sm': isDark ? 'rgba(0, 0, 0, 0.2)' : 'rgba(0, 0, 0, 0.05)',
         '--pill-inset': isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(255, 255, 255, 0.4)',
@@ -2622,7 +2627,7 @@ function loadDemo() {
   gap: 2px;
   padding: 4px;
   border-radius: 9999px;
-  background: var(--pill-bg, rgba(245, 245, 247, 0.45));
+  background: var(--pill-bg, rgba(245, 245, 247, 0.65));
   backdrop-filter: blur(24px) saturate(1.8);
   -webkit-backdrop-filter: blur(24px) saturate(1.8);
   box-shadow:
