@@ -35,13 +35,7 @@ import { getErrorMessage } from '@/utils/helpers'
 import { undoShortcutLabel } from '@/utils/platform'
 import { countChars } from '@/utils/charCount'
 import { parseMarkdownAsync, type ParagraphStyle } from '@/utils/markdownParser'
-import {
-  paraFontSize,
-  paraLineHeight,
-  paraFontWeight,
-  paraMargin,
-  paraIndent,
-} from '@/composables/useParagraphSettings'
+import { paraFontSize, paraFontWeight, paraIndent } from '@/composables/useParagraphSettings'
 import {
   buildReviseUserMessage,
   buildSelfCheckUserMessage,
@@ -215,8 +209,6 @@ function onSettingChanged(e: Event) {
   }
 }
 
-const modelLabel = computed(() => resolveWriteConfig().model || '未设置模型')
-
 // ── 参数（改动即持久化，下次沿用） ──
 const archetype = ref<WriteArchetype>(normalizeArchetype(getSetting<string>('aiWriteArchetype')))
 const length = ref<WriteLength>(normalizeLength(getSetting<string>('aiWriteLength')))
@@ -302,20 +294,31 @@ const hasMessages = computed(() => messages.value.length > 0)
 const renderedHtml = ref<Record<string, string>>({})
 
 /**
- * 预览里比用户设置再收紧一点的行距。
+ * 稿件预览的行高与段间距——**固定值，不跟「设置 → 段落格式」走**。
  *
- * 字号不在这里收：标题、列表、引用、代码的字号都写死在解析器里（段落才走这段设置），
- * 只有整体缩放才能把它们一起缩小，所以字号交给 CSS 里 `.ai-write-preview` 的 zoom，
- * 这里只负责把行距压紧一档。
+ * 为什么不复用那两个设置：它们服务的是「成稿在编辑器里的最终观感」，
+ * 按公众号排版的习惯偏松（行高默认 1.85、段间距默认 24）。但 AI 回复区是
+ * **一屏里连续读**的对话流，松排版会让同屏能读到的内容变少、视线跳跃变多。
+ * 两者诉求不同，所以这里定死。
+ *
+ * 曾经的做法是「用户行高 − 0.35」（下限 1.2），但那样 AI 回复的松紧会随设置漂移，
+ * 打开面板前得先知道自己在设置里调过什么，不直观。
+ *
+ * 字号仍不在这里收：标题、列表、引用、代码的字号都写死在解析器里（段落才走这段设置），
+ * 只有整体缩放才能把它们一起缩小，所以字号交给 CSS 里 `.ai-write-preview` 的 zoom。
+ *
+ * 两个值的口径不同，别混：行高是**倍数**（相对字号），段间距是**像素**。
  */
-const PREVIEW_LINE_HEIGHT_STEP = 0.15
+const PREVIEW_LINE_HEIGHT = 1.4
+/** 段间距（px）：与 1.4 行高配合，段落之间留出清晰但不松垮的间距 */
+const PREVIEW_PARAGRAPH_MARGIN = 18
 
 function paragraphStyle(): ParagraphStyle {
   return {
     fontSize: paraFontSize.value,
-    lineHeight: Math.max(1.2, Number((paraLineHeight.value - PREVIEW_LINE_HEIGHT_STEP).toFixed(2))),
+    lineHeight: PREVIEW_LINE_HEIGHT,
     fontWeight: paraFontWeight.value,
-    margin: paraMargin.value,
+    margin: PREVIEW_PARAGRAPH_MARGIN,
     indent: paraIndent.value,
   }
 }
@@ -856,10 +859,22 @@ function onSkillChanged(e: Event) {
     no-body-padding
     @close="emit('close')"
   >
-    <!-- 头部：会话剩余时间 / 模型 / 新建会话 -->
+    <!--
+      头部：会话剩余时间 / 模型 / 新建会话。
+      - 整体跟着 configured：没配接口就没有会话、没有模型可言，显示出来只会是
+        「会话剩余 undefined」「未设置模型」这类无效信息，与正文里的「还没有配置
+        AI 接口」引导自相矛盾。
+      - 倒计时与模型名额外跟着 hasMessages：打开面板时 ensureSession() 会先建一个
+        **空会话**占位，此时它里面什么都没有，倒计时却显示「会话剩余 23 小时 59 分」，
+        模型名也早早挂在那里——看着像有个东西正在倒计时，实际无内容可保。
+        这两样都是「会话已经在跑」的旁证，发出第一条消息后再显示才名副其实。
+      - 「新建会话」不跟着 hasMessages：空会话时它仍有意义（万一恢复出的会话有内容
+        想重来），且它本身不暗示任何「进行中」的状态。
+    -->
     <template #header>
-      <div class="flex min-w-0 flex-1 items-center gap-2">
+      <div v-if="configured" class="flex min-w-0 flex-1 items-center gap-2">
         <span
+          v-if="hasMessages"
           class="shrink-0 rounded-full px-2 py-[3px] text-[11px]"
           :class="
             expired
@@ -867,10 +882,7 @@ function onSkillChanged(e: Event) {
               : 'bg-[#f0f0f0] text-[#666] dark:bg-[#2a2a2a] dark:text-[#999]'
           "
         >
-          {{ expired ? '会话已过期' : `会话剩余 ${remainingText}` }}
-        </span>
-        <span class="min-w-0 truncate text-[11px] text-[#999] dark:text-[#666]">
-          {{ modelLabel }}
+          {{ expired ? '会话已过期' : `会话保留 ${remainingText}` }}
         </span>
         <button
           class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
@@ -961,10 +973,10 @@ function onSkillChanged(e: Event) {
                 </div>
               </div>
 
-              <!-- 追问：左对齐气泡 -->
+              <!-- 追问：左对齐气泡（行距与稿件预览一致，AI 的话统一收紧一档） -->
               <div v-else-if="msg.kind === 'question'" class="flex justify-start">
                 <div
-                  class="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md border border-[#f0f0f0] bg-white px-3.5 py-2 text-[13px] leading-relaxed text-[#333] dark:border-[#333] dark:bg-[#1e1e1e] dark:text-[#ccc]"
+                  class="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-bl-md border border-[#f0f0f0] bg-white px-3.5 py-2 text-[13px] leading-[1.4] text-[#333] dark:border-[#333] dark:bg-[#1e1e1e] dark:text-[#ccc]"
                 >
                   {{ msg.content }}
                 </div>
@@ -995,9 +1007,21 @@ function onSkillChanged(e: Event) {
                     class="markdown-body ai-write-preview"
                     v-html="renderedHtml[msg.id]"
                   ></div>
+                  <!--
+                    流式中的纯文本兜底。
+                    这里**不能**加 font-sans：Tailwind v4 的 --font-sans 栈里没有
+                    system-ui（是 -apple-system / BlinkMacSystemFont / 'Segoe UI' /
+                    Roboto / 'Noto Sans' / Arial / sans-serif / emoji 那一串），
+                    中文在 Windows 上会一路落到 sans-serif 兜底的**宋体**；
+                    而渲染完成后走的 .markdown-body 继承 body 的字栈（含 system-ui，
+                    Windows 上即微软雅黑）。两处不一致，就表现为「流式时宋体、
+                    完成后变微软雅黑」的字形跳变。
+                    去掉 font-sans 让它继承 body，两阶段字体才一致。
+                    行高同样对齐定稿的 1.4（见 PREVIEW_LINE_HEIGHT），避免完成瞬间跳一下。
+                  -->
                   <pre
                     v-else
-                    class="whitespace-pre-wrap break-words font-sans text-[13px] leading-relaxed text-[#333] dark:text-[#ccc]"
+                    class="ai-write-stream text-[13px] leading-[1.4] text-[#333] dark:text-[#ccc]"
                     >{{ msg.article }}</pre
                   >
                 </div>
@@ -1106,7 +1130,7 @@ function onSkillChanged(e: Event) {
                 <span class="text-[11px] text-[#999] dark:text-[#666]">{{ elapsedSec }}s</span>
               </div>
               <pre
-                class="whitespace-pre-wrap break-words px-3 py-2 text-[13px] leading-relaxed text-[#333] dark:text-[#ccc]"
+                class="ai-write-stream px-3 py-2 text-[13px] leading-[1.4] text-[#333] dark:text-[#ccc]"
                 >{{ displayStream() }}</pre
               >
             </div>
@@ -1258,6 +1282,27 @@ function onSkillChanged(e: Event) {
 }
 :global(.dark) .scrollbar-thin::-webkit-scrollbar-thumb {
   background: #444;
+}
+</style>
+
+<style>
+/*
+  AI 回复区的正文段落（流式中的纯文本兜底）。
+
+  为什么不能留 <pre> 的默认字体：浏览器给 pre 的默认 font-family 是
+  `monospace`（Chromium 系展开成 ui-monospace / Menlo / Consolas… 那一串），
+  **其中不含任何中文字体**。于是中文只能落到 monospace 的兜底字形上——
+  Windows 是宋体，而渲染完成后的 .markdown-body 继承 body（含 system-ui →
+  微软雅黑）。两阶段字体不同，用户就会看到「流式时宋体、完成瞬间变微软雅黑」
+  的字形跳变。
+
+  这里显式继承正文字体，让流式与定稿两阶段始终一致。
+  （代码块、自检报告那些确实该用等宽的，各自显式写了 font-mono，不受影响。）
+*/
+.ai-write-stream {
+  font-family: inherit;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
 }
 </style>
 

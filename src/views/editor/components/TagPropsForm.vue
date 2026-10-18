@@ -205,7 +205,10 @@ const selectChevronStyle = {
       该标签没有可编辑的属性
     </div>
 
-    <div v-else class="px-3 py-2.5 flex flex-col gap-2 overflow-y-auto overflow-x-hidden flex-1">
+    <div
+      v-else
+      class="tag-form-body px-3 py-2.5 flex flex-col gap-2 overflow-y-auto overflow-x-hidden flex-1"
+    >
       <div v-for="key in attrKeys" :key="key" class="flex flex-col gap-[3px]">
         <label
           class="text-[11px] font-semibold text-[var(--text-secondary,#6b7280)] flex items-center gap-1"
@@ -264,3 +267,18 @@ const selectChevronStyle = {
     </div>
   </div>
 </template>
+
+<style scoped>
+/*
+ * 移动端底部留白：底部悬浮胶囊 Tab 固定在 bottom: 24px、高 44px，占用
+ * y = 视口高度−68 ~ 视口高度−24 那一段。抽屉是 top:0 bottom:0 的通高面板，
+ * 不留白的话最后一个字段会被胶囊压住，滑到底也点不到。
+ * 88 = 24px 底距 + 44px 胶囊高 + 20px 间隙；只留 68 会让最后一行正好贴着胶囊顶部。
+ * 桌面没有这根胶囊，所以只在窄屏加。
+ */
+@media (max-width: 767px) {
+  .tag-form-body {
+    padding-bottom: 88px;
+  }
+}
+</style>

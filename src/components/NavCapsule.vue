@@ -70,7 +70,7 @@ function onNavLeave() {
         :href="item.to"
         target="_blank"
         rel="noopener noreferrer"
-        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[#111]"
+        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[var(--accent)]"
         @mouseenter="onNavEnter($event, item.key)"
       >
         <component :is="item.icon" v-if="item.icon" :size="16" />
@@ -89,7 +89,7 @@ function onNavLeave() {
       <router-link
         v-else-if="item.to"
         :to="item.to"
-        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[#111]"
+        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[var(--accent)]"
         @mouseenter="onNavEnter($event, item.key)"
       >
         <component :is="item.icon" v-if="item.icon" :size="16" />
@@ -112,7 +112,7 @@ function onNavLeave() {
       <a
         v-else
         href="javascript:void(0)"
-        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[#111]"
+        class="nav-link relative z-10 inline-flex items-center gap-1.5 rounded-2xl px-4 py-2 text-[14px] font-medium text-[#555] no-underline transition-colors hover:text-[var(--accent)]"
         @mouseenter="onNavEnter($event, item.key)"
         @click="$emit('click', item.key)"
       >
@@ -148,7 +148,15 @@ function onNavLeave() {
 </style>
 
 <style>
-/* 深色模式 */
+/*
+  顶栏胶囊菜单的配色（首页 / 扩展组件 / 素材库 / 帮助 用的都是这个组件）。
+
+  悬停时文字转主题色（--accent）：PC 端这些页面右上角菜单的一致反馈；
+  未悬停保持中性灰（暗色为半透明白），选中/悬停的胶囊底由 .nav-highlight 负责。
+
+  注意：暗色规则带 !important，会盖掉模板里的 Tailwind hover 类，
+  所以暗色的悬停色也必须在这里显式写上，否则暗色下悬停会退回白色。
+*/
 [data-theme='dark'] .nav-pill {
   background: rgba(255, 255, 255, 0.1) !important;
 }
@@ -156,7 +164,7 @@ function onNavLeave() {
   color: rgba(255, 255, 255, 0.6) !important;
 }
 [data-theme='dark'] .nav-link:hover {
-  color: #fff !important;
+  color: var(--accent, #27ae60) !important;
 }
 [data-theme='dark'] .nav-highlight {
   background: rgba(255, 255, 255, 0.12) !important;

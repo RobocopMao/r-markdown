@@ -7,12 +7,20 @@
  * useImageInsert 处理，与手动粘贴一张图片走同一条链路，面板内不做存储判断。
  */
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
-import { Loader2, Sparkles, Settings2, Download, RefreshCw, Wand2, Sparkle } from 'lucide-vue-next'
+import {
+  Loader2,
+  Sparkles,
+  Settings2,
+  Download,
+  RefreshCw,
+  Wand2,
+  Sparkle,
+  Eraser,
+} from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { useTheme } from '@/composables/useTheme'
-import { useIsMobileWeb } from '@/composables/useIsMobile'
 import { getErrorMessage } from '@/utils/helpers'
 import { extractTitle } from '@/utils/extractTitle'
 import { saveBinaryFile, blobToBytes } from '@/utils/saveFile'
@@ -43,7 +51,7 @@ import {
   isImageProviderConfigured,
   missingImageConfigFields,
 } from '@/services/imageProviders'
-import { getSetting } from '@/config/settings'
+import { getSetting, setSetting } from '@/config/settings'
 import { resolveAiConfig, isAiConfigured } from '@/services/aiFormat'
 
 const props = defineProps<{
@@ -67,7 +75,6 @@ const emit = defineEmits<{
 }>()
 
 const { colors } = useTheme()
-const isMobileWeb = useIsMobileWeb()
 
 /** 一次生成的结果（含本地预览地址与文件） */
 interface GeneratedImage {
@@ -118,7 +125,32 @@ onBeforeUnmount(() => {
 })
 
 // ── 参数 ──
-const prompt = ref('')
+/**
+ * 提示词草稿：初值取上次保存的内容，让人「重开面板还是在原来那句话上改」。
+ *
+ * 配图的常见节奏是改几个字再出一版，每次都重敲长提示词很烦。
+ * 持久化只跟着输入走（见下面的 watch），与生成结果、保留时长都无关；
+ * 需要重来点「清空」即可。
+ */
+const prompt = ref(getSetting<string>('aiImagePrompt') || '')
+
+/** 提示词改动就落盘（防抖：连续输入不必每个字符都写一次 localStorage） */
+let promptSaveTimer: ReturnType<typeof setTimeout> | null = null
+watch(prompt, (v) => {
+  if (promptSaveTimer) clearTimeout(promptSaveTimer)
+  promptSaveTimer = setTimeout(() => setSetting('aiImagePrompt', v, true), 400)
+})
+
+/**
+ * 手动清空提示词。
+ *
+ * 只改 ref：落盘由上面那个 watch 统一负责（含防抖），这里再写一次是多余的，
+ * 而且会和 watch 的 400ms 防抖抢着写同一个键。
+ */
+function onClearPrompt() {
+  prompt.value = ''
+}
+
 /** 参数改动即持久化：下次打开面板沿用上次的选择 */
 function persistParams(patch: { size?: string; ratio?: string }) {
   setProviderConfig(providerId.value, patch)
@@ -265,23 +297,43 @@ async function restoreHistory(): Promise<boolean> {
   return true
 }
 
-/** 清空生成的图片：内存 + 本地缓存一起清 */
+/** 清空生成的图片：内存 + 本地缓存一起清（用户点按钮时先弹确认） */
 function onClearHistory() {
   if (history.value.length === 0) return
   clearConfirmVisible.value = true
 }
 
+/**
+ * 真正执行清空。手动「清空结果」和「保留时长到期」走同一段，
+ * 保证两条路径的收尾（中止请求、清 blobs、清记录、清倒计时）完全一致。
+ *
+ * 到期时**连提示词草稿一起清**：整套状态是同一个保留窗口，结果都作废了，
+ * 留着一份旧草稿反而容易误以为是新的。
+ */
 async function doClearHistory() {
   clearConfirmVisible.value = false
   abort()
   resetAll()
   resultExpiresAt.value = null
   remainingText.value = ''
+  onClearPrompt()
   await clearRecord(HISTORY_KEY)
   await clearAllBlobs()
 }
 
 const clearConfirmVisible = ref(false)
+
+/**
+ * 保留时长到期 → 自动清空（结果图片 + 提示词草稿）。
+ *
+ * 用 watch(resultExpired) 而不是让 ticker 自己去清：resultExpired 由 now 驱动，
+ * 而 ticker 每秒刷一次 now，所以「越过过期时刻」这个边沿只会出现一次，
+ * 边沿触发最省，也不会重复清。过期只在**有结果**时成立（resultExpiresAt 非 null），
+ * 因此不会在空态误触发。
+ */
+watch(resultExpired, (expired) => {
+  if (expired && history.value.length > 0) void doClearHistory()
+})
 
 watch(
   () => props.visible,
@@ -674,13 +726,16 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
-            <span
-              class="text-[11px] text-[#999] dark:text-[#666]"
-              :class="{ 'w-full': isMobileWeb }"
-            >
+            <!--
+              输出尺寸提示跟在「尺寸 / 比例」后面同一行。
+              原来移动端加了 w-full 把它整条换到下一行，白白多占一行高度；
+              实测 390/360 宽都放得下（行内剩余 126px，最长的「输出 4K · 4096x4096」约 112px），
+              所以只在 320px 这种极窄屏会自然折行，不再强制。
+              whitespace-nowrap 保证「4K · 4096x4096」不被从中间劈开。
+            -->
+            <span class="whitespace-nowrap text-[11px] text-[#999] dark:text-[#666]">
               输出 {{ cfg.size }}
               <template v-if="outputSizeHint"> · {{ outputSizeHint }}</template>
-              · {{ cfg.model }}
             </span>
           </div>
 
@@ -741,6 +796,16 @@ onBeforeUnmount(() => {
                   优化提示词
                 </button>
               </BaseTooltip>
+              <!-- 清空：紧跟在「优化提示词」后面，同属「对提示词本身的操作」 -->
+              <button
+                v-if="prompt.length > 0"
+                class="flex cursor-pointer items-center gap-1 rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1.5 text-[11px] text-[#666] transition-colors hover:border-[#c0392b] hover:text-[#c0392b] disabled:cursor-not-allowed disabled:opacity-40 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#e57373] dark:hover:text-[#e57373]"
+                :disabled="generating || optimizing"
+                @click="onClearPrompt"
+              >
+                <Eraser :size="13" />
+                清空
+              </button>
 
               <!-- 主操作：与提示词同区，写完即可点 -->
               <button
@@ -804,7 +869,6 @@ onBeforeUnmount(() => {
             <span class="text-[12px] text-[#666] dark:text-[#999]">
               {{ current.sizeLabel }} · {{ current.sizeText }}
             </span>
-            <span class="text-[11px] text-[#999] dark:text-[#666]">{{ cfg.model }}</span>
             <div class="ml-auto flex gap-1">
               <button
                 class="flex cursor-pointer items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"

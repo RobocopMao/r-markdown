@@ -1899,6 +1899,33 @@ async function manualCheckUpdate() {
           </p>
         </div>
 
+        <!--
+          测试连接紧跟模型名：地址 / Key / 模型名三项填完就能立刻验一次，
+          不必先滚过「单次超时」「结果保留时长」这些与连通性无关的调参项。
+          位置与「AI 文本」子页保持一致（那边也是模型名之后紧接着测试）。
+        -->
+        <div class="flex items-center gap-3 mb-3">
+          <button
+            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+            :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
+            @click="handleTestImageConnection"
+          >
+            {{ imageTesting ? '测试中…' : '测试连接' }}
+          </button>
+          <span
+            v-if="imageTestResult === 'ok'"
+            class="text-[12px]"
+            :style="{ color: colors.accent }"
+            >连接成功</span
+          >
+          <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+            imageTestError
+          }}</span>
+          <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+            imageHint
+          }}</span>
+        </div>
+
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1">
             <label class="text-[12px] text-[#666] dark:text-[#999]">单次超时</label>
@@ -1946,28 +1973,6 @@ async function manualCheckUpdate() {
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
             生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
           </p>
-        </div>
-
-        <div class="flex items-center gap-3 mb-3">
-          <button
-            class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
-            :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
-            @click="handleTestImageConnection"
-          >
-            {{ imageTesting ? '测试中…' : '测试连接' }}
-          </button>
-          <span
-            v-if="imageTestResult === 'ok'"
-            class="text-[12px]"
-            :style="{ color: colors.accent }"
-            >连接成功</span
-          >
-          <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
-            imageTestError
-          }}</span>
-          <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
-            imageHint
-          }}</span>
         </div>
 
         <p class="text-[10px] text-[#999] dark:text-[#666]">
@@ -2199,8 +2204,8 @@ async function manualCheckUpdate() {
           </p>
         </div>
 
-        <!-- 清理图片缓存（移动端无本地图片缓存） -->
-        <div v-if="!isMobile" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+        <!-- 清理图片缓存：移动端同样有本地缓存（插入图片走 putImage 写 IndexedDB），不能藏 -->
+        <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             @click="showImageCache = true"

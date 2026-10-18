@@ -56,7 +56,7 @@ onBeforeUnmount(() => {
       <Monitor v-else :size="15" />
     </button>
     <div
-      class="dark-mode-menu absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-36"
+      class="dark-mode-menu absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-28"
       :class="{ show: isVisible }"
     >
       <button
@@ -65,7 +65,7 @@ onBeforeUnmount(() => {
         @click="select('light')"
       >
         <Sun :size="14" />
-        亮色
+        浅色模式
       </button>
       <button
         class="dark-mode-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -73,7 +73,7 @@ onBeforeUnmount(() => {
         @click="select('dark')"
       >
         <Moon :size="14" />
-        暗色
+        深色模式
       </button>
       <button
         class="dark-mode-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
@@ -88,6 +88,11 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+/*
+  外观与编辑页的深色模式下拉（ThemeModeToggle.vue）保持一致：
+  白底 + 同一套阴影、项高与内边距相同，暗色走下方 [data-theme='dark'] 覆盖。
+  改这里时记得和 ThemeModeToggle.vue 一起看，别让两处各写一套。
+*/
 .dark-mode-menu {
   display: none;
 }
@@ -96,15 +101,16 @@ onBeforeUnmount(() => {
   display: block;
 }
 
+/* 选中项：主题色文字 + 加粗，底色与 hover 同款，避免出现第三种色块 */
 .dark-mode-option.active {
-  background: var(--accent-light, rgba(108, 92, 231, 0.15));
   color: var(--accent, #6c5ce7);
   font-weight: 600;
+  background: rgba(0, 0, 0, 0.05);
 }
 </style>
 
 <style>
-/* Dark mode overrides for DarkModeToggle */
+/* 暗色覆盖：与 ThemeModeToggle.vue / Dropdown.vue 的暗色规则逐条对齐 */
 [data-theme='dark'] .dark-mode-toggle > button {
   background: #2d3436 !important;
   color: white !important;
@@ -119,6 +125,15 @@ onBeforeUnmount(() => {
   color: #ccc !important;
 }
 [data-theme='dark'] .dark-mode-option:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+/*
+  选中项要保持主题色，必须写在上面那条 #ccc 之后并提高选择器权重，
+  否则会被 !important 覆盖成普通灰字。
+*/
+[data-theme='dark'] .dark-mode-option.active {
+  color: var(--accent, #6c5ce7) !important;
   background: rgba(255, 255, 255, 0.08) !important;
 }
 </style>

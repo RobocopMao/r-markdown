@@ -2,7 +2,7 @@
 
 > 每次开发前必须阅读本文档，确保代码风格和项目结构一致。
 
-当前版本 **0.4.6**。
+当前版本 **0.4.7**。
 
 ## 项目概述
 
@@ -142,6 +142,7 @@ functions/               # Cloudflare Pages Function：/api/leta 乐塔图床代
 
 scripts/
 ├── clean-artifacts.mjs        # 清理 src/**.js 编译产物（dev/build 前自动执行）
+├── dev-lan.mjs                # 局域网真机调试：自签证书 + HTTPS 启动 vite（pnpm dev:lan）
 └── ensure-extension-stubs.mjs # extension 子模块为空时复制 stubs（build 前自动执行）
 ```
 
@@ -151,15 +152,16 @@ scripts/
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                                                                                                                    |
 | `Preview.vue`                                                          | 预览区渲染与复制                                                                                                                                                     |
-| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图） |
-| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单）                                                                                                                                   |
+| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图）；底部只留「展开 / 收起」按钮（深色模式与设置已移到顶栏右上角） |
+| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单；标题栏那排操作桌面/手机共用，手机上横向可滚动，**移动端「文章」Tab 直接用它，不再塞进三点菜单**）                                   |
 | `OutlinePanel.vue`                                                     | 文档大纲面板                                                                                                                                                         |
 | `FindReplacePanel.vue`                                                 | 查找替换面板                                                                                                                                                         |
 | `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                                                                                                                       |
 | `Minimap.vue`                                                          | 预览区缩略图                                                                                                                                                         |
 | `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                                                                                                                       |
 | `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / AI〔AI 文本·AI 图片〕 / 关于）；「AI 文本」把写作与排版合并成一份公共接口配置，两者不同的采样参数在该子页内分区展示      |
-| `ThemePicker.vue`                                                      | 主题色选择                                                                                                                                                           |
+| `ThemePicker.vue`                                                      | 主题色选择（顶栏右上角，最右一组按钮：主题色 → 深色/浅色 → 设置）                                                                                                    |
+| `ThemeModeToggle.vue`                                                  | 深色 / 浅色 / 跟随系统切换（顶栏右上角，紧邻主题色选择；弹出菜单同 `ThemePicker` 的点击展开方式）                                                                    |
 | `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                                                                                                                   |
 | `ImageCacheDialog.vue`                                                 | 图库弹窗（本地 / 磁盘图片）                                                                                                                                          |
 | `DraftListDialog.vue` `SaveDraftDialog.vue`                            | 草稿列表与保存草稿                                                                                                                                                   |
@@ -172,7 +174,8 @@ scripts/
 | `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果 / 结果保留倒计时 + 清空）                                                                      |
 | `AiImageDialog.vue`                                                    | AI 配图（提示词 / 尺寸档位·宽高比 / 出图预览与下载 / 插入编辑器 · 上传图床 · 保存磁盘并插入〔仅桌面端〕 / 结果保留倒计时 + 清空）                                    |
 | `Dropdown.vue`                                                         | 通用下拉                                                                                                                                                             |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（含 AI 写作、AI 排版、AI 配图入口）                                                                                                                   |
+| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（**只有编辑 / 预览两种模式**；文章 Tab 用文章树自带的标题栏工具栏，不再有这个菜单。宽度 `w-32`，与 `MobileNavMenu` 的 `w-32` 一致。设置常驻顶栏右上角、不在此菜单内） |
+| `mobile/MobileEditorToolbar.vue`                                       | 移动端编辑 Tab 快捷工具栏（PC 标题栏那排按钮在触屏没有 hover 二级菜单，故独立做一条可横向滚动的图标条：基础 / 容器 / 图片 / 组件 / 解析 + 13 个行内样式；前四类点开是底部 `Teleport` 面板。右端固定「撤销」按钮不参与横滚，走 CodeMirror 的 `undo` 命令，与 Cmd/Ctrl+Z 同一条历史栈） |
 
 ### 编辑器组合式函数（`src/views/editor/composables/`）
 
@@ -201,6 +204,9 @@ pnpm sm:update        # 或 bash update-submodules.sh
 # 启动 Web 开发服务器（会先执行 pnpm clean 清理 .js 编译产物）
 pnpm dev
 
+# 启动局域网开发服务器，供手机/平板访问（HTTPS + 监听所有网卡）
+pnpm dev:lan
+
 # 启动 Tauri 桌面客户端开发模式（热更新）
 pnpm tauri:dev
 
@@ -221,6 +227,18 @@ pnpm clean
 
 > `pnpm dev` / `build` / `tauri:dev` / `tauri:build` 均会先自动执行 `pnpm clean`，避免旧的 `.js` 文件被 Vite 优先加载导致行为异常。
 > `pnpm build` 还会先执行 `ensure-extension-stubs.mjs`：`src/extension/` 为空时把 `src/extension-stubs/` 的 31 个 `.ts` 复制进去，保证 `vue-tsc -b` 与 `vite` 不报错。
+
+### 局域网真机调试（`pnpm dev:lan`）
+
+手机连同一个 Wi-Fi，访问终端打印的 `https://192.168.x.x:5177/`，首次会弹证书警告，点「高级 → 继续前往」即可。
+
+**必须走 HTTPS，不能用 HTTP**：`http://192.168.x.x` 不是安全上下文，浏览器会把 `crypto.subtle` 置为 `undefined`；`src/services/encryption.ts` 的 `initCrypto()` 依赖它生成 AES 密钥，而 `src/main.ts` 的 `boot()` 里 `await initEncryption()` 一旦抛错，Vue 根本不挂载 —— 表现为**完整白屏**，控制台只有一条 `Uncaught (in promise)`，堆栈指向 `encryption.ts`。HTTPS（哪怕用的是自签证书、点了「继续访问」）仍然算安全上下文，`crypto.subtle` 与 `navigator.clipboard` 都正常。
+
+实现：
+- `scripts/dev-lan.mjs` 检测局域网 IPv4（优先 `en0`，排除 utun/bridge/awdl 等虚拟网卡）→ 用 openssl 自签证书（SAN 含 `localhost`、`127.0.0.1` 与当前局域网 IP，有效期 365 天）→ 启动 `vite.lan.config.ts`。
+- 证书放 `.dev-cert/`（已 gitignore）。`meta.json` 记着签给哪个 IP，**换网络后自动重签**（IP 变了 SAN 就对不上，手机仍会拦）。
+- 端口默认 5177，可用 `RMD_LAN_PORT` 覆盖。
+- `vite.lan.config.ts` 用 `mergeConfig` 继承主配置，只覆盖 `server` 段；`mergeConfig` 会整体替换 `server.proxy`，所以 `/api/leta` 代理要在该文件里重写一遍。
 
 ## 代码规范
 
@@ -650,7 +668,12 @@ pnpm preview
     - 老 key `aiWriteSelfCheck` / `aiWriteIncludeReferences` 已随合并删除；它们**从未发布过**（新增于同一会话），所以不需要迁移。
 26. **设置里的「AI 文本」= 写作 + 排版合并，接口配置共用**：`SettingsDialog` 的 `aiPane` 只有 `'text' | 'image'`（原来的 `write` / `format` 已合并）。接口地址 / API Key / 模型名 / 流式输出四项写作与排版**共用一份**（`aiBaseUrl` / `aiApiKey` / `aiModel` / `aiStream`），只出现一次；`aiWriteModelOverride` 已删除，`resolveWriteConfig()` 只覆盖写作与排版不同的采样参数（`aiWriteTemperature` / `aiWriteMaxTokens`），`isWriteConfigured()` 直接等同 `isAiConfigured()`。`text` 子页内用两个 `<section>`（「AI 排版」「AI 写作」）分区展示差异项。子页名与功能名是两套口径：**子页按模态叫「AI 文本 / AI 图片」，功能仍叫「AI 写作 / AI 排版 / AI 配图」**（侧栏入口、面板标题、教程都用功能名）。`initialTab` 约定保留 `'ai-write'` / `'ai-format'` / `'ai-image'` 三个入口，前两个都落到 `text` 子页
 27. **「AI 文本」里所有采样参数一律用滑块，样式对齐 `compress-slider`**：「AI 排版」「AI 写作」两个小节的控件必须同款——`class="compress-slider w-full cursor-pointer"` + 标题行 `flex items-center justify-between mb-1`（右侧显示当前值）+ 说明行 `mt-0.5`。写作的「最大输出」曾是 `<input type="number">`，与排版的滑块不一致，已统一改为滑块。写作最大输出的区间常量在 `services/aiWrite.ts`（`MIN_WRITE_MAX_TOKENS` / `MAX_WRITE_MAX_TOKENS` = 1024 / 65536），上限比排版的 1024–32768 更高——长文 + 技能全文 + 参考资料一起算，输出截断是写作最常见的失败；模板里用 `:min` / `:max` 绑定常量，不要写死字面量
-28. **AI 写作面板不显示 token 数（曾有过「固定开销约 N tokens」，已按要求移除）**：那段展示经历过一次修正——最初直接显示 `estimatePromptTokens(buildSystem())`，但四层自检**不改 system prompt**，而是出稿后**另发一次请求**（`runSelfCheck` 复用同一份 system，只把待检文章放进 user），所以勾选自检时数字纹丝不动、看起来像 bug；后来改成 `computed` 并在勾选时 ×2。**用户最终决定整个去掉**（2026-10-15），因此相关的 `fixedTokens` / `systemTokens` / `refreshFixedTokens` 与 `aiWritePrompt.estimatePromptTokens` 都已删除——不要再加回来，也不要在参数行右侧放这类估算。**保留的结论仍然成立**：四层自检会让一轮里的技能全文发两遍（实测两次请求的 system 相同），这是它更慢更贵的真实原因，教程里据实说明了这一点。**注意**：当时「自检不改 system」的原因是「四层自检是另发一次请求」，这一点仍然成立；但「自检」现在已并入「卡兹克写作技能」开关（见第 25 条），不再有独立的 `selfCheck` ref
+28. **AI 写作与 AI 排版面板都不显示「这段 prompt 有多大」的 token 估算（两边都曾有过，均已按要求移除；不要再加回来）**：
+    - **AI 写作**（2026-10-15 移除）：曾显示「固定开销约 N tokens」。那段经历了一次修正——最初直接显示 `estimatePromptTokens(buildSystem())`，但四层自检**不改 system prompt**，而是出稿后**另发一次请求**（`runSelfCheck` 复用同一份 system，只把待检文章放进 user），所以勾选自检时数字纹丝不动、看起来像 bug；后来改成 `computed` 并在勾选时 ×2，用户最终决定整个去掉。相关的 `fixedTokens` / `systemTokens` / `refreshFixedTokens` 与 `aiWritePrompt.estimatePromptTokens` 都已删除。
+    - **AI 排版**（2026-10-15 稍后移除）：参数行右侧曾显示「规范约 N tokens」（`specTokens` + `estimateTokens(buildSystemPrompt(spec, preset))`，随力度档位变化）。已连同 `specTokens` ref、`preset` watcher 里的重算、以及打开面板时那次「预热并估算」一起删除；`getSpec()` 的预热保留（它是模块级缓存，能省掉点「开始排版」后的等待）。
+    - **保留的结论仍然成立**：四层自检会让一轮里的技能全文发两遍（实测两次请求的 system 相同），这是它更慢更贵的真实原因，教程里据实说明了这一点。
+    - **注意区分**：排版面板里**生成中**显示的「N tokens」是**流式输出的字数进度**（`estimateTokens(streamingText)`，见 `AiFormatDialog` 的「排版中…」那一行），它反映的是「已经产出多少」，不是「prompt 有多大」——**这个要保留**。判据：跟着 `streamingText` 走的是进度，跟着 `spec` / `preset` 走的是估算。
+    - 另注：「自检」现已并入「卡兹克写作技能」开关（见第 25 条），不再有独立的 `selfCheck` ref。
 29. **三个 AI 面板的「结果保留」是同一套机制，但保留时长各设各的**：写作 / 排版 / 配图的结果都留在本地，按各自设置项（`aiWriteSessionHours` / `aiFormatSessionHours` / `aiImageSessionHours`，都默认 24h）自动作废。**别再把它们合回一个共用 key**——用户的节奏不同（写作一次聊几十分钟，排版/配图多是生成一次就用掉），共用会逼他折中。倒计时 composable 要显式传入自己那一项的 key（`useSessionCountdown('aiFormatSessionHours')`）。要点：
     - **滑动续期**：`expiresAt` 不是创建时算死，而是**每次发起请求时**推到 `now + 时长`（写作 `renewOnRequest()`、排版 `onGenerate`、配图 `onGenerate` 各调一次）。旧口径「从创建时刻算起的绝对有效期」已废弃——`aiWriteSession` 的旧 `normalizeSession` 曾拿 `createdAt` 当夹取基准，滑动续期下会把正常会话误判成异常，已改成以**最后一次消息时刻**为基准。
     - **共用逻辑**：保留时长的收敛 / 剩余文案 / 过期判定在 `utils/aiSession.ts`；倒计时刷新在 `composables/useSessionCountdown.ts`（每秒 tick，但只在文案真变了才写 ref）。面板自己只维护一个 `resultExpiresAt`。

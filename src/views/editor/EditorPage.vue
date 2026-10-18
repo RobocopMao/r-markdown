@@ -7,7 +7,7 @@ import { useDarkMode } from '@/composables/useDarkMode'
 import { getSetting, setSetting } from '@/config/settings'
 import { useSetting } from '@/composables/useSetting'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
-import { useScrollSync } from './composables/useScrollSync'
+import { useScrollSync, type MobileTab } from './composables/useScrollSync'
 import { useExport, exportItems } from './composables/useExport'
 import { useAutoSave, STORAGE_KEY, SAVE_TIME_KEY } from './composables/useAutoSave'
 import {
@@ -60,6 +60,7 @@ import {
   CircleCheck,
   Smartphone,
   SquarePen,
+  FolderTree,
   CircleQuestionMark,
   ImagePlus,
   Send,
@@ -73,6 +74,7 @@ import {
   HardDrive,
   ListTree,
   Search,
+  Settings as SettingsIcon,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -97,10 +99,12 @@ import Minimap from './components/Minimap.vue'
 import OutlinePanel from './components/OutlinePanel.vue'
 import FindReplacePanel, { type FindSpec } from './components/FindReplacePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
+import ThemeModeToggle from './components/ThemeModeToggle.vue'
 import SettingsDialog from './components/SettingsDialog.vue'
 import BannedWordsDialog from './components/BannedWordsDialog.vue'
 import Dropdown from './components/Dropdown.vue'
 import MobileActionsMenu from './components/mobile/MobileActionsMenu.vue'
+import MobileEditorToolbar from './components/mobile/MobileEditorToolbar.vue'
 import XhsExporter from './components/XhsExporter.vue'
 import TagPropsForm from './components/TagPropsForm.vue'
 import ComponentPickerDialog from './components/ComponentPickerDialog.vue'
@@ -142,6 +146,26 @@ const pushingCloud = ref(false)
 function onToggleTreePanel() {
   treePanelVisible.value = !treePanelVisible.value
   setSetting('treeSidebarExpanded', treePanelVisible.value)
+}
+
+// ── 移动端文章树（底部「文章」Tab）──
+/**
+ * 手机上从文章树点开一篇文章后，没有「又宽又高」的屏幕同时摆列表和编辑器，
+ * 所以加载完直接切到编辑 Tab；桌面端保持原样（列表和编辑器并排）。
+ *
+ * 注意：切 Tab 的时机放在「真正把文章写进编辑器」之后（见 doLoadArticle），
+ * 不在这里切——若编辑器已有内容会先弹「覆盖确认」，用户点取消时就不该跳走。
+ */
+function onMobileTreeEditArticle(
+  content: string,
+  node: import('@/services/GitHubTreeService').TreeNode,
+) {
+  onTreeEditArticle(content, node)
+}
+
+/** 加载了文章（含确认后加载）就自动切到编辑 Tab —— 仅在手机端生效 */
+function switchToEditorOnMobile() {
+  if (isMobile.value) mobileTab.value = 'editor'
 }
 
 // ── Tree Panel 拖动调整宽度 ──
@@ -300,11 +324,31 @@ function doLoadArticle(content: string) {
   currentDraftId.value = null
   // 加载云端文章后自动匹配本地草稿（通过标题或内容）
   setTimeout(() => matchExistingDraft(), 300)
+  switchToEditorOnMobile()
 }
 
 // ── 移动端 Tab 切换 ──
-const mobileTab = ref<'editor' | 'preview'>('editor')
+// 三栏：文章（文章树）/ 编辑 / 预览，类型见 useScrollSync 的 MobileTab。
+// 「文章」只在手机上出现——桌面端本来就有常驻的左侧文章树面板。
+const mobileTab = ref<MobileTab>('editor')
+
+/** 底部胶囊的三个 Tab，顺序即显示顺序 */
+const MOBILE_TABS: { key: MobileTab; label: string; icon: typeof FolderTree }[] = [
+  { key: 'articles', label: '文章', icon: FolderTree },
+  { key: 'editor', label: '编辑', icon: SquarePen },
+  { key: 'preview', label: '预览', icon: Smartphone },
+]
 const isMobile = ref(window.innerWidth < 768)
+
+/**
+ * 手机上默认停在「编辑」，没必要一进编辑器就拉一次仓库树。
+ * 首次切到「文章」才挂载（之后一直保留，切回编辑也不卸载，免得来回请求）。
+ */
+const mobileTreeMounted = ref(false)
+watch(mobileTab, (tab) => {
+  if (tab === 'articles') mobileTreeMounted.value = true
+})
+
 /**
  * 移动端 Web（窄屏且非桌面客户端）：无本地存储，图片粘贴/拖拽强制走 GitHub。
  * 与 isMobile 区分——isMobile 只管布局，桌面客户端缩窄窗口时仍算桌面。
@@ -1003,6 +1047,21 @@ function closeImageMenu() {
   }, 150)
 }
 
+// ── 帮助文档 ──
+/**
+ * 移动端三点菜单的「帮助文档」。
+ * 与左侧栏那个「帮助」入口（EditorSidebar.vue 的 openHelp）保持同一口径：
+ * 桌面客户端是 Tauri 窗口，站内路由跳转会顶掉编辑器，所以另开浏览器窗口；
+ * Web 端直接走前端路由，保留编辑器返回栈。
+ */
+function onOpenHelp() {
+  if (isTauri) {
+    window.open('https://r-markdown.pages.dev/#/help', '_blank', 'noopener,noreferrer')
+  } else {
+    router.push('/help')
+  }
+}
+
 // ── 导入 ──
 const { onImportClick } = useImport(
   markdown,
@@ -1318,21 +1377,30 @@ function loadDemo() {
           <Copy :size="14" />
           复制到公众号
         </button>
-        <!-- 移动端：下拉菜单 -->
+        <!--
+          移动端：下拉菜单（内容随底部 Tab 切换：编辑 / 预览）
+          文章 Tab 下不显示——那页直接用文章树自带的标题栏工具栏（可横向滚动），
+          比塞进三点列表更直接，也不需要为它影射一套菜单项。
+        -->
         <MobileActionsMenu
+          v-if="mobileTab !== 'articles'"
           :mode="mobileTab"
           @load-demo="confirmLoadVisible = true"
           @export-html="handleExportHTML"
           @save-image="handleSaveImage"
-          @copy-rich-text="handleCopyRichText"
           @export-xhs="xhsVisible = true"
           @go-components="$router.push('/components')"
+          @open-gallery="showGallery = true"
+          @go-materials="onMaterialAction('library')"
+          @open-my-materials="onMaterialAction('my')"
+          @open-banned-words="bannedWordsVisible = true"
           @save-to-repo="pushCloudVisible = true"
           @upload-image="handleUploadToGitHub"
-          @open-settings="settingsVisible = true"
+          @open-import="onImportClick"
           @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
+          @open-help="onOpenHelp"
         />
         <ThemePicker
           :themes="themes"
@@ -1341,6 +1409,11 @@ function loadDemo() {
           @select="setTheme"
           @custom-select="setCustomTheme"
         />
+        <ThemeModeToggle />
+        <!-- 设置：PC 与移动端都常驻顶栏右上角，不要再加 hidden sm:flex 把它在移动端藏掉 -->
+        <button class="toolbar-round-btn flex" title="设置" @click="settingsVisible = true">
+          <SettingsIcon :size="18" />
+        </button>
       </div>
     </div>
 
@@ -1358,22 +1431,19 @@ function loadDemo() {
       }"
     >
       <div class="mobile-tab-pill">
-        <div class="mobile-tab-highlight" :class="mobileTab === 'preview' ? 'right' : 'left'"></div>
+        <div
+          class="mobile-tab-highlight"
+          :style="{ '--tab-index': MOBILE_TABS.findIndex((t) => t.key === mobileTab) }"
+        ></div>
         <button
+          v-for="tab in MOBILE_TABS"
+          :key="tab.key"
           class="mobile-tab-btn"
-          :class="{ active: mobileTab === 'editor' }"
-          @click="mobileTab = 'editor'"
+          :class="{ active: mobileTab === tab.key }"
+          @click="mobileTab = tab.key"
         >
-          <SquarePen :size="16" />
-          编辑
-        </button>
-        <button
-          class="mobile-tab-btn"
-          :class="{ active: mobileTab === 'preview' }"
-          @click="mobileTab = 'preview'"
-        >
-          <Smartphone :size="16" />
-          预览
+          <component :is="tab.icon" :size="16" />
+          {{ tab.label }}
         </button>
       </div>
     </div>
@@ -1390,7 +1460,6 @@ function loadDemo() {
             :draft-count="draftCount"
             :tree-panel-visible="treePanelVisible"
             @select="onSidebarSelect"
-            @open-settings="settingsVisible = true"
             @open-gallery="showGallery = true"
             @open-banned-words="bannedWordsVisible = true"
             @ai-action="onSidebarAiAction"
@@ -1446,6 +1515,21 @@ function loadDemo() {
               <polyline points="7 8 3 12 7 16" />
             </svg>
           </div>
+        </div>
+        <!-- 移动端「文章」Tab：文章树铺满整屏，标题栏那排操作直接用文章树自带的（可横向滚动） -->
+        <div
+          v-if="isMobile && mobileTreeMounted"
+          class="flex flex-col flex-1 min-w-0 overflow-hidden"
+          :class="{ hidden: mobileTab !== 'articles' }"
+          style="background: var(--bg-primary)"
+        >
+          <TreeSidebar
+            compact
+            @open-settings="onSettingsOpen"
+            @edit-article="onMobileTreeEditArticle"
+            @toast="showToast"
+            @clear-editor="onClearEditor"
+          />
         </div>
         <!-- Editor Panel -->
         <div
@@ -2063,6 +2147,38 @@ function loadDemo() {
               />
             </div>
           </div>
+          <!--
+            移动端快捷工具栏：PC 那排按钮在标题栏里（hidden md:flex），触屏也没有 hover 展开
+            二级菜单，所以单做一条可横向滚动的图标条，同一套插入逻辑回传上来。
+          -->
+          <MobileEditorToolbar
+            v-if="isMobile"
+            :at-line-start="!!editorRef?.isAtLineStart"
+            :has-selection="!!editorRef?.hasInlineSelection"
+            :accent="colors.accent"
+            :is-tauri="isTauri"
+            :uploading="githubUploading"
+            :upload-label="uploadHostingLabel"
+            :tag-available="!!tagInfo"
+            :can-undo="!!editorRef?.canUndo"
+            @undo="editorRef?.undo()"
+            @inline-format="(s, w) => editorRef?.applyInlineFormat(s, w)"
+            @insert-syntax="(s) => editorRef?.insertAtCursor(s)"
+            @insert-table="(r, c) => insertTable(r, c)"
+            @insert-column="(c) => insertColumnLayout(c)"
+            @insert-column-stack="(c) => insertColumnStack(c)"
+            @insert-row="(r) => insertRowStack(r)"
+            @insert-stack="insertStack()"
+            @insert-container="insertContainer()"
+            @insert-text="insertText()"
+            @insert-html="insertHtmlContainer()"
+            @image-temp="handleInsertImage()"
+            @image-persist="handleInsertImagePersist()"
+            @image-disk="handleUploadToDisk()"
+            @image-hosting="handleUploadToGitHub()"
+            @open-components="componentDialogVisible = true"
+            @open-tag="showTagDialog = true"
+          />
           <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
           <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
             <Editor
@@ -2110,8 +2226,9 @@ function loadDemo() {
               class="hidden"
               @change="onDiskImageSelected"
             />
+            <!-- 解析标签属性：移动端工具栏也有「解析」入口，所以这里不再排除 isMobile -->
             <TagPropsForm
-              :visible="showTagDialog && !isMobile"
+              :visible="showTagDialog"
               :tag-info="tagInfo"
               @close="onTagDialogClose"
               @update="onTagDialogUpdate"
@@ -2519,28 +2636,28 @@ function loadDemo() {
   position: absolute;
   top: 4px;
   bottom: 4px;
-  width: calc(50% - 4px);
+  /*
+    三个 Tab 等宽（按钮 flex: 1），高亮块宽度 = (整条 - 左右 padding 8px - 两个 gap 4px) / 3；
+    位移按 --tab-index 逐档平移一档（自身宽度 + gap 2px）。
+    加 Tab 只要改 MOBILE_TABS，这里不用跟着改数字。
+  */
+  width: calc((100% - 12px) / 3);
   border-radius: 9999px;
   background: var(--accent, #6c5ce7);
+  transform: translateX(calc(var(--tab-index, 0) * (100% + 2px)));
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-}
-
-.mobile-tab-highlight.left {
-  transform: translateX(0);
-}
-
-.mobile-tab-highlight.right {
-  transform: translateX(100%);
 }
 
 .mobile-tab-btn {
   position: relative;
   z-index: 1;
+  flex: 1 1 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
-  padding: 10px 20px;
+  padding: 10px 14px;
   border: none;
   border-radius: 9999px;
   background: transparent;

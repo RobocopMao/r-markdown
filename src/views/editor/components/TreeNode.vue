@@ -137,7 +137,13 @@ function dropIndicator(nodeId: string) {
             <span class="text-xs truncate" style="color: var(--text-primary)">{{ node.title }}</span>
           </BaseTooltip>
         </div>
-        <span class="ml-auto shrink-0 hidden group-hover:flex items-center">
+        <!--
+          「重新编辑」按钮：PC 端仍是 hover 才显形，移动端常驻。
+          触屏没有 hover（matchMedia('(hover: none)') 为真），只写 group-hover 的话
+          手机上这个入口永远不出现；移动端文章树也只有这里能进入编辑。
+          显隐规则见下方 .node-edit-btn 的两条媒体查询。
+        -->
+        <span class="node-edit-btn ml-auto shrink-0 items-center">
           <BaseTooltip text="重新编辑">
             <button
               class="p-0.5 rounded hover:bg-[var(--bg-hover)] cursor-pointer"
@@ -164,6 +170,27 @@ function dropIndicator(nodeId: string) {
 
 .tree-node--active {
   background: color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+/*
+  「重新编辑」按钮的显隐：
+  - 鼠标设备（hover: hover）：默认隐藏，悬停整行才出现——保持 PC 端原来的做法
+  - 触屏设备（hover: none）：常驻显示，否则手机上完全没有进入编辑的入口
+ */
+.node-edit-btn {
+  display: none;
+}
+
+@media (hover: hover) {
+  .tree-node:hover .node-edit-btn {
+    display: flex;
+  }
+}
+
+@media (hover: none) {
+  .node-edit-btn {
+    display: flex;
+  }
 }
 
 .tree-node--drop-inside {

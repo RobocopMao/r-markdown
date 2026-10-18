@@ -198,6 +198,32 @@ const generating = ref(false)
 /** 生成耗时（秒），完成后展示 */
 const elapsedSec = ref(0)
 
+/** 流式输出的滚动容器（那个 <pre>） */
+const streamRef = ref<HTMLElement>()
+/** 结果区（diff 视图）的滚动容器，生成结束后复位用 */
+const resultScrollRef = ref<HTMLElement>()
+
+/**
+ * 生成中跟随到底部。
+ *
+ * 不能只在 streamingText 变化后滚一次就完事：流式增量与 DOM 更新、布局重算是错拍的，
+ * 拿到 nextTick 时 scrollHeight 可能还是旧值，滚过去会差几行。所以先 await nextTick
+ * 让新内容落地，再按 scrollHeight 直接赋 scrollTop。
+ * 这里刻意不用 scrollTo({behavior:'smooth'})：增量每 100ms 一次，平滑动画会互相打断，反而抖。
+ */
+async function stickStreamToBottom() {
+  await nextTick()
+  const el = streamRef.value
+  if (el) el.scrollTop = el.scrollHeight
+}
+
+/** 生成结束：把结果区复位到顶部——结果是要从头读的，停在末尾会先看到文章结尾 */
+async function resetStreamScroll() {
+  await nextTick()
+  const el = resultScrollRef.value
+  if (el) el.scrollTop = 0
+}
+
 /** 生成完成后的结果文本（可编辑） */
 const resultText = ref('')
 /** 本次生成实际送往模型的原文（diff 的基线，不随来源切换变化） */
@@ -254,7 +280,6 @@ const sourceText = computed(() => {
 
 const sourceStats = computed(() => countChars(sourceText.value))
 const sourceTooLong = computed(() => sourceText.value.length > LONG_ARTICLE_CHARS)
-const specTokens = ref(0)
 
 // ── 请求中止 ──
 let controller: AbortController | null = null
@@ -302,9 +327,8 @@ watch(
     // 从设置面板返回后重新读取配置，避免仍显示上一次的「待配置」状态
     refreshAiConfig()
     errorMsg.value = ''
-    // 预热规范并估算固定开销
-    const spec = await getSpec()
-    specTokens.value = estimateTokens(buildSystemPrompt(spec, preset.value))
+    // 预热规范：getSpec() 是模块级缓存，这里先发起加载，真正点「开始排版」时就不必再等
+    await getSpec()
 
     // 没有内存态结果时，尝试恢复上次未过期的结果（关了面板再打开不该丢）
     if (!resultText.value) {
@@ -320,9 +344,6 @@ watch(
 
 watch(preset, (v) => {
   setSetting('aiStylePreset', v, true)
-  void getSpec().then((spec) => {
-    specTokens.value = estimateTokens(buildSystemPrompt(spec, v))
-  })
 })
 
 function onSourceTab(tab: SourceTab) {
@@ -546,6 +567,30 @@ function recomputeDiff() {
 watch(resultText, () => {
   if (diffTimer) clearTimeout(diffTimer)
   diffTimer = setTimeout(recomputeDiff, 300)
+})
+
+/**
+ * 流式输出：每来一段增量就贴到底部。
+ *
+ * 跟的是 streamingText 而不是 generating——增量才是「内容变长了」的信号；
+ * generating 只在开始/结束各变一次。
+ */
+watch(streamingText, () => {
+  if (generating.value) void stickStreamToBottom()
+})
+
+/**
+ * 生成结束：把结果区滚回顶部。
+ *
+ * 时机是 generating 由 true 转 false（而非 resultText 出现）——结果区要等下一次
+ * DOM 更新才挂出来，再一个是「重新生成」也会重复走这一遭。放在这个边沿上，
+ * 流式结束与结果呈现之间不会残留末尾的滚动位置。
+ *
+ * 编辑视图的 textarea 有原生滚动，且 textarea 换内容后 scrollTop 本来就会归零，
+ * 不需要单独处理；这里只复位 diff 容器。
+ */
+watch(generating, (now, before) => {
+  if (before && !now) void resetStreamScroll()
 })
 
 async function switchToDiff() {
@@ -790,13 +835,6 @@ onBeforeUnmount(() => {
                 </button>
               </BaseTooltip>
             </div>
-            <!-- 移动端：token 统计换到下一行，避免与输入框/添加按钮抢宽度 -->
-            <span
-              class="text-[10px] text-[#999] dark:text-[#666]"
-              :class="{ 'w-full': isMobileWeb }"
-            >
-              规范约 {{ specTokens }} tokens
-            </span>
           </div>
 
           <!-- 常用补充要求：勾选后每次自动拼接，勾选状态已记住 -->
@@ -912,6 +950,7 @@ onBeforeUnmount(() => {
             </span>
           </div>
           <pre
+            ref="streamRef"
             class="min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap break-words px-3 py-2 font-mono text-[12px] leading-relaxed text-[#333] dark:text-[#ccc]"
             >{{ streamingText }}</pre
           >
@@ -974,7 +1013,11 @@ onBeforeUnmount(() => {
             </div>
 
             <!-- 对比视图 -->
-            <div v-if="resultView === 'diff'" class="min-h-0 flex-1 overflow-y-auto">
+            <div
+              v-if="resultView === 'diff'"
+              ref="resultScrollRef"
+              class="min-h-0 flex-1 overflow-y-auto"
+            >
               <!-- 移动端是单栏逐行对照（带 +/− 标记），表头只写一行说明 -->
               <div
                 v-if="isMobileWeb"

@@ -317,7 +317,9 @@ defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
           maxWidth: '700px',
           flexShrink: 0,
           background: 'transparent',
-          boxShadow: '0 8px 40px rgba(0, 0, 0, 0.12)',
+          // 手机端预览就是整屏，没有「浮起一张手机卡」的观感需要，
+          // 这层投影反而会在底部留白上压出一道灰带，所以只在桌面端给。
+          boxShadow: isMobile ? 'none' : '0 8px 40px rgba(0, 0, 0, 0.12)',
           overflow: 'hidden',
           margin: '0 auto',
         }"
@@ -363,6 +365,17 @@ defineExpose({ copyRichText, copyHTML, saveAsImage, getHTML })
 </template>
 
 <style scoped>
+/*
+  滚动容器自己铺面板底色。
+  移动端滚到底部会由 EditorPage 给 .preview-scroll 补 padding-bottom: 80px；
+  这点是 padding 区，容器背景透明时它会穿透显示到外层的 --bg-frame（灰色），
+  于是正文白色、底部留白灰色，出现明显色差。铺上与面板一致的底色即可。
+  用 --bg-primary 而不是写死白色，深色模式下自动跟着变。
+*/
+.preview-scroll {
+  background: var(--bg-primary);
+}
+
 .preview-scroll::-webkit-scrollbar {
   display: none;
 }

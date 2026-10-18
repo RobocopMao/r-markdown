@@ -1,8 +1,15 @@
 import { ref, onMounted, onBeforeUnmount, type Ref } from 'vue'
 
+/**
+ * 移动端 Tab。'articles'（文章树）和 'preview' 一样看不到编辑器，
+ * 所以下面只判断「是不是编辑 Tab」，不要逐个列举非编辑的 Tab，
+ * 以后再加 Tab 也不会漏改这里。
+ */
+export type MobileTab = 'articles' | 'editor' | 'preview'
+
 export function useScrollSync(
   isMobile: Ref<boolean>,
-  mobileTab: Ref<'editor' | 'preview'>,
+  mobileTab: Ref<MobileTab>,
   nearBottom: Ref<boolean>,
 ) {
   const minimapScrollRatio = ref(0)

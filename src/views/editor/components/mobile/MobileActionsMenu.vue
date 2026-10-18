@@ -3,20 +3,30 @@ import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
 import {
   Braces,
-  Copy,
   EllipsisVertical,
   FileText,
   Image,
+  Images,
   LayoutGrid,
   Bot,
   Feather,
   Cloud,
   ImageUp,
   ImagePlus,
-  Settings,
+  Import,
+  Library,
+  BookMarked,
+  ShieldAlert,
+  HelpCircle,
 } from 'lucide-vue-next'
 
-const props = defineProps<{
+defineProps<{
+  /**
+   * 当前移动端 Tab：编辑 / 预览。菜单内容随它切换。
+   *
+   * 「文章」Tab 不走这个菜单——那一排是文章树自己的操作，直接由 TreeSidebar
+   * 内置的标题栏工具栏承载（手机上横向可滚动），所以这里没有 articles 分支。
+   */
   mode?: 'editor' | 'preview'
 }>()
 
@@ -24,15 +34,19 @@ const emit = defineEmits<{
   'load-demo': []
   'export-html': []
   'save-image': []
-  'copy-rich-text': []
   'export-xhs': []
   'go-components': []
+  'open-gallery': []
+  'go-materials': []
+  'open-my-materials': []
+  'open-banned-words': []
   'save-to-repo': []
   'upload-image': []
-  'open-settings': []
+  'open-import': []
   'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
+  'open-help': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -41,6 +55,7 @@ function toggle() {
   groupToggle(!isVisible.value)
 }
 
+/** 执行菜单项并关闭菜单 */
 function handleAction(action: () => void) {
   action()
   groupToggle(false)
@@ -72,32 +87,11 @@ onBeforeUnmount(() => {
       <EllipsisVertical :size="15" />
     </button>
     <div
-      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-44"
+      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-32"
       :class="{ show: isVisible }"
     >
-      <!-- 编辑模式：扩展组件 + 保存到仓库 + 上传图片 + AI 写作/排版/配图 + 加载示例 + 设置 -->
+      <!-- 编辑模式：AI 写作/排版/配图 → 上传图片 → 保存到仓库 → 扩展组件 → 加载示例 -->
       <template v-if="mode === 'editor'">
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('go-components'))"
-        >
-          <LayoutGrid :size="14" />
-          扩展组件
-        </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('save-to-repo'))"
-        >
-          <Cloud :size="14" />
-          保存到仓库
-        </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('upload-image'))"
-        >
-          <ImageUp :size="14" />
-          上传图片
-        </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-write'))"
@@ -121,6 +115,63 @@ onBeforeUnmount(() => {
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('upload-image'))"
+        >
+          <ImageUp :size="14" />
+          上传图片
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-import'))"
+        >
+          <Import :size="14" />
+          导入
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('save-to-repo'))"
+        >
+          <Cloud :size="14" />
+          保存到仓库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('go-components'))"
+        >
+          <LayoutGrid :size="14" />
+          扩展组件
+        </button>
+        <!-- 素材/图库/检测：与桌面端左侧栏同源功能，避免移动端只能从别处绕进去 -->
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-gallery'))"
+        >
+          <Images :size="14" />
+          图库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('go-materials'))"
+        >
+          <Library :size="14" />
+          素材库
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-my-materials'))"
+        >
+          <BookMarked :size="14" />
+          我的素材
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-banned-words'))"
+        >
+          <ShieldAlert :size="14" />
+          违禁词检测
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('load-demo'))"
         >
           <FileText :size="14" />
@@ -128,14 +179,14 @@ onBeforeUnmount(() => {
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('open-settings'))"
+          @click="handleAction(() => emit('open-help'))"
         >
-          <Settings :size="14" />
-          设置
+          <HelpCircle :size="14" />
+          帮助文档
         </button>
       </template>
       <!-- 预览模式：显示其他三个 -->
-      <template v-else>
+      <template v-else-if="mode === 'preview'">
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('export-html'))"
@@ -157,16 +208,6 @@ onBeforeUnmount(() => {
           <FileText :size="14" />
           小红书图
         </button>
-        <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
-          @click="handleAction(() => emit('copy-rich-text'))"
-        >
-          <Copy :size="14" />
-          复制到公众号
-        </button>
-        <div class="px-4 pb-1 text-[10px] opacity-40 leading-tight">
-          移动端复制到公众号会丢失样式，推荐在PC端操作
-        </div>
       </template>
     </div>
   </div>

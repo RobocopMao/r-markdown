@@ -72,7 +72,7 @@ onBeforeUnmount(() => {
       </svg>
     </button>
     <div
-      class="dd-menu absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl z-50 w-40"
+      class="dd-menu absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl z-50 w-28"
       :class="[menuClass, { show: isVisible }]"
       :style="{ boxShadow: '0 8px 32px rgba(0,0,0,0.12)' }"
     >
