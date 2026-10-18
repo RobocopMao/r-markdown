@@ -325,7 +325,7 @@ defineExpose({ doCleanup })
       >
         暂无缓存图片
       </div>
-      <div v-else class="relative grid grid-cols-6 gap-3">
+      <div v-else class="relative grid grid-cols-2 gap-3 sm:grid-cols-6">
         <div
           v-for="img in sortedImages"
           :key="img.token"
@@ -402,7 +402,7 @@ defineExpose({ doCleanup })
           通过「保存到本地磁盘」上传的图片会存放在这里
         </div>
       </div>
-      <div v-else class="relative grid grid-cols-6 gap-3">
+      <div v-else class="relative grid grid-cols-2 gap-3 sm:grid-cols-6">
         <div
           v-for="img in diskImages"
           :key="img.relPath"

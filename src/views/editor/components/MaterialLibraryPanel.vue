@@ -33,14 +33,27 @@ const toastMessage = ref('')
 const publishConfirmVisible = ref(false)
 
 // ── 瀑布流（@yeger/vue-masonry-wall）──
-const COLS = 2
 const COLS_GAP = 8
+/**
+ * 容器宽度低于此值就退成单列。取 768 与移动端断点（MOBILE_BREAKPOINT）一致：
+ * 手机上两列会把卡片压到 180px 上下，标题和描述都要折行，读起来很挤；
+ * 桌面端抽屉固定 800px，仍走两列。
+ */
+const SINGLE_COLUMN_MAX_WIDTH = 768
 const wallWidth = ref(0)
 const wallWrapperRef = ref<HTMLElement | null>(null)
 let wallResizeObserver: ResizeObserver | null = null
+/**
+ * 列数按容器实际宽度算，不按窗口宽度算——面板在桌面是 800px 抽屉、手机是整屏，
+ * 用容器宽度一处就能覆盖两种情况，也不必区分 Tauri 窄窗口。
+ */
+const cols = computed(() =>
+  wallWidth.value > 0 && wallWidth.value < SINGLE_COLUMN_MAX_WIDTH ? 1 : 2,
+)
 const columnWidth = computed(() => {
   if (wallWidth.value <= 0) return 0
-  return (wallWidth.value - COLS_GAP * (COLS - 1)) / COLS
+  const n = cols.value
+  return (wallWidth.value - COLS_GAP * (n - 1)) / n
 })
 
 function initWallObserver() {
@@ -313,8 +326,8 @@ watch(
           :items="filteredMaterials"
           :column-width="columnWidth"
           :gap="COLS_GAP"
-          :min-columns="COLS"
-          :max-columns="COLS"
+          :min-columns="cols"
+          :max-columns="cols"
           :key-mapper="(item) => item.id"
         >
           <template #default="{ item }">

@@ -2204,8 +2204,8 @@ async function manualCheckUpdate() {
           </p>
         </div>
 
-        <!-- 清理图片缓存（移动端无本地图片缓存） -->
-        <div v-if="!isMobile" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+        <!-- 清理图片缓存：移动端同样有本地缓存（插入图片走 putImage 写 IndexedDB），不能藏 -->
+        <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
           <button
             class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
             @click="showImageCache = true"
