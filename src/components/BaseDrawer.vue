@@ -109,7 +109,7 @@ onBeforeUnmount(() => {
         <!-- Footer -->
         <div
           v-if="showFooter"
-          class="flex shrink-0 justify-end gap-3 border-t border-[#f0f0f0] px-5 py-3 dark:border-[#333]"
+          class="flex shrink-0 justify-end gap-3 border-t border-[#f0f0f0] p-3 dark:border-[#333]"
         >
           <slot name="footer" />
         </div>
