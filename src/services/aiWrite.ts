@@ -39,7 +39,7 @@ export const MAX_WRITE_MAX_TOKENS = 65536
  * 解析写作配置：以「AI 文本」共用配置（地址 / Key / 模型）为底，覆盖写作专用的三项。
  *
  * 模型：写作与排版共用同一套接口与常用模型清单，但各自记住用哪个
- * （aiWriteModel / aiFormatModel），空串表示跟随设置页的 aiModel。
+ * （aiWriteModel / aiFormatModel），空串表示跟随清单首项（没有单独的默认模型设置）。
  * 采样温度与最大输出因为任务性质不同而分开存。
  */
 export function resolveWriteConfig(modelOverride?: string): AiFormatConfig {
@@ -56,8 +56,8 @@ export function resolveWriteConfig(modelOverride?: string): AiFormatConfig {
 /**
  * 配置是否可用：地址 / Key / 模型三项齐备。
  *
- * 不能直接复用 isAiConfigured()——那个读的是 aiModel，
- * 而写作实际会用 aiWriteModel，面板单独选了模型时两者可能不同。
+ * 不能直接复用 isAiConfigured()——那个不带面板的模型覆盖，
+ * 而写作面板可能临时换了模型，两者解析出来的 model 未必相同。
  */
 export function isWriteConfigured(modelOverride?: string): boolean {
   const c = resolveWriteConfig(modelOverride)

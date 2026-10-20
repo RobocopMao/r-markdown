@@ -340,12 +340,21 @@ function decodeBase64Image(b64: string, type = 'image/png'): Blob {
 }
 
 /**
- * 拉取可用模型列表并筛选出图像模型。
+ * 拉取可用模型列表并筛选出「本厂商能用」的模型。
+ *
+ * 两道筛选：
+ * 1. `pattern`（def.modelIdPattern）：是不是图像模型——把文本模型挡在外面；
+ * 2. `strict`（def.modelIdValid，可选）：**是不是本厂商真能用的型号**。
+ *    中转站的 /models 会把几十个别家的图像模型一起列出来（nano-banana / seedream /
+ *    flux …），它们不吃本厂商这套参数，列进下拉只会让人选了再失败。
+ *    各家写法不一致（前缀、后缀、下划线分隔都有可能），宽松匹配由 def 的正则负责。
+ *
  * 接口不支持 /models 时抛可读错误，由设置页引导用户手填模型名。
  */
 export async function listImageModels(
   cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
   pattern: RegExp,
+  strict?: RegExp,
 ): Promise<string[]> {
   const baseUrl = normalizeBaseUrl(cfg.baseUrl)
   if (!baseUrl || !cfg.apiKey) {
@@ -381,13 +390,20 @@ export async function listImageModels(
     if (ids.length === 0) {
       throw new Error('该接口未返回模型列表，请手动填写模型名')
     }
-    const images = [...new Set(ids.filter((id) => pattern.test(id)))].sort((a, b) =>
+    const imageIds = [...new Set(ids.filter((id) => pattern.test(id)))].sort((a, b) =>
       a.localeCompare(b),
     )
-    if (images.length === 0) {
+    if (imageIds.length === 0) {
       throw new Error(`接口返回了 ${ids.length} 个模型，但没有匹配的图像模型，请手动填写模型名`)
     }
-    return images
+    if (!strict) return imageIds
+    const usable = imageIds.filter((id) => strict.test(id))
+    if (usable.length === 0) {
+      throw new Error(
+        `接口返回了 ${imageIds.length} 个图像模型，但没有本厂商支持的型号，请手动填写模型名`,
+      )
+    }
+    return usable
   } finally {
     cleanup()
   }
@@ -397,8 +413,9 @@ export async function listImageModels(
 export async function testImageConnection(
   cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
   pattern: RegExp,
+  strict?: RegExp,
 ): Promise<string[]> {
-  return listImageModels(cfg, pattern)
+  return listImageModels(cfg, pattern, strict)
 }
 
 /**

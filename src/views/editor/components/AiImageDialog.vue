@@ -661,7 +661,11 @@ function refreshAiReady() {
 }
 function onAiSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel') refreshAiReady()
+  // 监听 aiModels 而不只是旧字段 aiModel：模型清单才是现在的配置来源，
+  // 清单从空到有（或反过来）会直接翻转「有没有可用的文本模型」。
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
+    refreshAiReady()
+  }
 }
 
 /** 优化中：流式累计的文本（用于实时回显） */

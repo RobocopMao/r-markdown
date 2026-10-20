@@ -138,12 +138,19 @@ export interface ImageProviderDef {
   /** 从 /models 列表里筛选图像模型的规则；不匹配的模型名不会进入下拉 */
   modelIdPattern: RegExp
   /**
-   * 「本厂商真正支持的型号」的形状；当前模型名不匹配时，设置页会在下方追加一句提示，
-   * **但不阻止保存**（中转站可能给模型名加前缀，硬拦会把能用的配置也拦掉）。
+   * 「本厂商真正支持的型号」的形状。作用有三：
+   * 1. 「获取模型列表」之后按它**直接过滤掉**不适配的模型（中转站的 /models 混着几十个
+   *    别家的图像模型，全列出来只会让人选错）；
+   * 2. 手填的模型名不在范围内时，设置页在下方追加一句提示；
+   * 3. **都不阻止保存**——中转站可能给模型名加前缀 / 改分隔符，硬拦会把能用的配置也拦掉。
+   *
+   * 正则必须是**宽松的包含式匹配**（不加 ^$、允许 - _ . 空格互换），
+   * 因为各家中转站对同一个模型的写法并不一致（`openai/gpt-image-2.5-flare`、
+   * `gpt-image-2.5-flare-20251001`、`gpt_image_2_5_flare` 都算）。
    * 不声明则不做这项校验——Agnes 的模型名随版本迭代，没必要限制。
    */
   modelIdValid?: RegExp
-  /** 模型名不在合法范围时追加的提示文案 */
+  /** 手填的模型名不在合法范围时追加的提示文案 */
   modelIdWarn?: string
   /** 模型名下方的用法提示；不声明则不显示这一行（模型名已说明清楚的地方不必重复） */
   modelHint?: string
@@ -418,9 +425,12 @@ const gptImage: ImageProviderDef = {
   // 它们不吃 size / quality / background / moderation 这套官方字段，选了只会报错。
   // 连 gpt-image-2.5-ext 也算不匹配——那是中转站自造的聚合路由，只收「比例 + resolution」，
   // 不收 quality / 透明背景 / 自定义像素，跟本面板的参数对不上。
-  modelIdValid: /gpt-image-2\.5-(flare|sunburst)/i,
+  // 分隔符三种都可能：连字符（官方）、下划线、点，还常有 `openai/` 前缀或 `-20251001` 后缀，
+  // 所以用包含式匹配而不加 ^$。ext 是聚合路由，匹配不上属于预期。
+  // 末尾的 (?![a-z]) 是必要的一道：没有它 gpt-image-2.5-flareless 也会命中。
+  modelIdValid: /gpt[-_ ]?image[-_ ]?2[._-]5[-_ ]?(flare|sunburst)(?![a-z])/i,
   modelIdWarn:
-    '仅支持 gpt-image-2.5-flare 与 gpt-image-2.5-sunburst。其他模型（含 gpt-image-2.5-ext 这类聚合路由）不吃本面板的比例 · 质量 · 背景参数，生图会失败。',
+    '只认 gpt-image-2.5-flare 与 gpt-image-2.5-sunburst。其他模型（含 gpt-image-2.5-ext 这类聚合路由）不吃本面板的比例 · 质量 · 背景参数，生图会失败。',
   intro:
     '官方接口与中转站都按 OpenAI 标准字段发送（size / quality / background / moderation）：地址填 https://api.openai.com/v1，或中转站的 …/v1 即可；尺寸、质量等参数在生成面板里按次选择。',
   customSize: { min: 256, max: 4096, step: 16 },
@@ -530,6 +540,18 @@ export function supportsRelay(def: ImageProviderDef): boolean {
 }
 
 /**
+ * 一个模型名是否落在本厂商支持的范围内。
+ *
+ * 「获取模型列表」的过滤与手填后的提醒都用这一个判断，避免两处各写一份正则
+ * （一处改了另一处没改，就会「列表里能选、选了又报不支持」）。
+ * 厂商没声明 modelIdValid 时一律视为支持。
+ */
+export function isSupportedImageModel(def: ImageProviderDef, model: string): boolean {
+  const valid = def.modelIdValid
+  return !valid || valid.test(model)
+}
+
+/**
  * 从白名单里取值，不在表内（或空）则回退默认值。
  *
  * 厂商没声明选项表时没有「用户能选的值」，此时直接回退 default ——
@@ -563,11 +585,15 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
     custom && ratio === CUSTOM_RATIO ? clampDimension(stored.height, custom, fallbackH) : 0
 
   /**
-   * 常用模型清单的收敛：
-   * - 缺失（旧配置）或为空 → 退化成只含当前 model 的一项，这样面板下拉不会是空的；
-   * - 有值 → 去空、去重；当前 model 若不在清单里就补进去（手填过但没勾选的情况）。
+   * 常用模型清单与当前模型的收敛。
+   *
+   * 没有单独的「默认模型」设置：**清单首项即默认**（用户明确要求去掉那层，
+   * 见 DEVELOPMENT.md 第 30 条）。所以顺序是——先把清单洗净，再决定当前值：
+   * - 清单缺失（旧配置）或为空 → 退化成只含当前 model 的一项，面板下拉才不会空着；
+   * - 清单有值 → 去空、去重；
+   * - 当前 model 不在清单里（从没选过、或被从清单里删了）就落到清单首项，
+   *   而不是补进清单尾——否则「默认」就成了最后勾的那个，行为看着随机。
    */
-  const model = (typeof stored.model === 'string' && stored.model.trim()) || def.defaultModel
   const listed = Array.isArray(stored.models)
     ? stored.models.filter((m): m is string => typeof m === 'string')
     : []
@@ -579,7 +605,10 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
     seen.add(name)
     models.push(name)
   }
-  if (!models.includes(model)) models.push(model)
+  const storedModel = typeof stored.model === 'string' ? stored.model.trim() : ''
+  if (models.length === 0 && storedModel) models.push(storedModel)
+  if (models.length === 0) models.push(def.defaultModel)
+  const model = models.includes(storedModel) ? storedModel : models[0]
 
   return {
     apiKey: typeof stored.apiKey === 'string' ? stored.apiKey : '',

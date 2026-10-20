@@ -255,42 +255,39 @@ const resultExpired = computed(
  */
 const aiBaseUrl = ref(getSetting<string>('aiBaseUrl') || '')
 const aiApiKey = ref(getSetting<string>('aiApiKey') || '')
-const aiModel = ref(getSetting<string>('aiModel') || '')
 
 /**
  * 本次排版使用的模型。
  *
- * 面板里只列具体模型、没有「默认」这种伪选项，所以值始终是真实模型名：
- * 没在面板选过时初始化为设置页的默认模型。
+ * 面板里只列具体模型、没有「默认」这种伪选项，所以值始终是真实模型名。
+ * 没有单独的「默认模型」设置：**清单首项即默认**，没在面板选过时就用它。
  * 与写作分开存：排版要的是结构稳定、少改写，常和写作挑不同的模型。
  */
-const formatModel = ref(getSetting<string>('aiFormatModel') || getSetting<string>('aiModel') || '')
+const formatModel = ref(getSetting<string>('aiFormatModel') || '')
 /** 可选模型清单，来自设置页「AI 文本」的多选；只有一项时不渲染下拉 */
 const modelOptions = ref(listTextModels())
-// 两条设置都空但清单里还有模型（只勾选、没指定默认）时落到首项，
-// 保证下拉显示的值就是请求里发的值。
-if (!formatModel.value && modelOptions.value.length > 0) formatModel.value = modelOptions.value[0]
+// 没记录过（或记录的不在清单里）时落到首项，
+// 保证下拉显示的值就是请求里真正发出去的那个。
+if (!modelOptions.value.includes(formatModel.value)) {
+  formatModel.value = modelOptions.value[0] || ''
+}
 
 watch(formatModel, (v) => setSetting('aiFormatModel', v, true))
 
 function refreshAiConfig() {
   aiBaseUrl.value = getSetting<string>('aiBaseUrl') || ''
   aiApiKey.value = getSetting<string>('aiApiKey') || ''
-  aiModel.value = getSetting<string>('aiModel') || ''
   modelOptions.value = listTextModels()
-  // 当前值失效（设置页换了默认模型、或把它从清单里删了）时落到默认模型，
+  // 当前值失效（设置页把它从清单里删了、或整份清单换了）时落到首项，
   // 而不是留空——空值配上没有空选项的 select，会显示清单首项却发另一条出去。
   if (!modelOptions.value.includes(formatModel.value)) {
-    const fallback = (getSetting<string>('aiModel') || '').trim()
-    formatModel.value = modelOptions.value.includes(fallback)
-      ? fallback
-      : modelOptions.value[0] || ''
+    formatModel.value = modelOptions.value[0] || ''
   }
 }
 
 function onAiSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel' || key === 'aiModels') {
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
     refreshAiConfig()
   }
 }
@@ -298,9 +295,9 @@ function onAiSettingChanged(e: Event) {
 onMounted(() => window.addEventListener('setting-changed', onAiSettingChanged))
 onBeforeUnmount(() => window.removeEventListener('setting-changed', onAiSettingChanged))
 
-// 判定要用「实际会发的模型」：面板单独选了模型时 aiModel 可能为空
+// 判定要用「实际会发的模型」：与 refreshAiConfig 同一口径，都取面板当前值
 const configured = computed(() =>
-  Boolean(aiBaseUrl.value && aiApiKey.value && (formatModel.value || aiModel.value)),
+  Boolean(aiBaseUrl.value && aiApiKey.value && (formatModel.value || modelOptions.value[0])),
 )
 
 const sourceText = computed(() => {

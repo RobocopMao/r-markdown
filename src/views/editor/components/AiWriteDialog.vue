@@ -197,26 +197,23 @@ async function doNewSession() {
  * 本次使用的模型。
  *
  * 选项来自设置页「AI 文本」勾选的常用模型清单。面板里只列具体模型、不提供
- * 「默认」这种伪选项，所以这里的值始终是一个真实模型名：没在面板选过时
- * 初始化为设置页的默认模型。
+ * 「默认」这种伪选项，所以这里的值始终是一个真实模型名。
+ * 没有单独的「默认模型」设置：**清单首项即默认**，没在面板选过时就用它。
  * 写作与排版各存一份（aiWriteModel / aiFormatModel），因为它们常挑不同的模型：
  * 写作要发散、排版要稳定，共用一个的话每次切换都得回设置页改。
  */
-const model = ref(getSetting<string>('aiWriteModel') || getSetting<string>('aiModel') || '')
+const model = ref(getSetting<string>('aiWriteModel') || '')
 /** 可选模型清单；只有一项时不渲染下拉 */
 const modelOptions = ref(listTextModels())
-// 两条设置都空但清单里还有模型（例如只勾选、没指定默认）时，落到首项，
-// 保证下拉的值与发出的请求一致。
-if (!model.value && modelOptions.value.length > 0) model.value = modelOptions.value[0]
+// 没记录过（或记录的不在清单里）时落到清单首项，保证下拉显示的值
+// 就是请求里真正发出去的那个。
+if (!modelOptions.value.includes(model.value)) model.value = modelOptions.value[0] || ''
 
 function refreshModelOptions() {
   modelOptions.value = listTextModels()
-  // 当前值失效（设置页换了默认模型、或把它从清单里删了）时落到设置页的默认模型，
+  // 当前值失效（设置页把它从清单里删了、或整份清单换了）时落到首项，
   // 而不是留空——空值配上没有空选项的 select，会显示清单首项却发另一条出去。
-  if (!modelOptions.value.includes(model.value)) {
-    const fallback = (getSetting<string>('aiModel') || '').trim()
-    model.value = modelOptions.value.includes(fallback) ? fallback : modelOptions.value[0] || ''
-  }
+  if (!modelOptions.value.includes(model.value)) model.value = modelOptions.value[0] || ''
 }
 
 watch(model, (v) => setSetting('aiWriteModel', v, true))
@@ -236,8 +233,10 @@ function onSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
   // 写作与排版共用接口地址 / Key / 模型名（「AI 文本」子页），任一项变了都要重新判定是否可用
   if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel' || key === 'aiModels') {
-    refreshConfig()
+    // 先刷清单再判配置：清单变了可能把 model 挪到新的首项，
+    // 反过来会让 refreshConfig 拿旧模型去判定。
     refreshModelOptions()
+    refreshConfig()
   }
 }
 
