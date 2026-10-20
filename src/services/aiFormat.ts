@@ -40,16 +40,40 @@ export interface FormatResult {
   finishReason: string
 }
 
-export function resolveAiConfig(): AiFormatConfig {
+/**
+ * 读取文本模型配置。
+ *
+ * @param modelOverride 面板上临时选中的模型。写作与排版各有自己的「当前模型」
+ *   （aiWriteModel / aiFormatModel），没选时为空串，退回设置页的 aiModel。
+ *   做成参数而不是各自读设置，是为了让调用点显式表达「我要用哪个模型」，
+ *   也避免把三个面板的选择逻辑散落在服务层。
+ */
+export function resolveAiConfig(modelOverride?: string): AiFormatConfig {
   return {
     baseUrl: normalizeBaseUrl(getSetting<string>('aiBaseUrl') || ''),
     apiKey: getSetting<string>('aiApiKey') || '',
-    model: (getSetting<string>('aiModel') || '').trim(),
+    model: (modelOverride || getSetting<string>('aiModel') || '').trim(),
     temperature: getSetting<number>('aiTemperature') ?? 0.3,
     maxTokens: getSetting<number>('aiMaxTokens') ?? 8192,
     stream: getSetting<boolean>('aiStream') ?? true,
     timeoutSec: getSetting<number>('aiTimeoutSec') ?? 180,
   }
+}
+
+/** 文本常用模型清单（设置页多选维护）；当前模型不在清单里时也补进去，避免下拉丢失当前值 */
+export function listTextModels(): string[] {
+  const listed = getSetting<string[]>('aiModels')
+  const current = (getSetting<string>('aiModel') || '').trim()
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const m of Array.isArray(listed) ? listed : []) {
+    const name = typeof m === 'string' ? m.trim() : ''
+    if (!name || seen.has(name)) continue
+    seen.add(name)
+    out.push(name)
+  }
+  if (current && !out.includes(current)) out.push(current)
+  return out
 }
 
 /** 配置是否完整（三项均必填） */

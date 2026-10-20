@@ -138,8 +138,20 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   aiBaseUrl: { default: '' },
   /** AI 排版：API Key（敏感字段，加密存储；必填，无默认值） */
   aiApiKey: { default: '' },
-  /** AI 排版：模型名（必填，无默认值；可在设置中查询接口模型列表后选择） */
+  /** AI 排版：当前使用的模型名（必填，无默认值；取自下面的常用模型列表） */
   aiModel: { default: '' },
+  /**
+   * AI 文本：常用模型清单（设置页多选维护，可手填）。
+   * 写作与排版共用接口，但各自记住用哪一个，所以下面还有两个「当前选择」。
+   */
+  aiModels: { default: [] },
+  /**
+   * AI 写作面板当前使用的模型；空串表示跟随 aiModel。
+   * 分开存是因为同一套接口下，写作常挑发散度高的模型、排版常挑稳定的模型。
+   */
+  aiWriteModel: { default: '' },
+  /** AI 排版面板当前使用的模型；空串表示跟随 aiModel */
+  aiFormatModel: { default: '' },
   /** AI 排版：采样温度，排版任务取较低值以稳定输出 */
   aiTemperature: { default: 0.3 },
   /** AI 排版：单次输出 token 上限，长文被截断时可调大 */
@@ -213,13 +225,17 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   aiWriteExtraInstruction: { default: '' },
   /**
    * AI 配图：当前选中的厂商 id（对应 services/imageProviders.ts 的注册表，
-   * 目前只有 'agnes'）。各厂商参数不一致，故配置按厂商分开存放。
+   * 目前有 'agnes' 与 'gpt-image'）。各厂商参数不一致，故配置按厂商分开存放。
    */
   imageGenProvider: { default: 'agnes' },
   /**
    * AI 配图：按厂商的配置表（敏感字段，整体加密存储）。
-   * 形如 { agnes: { apiKey, baseUrl, model, size, ratio, timeoutSec } }；
-   * 读取一律走 imageProviders.getProviderConfig()，缺失字段会自动回退厂商默认值。
+   * 形如 { agnes: { apiKey, baseUrl, model, models, size, ratio, timeoutSec },
+   *        'gpt-image': { …, width, height, quality, background, moderation, relay } }；
+   * models 是该厂商勾选的常用模型清单（可手填），model 是当前使用的那个。
+   * 读取一律走 imageProviders.getProviderConfig()，缺失字段会自动回退厂商默认值
+   * （含旧版本没有的 width / height / quality / background / moderation / relay）。
+   * relay 是选中的中转站 id，空串表示按标准同步接口处理。
    */
   imageGenProviders: { default: {} },
 }

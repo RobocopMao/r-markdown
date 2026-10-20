@@ -71,6 +71,7 @@ import {
   resolveWriteConfig,
   runWrite,
 } from '@/services/aiWrite'
+import { listTextModels } from '@/services/aiFormat'
 import { clearSession, loadSession, saveSession } from '@/services/aiWriteSessionStore'
 import { pickDocumentFile } from '../composables/useImport'
 import type { ChatMessage } from '@/services/aiFormat'
@@ -192,24 +193,54 @@ async function doNewSession() {
 }
 
 // ── 配置 ──
-const configured = ref(isWriteConfigured())
+/**
+ * 本次使用的模型。
+ *
+ * 选项来自设置页「AI 文本」勾选的常用模型清单。面板里只列具体模型、不提供
+ * 「默认」这种伪选项，所以这里的值始终是一个真实模型名：没在面板选过时
+ * 初始化为设置页的默认模型。
+ * 写作与排版各存一份（aiWriteModel / aiFormatModel），因为它们常挑不同的模型：
+ * 写作要发散、排版要稳定，共用一个的话每次切换都得回设置页改。
+ */
+const model = ref(getSetting<string>('aiWriteModel') || getSetting<string>('aiModel') || '')
+/** 可选模型清单；只有一项时不渲染下拉 */
+const modelOptions = ref(listTextModels())
+// 两条设置都空但清单里还有模型（例如只勾选、没指定默认）时，落到首项，
+// 保证下拉的值与发出的请求一致。
+if (!model.value && modelOptions.value.length > 0) model.value = modelOptions.value[0]
+
+function refreshModelOptions() {
+  modelOptions.value = listTextModels()
+  // 当前值失效（设置页换了默认模型、或把它从清单里删了）时落到设置页的默认模型，
+  // 而不是留空——空值配上没有空选项的 select，会显示清单首项却发另一条出去。
+  if (!modelOptions.value.includes(model.value)) {
+    const fallback = (getSetting<string>('aiModel') || '').trim()
+    model.value = modelOptions.value.includes(fallback) ? fallback : modelOptions.value[0] || ''
+  }
+}
+
+watch(model, (v) => setSetting('aiWriteModel', v, true))
+
+const configured = ref(isWriteConfigured(model.value))
 const configMissing = ref('')
 
 function refreshConfig() {
-  configured.value = isWriteConfigured()
-  const missing = missingWriteConfigFields()
+  // 传当前选中值而不是让它去读 aiWriteModel：watch 落盘是异步的，
+  // 刚在面板换完模型就点生成时，设置里可能还是上一条。
+  configured.value = isWriteConfigured(model.value)
+  const missing = missingWriteConfigFields(model.value)
   configMissing.value = missing.length > 0 ? missing.join('、') : ''
 }
 
 function onSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
   // 写作与排版共用接口地址 / Key / 模型名（「AI 文本」子页），任一项变了都要重新判定是否可用
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel') {
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel' || key === 'aiModels') {
     refreshConfig()
+    refreshModelOptions()
   }
 }
 
-// ── 参数（改动即持久化，下次沿用） ──
 const archetype = ref<WriteArchetype>(normalizeArchetype(getSetting<string>('aiWriteArchetype')))
 const length = ref<WriteLength>(normalizeLength(getSetting<string>('aiWriteLength')))
 /**
@@ -570,7 +601,7 @@ async function runTurn() {
       m.role === 'user' ? { role: 'user' as const, content: buildWriteUserMessage(m.content) } : m,
     )
     const { text, finishReason } = await runWrite(
-      resolveWriteConfig(),
+      resolveWriteConfig(model.value),
       [{ role: 'system', content: system }, ...history],
       {
         signal: controller.signal,
@@ -631,7 +662,7 @@ async function runSelfCheck(messageId: string, article: string) {
   try {
     const system = await buildSystem()
     const { text } = await runWrite(
-      resolveWriteConfig(),
+      resolveWriteConfig(model.value),
       [
         { role: 'system', content: system },
         { role: 'user', content: buildSelfCheckUserMessage(article) },
@@ -751,7 +782,7 @@ async function onRevise(msg: WriteMessage) {
   try {
     const system = await buildSystem()
     const { text, finishReason } = await runWrite(
-      resolveWriteConfig(),
+      resolveWriteConfig(model.value),
       [
         { role: 'system', content: system },
         { role: 'user', content: buildReviseUserMessage(msg.report, msg.article) },
@@ -808,6 +839,7 @@ watch(
     editorSnapshot = props.markdown.trim()
     errorMsg.value = ''
     refreshConfig()
+    refreshModelOptions()
     // 参数可能被设置页或其他窗口改过，重新读一遍（本面板的勾选要与设置保持一致）
     archetype.value = normalizeArchetype(getSetting<string>('aiWriteArchetype'))
     length.value = normalizeLength(getSetting<string>('aiWriteLength'))
@@ -1162,6 +1194,17 @@ function onSkillChanged(e: Event) {
       <div class="flex w-full flex-col gap-2">
         <!-- 参数行 -->
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          <!-- 模型：只在设置页勾了多个时才出现，只有一个模型时显示下拉没有意义 -->
+          <label v-if="modelOptions.length > 1" class="flex items-center gap-1.5">
+            <span class="shrink-0 text-[11px] text-[#999] dark:text-[#666]">模型</span>
+            <select
+              v-model="model"
+              class="cursor-pointer appearance-none rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] outline-none transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+              :disabled="generating"
+            >
+              <option v-for="m in modelOptions" :key="m" :value="m">{{ m }}</option>
+            </select>
+          </label>
           <label class="flex items-center gap-1.5">
             <span class="shrink-0 text-[11px] text-[#999] dark:text-[#666]">类型</span>
             <select

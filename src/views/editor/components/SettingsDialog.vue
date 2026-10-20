@@ -6,6 +6,7 @@ import pkg from '../../../../package.json'
 import { Check, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseCheckbox from '@/components/BaseCheckbox.vue'
+import ModelMultiSelect from '@/components/ModelMultiSelect.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
@@ -28,6 +29,7 @@ import { GitHubTreeService } from '@/services/GitHubTreeService'
 import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
 import {
   IMAGE_PROVIDERS,
+  IMAGE_RELAYS,
   getActiveProviderId,
   getImageProvider,
   getProviderConfig,
@@ -384,6 +386,37 @@ function saveAiModel(val: string) {
   resetAiTestState()
 }
 
+/**
+ * 文本常用模型清单（多选维护）。
+ *
+ * 升级迁移：装过旧版本的用户只有单个 `aiModel`、没有这份清单，
+ * 直接取空数组会让多选控件显示「还没有选中任何模型」，默认模型下拉也不渲染。
+ * 所以清单为空而 `aiModel` 有值时，用它兜底成一份只有一项的清单。
+ */
+function initAiModels(): string[] {
+  const listed = getSetting<string[]>('aiModels')
+  const out: string[] = []
+  for (const m of Array.isArray(listed) ? listed : []) {
+    if (typeof m === 'string' && m.trim() && !out.includes(m.trim())) out.push(m.trim())
+  }
+  // 当前模型一定在清单里，否则「默认模型」下拉会没有对应选项、显示成清单首项
+  const current = (getSetting<string>('aiModel') || '').trim()
+  if (current && !out.includes(current)) out.push(current)
+  return out
+}
+
+const aiModels = ref(initAiModels())
+
+function saveAiModels(val: string[]) {
+  aiModels.value = val
+  setSetting('aiModels', val)
+  // 清单被清空或删掉了当前模型时，把当前模型改成清单首项（没剩项则置空）
+  if (!val.includes(aiModel.value)) {
+    saveAiModel(val[0] || '')
+  }
+  resetAiTestState()
+}
+
 function saveAiTemperature(val: number) {
   aiTemperature.value = val
   setSetting('aiTemperature', val)
@@ -411,6 +444,19 @@ const imageConfig = ref<ImageGenProviderConfig>(getProviderConfig(imageProviderI
 const imageModelList = ref<string[]>([])
 const imageModelLoading = ref(false)
 const imageModelError = ref('')
+/**
+ * 当前模型名是否可能不被本厂商支持（只提示、不阻止保存）。
+ *
+ * 中转站的 /models 会返回几十个图像模型（nano-banana / seedream / flux …），
+ * 它们不吃本厂商的 size / quality / background 这套字段，选了生图才报错。
+ * 在这里提前说一句，比让用户生成失败后再回来猜要省事。
+ */
+const imageModelWarn = computed(() => {
+  const valid = imageDef.value.modelIdValid
+  if (!valid) return false
+  const model = imageConfig.value.model
+  return Boolean(model) && !valid.test(model)
+})
 /** 连接测试状态 */
 const imageTesting = ref(false)
 const imageTestResult = ref<'ok' | 'fail' | ''>('')
@@ -459,9 +505,58 @@ function saveImageModel(val: string) {
   resetImageTestState()
 }
 
+/**
+ * 保存图片常用模型清单。
+ *
+ * 当前使用的模型必须留在清单里：清单是配图面板下拉的数据源，
+ * 删掉当前项会让下拉没有可选项，所以这里顺手把当前模型纠到清单首项。
+ */
+function saveImageModels(val: string[]) {
+  patchImageConfig({
+    models: val,
+    model: val.includes(imageConfig.value.model) ? imageConfig.value.model : val[0] || '',
+  })
+  resetImageTestState()
+}
+
 function saveImageTimeout(val: number) {
   patchImageConfig({ timeoutSec: val })
 }
+
+/**
+ * 选中转站。
+ *
+ * 选中后生图改走「提交 → 轮询任务 → 取图」；选「不使用」则回到标准同步接口。
+ * 每个中转站的查询路径与结果结构不同，由厂商 def 的 relays 描述，这里只存 id。
+ */
+function saveImageRelay(val: string) {
+  const relay = IMAGE_RELAYS.find((r) => r.id === val)
+  if (relay?.baseUrl) {
+    // 选中转站时顺手把接口地址换成该站的（省得手抄）
+    patchImageConfig({ relay: val, baseUrl: relay.baseUrl })
+  } else {
+    /**
+     * 取消选择：地址如果还停在某家中转站的地址上，就退回厂商默认地址。
+     * 否则会留在「地址是中转站、却按同步接口解析」的状态，那边只回 task_id，
+     * 生成时只会得到「接口未返回图片」，看不出是哪里错了。
+     */
+    const current = imageConfig.value.baseUrl
+    const staleRelay = IMAGE_RELAYS.find((r) => r.baseUrl === current)
+    patchImageConfig({ relay: val, baseUrl: staleRelay ? imageDef.value.baseUrl : current })
+  }
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+/** 当前选中中转站的说明（未选时说清默认行为） */
+const imageRelayHint = computed(() => {
+  const relay = IMAGE_RELAYS.find((r) => r.id === imageConfig.value.relay)
+  if (!relay) {
+    return '不选＝直连官方，按标准 /images/generations 一次性返回；只有提交只回 task_id 的站才需要选。'
+  }
+  const addr = relay.baseUrl ? `接口地址已填为 ${relay.baseUrl}，` : ''
+  return `${addr}该站提交后只返回任务 id，生图时会自动轮询任务接口取图。`
+})
 
 /** 查询该厂商的可用图像模型（/models 后按模型名规则筛选） */
 async function handleFetchImageModels() {
@@ -1564,35 +1659,36 @@ async function manualCheckUpdate() {
               {{ modelListLoading ? '查询中…' : '获取模型列表' }}
             </button>
           </div>
-          <!-- 已获取列表：下拉选择；未获取：手填输入框 -->
-          <select
-            v-if="modelList.length > 0"
-            :value="aiModel"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-            :style="selectChevronStyle"
-            @change="saveAiModel(($event.target as HTMLSelectElement).value)"
-          >
-            <!-- 已保存的模型若不在列表里（手填或列表已变），保留为一个选项避免丢失 -->
-            <option v-if="aiModel && !modelList.includes(aiModel)" :value="aiModel">
-              {{ aiModel }}（当前值）
-            </option>
-            <option v-for="id in modelList" :key="id" :value="id">{{ id }}</option>
-          </select>
-          <input
-            v-else
-            :value="aiModel"
-            placeholder="deepseek-chat"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-            @input="saveAiModel(($event.target as HTMLInputElement).value)"
+          <!--
+            多选：勾一批常用模型，再在写作 / 排版面板里选这次用哪个。
+            手填入口常驻，因为中转站的 /models 经常漏项或返回一堆同名不同前缀的别名。
+          -->
+          <ModelMultiSelect
+            :models="aiModels"
+            :options="modelList"
+            placeholder="手填模型名后回车添加，如 deepseek-chat"
+            @update:models="saveAiModels"
           />
+          <!-- 清单里挑一个「默认」模型：面板没单独选过时就用它 -->
+          <div v-if="aiModels.length > 0" class="mt-2 flex items-center gap-1.5">
+            <label class="shrink-0 text-[11px] text-[#999] dark:text-[#666]">默认模型</label>
+            <select
+              :value="aiModel"
+              class="min-w-0 flex-1 rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="saveAiModel(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="id in aiModels" :key="id" :value="id">{{ id }}</option>
+            </select>
+          </div>
           <p v-if="modelListError" class="text-[10px] text-[#e74c3c] mt-1">
             {{ modelListError }}
           </p>
           <p v-else-if="modelList.length > 0" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-            已获取 {{ modelList.length }} 个模型，从下拉中选择。
+            已获取 {{ modelList.length }} 个模型，勾选常用的几个即可。
           </p>
           <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-            写作与排版共用这一个模型，换模型两边一起生效。
+            也可以直接手填模型名。写作与排版共用一个默认模型，各自面板还能临时换。
           </p>
         </div>
 
@@ -1816,6 +1912,28 @@ async function manualCheckUpdate() {
           </p>
         </div>
 
+        <!--
+          中转站紧跟在厂商下面：选了哪家站才决定下面「接口地址」填什么，
+          所以顺序是 厂商 → 中转站 → 接口地址。不声明 relays 的厂商（如 Agnes）整块不渲染。
+        -->
+        <div v-if="imageDef.relays?.length" class="mb-3">
+          <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">中转站</label>
+          <select
+            :value="imageConfig.relay"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveImageRelay(($event.target as HTMLSelectElement).value)"
+          >
+            <option value="">不使用（官方直连 / 标准同步接口）</option>
+            <option v-for="relay in imageDef.relays" :key="relay.id" :value="relay.id">
+              {{ relay.name }}
+            </option>
+          </select>
+          <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            {{ imageRelayHint }}
+          </p>
+        </div>
+
         <div class="mb-3">
           <div class="flex items-center justify-between mb-1.5">
             <label class="text-[12px] text-[#666] dark:text-[#999]">接口地址</label>
@@ -1863,28 +1981,27 @@ async function manualCheckUpdate() {
               {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
             </button>
           </div>
-          <select
-            v-if="imageModelList.length > 0"
-            :value="imageConfig.model"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-            :style="selectChevronStyle"
-            @change="saveImageModel(($event.target as HTMLSelectElement).value)"
-          >
-            <option
-              v-if="imageConfig.model && !imageModelList.includes(imageConfig.model)"
-              :value="imageConfig.model"
-            >
-              {{ imageConfig.model }}（当前值）
-            </option>
-            <option v-for="id in imageModelList" :key="id" :value="id">{{ id }}</option>
-          </select>
-          <input
-            v-else
-            :value="imageConfig.model"
-            :placeholder="imageDef.defaultModel"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-            @input="saveImageModel(($event.target as HTMLInputElement).value)"
+          <!--
+            多选：勾一批常用模型，再在 AI 配图面板里选这次用哪个。
+            手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
+          -->
+          <ModelMultiSelect
+            :models="imageConfig.models"
+            :options="imageModelList"
+            :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
+            @update:models="saveImageModels"
           />
+          <div v-if="imageConfig.models.length > 0" class="mt-2 flex items-center gap-1.5">
+            <label class="shrink-0 text-[11px] text-[#999] dark:text-[#666]">默认模型</label>
+            <select
+              :value="imageConfig.model"
+              class="min-w-0 flex-1 rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="saveImageModel(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="id in imageConfig.models" :key="id" :value="id">{{ id }}</option>
+            </select>
+          </div>
           <p v-if="imageModelError" class="text-[10px] text-[#e74c3c] mt-1">
             {{ imageModelError }}
           </p>
@@ -1892,10 +2009,18 @@ async function manualCheckUpdate() {
             v-else-if="imageModelList.length > 0"
             class="text-[10px] text-[#999] dark:text-[#666] mt-1"
           >
-            已获取 {{ imageModelList.length }} 个图像模型，从下拉中选择。
+            已获取 {{ imageModelList.length }} 个图像模型，勾选常用的几个即可。
           </p>
-          <p v-else class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+          <p v-else-if="imageDef.modelHint" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
             {{ imageDef.modelHint }}
+          </p>
+          <!--
+            模型名「可能不支持」的提醒：只提示、不拦保存。
+            /models 返回的图像模型里混着 nano-banana / seedream / flux 等，
+            它们不吃本厂商这套参数，生图时才报错——提前说一句省一次失败。
+          -->
+          <p v-if="imageModelWarn" class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-1">
+            {{ imageDef.modelIdWarn }}
           </p>
         </div>
 
@@ -1944,7 +2069,7 @@ async function manualCheckUpdate() {
           />
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
             官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
-            秒；复杂提示词与大尺寸 需要更久。
+            秒；复杂提示词与大尺寸 需要更久。走中转站时这段时间是「提交 + 轮询」的总时长。
           </p>
         </div>
 

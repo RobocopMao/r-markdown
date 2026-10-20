@@ -36,13 +36,14 @@ export const MIN_WRITE_MAX_TOKENS = 1024
 export const MAX_WRITE_MAX_TOKENS = 65536
 
 /**
- * 解析写作配置：以「AI 文本」共用配置（地址 / Key / 模型）为底，覆盖写作专用的两项。
+ * 解析写作配置：以「AI 文本」共用配置（地址 / Key / 模型）为底，覆盖写作专用的三项。
  *
- * 模型不再单独覆盖——写作与排版共用同一个模型名（设置里合并为「AI 文本」一个子页）。
- * 只有采样温度与最大输出因为任务性质不同而分开存。
+ * 模型：写作与排版共用同一套接口与常用模型清单，但各自记住用哪个
+ * （aiWriteModel / aiFormatModel），空串表示跟随设置页的 aiModel。
+ * 采样温度与最大输出因为任务性质不同而分开存。
  */
-export function resolveWriteConfig(): AiFormatConfig {
-  const base = resolveAiConfig()
+export function resolveWriteConfig(modelOverride?: string): AiFormatConfig {
+  const base = resolveAiConfig(modelOverride ?? (getSetting<string>('aiWriteModel') || ''))
   const temperature = Number(getSetting<number>('aiWriteTemperature'))
   const maxTokens = Number(getSetting<number>('aiWriteMaxTokens'))
   return {
@@ -52,14 +53,20 @@ export function resolveWriteConfig(): AiFormatConfig {
   }
 }
 
-/** 配置是否可用：写作与排版共用同一套接口与模型，判定与排版完全一致 */
-export function isWriteConfigured(): boolean {
-  return isAiConfigured()
+/**
+ * 配置是否可用：地址 / Key / 模型三项齐备。
+ *
+ * 不能直接复用 isAiConfigured()——那个读的是 aiModel，
+ * 而写作实际会用 aiWriteModel，面板单独选了模型时两者可能不同。
+ */
+export function isWriteConfigured(modelOverride?: string): boolean {
+  const c = resolveWriteConfig(modelOverride)
+  return Boolean(c.baseUrl && c.apiKey && c.model)
 }
 
 /** 未配置时列出缺项，供界面拼中文提示 */
-export function missingWriteConfigFields(): string[] {
-  const cfg = resolveWriteConfig()
+export function missingWriteConfigFields(modelOverride?: string): string[] {
+  const cfg = resolveWriteConfig(modelOverride)
   const missing: string[] = []
   if (!cfg.baseUrl) missing.push('接口地址')
   if (!cfg.apiKey) missing.push('API Key')
