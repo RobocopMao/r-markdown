@@ -9,6 +9,7 @@
  */
 
 import { normalizeBaseUrl, describeHttpError, isAbortError, withTimeout } from '@/services/apiBase'
+import type { ImageRelayDef, ImageRelayTaskState } from '@/services/imageProviders'
 
 export interface ImageGenConfig {
   /** 归一化后的接口基址，形如 https://apihub.agnes-ai.com/v1 */
@@ -16,18 +17,36 @@ export interface ImageGenConfig {
   apiKey: string
   model: string
   timeoutSec: number
+  /**
+   * 选中的中转站。有值时生图分两步：先提交拿 task_id，再轮询任务接口取图；
+   * 未选（undefined）则维持一次性同步返回，两种走法的响应体由 def 各自解析。
+   */
+  relay?: ImageRelayDef
 }
 
 export interface ImageGenRequest {
   prompt: string
-  /** 尺寸档位，如 1K */
+  /** 尺寸档位，如 1K（自定义像素模式下仅作展示，实际尺寸看 pixels） */
   size: string
-  /** 宽高比，如 16:9 */
+  /** 宽高比，如 16:9；自定义像素模式下为 'custom' */
   ratio: string
+  /** 已换算好的像素尺寸，形如 1024x1024 —— 官方 size 字段直接用这个 */
+  pixels: string
+  /** 图片质量档位（厂商不支持时传空串，由 def 决定发不发） */
+  quality: string
+  /** 背景档位（厂商不支持时传空串） */
+  background: string
+  /** 内容审核强度（厂商不支持时传空串） */
+  moderation: string
 }
 
 export interface ImageGenOptions {
   signal?: AbortSignal
+  /**
+   * 任务状态变化回调，只在走了中转站轮询时触发（同步接口一次就回图，没有中间态）。
+   * 面板用它把「排队中 / 生成中 45%」显示出来，不传则静默轮询。
+   */
+  onTaskState?: (state: ImageRelayTaskState) => void
 }
 
 export interface ImageGenResult {
@@ -39,12 +58,21 @@ export interface ImageGenResult {
   revisedPrompt: string
 }
 
-/** 组装请求体的回调，由厂商 def 提供 */
+/**
+ * 组装请求体的回调，由厂商 def 提供。
+ *
+ * ctx 是「面板选了什么」与「接口要什么」之间的全部信息，各厂商只挑自己认识的字段发，
+ * 不认识的就不要发（例如 Agnes 不发 quality，GPT-Image 不发 ratio）。
+ */
 export type BuildImageBody = (ctx: {
   model: string
   prompt: string
   size: string
   ratio: string
+  pixels: string
+  quality: string
+  background: string
+  moderation: string
 }) => Record<string, unknown>
 
 /** 解析响应的回调，由厂商 def 提供 */
@@ -65,9 +93,143 @@ function assertConfigured(cfg: ImageGenConfig): void {
 }
 
 /**
+ * 提交生图请求，返回原始 JSON。
+ *
+ * 同步接口在这一步就拿到图片；走中转站时这里只拿到 task_id。
+ */
+async function submitGeneration(
+  baseUrl: string,
+  cfg: ImageGenConfig,
+  req: ImageGenRequest,
+  buildBody: BuildImageBody,
+  signal: AbortSignal,
+): Promise<unknown> {
+  let res: Response
+  try {
+    res = await fetch(`${baseUrl}/images/generations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${cfg.apiKey}`,
+      },
+      body: JSON.stringify(
+        buildBody({
+          model: cfg.model,
+          prompt: req.prompt,
+          size: req.size,
+          ratio: req.ratio,
+          pixels: req.pixels,
+          quality: req.quality,
+          background: req.background,
+          moderation: req.moderation,
+        }),
+      ),
+      signal,
+    })
+  } catch (e: unknown) {
+    if (isAbortError(e)) throw e
+    // fetch 只在网络层失败时抛 TypeError
+    throw new TypeError('网络请求失败')
+  }
+
+  if (!res.ok) {
+    const bodyText = await res.text().catch(() => '')
+    throw new Error(describeHttpError(res.status, bodyText, '生成图片'))
+  }
+  return res.json().catch(() => null)
+}
+
+/** 可被中止的等待，用于轮询间隔 */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException('请求已中止', 'AbortError'))
+      return
+    }
+    // onAbort 用函数声明，好让它能引用后声明的 timer；声明提升，运行时无问题
+    function onAbort() {
+      clearTimeout(timer)
+      reject(new DOMException('请求已中止', 'AbortError'))
+    }
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort)
+      resolve()
+    }, ms)
+    signal.addEventListener('abort', onAbort, { once: true })
+  })
+}
+
+/**
+ * 轮询中转站的任务接口，直到出图、失败或整体超时。
+ *
+ * 超时由外层的 withTimeout 统一控制（提交与轮询共用同一个 deadline），
+ * 这里只需一直查，直到 signal 被中止。
+ */
+async function pollRelayTask(
+  baseUrl: string,
+  cfg: ImageGenConfig,
+  relay: ImageRelayDef,
+  taskId: string,
+  parseResponse: ParseImageResponse,
+  opts: ImageGenOptions,
+  signal: AbortSignal,
+): Promise<ImageGenResult> {
+  const interval = Math.max(1, relay.pollIntervalSec) * 1000
+  const taskUrl = `${baseUrl}${relay.taskPath.replace('{id}', encodeURIComponent(taskId))}`
+
+  for (;;) {
+    let res: Response
+    try {
+      res = await fetch(taskUrl, {
+        headers: { Authorization: `Bearer ${cfg.apiKey}` },
+        signal,
+      })
+    } catch (e: unknown) {
+      if (isAbortError(e)) throw e
+      throw new TypeError('网络请求失败')
+    }
+
+    if (!res.ok) {
+      const bodyText = await res.text().catch(() => '')
+      throw new Error(describeHttpError(res.status, bodyText, '查询任务状态'))
+    }
+
+    const json = await res.json().catch(() => null)
+    const state = relay.parseTask(json)
+    opts.onTaskState?.(state)
+
+    if (state.failed) {
+      throw new Error(state.message || '任务已失败，请稍后重试')
+    }
+    if (state.url || state.b64) {
+      return {
+        url: state.url || '',
+        b64: state.b64 || '',
+        revisedPrompt: state.revisedPrompt || '',
+      }
+    }
+    if (state.done) {
+      // 声明完成却没给图：再按同步响应结构试一次，免得白等
+      const parsed = parseResponse(json)
+      if (parsed.url || parsed.b64) {
+        return {
+          url: parsed.url || '',
+          b64: parsed.b64 || '',
+          revisedPrompt: parsed.revisedPrompt || '',
+        }
+      }
+      throw new Error('任务已完成但没有返回图片，请检查模型名与尺寸参数是否正确')
+    }
+
+    await sleep(interval, signal)
+  }
+}
+
+/**
  * 执行一次生图请求。
  *
  * 只负责把图片取回（URL 或 base64 二选一），不做下载、压缩、落盘 —— 那些属于调用方。
+ * 选了中转站时自动走「提交 → 轮询 → 取图」，调用方无需区分。
  */
 export async function generateImage(
   cfg: ImageGenConfig,
@@ -81,36 +243,23 @@ export async function generateImage(
   const baseUrl = normalizeBaseUrl(cfg.baseUrl)
   const { signal, cleanup } = withTimeout(cfg.timeoutSec, opts.signal)
   try {
-    let res: Response
-    try {
-      res = await fetch(`${baseUrl}/images/generations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${cfg.apiKey}`,
-        },
-        body: JSON.stringify(
-          buildBody({
-            model: cfg.model,
-            prompt: req.prompt,
-            size: req.size,
-            ratio: req.ratio,
-          }),
-        ),
-        signal,
-      })
-    } catch (e: unknown) {
-      if (isAbortError(e)) throw e
-      // fetch 只在网络层失败时抛 TypeError
-      throw new TypeError('网络请求失败')
+    const json = await submitGeneration(baseUrl, cfg, req, buildBody, signal)
+
+    // 中转站：提交只回 task_id，图要再查任务接口
+    if (cfg.relay) {
+      const taskId = cfg.relay.parseTaskId(json)
+      if (taskId) {
+        opts.onTaskState?.({
+          status: 'submitted',
+          done: false,
+          failed: false,
+          progress: 0,
+        })
+        return await pollRelayTask(baseUrl, cfg, cfg.relay, taskId, parseResponse, opts, signal)
+      }
+      // 没给 task_id，说明这一家用的是同步响应，按普通结构继续解析
     }
 
-    if (!res.ok) {
-      const bodyText = await res.text().catch(() => '')
-      throw new Error(describeHttpError(res.status, bodyText, '生成图片'))
-    }
-
-    const json = await res.json().catch(() => null)
     const parsed = parseResponse(json)
     if (!parsed.url && !parsed.b64) {
       throw new Error('接口未返回图片，请检查模型名与尺寸参数是否正确')
@@ -191,12 +340,21 @@ function decodeBase64Image(b64: string, type = 'image/png'): Blob {
 }
 
 /**
- * 拉取可用模型列表并筛选出图像模型。
+ * 拉取可用模型列表并筛选出「本厂商能用」的模型。
+ *
+ * 两道筛选：
+ * 1. `pattern`（def.modelIdPattern）：是不是图像模型——把文本模型挡在外面；
+ * 2. `strict`（def.modelIdValid，可选）：**是不是本厂商真能用的型号**。
+ *    中转站的 /models 会把几十个别家的图像模型一起列出来（nano-banana / seedream /
+ *    flux …），它们不吃本厂商这套参数，列进下拉只会让人选了再失败。
+ *    各家写法不一致（前缀、后缀、下划线分隔都有可能），宽松匹配由 def 的正则负责。
+ *
  * 接口不支持 /models 时抛可读错误，由设置页引导用户手填模型名。
  */
 export async function listImageModels(
   cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
   pattern: RegExp,
+  strict?: RegExp,
 ): Promise<string[]> {
   const baseUrl = normalizeBaseUrl(cfg.baseUrl)
   if (!baseUrl || !cfg.apiKey) {
@@ -232,13 +390,20 @@ export async function listImageModels(
     if (ids.length === 0) {
       throw new Error('该接口未返回模型列表，请手动填写模型名')
     }
-    const images = [...new Set(ids.filter((id) => pattern.test(id)))].sort((a, b) =>
+    const imageIds = [...new Set(ids.filter((id) => pattern.test(id)))].sort((a, b) =>
       a.localeCompare(b),
     )
-    if (images.length === 0) {
+    if (imageIds.length === 0) {
       throw new Error(`接口返回了 ${ids.length} 个模型，但没有匹配的图像模型，请手动填写模型名`)
     }
-    return images
+    if (!strict) return imageIds
+    const usable = imageIds.filter((id) => strict.test(id))
+    if (usable.length === 0) {
+      throw new Error(
+        `接口返回了 ${imageIds.length} 个图像模型，但没有本厂商支持的型号，请手动填写模型名`,
+      )
+    }
+    return usable
   } finally {
     cleanup()
   }
@@ -248,8 +413,9 @@ export async function listImageModels(
 export async function testImageConnection(
   cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
   pattern: RegExp,
+  strict?: RegExp,
 ): Promise<string[]> {
-  return listImageModels(cfg, pattern)
+  return listImageModels(cfg, pattern, strict)
 }
 
 /**
@@ -272,7 +438,7 @@ export async function optimizeImagePrompt(
     timeoutSec: number
   },
   promptText: string,
-  opts: { size: string; ratio: string; signal?: AbortSignal; onDelta?: (d: string) => void },
+  opts: { sizeText: string; signal?: AbortSignal; onDelta?: (d: string) => void },
 ): Promise<string> {
   // 动态导入：避免 AI 配图在未使用优化功能时也把排版模块打进同一 chunk
   const { formatArticle } = await import('@/services/aiFormat')
@@ -290,7 +456,8 @@ export async function optimizeImagePrompt(
 
   const user = [
     `原始描述：${promptText}`,
-    `本次出图参数：${opts.size} 档、${opts.ratio} 比例`,
+    // 自定义像素模式下没有档位，写「2K 档、16:9 比例」会让模型凭空编一个档位，所以只传成品描述
+    `本次出图参数：${opts.sizeText}`,
     '',
     '请输出扩写后的提示词：',
   ].join('\n')

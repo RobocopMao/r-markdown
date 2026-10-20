@@ -42,14 +42,18 @@ import {
 } from '@/services/imageGen'
 import {
   IMAGE_PROVIDERS,
+  CUSTOM_RATIO,
   getActiveProviderId,
   getImageProvider,
   getProviderConfig,
   setActiveProviderId,
   setProviderConfig,
-  describeOutputSize,
+  resolveOutputSize,
+  supportsCustomSize,
+  getImageRelay,
   isImageProviderConfigured,
   missingImageConfigFields,
+  type ImageGenProviderConfig,
 } from '@/services/imageProviders'
 import { getSetting, setSetting } from '@/config/settings'
 import { resolveAiConfig, isAiConfigured } from '@/services/aiFormat'
@@ -152,9 +156,18 @@ function onClearPrompt() {
 }
 
 /** 参数改动即持久化：下次打开面板沿用上次的选择 */
-function persistParams(patch: { size?: string; ratio?: string }) {
+type ParamsPatch = Partial<
+  Pick<
+    ImageGenProviderConfig,
+    'model' | 'size' | 'ratio' | 'width' | 'height' | 'quality' | 'background' | 'moderation'
+  >
+>
+
+function persistParams(patch: ParamsPatch) {
   setProviderConfig(providerId.value, patch)
-  cfg.value = { ...cfg.value, ...patch }
+  // 重新读一次而不是直接合并：width/height 在非自定义比例下会被收敛成 0，
+  // 直接合并会让界面留着上一次的旧宽高，和存储里的值对不上。
+  cfg.value = getProviderConfig(providerId.value)
 }
 
 function onProviderChange(id: string) {
@@ -162,9 +175,66 @@ function onProviderChange(id: string) {
   refreshConfig()
 }
 
-const outputSizeHint = computed(() =>
-  describeOutputSize(providerDef.value, cfg.value.size, cfg.value.ratio),
-)
+/** 当前选择对应的像素尺寸与展示文案（换算只发生在 resolveOutputSize 里） */
+const outputSize = computed(() => resolveOutputSize(providerDef.value, cfg.value))
+
+/** 该厂商是否支持自定义像素宽高 */
+const canCustomSize = computed(() => supportsCustomSize(providerDef.value))
+
+/** 比例下拉选项：预设比例 + （支持时）自定义 */
+const ratioOptions = computed(() => {
+  const base = providerDef.value.ratios.map((r) => ({ value: r, label: r }))
+  return canCustomSize.value ? [...base, { value: CUSTOM_RATIO, label: '自定义' }] : base
+})
+
+/** 比例选了「自定义」：此时不选分辨率档位，改填宽高 */
+const isCustomRatio = computed(() => cfg.value.ratio === CUSTOM_RATIO && canCustomSize.value)
+
+/**
+ * 宽高输入的合法区间与对齐粒度。
+ *
+ * 对齐到 step（官方表里所有边长都是 16 的倍数）而不是随便接受任意整数：
+ * 不对齐的话自定义模式发出的像素和预设模式是两种口径，部分中转站会直接 422。
+ */
+const customSize = computed(() => providerDef.value.customSize)
+const dimMin = computed(() => customSize.value?.min ?? 256)
+const dimMax = computed(() => customSize.value?.max ?? 4096)
+const dimStep = computed(() => customSize.value?.step ?? 16)
+
+/**
+ * 宽高输入回写。
+ *
+ * change 而不是 input：用户敲 "1920" 的过程中会依次出现 1 / 19 / 192，
+ * 每次 input 都存盘并夹到 step 上，光标位置和输入内容都会被打乱。
+ */
+function onDimensionChange(edge: 'width' | 'height', e: Event) {
+  const el = e.target as HTMLInputElement
+  persistParams({ [edge]: Number(el.value) || 0 })
+  // 值被 clip 到区间或对齐后可能与输入不同，回显一次让用户看到最终的数值
+  el.value = String(edge === 'width' ? cfg.value.width : cfg.value.height)
+}
+
+/**
+ * 参数行控件的公共 class。
+ *
+ * 抽出来是因为这一行现在有 5–7 个控件（厂商 / 比例 / 分辨率 / 宽高 / 质量 / 背景 / 审核），
+ * 每个都内联一长串 class 会让模板没法读；样式本身与原来完全一致。
+ */
+const paramLabelClass = 'text-[12px] text-[#666] dark:text-[#999]'
+/** 输入框与下拉共用的外框；下拉再叠箭头相关的那几个类 */
+const paramFieldClass =
+  'rounded-lg border border-[#e5e5e5] bg-white px-2 py-1 text-[11px] text-[#1a1a1a] outline-none dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]'
+/**
+ * 下拉框：抹掉系统原生箭头自己画一枚。
+ * 原生箭头在 macOS 上又大又贴右边框，和设置页里的下拉长得不一样；
+ * 这里用同一枚 SVG 图标，只是面板控件更紧凑，贴边距与右内边距都比设置页小一号。
+ */
+const paramSelectClass = `${paramFieldClass} cursor-pointer appearance-none bg-no-repeat bg-[right_5px_center] pr-5`
+const paramChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+}
+/** 宽高输入框：定宽，否则 type=number 会撑满整行（不带下拉箭头那套 padding） */
+const paramDimensionClass = `${paramFieldClass} w-[64px]`
 
 /**
  * 输入框占位文案：把「推荐结构 + 示例」直接写进 placeholder，
@@ -176,6 +246,8 @@ const promptPlaceholder =
 // ── 生成 ──
 const generating = ref(false)
 const elapsedSec = ref(0)
+/** 走中转站时的任务状态文案（如「生成中 45%」）；同步接口下始终为空 */
+const taskStatus = ref('')
 const errorMsg = ref('')
 const current = ref<GeneratedImage | null>(null)
 /** 本次生成的图片；内存 + 本地 IndexedDB（按保留时长自动作废） */
@@ -376,9 +448,15 @@ async function onGenerate() {
     errorMsg.value = '请先填写提示词'
     return
   }
+  // 比例与分辨率在表里没有对应格子（或自定义宽高异常）时，先拦住，别发一个 size 为空的请求
+  if (!outputSize.value.pixels) {
+    errorMsg.value = '当前比例与分辨率没有对应的尺寸，请换一组参数'
+    return
+  }
 
   generating.value = true
   elapsedSec.value = 0
+  taskStatus.value = ''
   // 发起请求即续期：保留时长按「最后一次请求」算，倒计时回满
   resultExpiresAt.value = expiresAtFrom(Date.now(), currentHours())
   syncText(resultExpiresAt.value)
@@ -396,11 +474,28 @@ async function onGenerate() {
         apiKey: cfg.value.apiKey,
         model: cfg.value.model,
         timeoutSec: cfg.value.timeoutSec,
+        // 选过中转站才走「提交 → 轮询」，否则是同步接口
+        relay: getImageRelay(cfg.value.relay),
       },
-      { prompt: text, size: cfg.value.size, ratio: cfg.value.ratio },
+      {
+        prompt: text,
+        size: cfg.value.size,
+        ratio: cfg.value.ratio,
+        // 像素尺寸由 resolveOutputSize 统一换算，buildBody 直接透传
+        pixels: outputSize.value.pixels,
+        quality: cfg.value.quality,
+        background: cfg.value.background,
+        moderation: cfg.value.moderation,
+      },
       providerDef.value.buildBody,
       providerDef.value.parseResponse,
-      { signal: controller.signal },
+      {
+        signal: controller.signal,
+        onTaskState(state) {
+          const label = relayStatusLabel(state.status)
+          taskStatus.value = state.progress > 0 ? `${label} ${Math.round(state.progress)}%` : label
+        },
+      },
     )
 
     const blob = await toImageBlob(result, Math.min(cfg.value.timeoutSec, 120), controller.signal)
@@ -414,8 +509,15 @@ async function onGenerate() {
   } finally {
     generating.value = false
     controller = null
+    taskStatus.value = ''
     stopTimer()
   }
+}
+
+/** 任务状态的展示文案：认识的状态翻成中文，不认识的直接显示原文 */
+function relayStatusLabel(status: string): string {
+  const relay = getImageRelay(cfg.value.relay)
+  return relay?.statusText?.[status] || status || '处理中'
 }
 
 function buildImage(blob: Blob, result: ImageGenResult, usedPrompt: string): GeneratedImage {
@@ -427,9 +529,7 @@ function buildImage(blob: Blob, result: ImageGenResult, usedPrompt: string): Gen
     id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
     previewUrl: URL.createObjectURL(blob),
     file,
-    sizeLabel: outputSizeHint.value
-      ? `${outputSizeHint.value} · ${cfg.value.size}`
-      : cfg.value.size,
+    sizeLabel: outputSize.value.label || cfg.value.size,
     sizeText: formatBytes(blob.size),
     revisedPrompt: result.revisedPrompt,
     prompt: usedPrompt,
@@ -561,7 +661,11 @@ function refreshAiReady() {
 }
 function onAiSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel') refreshAiReady()
+  // 监听 aiModels 而不只是旧字段 aiModel：模型清单才是现在的配置来源，
+  // 清单从空到有（或反过来）会直接翻转「有没有可用的文本模型」。
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
+    refreshAiReady()
+  }
 }
 
 /** 优化中：流式累计的文本（用于实时回显） */
@@ -588,8 +692,9 @@ async function onOptimizePrompt() {
   optimizeController = new AbortController()
   try {
     const result = await optimizeImagePrompt(resolveAiConfig(), text, {
-      size: cfg.value.size,
-      ratio: cfg.value.ratio,
+      // 传成品描述（"2K · 2048x1152" 或 "1080×1440 · 3:4"）：自定义模式下没有档位，
+      // 拼成「1K 档」会让模型根据不存在的档位编构图
+      sizeText: outputSize.value.label,
       signal: optimizeController.signal,
       onDelta: (d) => {
         optimizedPreview.value += d
@@ -691,10 +796,11 @@ onBeforeUnmount(() => {
         >
           <div class="flex flex-wrap items-center gap-3">
             <div v-if="IMAGE_PROVIDERS.length > 1" class="flex items-center gap-1.5">
-              <span class="text-[12px] text-[#666] dark:text-[#999]">厂商</span>
+              <span :class="paramLabelClass">厂商</span>
               <select
                 :value="providerId"
-                class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-2 py-1 text-[11px] text-[#1a1a1a] outline-none dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
                 :disabled="generating"
                 @change="onProviderChange(($event.target as HTMLSelectElement).value)"
               >
@@ -702,11 +808,49 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
+            <!--
+              模型：选项来自设置页勾选的常用模型清单（每家厂商一份）。
+              只有一项时不渲染——单个选项的下拉没有可选的余地，白占一格挤别的控件；
+              判断与写作 / 排版面板保持一致。
+            -->
+            <div v-if="cfg.models.length > 1" class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">模型</span>
+              <select
+                :value="cfg.model"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
+                :disabled="generating"
+                @change="persistParams({ model: ($event.target as HTMLSelectElement).value })"
+              >
+                <option v-for="m in cfg.models" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </div>
+
             <div class="flex items-center gap-1.5">
-              <span class="text-[12px] text-[#666] dark:text-[#999]">尺寸</span>
+              <span :class="paramLabelClass">比例</span>
+              <select
+                :value="cfg.ratio"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
+                :disabled="generating"
+                @change="persistParams({ ratio: ($event.target as HTMLSelectElement).value })"
+              >
+                <option v-for="r in ratioOptions" :key="r.value" :value="r.value">
+                  {{ r.label }}
+                </option>
+              </select>
+            </div>
+
+            <!--
+              分辨率档位只在预设比例下出现：自定义模式已经由宽高定死了像素，
+              再选一个档位既是多余的，也会让人以为档位会参与换算。
+            -->
+            <div v-if="!isCustomRatio" class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">分辨率</span>
               <select
                 :value="cfg.size"
-                class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-2 py-1 text-[11px] text-[#1a1a1a] outline-none dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
                 :disabled="generating"
                 @change="persistParams({ size: ($event.target as HTMLSelectElement).value })"
               >
@@ -714,28 +858,89 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
-            <div class="flex items-center gap-1.5">
-              <span class="text-[12px] text-[#666] dark:text-[#999]">比例</span>
-              <select
-                :value="cfg.ratio"
-                class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-2 py-1 text-[11px] text-[#1a1a1a] outline-none dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            <div v-else class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">宽高</span>
+              <input
+                type="number"
+                inputmode="numeric"
+                :value="cfg.width"
+                :min="dimMin"
+                :max="dimMax"
+                :step="dimStep"
                 :disabled="generating"
-                @change="persistParams({ ratio: ($event.target as HTMLSelectElement).value })"
+                :class="paramDimensionClass"
+                aria-label="宽度（像素）"
+                @change="onDimensionChange('width', $event)"
+              />
+              <span class="text-[11px] text-[#999] dark:text-[#666]">×</span>
+              <input
+                type="number"
+                inputmode="numeric"
+                :value="cfg.height"
+                :min="dimMin"
+                :max="dimMax"
+                :step="dimStep"
+                :disabled="generating"
+                :class="paramDimensionClass"
+                aria-label="高度（像素）"
+                @change="onDimensionChange('height', $event)"
+              />
+            </div>
+
+            <div v-if="providerDef.qualities?.length" class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">质量</span>
+              <select
+                :value="cfg.quality"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
+                :disabled="generating"
+                @change="persistParams({ quality: ($event.target as HTMLSelectElement).value })"
               >
-                <option v-for="r in providerDef.ratios" :key="r" :value="r">{{ r }}</option>
+                <option v-for="q in providerDef.qualities" :key="q.value" :value="q.value">
+                  {{ q.label }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="providerDef.backgrounds?.length" class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">背景</span>
+              <select
+                :value="cfg.background"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
+                :disabled="generating"
+                @change="persistParams({ background: ($event.target as HTMLSelectElement).value })"
+              >
+                <option v-for="b in providerDef.backgrounds" :key="b.value" :value="b.value">
+                  {{ b.label }}
+                </option>
+              </select>
+            </div>
+
+            <div v-if="providerDef.moderations?.length" class="flex items-center gap-1.5">
+              <span :class="paramLabelClass">审核</span>
+              <select
+                :value="cfg.moderation"
+                :class="paramSelectClass"
+                :style="paramChevronStyle"
+                :disabled="generating"
+                @change="persistParams({ moderation: ($event.target as HTMLSelectElement).value })"
+              >
+                <option v-for="m in providerDef.moderations" :key="m.value" :value="m.value">
+                  {{ m.label }}
+                </option>
               </select>
             </div>
 
             <!--
-              输出尺寸提示跟在「尺寸 / 比例」后面同一行。
+              输出提示跟在参数后面同一行。
               原来移动端加了 w-full 把它整条换到下一行，白白多占一行高度；
               实测 390/360 宽都放得下（行内剩余 126px，最长的「输出 4K · 4096x4096」约 112px），
               所以只在 320px 这种极窄屏会自然折行，不再强制。
               whitespace-nowrap 保证「4K · 4096x4096」不被从中间劈开。
             -->
             <span class="whitespace-nowrap text-[11px] text-[#999] dark:text-[#666]">
-              输出 {{ cfg.size }}
-              <template v-if="outputSizeHint"> · {{ outputSizeHint }}</template>
+              {{ outputSize.label ? `输出 ${outputSize.label}` : '该组合无对应尺寸' }}
             </span>
           </div>
 
@@ -851,10 +1056,16 @@ onBeforeUnmount(() => {
         >
           <Loader2 :size="24" class="animate-spin text-[var(--accent)]" />
           <p class="text-[12px] text-[#666] dark:text-[#999]">
-            正在生成图片… {{ elapsedSec }}s / 最长 {{ cfg.timeoutSec }}s
+            <template v-if="taskStatus">{{ taskStatus }} · </template>
+            {{ taskStatus ? '已用' : '正在生成图片…' }} {{ elapsedSec }}s / 最长
+            {{ cfg.timeoutSec }}s
           </p>
           <p class="text-[11px] text-[#999] dark:text-[#666]">
-            大尺寸或复杂提示词可能需要几十秒，可随时点「停止」。
+            {{
+              taskStatus
+                ? '中转站按任务异步出图，会自动轮询到出结果。'
+                : '大尺寸或复杂提示词可能需要几十秒，'
+            }}可随时点「停止」。
           </p>
         </div>
 

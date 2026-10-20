@@ -38,7 +38,7 @@ import {
   type AiStylePreset,
   type ExtraPreset,
 } from '@/utils/aiFormatPrompt'
-import { formatArticle, resolveAiConfig } from '@/services/aiFormat'
+import { formatArticle, listTextModels, resolveAiConfig } from '@/services/aiFormat'
 import { diffLines, toHunks, type DiffHunk } from '@/utils/textDiff'
 import { pickDocumentFile } from '../composables/useImport'
 import { useSessionCountdown } from '@/composables/useSessionCountdown'
@@ -255,23 +255,50 @@ const resultExpired = computed(
  */
 const aiBaseUrl = ref(getSetting<string>('aiBaseUrl') || '')
 const aiApiKey = ref(getSetting<string>('aiApiKey') || '')
-const aiModel = ref(getSetting<string>('aiModel') || '')
+
+/**
+ * 本次排版使用的模型。
+ *
+ * 面板里只列具体模型、没有「默认」这种伪选项，所以值始终是真实模型名。
+ * 没有单独的「默认模型」设置：**清单首项即默认**，没在面板选过时就用它。
+ * 与写作分开存：排版要的是结构稳定、少改写，常和写作挑不同的模型。
+ */
+const formatModel = ref(getSetting<string>('aiFormatModel') || '')
+/** 可选模型清单，来自设置页「AI 文本」的多选；只有一项时不渲染下拉 */
+const modelOptions = ref(listTextModels())
+// 没记录过（或记录的不在清单里）时落到首项，
+// 保证下拉显示的值就是请求里真正发出去的那个。
+if (!modelOptions.value.includes(formatModel.value)) {
+  formatModel.value = modelOptions.value[0] || ''
+}
+
+watch(formatModel, (v) => setSetting('aiFormatModel', v, true))
 
 function refreshAiConfig() {
   aiBaseUrl.value = getSetting<string>('aiBaseUrl') || ''
   aiApiKey.value = getSetting<string>('aiApiKey') || ''
-  aiModel.value = getSetting<string>('aiModel') || ''
+  modelOptions.value = listTextModels()
+  // 当前值失效（设置页把它从清单里删了、或整份清单换了）时落到首项，
+  // 而不是留空——空值配上没有空选项的 select，会显示清单首项却发另一条出去。
+  if (!modelOptions.value.includes(formatModel.value)) {
+    formatModel.value = modelOptions.value[0] || ''
+  }
 }
 
 function onAiSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModel') refreshAiConfig()
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
+    refreshAiConfig()
+  }
 }
 
 onMounted(() => window.addEventListener('setting-changed', onAiSettingChanged))
 onBeforeUnmount(() => window.removeEventListener('setting-changed', onAiSettingChanged))
 
-const configured = computed(() => Boolean(aiBaseUrl.value && aiApiKey.value && aiModel.value))
+// 判定要用「实际会发的模型」：与 refreshAiConfig 同一口径，都取面板当前值
+const configured = computed(() =>
+  Boolean(aiBaseUrl.value && aiApiKey.value && (formatModel.value || modelOptions.value[0])),
+)
 
 const sourceText = computed(() => {
   if (sourceTab.value === 'current') return props.markdown
@@ -379,7 +406,7 @@ async function onGenerate() {
   syncText(resultExpiresAt.value)
   startTicker(() => resultExpiresAt.value)
 
-  const cfg = resolveAiConfig()
+  const cfg = resolveAiConfig(formatModel.value)
   if (!cfg.baseUrl || !cfg.apiKey || !cfg.model) {
     errorMsg.value =
       '尚未配置 AI 文本：请先在「设置 → AI 设置 → AI 文本」填写接口地址、API Key 与模型名'
@@ -794,6 +821,17 @@ onBeforeUnmount(() => {
           class="shrink-0 rounded-xl border border-[#f0f0f0] bg-white p-2.5 dark:border-[#333] dark:bg-[#1e1e1e]"
         >
           <div class="flex flex-wrap items-center gap-3">
+            <!-- 模型：只在设置页勾了多个时才出现；只有一项时显得多余 -->
+            <div v-if="modelOptions.length > 1" class="flex items-center gap-1.5">
+              <span class="text-[12px] text-[#666] dark:text-[#999]">模型</span>
+              <select
+                v-model="formatModel"
+                class="cursor-pointer appearance-none rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] outline-none transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                :disabled="generating"
+              >
+                <option v-for="m in modelOptions" :key="m" :value="m">{{ m }}</option>
+              </select>
+            </div>
             <div class="flex items-center gap-1.5">
               <span class="text-[12px] text-[#666] dark:text-[#999]">力度</span>
               <div class="flex gap-1">

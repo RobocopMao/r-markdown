@@ -106,6 +106,24 @@ async function compressImage(file: File, maxSizeKB: number, maxQuality: number):
   ctx.drawImage(img, 0, 0, width, height)
 
   const maxBytes = maxSizeKB * 1024
+
+  /**
+   * PNG 输入走 PNG 编码，只缩放、不转 JPEG。
+   *
+   * 为什么要分这一支：AI 配图的「背景透明」产出的是带 alpha 的 PNG，
+   * 而 JPEG 没有 alpha 通道，转过去透明区域会被填成黑/白，用户拿到的「透明背景」等于没生效。
+   * PNG 不能调质量，所以只有「缩放 + 兜底转 JPEG」两种手段；能塞进上限就保持 PNG。
+   *
+   * 代价：照片类图片转 PNG 后体积通常比 JPEG 大不少，所以只在 PNG 超上限时才退回 JPEG
+   * （那时至少保住了体积限制，透明通道放弃——用户选了「质量优先」就是这个取舍）。
+   */
+  if (file.type === 'image/png') {
+    const png = await encodeCanvas(canvas, 'image/png', 1)
+    if (png && png.size <= maxBytes) {
+      return new File([png], file.name, { type: 'image/png' })
+    }
+  }
+
   let low = 0.1
   let high = maxQuality
   let best: Blob | null = null
@@ -131,6 +149,17 @@ async function compressImage(file: File, maxSizeKB: number, maxQuality: number):
 
   const newName = file.name.replace(/\.[^.]+$/, '.jpg')
   return new File([best], newName, { type: 'image/jpeg' })
+}
+
+/** Canvas 编码的 Promise 包装（toBlob 失败时返回 null，由调用方决定兜底） */
+function encodeCanvas(
+  canvas: HTMLCanvasElement,
+  type: string,
+  quality: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    canvas.toBlob((b) => resolve(b), type, quality)
+  })
 }
 
 interface EditorExposed {

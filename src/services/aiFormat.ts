@@ -40,16 +40,51 @@ export interface FormatResult {
   finishReason: string
 }
 
-export function resolveAiConfig(): AiFormatConfig {
+/**
+ * 读取文本模型配置。
+ *
+ * 没有「默认模型」这一层：设置页只维护一份常用清单，清单首项即默认
+ * （用户明确不要一个单独的默认模型下拉，见 DEVELOPMENT.md 第 30 条）。
+ *
+ * @param modelOverride 面板上临时选中的模型。写作与排版各有自己的「当前模型」
+ *   （aiWriteModel / aiFormatModel），没选时为空串，退回清单首项。
+ *   做成参数而不是各自读设置，是为了让调用点显式表达「我要用哪个模型」，
+ *   也避免把三个面板的选择逻辑散落在服务层。
+ */
+export function resolveAiConfig(modelOverride?: string): AiFormatConfig {
   return {
     baseUrl: normalizeBaseUrl(getSetting<string>('aiBaseUrl') || ''),
     apiKey: getSetting<string>('aiApiKey') || '',
-    model: (getSetting<string>('aiModel') || '').trim(),
+    model: (modelOverride || '').trim() || listTextModels()[0] || '',
     temperature: getSetting<number>('aiTemperature') ?? 0.3,
     maxTokens: getSetting<number>('aiMaxTokens') ?? 8192,
     stream: getSetting<boolean>('aiStream') ?? true,
     timeoutSec: getSetting<number>('aiTimeoutSec') ?? 180,
   }
+}
+
+/**
+ * 文本常用模型清单（设置页多选维护）。
+ *
+ * 清单首项就是默认模型——没有单独的「默认模型」设置项。
+ * 升级迁移：装过旧版本的用户只有单个 `aiModel`、没有这份清单，
+ * 直接返回空数组会让人「明明填过模型却说没配置」，所以清单为空时用它兜底。
+ */
+export function listTextModels(): string[] {
+  const listed = getSetting<string[]>('aiModels')
+  const seen = new Set<string>()
+  const out: string[] = []
+  for (const m of Array.isArray(listed) ? listed : []) {
+    const name = typeof m === 'string' ? m.trim() : ''
+    if (!name || seen.has(name)) continue
+    seen.add(name)
+    out.push(name)
+  }
+  if (out.length === 0) {
+    const legacy = (getSetting<string>('aiModel') || '').trim()
+    if (legacy) out.push(legacy)
+  }
+  return out
 }
 
 /** 配置是否完整（三项均必填） */
