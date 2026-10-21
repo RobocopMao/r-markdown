@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
-import { ListChecks, CheckCheck, Pin, PinOff, Folder } from 'lucide-vue-next'
+import { ListChecks, CheckCheck, Pin, PinOff, Folder, Eye } from 'lucide-vue-next'
 import { invoke } from '@tauri-apps/api/core'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import ImagePreview from '@/components/ImagePreview.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { LocalImageDisk, type DiskImageEntry } from '@/services/localImageDisk'
 import { getImagesDir } from '@/services/localArticlePath'
@@ -39,6 +40,9 @@ const diskLoading = ref(false)
 const diskImages = ref<DiskImageItem[]>([])
 const diskSelected = ref<string | null>(null)
 
+// ── 大图预览（浮层本身是公共组件 @/components/ImagePreview.vue，面板只负责喂图）──
+const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
+
 // 顶部切换按钮：主题色滑块（参考 XhsExporter 比例切换）
 const btnLocal = ref<HTMLButtonElement | null>(null)
 const btnDisk = ref<HTMLButtonElement | null>(null)
@@ -59,10 +63,16 @@ function updateTabSlider() {
 
 watch(activeTab, () => nextTick(updateTabSlider))
 
+/** 按保存日期降序（新的在前）；createdAt 缺失的沉到该组末尾 */
+function byCreatedAtDesc(a: { createdAt: number }, b: { createdAt: number }): number {
+  return (b.createdAt || 0) - (a.createdAt || 0)
+}
+
+// 置顶的仍然排在最前，置顶组内与其余图片都按日期降序
 const sortedImages = computed(() => {
   const pinned = images.value.filter((img) => pinnedTokens.value.has(img.token))
   const unpinned = images.value.filter((img) => !pinnedTokens.value.has(img.token))
-  return [...pinned, ...unpinned]
+  return [...pinned.sort(byCreatedAtDesc), ...unpinned.sort(byCreatedAtDesc)]
 })
 
 const allSelected = computed(
@@ -128,6 +138,18 @@ function loadPinnedTokens() {
   pinnedTokens.value = new Set(saved)
 }
 
+/** 按 token 切换置顶（卡片右上角的置顶按钮用，不影响当前选中项） */
+function toggleCardPin(token: string) {
+  const next = new Set(pinnedTokens.value)
+  if (next.has(token)) {
+    next.delete(token)
+  } else {
+    next.add(token)
+  }
+  pinnedTokens.value = next
+  setSetting('pinnedImageTokens', [...next])
+}
+
 function togglePin() {
   if (!gallerySelected.value) return
   const next = new Set(pinnedTokens.value)
@@ -151,6 +173,21 @@ function formatDate(ts: number): string {
   if (!ts) return ''
   const d = new Date(ts)
   return `${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
+/** 大图下方的说明：本地图片显示「大小 · 日期」 */
+function localPreviewCaption(img: { size: number; createdAt: number }): string {
+  return [formatSize(img.size), formatDate(img.createdAt)].filter(Boolean).join(' · ')
+}
+
+/** 大图下方的说明：磁盘图片显示「文件名 · 大小」 */
+function diskPreviewCaption(img: DiskImageItem): string {
+  return [img.name, formatSize(img.size)].filter(Boolean).join(' · ')
+}
+
+/** 打开大图：浮层与尺寸回填都在 ImagePreview 内部，这里只传地址和说明 */
+function openPreview(src: string | undefined, caption: string) {
+  imagePreviewRef.value?.open(src, caption)
 }
 
 async function loadImages() {
@@ -213,11 +250,14 @@ async function doCleanup(tokens: string[]) {
 watch(
   () => props.visible,
   (val) => {
+    // 抽屉关掉时顺手收起大图，避免浮层比抽屉活得久
+    if (!val) imagePreviewRef.value?.close()
     if (val) {
       selectedTokens.value.clear()
       multiSelect.value = false
       gallerySelected.value = null
       diskSelected.value = null
+      imagePreviewRef.value?.close()
       activeTab.value = 'local'
       loadPinnedTokens()
       loadImages()
@@ -329,7 +369,7 @@ defineExpose({ doCleanup })
         <div
           v-for="img in sortedImages"
           :key="img.token"
-          class="relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
+          class="group relative aspect-square overflow-hidden rounded-lg border-2 bg-white transition-colors dark:bg-[#2a2a2a]"
           :class="
             isGallery
               ? gallerySelected === img.token
@@ -344,17 +384,38 @@ defineExpose({ doCleanup })
           @click="isGallery ? toggleGallery(img.token) : multiSelect && toggleSelect(img.token)"
         >
           <img :src="img.dataUrl" class="block h-full w-full object-cover" />
-          <!-- Pin badge -->
-          <div
-            v-if="pinnedTokens.has(img.token)"
-            class="absolute right-1.5 top-1.5 flex items-center gap-0.5 rounded bg-black/55 px-1 py-[2px] text-[10px] text-white"
-          >
-            <Pin :size="10" />
+          <!-- 右上角：查看大图 → 置顶（两个按钮同款，深浅一致；悬停才变主题色，已置顶的置顶按钮常驻） -->
+          <div class="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+            <BaseTooltip class="card-action-hint" text="查看大图" placement="top">
+              <button
+                class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[var(--accent)]"
+                @click.stop="openPreview(img.dataUrl, localPreviewCaption(img))"
+              >
+                <Eye :size="12" />
+              </button>
+            </BaseTooltip>
+            <!-- 置顶永远在最右：默认深底，hover 才显主题色（已置顶同理），状态靠图标区分 -->
+            <BaseTooltip
+              class="card-action-hint"
+              :class="{ 'card-action-hint--on': pinnedTokens.has(img.token) }"
+              :text="pinnedTokens.has(img.token) ? '取消置顶' : '置顶'"
+              placement="top"
+            >
+              <button
+                class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[var(--accent)]"
+                @click.stop="toggleCardPin(img.token)"
+              >
+                <PinOff v-if="pinnedTokens.has(img.token)" :size="12" />
+                <Pin v-else :size="12" />
+              </button>
+            </BaseTooltip>
           </div>
           <!-- Selected checkmark -->
           <div
             v-if="
-              isGallery ? gallerySelected === img.token : multiSelect && selectedTokens.has(img.token)
+              isGallery
+                ? gallerySelected === img.token
+                : multiSelect && selectedTokens.has(img.token)
             "
             class="absolute left-1.5 top-1.5 flex h-[22px] w-[22px] items-center justify-center rounded border-2 bg-white/90 dark:bg-[#2a2a2a]/90"
             :class="
@@ -414,13 +475,14 @@ defineExpose({ doCleanup })
           "
           @click="toggleDisk(img.relPath)"
         >
-          <img
-            v-if="img.dataUrl"
-            :src="img.dataUrl"
-            class="block h-full w-full object-cover"
-          />
-          <div v-else class="flex h-full w-full items-center justify-center bg-[#f0f0f0] dark:bg-[#222]">
-            <div class="size-4 animate-spin rounded-full border-2 border-[#ccc] border-t-transparent" />
+          <img v-if="img.dataUrl" :src="img.dataUrl" class="block h-full w-full object-cover" />
+          <div
+            v-else
+            class="flex h-full w-full items-center justify-center bg-[#f0f0f0] dark:bg-[#222]"
+          >
+            <div
+              class="size-4 animate-spin rounded-full border-2 border-[#ccc] border-t-transparent"
+            />
           </div>
           <!-- Selected checkmark -->
           <div
@@ -429,20 +491,35 @@ defineExpose({ doCleanup })
           >
             <span class="text-[13px] font-bold text-white">✓</span>
           </div>
-          <!-- Reveal in folder (hover) -->
-          <BaseTooltip
-            v-if="isTauri"
-            text="在文件管理器中显示"
-            placement="top"
-            class="absolute right-1.5 top-1.5 z-10"
-          >
-            <button
-              class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white opacity-0 transition-opacity hover:bg-[var(--accent)] group-hover:opacity-100"
-              @click.stop="revealDiskImage(img)"
+          <!-- 右上角：文件管理器定位 + 预览（悬停出现） -->
+          <div class="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+            <BaseTooltip
+              v-if="isTauri"
+              class="card-action-hint"
+              text="在文件管理器中显示"
+              placement="top"
             >
-              <Folder :size="12" />
-            </button>
-          </BaseTooltip>
+              <button
+                class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[var(--accent)]"
+                @click.stop="revealDiskImage(img)"
+              >
+                <Folder :size="12" />
+              </button>
+            </BaseTooltip>
+            <BaseTooltip
+              v-if="img.dataUrl"
+              class="card-action-hint"
+              text="查看大图"
+              placement="top"
+            >
+              <button
+                class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[var(--accent)]"
+                @click.stop="openPreview(img.dataUrl, diskPreviewCaption(img))"
+              >
+                <Eye :size="12" />
+              </button>
+            </BaseTooltip>
+          </div>
           <!-- Size label -->
           <div
             class="absolute bottom-1.5 left-1.5 rounded bg-black/50 px-1 py-px text-[10px] text-white/80"
@@ -477,4 +554,45 @@ defineExpose({ doCleanup })
       </button>
     </template>
   </BaseDrawer>
+
+  <!-- 大图预览浮层（公共组件，Teleport / 层级 / Esc / 尺寸回填都在里面） -->
+  <ImagePreview ref="imagePreviewRef" />
 </template>
+
+<style scoped>
+/*
+  缩略图右上角操作按钮（置顶 / 查看大图 / 文件管理器定位，含它们的 tooltip 触发器）的显隐：
+  - 鼠标设备（hover: hover）：默认隐藏，悬停缩略图才出现，避免网格里到处是小图标
+  - 触屏设备（hover: none）：常驻显示，否则手机上没有任何查看大图的入口
+
+  隐藏时一并关掉 pointer-events，否则图标看不见但它的 tooltip 仍会被悬停触发。
+  作用在 BaseTooltip 的根元素上（含按钮），只写按钮会留下这块「透明的可点区域」。
+ */
+.card-action-hint {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.group:hover .card-action-hint,
+.card-action-hint:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/*
+  已置顶：按钮常驻显示，否则「这张已置顶」只有把鼠标移上去才看得见。
+  只改显隐、不改底色——主题色留给 hover，网格里才不会被一片绿块糊住。
+ */
+.card-action-hint--on {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .card-action-hint {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+</style>

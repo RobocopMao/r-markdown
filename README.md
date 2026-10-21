@@ -212,6 +212,7 @@ r-markdown/
 │   │   ├── BaseDialog.vue         # 通用弹窗
 │   │   ├── BaseDrawer.vue         # 通用抽屉
 │   │   ├── BaseTooltip.vue        # 通用 tooltip
+│   │   ├── ImagePreview.vue       # 大图预览浮层（命令式 open，Teleport 到 body）
 │   │   ├── ConfirmDialog.vue      # 确认弹窗
 │   │   ├── DarkModeToggle.vue     # 暗色模式切换
 │   │   ├── NavCapsule.vue         # 顶部导航胶囊

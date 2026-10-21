@@ -291,6 +291,91 @@ export function useImageInsert(
   }
 
   /**
+   * 压缩到「本地图库（IndexedDB）」口径：上限 5MB。
+   * 抽出来是为了让「本地插入」与「只添加到图库」用同一套压缩参数，避免两处漂移。
+   */
+  async function prepareGalleryFile(file: File): Promise<File | null> {
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      showToast('正在压缩图片...')
+      finalFile = await compressImage(file, 5000, quality)
+      if (finalFile.size > 5 * 1024 * 1024) {
+        showToast('图片压缩后仍超过 5MB')
+        return null
+      }
+    } else if (file.size > 5 * 1024 * 1024) {
+      showToast('图片不能超过 5MB')
+      return null
+    }
+    return finalFile
+  }
+
+  /**
+   * 压缩到「本地磁盘 images 目录」口径：上限 10MB（磁盘吃得住更大的图）。
+   * 与 insertImageToDisk 共用同一份压缩参数。
+   */
+  async function prepareDiskFile(file: File): Promise<File | null> {
+    const quality = (getSetting<number>('compressQuality') || 100) / 100
+    let finalFile = file
+    if (quality < 1.0) {
+      showToast('正在压缩图片...')
+      finalFile = await compressImage(file, 10000, quality)
+      if (finalFile.size > 10 * 1024 * 1024) {
+        showToast('图片压缩后仍超过 10MB')
+        return null
+      }
+    } else if (file.size > 10 * 1024 * 1024) {
+      showToast('图片不能超过 10MB')
+      return null
+    }
+    return finalFile
+  }
+
+  /**
+   * 只把图片存进本地图库（IndexedDB），**不插入编辑器**。
+   * 供 AI 配图的「添加到本地图库」使用：用户只是想让这张图进图库，晚点再挑。
+   * 返回是否成功，调用方据此给按钮反馈。
+   */
+  async function addImageToGallery(file: File): Promise<boolean> {
+    if (!file.type.startsWith('image/')) {
+      showToast('请选择图片文件')
+      return false
+    }
+    const finalFile = await prepareGalleryFile(file)
+    if (!finalFile) return false
+    try {
+      await putImage(finalFile)
+      showToast('已添加到图库')
+      return true
+    } catch {
+      showToast('存储图片失败')
+      return false
+    }
+  }
+
+  /**
+   * 只把图片写进本地磁盘的 images 目录（文章目录下），**不插入编辑器**。
+   * 供 AI 配图的「添加到本地磁盘」使用，仅桌面端有效。
+   */
+  async function addImageToDisk(file: File): Promise<boolean> {
+    if (!file.type.startsWith('image/')) {
+      showToast('请选择图片文件')
+      return false
+    }
+    const finalFile = await prepareDiskFile(file)
+    if (!finalFile) return false
+    try {
+      await LocalImageDisk.saveImage(finalFile)
+      showToast('已保存到本地磁盘')
+      return true
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e, '保存图片失败'))
+      return false
+    }
+  }
+
+  /**
    * 保存到本地磁盘并插入（仅桌面端有效）。
    *
    * 抽成独立函数是因为有三个入口要走同一条链路：
@@ -304,19 +389,8 @@ export function useImageInsert(
       return
     }
 
-    const quality = (getSetting<number>('compressQuality') || 100) / 100
-    let finalFile = file
-    if (quality < 1.0) {
-      showToast('正在压缩图片...')
-      finalFile = await compressImage(file, 10000, quality)
-      if (finalFile.size > 10 * 1024 * 1024) {
-        showToast('图片压缩后仍超过 10MB')
-        return
-      }
-    } else if (file.size > 10 * 1024 * 1024) {
-      showToast('图片不能超过 10MB')
-      return
-    }
+    const finalFile = await prepareDiskFile(file)
+    if (!finalFile) return
 
     try {
       const relPath = await LocalImageDisk.saveImage(finalFile)
@@ -445,19 +519,8 @@ export function useImageInsert(
     }
 
     // 本地模式 → IndexedDB 存储
-    const quality = (getSetting<number>('compressQuality') || 100) / 100
-    let finalFile = file
-    if (quality < 1.0) {
-      showToast('正在压缩图片...')
-      finalFile = await compressImage(file, 5000, quality)
-      if (finalFile.size > 5 * 1024 * 1024) {
-        showToast('图片压缩后仍超过 5MB')
-        return
-      }
-    } else if (file.size > 5 * 1024 * 1024) {
-      showToast('图片不能超过 5MB')
-      return
-    }
+    const finalFile = await prepareGalleryFile(file)
+    if (!finalFile) return
     try {
       const token = await putImage(finalFile)
       const tag = `<img src="idb:${token}" width="100%" height="auto" radius="8px" fit="cover" />`
@@ -628,5 +691,9 @@ export function useImageInsert(
     insertImageToDisk,
     /** 供 AI 配图的「上传图床并插入」复用（按 defaultHosting 走 GitHub 或乐塔） */
     uploadImageToHosting,
+    /** 供 AI 配图的「添加到本地图库」复用（只入库，不插入编辑器） */
+    addImageToGallery,
+    /** 供 AI 配图的「添加到本地磁盘」复用（只落盘，不插入编辑器） */
+    addImageToDisk,
   }
 }
