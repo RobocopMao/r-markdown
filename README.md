@@ -3,7 +3,7 @@
 > 专为微信公众号打造的 Markdown 排版工具，所见即所得，一键复制到公众号后台。
 > 同时提供 macOS / Windows 桌面客户端，本地离线使用。
 
-当前版本 **0.4.8**。
+当前版本 **0.4.9**。
 
 ## ✨ 功能特性
 
@@ -212,6 +212,7 @@ r-markdown/
 │   │   ├── BaseDialog.vue         # 通用弹窗
 │   │   ├── BaseDrawer.vue         # 通用抽屉
 │   │   ├── BaseTooltip.vue        # 通用 tooltip
+│   │   ├── ImagePreview.vue       # 大图预览浮层（命令式 open，Teleport 到 body）
 │   │   ├── ConfirmDialog.vue      # 确认弹窗
 │   │   ├── DarkModeToggle.vue     # 暗色模式切换
 │   │   ├── NavCapsule.vue         # 顶部导航胶囊

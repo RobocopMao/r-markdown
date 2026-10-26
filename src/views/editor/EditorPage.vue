@@ -1029,6 +1029,8 @@ const {
   processImageInsert,
   insertImageToDisk,
   uploadImageToHosting,
+  addImageToGallery,
+  addImageToDisk,
 } = useImageInsert(editorRef, showToast, markdown, isMobileWeb)
 
 const imageMenuOpen = ref(false)
@@ -1183,6 +1185,19 @@ async function onAiImageUpload(file: File) {
 function onAiImageSaveDisk(file: File) {
   aiImageVisible.value = false
   void insertImageToDisk(file)
+}
+
+/**
+ * AI 配图的「添加到本地图库」：只入库，不插入编辑器。
+ * 面板保持打开（用户可能还想再存几张 / 再插入），提示由 addImageToGallery 内部弹。
+ */
+function onAiImageAddGallery(file: File) {
+  void addImageToGallery(file)
+}
+
+/** AI 配图的「添加到本地磁盘」：只落盘，不插入编辑器；仅桌面端有该按钮 */
+function onAiImageAddDisk(file: File) {
+  void addImageToDisk(file)
 }
 
 /** 从 AI 配图面板跳转设置：落到「AI 设置 → AI 图片」子页 */
@@ -2400,6 +2415,8 @@ function loadDemo() {
     @insert="onAiImageInsert"
     @upload="onAiImageUpload"
     @save-disk="onAiImageSaveDisk"
+    @add-gallery="onAiImageAddGallery"
+    @add-disk="onAiImageAddDisk"
     @open-settings="onAiImageOpenSettings"
   />
   <PushToCloudDialog

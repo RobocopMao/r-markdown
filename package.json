@@ -1,7 +1,7 @@
 {
   "name": "r-markdown",
   "private": true,
-  "version": "0.4.8",
+  "version": "0.4.9",
   "type": "module",
   "scripts": {
     "clean": "node scripts/clean-artifacts.mjs",
@@ -33,8 +33,8 @@
     "@uiw/codemirror-theme-material": "^4.25.11",
     "@uiw/codemirror-theme-monokai": "^4.25.11",
     "@uiw/codemirror-theme-solarized": "^4.25.11",
-    "@vue/compiler-dom": "^3.6.0-rc.2",
-    "@vue/compiler-sfc": "^3.6.0-rc.2",
+    "@vue/compiler-dom": "^3.6.0-rc.13",
+    "@vue/compiler-sfc": "^3.6.0-rc.13",
     "@yeger/vue-masonry-wall": "^6.1.4",
     "awesome-design-md": "^1.1.0",
     "codemirror": "^6.0.2",
@@ -45,7 +45,7 @@
     "mammoth": "^1.12.0",
     "mermaid": "^11.16.0",
     "pixi.js": "^8.19.0",
-    "vue": "^3.6.0-rc.2",
+    "vue": "^3.6.0-rc.13",
     "vue-router": "^4.6.4"
   },
   "devDependencies": {

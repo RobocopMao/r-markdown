@@ -685,7 +685,7 @@ onBeforeUnmount(() => {
     :visible="visible"
     title="AI 排版"
     width="min(95vw, 1000px)"
-    :show-footer="true"
+    :show-footer="configured"
     no-body-padding
     @close="emit('close')"
   >

@@ -1,24 +1,16 @@
 <script setup vapor lang="ts">
 import { ref, computed, onMounted, watch, onBeforeUnmount } from 'vue'
-import { useRouter } from 'vue-router'
 import { MasonryWall } from '@yeger/vue-masonry-wall'
-import { SquarePen, Home } from 'lucide-vue-next'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { useTheme } from '@/composables/useTheme'
-import { useDarkMode } from '@/composables/useDarkMode'
 import { useMermaid } from '@/composables/useMermaid'
-import DarkModeToggle from '@/components/DarkModeToggle.vue'
-import SiteLogo from '@/components/SiteLogo.vue'
-import NavCapsule from '@/components/NavCapsule.vue'
-import MobileNavMenu from '@/components/mobile/MobileNavMenu.vue'
+import SiteHeader from '@/components/SiteHeader.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import Toast from '@/components/Toast.vue'
 import { components } from '@/extension'
 
-const { mode: darkMode, setMode: setDarkMode } = useDarkMode()
 const { colors } = useTheme()
 const { renderAll } = useMermaid()
-const router = useRouter()
 const visible = ref(false)
 
 // 分类定义
@@ -76,17 +68,6 @@ const componentCategoryMap: Record<string, string> = {
 const filteredComponents = computed(() => {
   if (activeCategory.value === 'all') return componentExamples.value
   return componentExamples.value.filter((c) => componentCategoryMap[c.id] === activeCategory.value)
-})
-
-const isTauri = import.meta.env.VITE_TAURI === 'true'
-
-const showcaseNavItems = computed(() => {
-  const items = [{ key: 'editor', label: '编辑器', to: '/editor', icon: SquarePen }]
-  // Web 端首页和编辑器是不同页面，Tauri 客户端首页即编辑器，去除重复项
-  if (!isTauri) {
-    items.unshift({ key: 'home', label: '首页', to: '/', icon: Home })
-  }
-  return items
 })
 
 const componentExamples = ref<
@@ -210,26 +191,10 @@ function onWindowResize() {
 <template>
   <div class="showcase-page" :class="{ 'opacity-100': visible, 'opacity-0': !visible }">
     <!-- Header -->
-    <header class="header-blur sticky top-0 z-50 backdrop-blur-xl">
-      <div class="mx-auto max-w-[1100px] flex items-center gap-1.5 px-4 sm:px-8 py-3.5">
-        <SiteLogo />
-        <NavCapsule :items="showcaseNavItems" active-key="editor" class="ml-auto" />
-        <MobileNavMenu
-          :items="showcaseNavItems"
-          class="ml-auto sm:ml-0"
-          @click="
-            (key: string) => {
-              if (key === 'home') router.push('/')
-              else if (key === 'editor') router.push('/editor')
-            }
-          "
-        />
-        <DarkModeToggle :mode="darkMode" class="shrink-0" @select="setDarkMode" />
-      </div>
-    </header>
+    <SiteHeader :show-nav-links="false" />
 
     <!-- Main Content -->
-    <main class="px-4 sm:px-8 py-8 sm:py-12">
+    <main class="px-4 sm:px-8 pt-[100px] sm:pt-[116px] pb-8 sm:pb-12">
       <div ref="wallWrapperRef" class="mx-auto max-w-[1020px]">
         <div class="mb-4 sm:mb-6">
           <h1
@@ -265,83 +230,86 @@ function onWindowResize() {
           :key-mapper="(item) => item.id"
         >
           <template #default="{ item }">
-          <div
-            class="spotlight-card"
-            @mousemove="onMouseMove"
-            @mouseenter="onCardEnter"
-            @mouseleave="onCardLeave"
-          >
-            <!-- 高光层 -->
-            <div class="spotlight-glow"></div>
+            <div
+              class="spotlight-card"
+              @mousemove="onMouseMove"
+              @mouseenter="onCardEnter"
+              @mouseleave="onCardLeave"
+            >
+              <!-- 高光层 -->
+              <div class="spotlight-glow"></div>
 
-            <!-- 正面：渲染预览 -->
-            <div class="card-front">
-              <div class="p-6">
-                <div v-if="item.rendered" class="preview-content" v-html="item.rendered"></div>
-                <div v-else class="text-[13px] text-[#ccc] italic py-8 text-center">暂无示例</div>
-              </div>
-            </div>
-
-            <!-- 悬浮层：语法用法 -->
-            <div v-if="item.example" class="card-overlay">
-              <div class="overlay-content">
-                <div class="overlay-header">
-                  <span class="overlay-title"
-                    >{{ item.name }} <span class="overlay-id">{{ item.idSuffix }}</span></span
-                  >
-                  <button class="copy-btn" @click.stop="copySyntax(item.example)">
-                    <svg
-                      viewBox="0 0 16 16"
-                      width="13"
-                      height="13"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <rect x="5" y="5" width="9" height="9" rx="1.5" />
-                      <path
-                        d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"
-                      />
-                    </svg>
-                    复制
-                  </button>
+              <!-- 正面：渲染预览 -->
+              <div class="card-front">
+                <div class="p-6">
+                  <div v-if="item.rendered" class="preview-content" v-html="item.rendered"></div>
+                  <div v-else class="text-[13px] text-[#ccc] italic py-8 text-center">暂无示例</div>
                 </div>
-                <pre class="syntax-code"><code>{{ item.example }}</code></pre>
-                <!-- 属性说明表 -->
-                <div v-if="item.attrs && item.attrs.length" class="attrs-table">
-                  <div class="attrs-row attrs-label-row">
-                    <span class="attr-col-key">属性</span>
-                    <span class="attr-col-desc">说明</span>
-                  </div>
-                  <div v-for="attr in item.attrs" :key="attr.key" class="attrs-row">
-                    <span class="attr-col-key"
-                      ><code>{{ attr.key }}</code
-                      ><span v-if="attr.required" class="attr-required">必填</span></span
+              </div>
+
+              <!-- 悬浮层：语法用法 -->
+              <div v-if="item.example" class="card-overlay">
+                <div class="overlay-content">
+                  <div class="overlay-header">
+                    <span class="overlay-title"
+                      >{{ item.name }} <span class="overlay-id">{{ item.idSuffix }}</span></span
                     >
-                    <span class="attr-col-desc">
-                      {{ attr.label }}
-                      <template v-if="attr.default"
-                        >，默认
-                        <code class="attr-default-inline">{{ attr.default }}</code></template
+                    <button class="copy-btn" @click.stop="copySyntax(item.example)">
+                      <svg
+                        viewBox="0 0 16 16"
+                        width="13"
+                        height="13"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
                       >
-                      <template v-if="attr.options && attr.options.length">
-                        ，可选
-                        <code v-for="(opt, i) in attr.options" :key="opt" class="attr-option-inline"
-                          >{{ opt
-                          }}<template v-if="i < attr.options.length - 1"> / </template></code
+                        <rect x="5" y="5" width="9" height="9" rx="1.5" />
+                        <path
+                          d="M11 5V3.5A1.5 1.5 0 009.5 2h-6A1.5 1.5 0 002 3.5v6A1.5 1.5 0 003.5 11H5"
+                        />
+                      </svg>
+                      复制
+                    </button>
+                  </div>
+                  <pre class="syntax-code"><code>{{ item.example }}</code></pre>
+                  <!-- 属性说明表 -->
+                  <div v-if="item.attrs && item.attrs.length" class="attrs-table">
+                    <div class="attrs-row attrs-label-row">
+                      <span class="attr-col-key">属性</span>
+                      <span class="attr-col-desc">说明</span>
+                    </div>
+                    <div v-for="attr in item.attrs" :key="attr.key" class="attrs-row">
+                      <span class="attr-col-key"
+                        ><code>{{ attr.key }}</code
+                        ><span v-if="attr.required" class="attr-required">必填</span></span
+                      >
+                      <span class="attr-col-desc">
+                        {{ attr.label }}
+                        <template v-if="attr.default"
+                          >，默认
+                          <code class="attr-default-inline">{{ attr.default }}</code></template
                         >
-                      </template>
-                    </span>
+                        <template v-if="attr.options && attr.options.length">
+                          ，可选
+                          <code
+                            v-for="(opt, i) in attr.options"
+                            :key="opt"
+                            class="attr-option-inline"
+                            >{{ opt
+                            }}<template v-if="i < attr.options.length - 1"> / </template></code
+                          >
+                        </template>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-            </template>
-          </MasonryWall>
-        </div>
+          </template>
+        </MasonryWall>
+      </div>
     </main>
 
     <!-- Footer -->

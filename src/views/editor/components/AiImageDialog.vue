@@ -12,6 +12,9 @@ import {
   Sparkles,
   Settings2,
   Download,
+  Eye,
+  Images,
+  HardDrive,
   RefreshCw,
   Wand2,
   Sparkle,
@@ -20,6 +23,7 @@ import {
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import ImagePreview from '@/components/ImagePreview.vue'
 import { useTheme } from '@/composables/useTheme'
 import { getErrorMessage } from '@/utils/helpers'
 import { extractTitle } from '@/utils/extractTitle'
@@ -74,6 +78,10 @@ const emit = defineEmits<{
   upload: [file: File]
   /** 保存磁盘并插入：仅桌面端显示，复用编辑器既有的本地磁盘落盘链路 */
   saveDisk: [file: File]
+  /** 只添加到本地图库（不插入编辑器），复用编辑器既有的 IndexedDB 入库链路 */
+  addGallery: [file: File]
+  /** 只添加到本地磁盘 images 目录（不插入编辑器），仅桌面端 */
+  addDisk: [file: File]
   /** 跳转设置（落到「AI 设置 → AI 图片」子页） */
   openSettings: []
 }>()
@@ -590,6 +598,40 @@ function onSaveToDisk() {
   emit('close')
 }
 
+/**
+ * 只添加到本地图库（IndexedDB），**不插入编辑器**。
+ * 适合「先攒着，晚点挑一张插」——图库（左侧栏）里能直接看到。
+ */
+function onAddToGallery() {
+  const img = current.value
+  if (!img) return
+  emit('addGallery', img.file)
+}
+
+/**
+ * 只添加到本地磁盘的 images 目录，**不插入编辑器**。
+ * 仅桌面客户端显示：Web 版没有本地文件系统。目录就是文章目录下的 images/，
+ * 与「保存磁盘并插入」「图库 → 磁盘图片」是同一个文件夹。
+ */
+function onAddToDisk() {
+  const img = current.value
+  if (!img) return
+  emit('addDisk', img.file)
+}
+
+/** 大图预览浮层（公共组件，与图库同一份实现） */
+const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
+
+/** 点结果图右上角的预览图标：大图顶部那行说明与面板标题行同口径（尺寸 · 文件大小） */
+function openPreview() {
+  const img = current.value
+  if (!img) return
+  imagePreviewRef.value?.open(
+    img.previewUrl,
+    [img.sizeLabel, img.sizeText].filter(Boolean).join(' · '),
+  )
+}
+
 /** 是否桌面客户端（本地磁盘保存只在客户端可用） */
 const isDesktop = import.meta.env.VITE_TAURI === 'true'
 
@@ -1080,13 +1122,28 @@ onBeforeUnmount(() => {
             <span class="text-[12px] text-[#666] dark:text-[#999]">
               {{ current.sizeLabel }} · {{ current.sizeText }}
             </span>
-            <div class="ml-auto flex gap-1">
+            <div class="ml-auto flex flex-wrap justify-end gap-1">
               <button
                 class="flex cursor-pointer items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
                 @click="reusePrompt(current)"
               >
                 <RefreshCw :size="12" />
                 用这条提示词
+              </button>
+              <button
+                class="flex cursor-pointer items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                @click="onAddToGallery"
+              >
+                <Images :size="12" />
+                添加到图库
+              </button>
+              <button
+                v-if="isDesktop"
+                class="flex cursor-pointer items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+                @click="onAddToDisk"
+              >
+                <HardDrive :size="12" />
+                添加到磁盘
               </button>
               <button
                 class="flex cursor-pointer items-center gap-1 rounded-md border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
@@ -1101,11 +1158,25 @@ onBeforeUnmount(() => {
           </div>
 
           <div class="min-h-0 flex-1 overflow-y-auto p-3">
-            <img
-              :src="current.previewUrl"
-              alt="AI 生成结果"
-              class="mx-auto max-h-[46vh] w-auto max-w-full rounded-lg border border-[#f0f0f0] object-contain dark:border-[#333]"
-            />
+            <!-- 图片容器加 group：右上角预览按钮与图库同款（悬停整图才出现） -->
+            <div class="group relative mx-auto w-fit max-w-full">
+              <img
+                :src="current.previewUrl"
+                alt="AI 生成结果"
+                class="mx-auto block max-h-[46vh] w-auto max-w-full rounded-lg border border-[#f0f0f0] object-contain dark:border-[#333]"
+              />
+              <!-- 与图库同一个写法：外层定位容器 + BaseTooltip 包按钮，避免 tooltip 的 span 参与排版 -->
+              <div class="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+                <BaseTooltip class="preview-hint" text="查看大图" placement="top">
+                  <button
+                    class="flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[var(--accent)]"
+                    @click.stop="openPreview"
+                  >
+                    <Eye :size="12" />
+                  </button>
+                </BaseTooltip>
+              </div>
+            </div>
             <p
               v-if="current.revisedPrompt"
               class="mt-2 rounded-lg bg-[#fafafa] px-3 py-2 text-[11px] leading-relaxed text-[#666] dark:bg-[#252525] dark:text-[#999]"
@@ -1180,6 +1251,9 @@ onBeforeUnmount(() => {
     </template>
   </BaseDrawer>
 
+  <!-- 大图预览浮层（公共组件） -->
+  <ImagePreview ref="imagePreviewRef" />
+
   <!-- 清空结果确认 -->
   <ConfirmDialog
     v-model:visible="clearConfirmVisible"
@@ -1191,3 +1265,30 @@ onBeforeUnmount(() => {
     @cancel="clearConfirmVisible = false"
   />
 </template>
+<style scoped>
+/*
+  结果图右上角预览按钮的显隐：与图库（ImageCacheDialog 的 .card-action-hint）同一套口径。
+  - 鼠标设备（hover: hover）：默认隐藏，悬停整图才出现
+  - 触屏设备（hover: none）：常驻显示，否则手机上就没有入口
+  隐藏时一并关掉 pointer-events，否则看不见的按钮仍会吃点击、并触发它的 tooltip。
+  类挂在 BaseTooltip 的根元素上（含按钮），只写按钮会留下透明的可点区域。
+ */
+.preview-hint {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s;
+}
+
+.group:hover .preview-hint,
+.preview-hint:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .preview-hint {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+</style>

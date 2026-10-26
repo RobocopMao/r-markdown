@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 .pnpm-store/
+# 统一使用 pnpm（pnpm-lock.yaml 为唯一锁文件）；npm/yarn 的 lock 不纳入版本管理
+package-lock.json
+yarn.lock
 
 # Build output
 dist/
