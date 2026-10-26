@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 站点公共头部导航（悬浮胶囊 + 移动端抽屉）。
  *
@@ -107,7 +107,7 @@ interface MenuEntry {
 /**
  * 站点级导航：没有页内锚点的页面（扩展组件 / 素材库 / 帮助文档）用的那套。
  * 编辑器放最后：PC 上右侧有「打开编辑器」按钮会把这一项过滤掉，
- * 只有移动端（按钮被 max-lg:hidden 收起）才靠这一项进编辑器。
+ * 只有移动端（按钮被 max-xl:hidden 收起）才靠这一项进编辑器。
  */
 const SITE_MENU: MenuEntry[] = [
   { label: '首页', to: '/', icon: Home },
@@ -134,7 +134,7 @@ const ANCHOR_ICONS: Record<string, unknown> = {
  */
 /**
  * 首页这种「传了 items」的页面，导航是页内锚点，天然没有站点其他页面的入口。
- * 移动端那颗「打开编辑器」又被 max-lg:hidden 收起来了，所以菜单末尾补上
+ * 移动端那颗「打开编辑器」又被 max-xl:hidden 收起来了，所以菜单末尾补上
  * 传进来的项里没有的站点入口，保证手机上任何一个页面都能跳到其他页面。
  * PC 端不用管：首页那排文字导航直接用传入的 items，不读这个 computed。
  */
@@ -221,12 +221,12 @@ onBeforeUnmount(() => {
     <!-- ── 悬浮胶囊导航 ── -->
     <header class="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
       <div
-        class="flex w-full max-w-[1100px] items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.6)] py-2 pl-4 pr-2 backdrop-blur-[16px] backdrop-saturate-[1.4] shadow-[0_2px_8px_rgba(17,18,20,0.04)] [transition:box-shadow_.5s_var(--ease),background_.5s_var(--ease)] dark:bg-[rgba(31,31,31,0.6)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)] [&.nav-bar--scrolled]:shadow-[0_8px_32px_rgba(17,18,20,0.1)] dark:[&.nav-bar--scrolled]:bg-[rgba(31,31,31,0.6)]"
+        class="flex w-full max-w-[1100px] items-center gap-2 rounded-full border border-[var(--line)] bg-[rgba(255,255,255,0.6)] py-2 pl-4 pr-2 backdrop-blur-[16px] backdrop-saturate-[1.4] shadow-[0_2px_8px_rgba(17,18,20,0.04)] [transition:box-shadow_.5s_var(--ease),background_.5s_var(--ease)] dark:bg-[rgba(31,31,31,0.6)] dark:shadow-[0_2px_8px_rgba(0,0,0,0.4)] [&.nav-bar--scrolled]:shadow-[0_8px_32px_rgba(17,18,20,0.1)] dark:[&.nav-bar--scrolled]:shadow-[0_8px_32px_rgba(0,0,0,0.55)] dark:[&.nav-bar--scrolled]:bg-[rgba(31,31,31,0.6)]"
         :class="{ 'nav-bar--scrolled': scrolled }"
       >
         <SiteLogo :typing="logoTyping" class="shrink-0" />
 
-        <nav v-if="hasLinks()" class="hidden items-center gap-1 lg:flex" aria-label="主导航">
+        <nav v-if="hasLinks()" class="hidden items-center gap-1 xl:flex" aria-label="主导航">
           <button
             v-for="item in items.filter((i) => i.href)"
             :key="item.label"
@@ -254,7 +254,7 @@ onBeforeUnmount(() => {
              拆成两段渲染（锚点项 / 路由项），和首页导航同一套写法，顺序稳定。 -->
         <nav
           v-else-if="menuItems.length"
-          class="hidden items-center gap-1 lg:flex"
+          class="hidden items-center gap-1 xl:flex"
           aria-label="站点导航"
         >
           <button
@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
           <slot name="actions" />
 
           <!-- 三点菜单：与编辑器页面的操作菜单同一套样式，只在移动端出现 -->
-          <div class="site-menu relative lg:hidden">
+          <div class="site-menu relative xl:hidden">
             <button
               class="toolbar-round-btn flex"
               title="站点菜单"
@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
           <ThemeModeToggle class="shrink-0" />
           <button
             v-if="showEditorCta"
-            class="inline-flex shrink-0 cursor-pointer px-3 py-2 text-[14px] items-center gap-2 rounded-full border font-semibold whitespace-nowrap no-underline [transition:translate_.5s_var(--ease),scale_.5s_var(--ease),background_.3s_var(--ease),box-shadow_.5s_var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:scale-[0.98] motion-reduce:hover:translate-y-0 [&:hover_.cta-arrow]:translate-x-1 border-transparent bg-[var(--accent)] text-white leading-6 shadow-[0_2px_8px_rgba(var(--accent-rgb),0.24)] hover:-translate-y-0.5 hover:bg-[var(--accent-dark)] hover:shadow-[0_8px_24px_rgba(var(--accent-rgb),0.32)] max-lg:hidden"
+            class="inline-flex shrink-0 cursor-pointer px-3 py-2 text-[14px] items-center gap-2 rounded-full border font-semibold whitespace-nowrap no-underline [transition:translate_.5s_var(--ease),scale_.5s_var(--ease),background_.3s_var(--ease),box-shadow_.5s_var(--ease)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)] active:scale-[0.98] motion-reduce:hover:translate-y-0 [&:hover_.cta-arrow]:translate-x-1 border-transparent bg-[var(--accent)] text-white leading-6 shadow-[0_2px_8px_rgba(var(--accent-rgb),0.24)] hover:-translate-y-0.5 hover:bg-[var(--accent-dark)] hover:shadow-[0_8px_24px_rgba(var(--accent-rgb),0.32)] max-xl:hidden"
             @click="openEditor"
           >
             打开编辑器
