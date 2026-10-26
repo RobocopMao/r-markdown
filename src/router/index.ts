@@ -9,10 +9,10 @@ const router = createRouter({
       path: '/',
       name: 'home',
       // Tauri 客户端默认打开编辑器，Web 版显示首页
-      // 有私有子模块 → 粒子特效版，无 → 公开降级版（通过 Vite alias 自动 fallback）
+      // 有私有子模块 → 新版首页 V2，无 → 公开降级版（通过 Vite alias 自动 fallback）
       component: isTauriClient
         ? () => import('../views/editor/EditorPage.vue')
-        : () => import('@/views-private/home/HomePage.vue'),
+        : () => import('@/views-private/home/HomePageV2.vue'),
     },
     {
       path: '/editor',
@@ -38,6 +38,11 @@ const router = createRouter({
       path: '/help/:slug',
       name: 'help-detail',
       component: () => import('@/views-private/help/TutorialDetail.vue'),
+    },
+    {
+      path: '/changelog',
+      name: 'changelog',
+      component: () => import('@/views/changelog/ChangelogPage.vue'),
     },
     {
       path: '/:pathMatch(.*)*',
