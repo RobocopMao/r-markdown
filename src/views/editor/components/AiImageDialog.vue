@@ -52,9 +52,8 @@ import {
   getProviderConfig,
   setActiveProviderId,
   setProviderConfig,
+  resolveCapabilities,
   resolveOutputSize,
-  resolveQualityOptions,
-  supportsCustomSize,
   getImageRelay,
   isImageProviderConfigured,
   missingImageConfigFields,
@@ -184,24 +183,38 @@ function onProviderChange(id: string) {
   refreshConfig()
 }
 
+/**
+ * 当前「厂商 + 中转站 + 模型」的实际能力。
+ *
+ * 能力不是厂商一级固定的：ToAPIs 的普通版只认 10 种比例、不收起像素、没有画质可调，
+ * 而它的 -vip / -official 线路是官方口径的完整能力。所以下拉里列出什么、
+ * 以及请求体怎么组装，都要按这个组合实时算，不能只看厂商。
+ */
+const caps = computed(() =>
+  resolveCapabilities(providerDef.value, cfg.value.relay, cfg.value.model),
+)
+
 /** 当前选择对应的像素尺寸与展示文案（换算只发生在 resolveOutputSize 里） */
 const outputSize = computed(() => resolveOutputSize(providerDef.value, cfg.value))
 
-/** 该厂商是否支持自定义像素宽高 */
-const canCustomSize = computed(() => supportsCustomSize(providerDef.value))
+/** 是否支持自填像素宽高（取决于中转站线路） */
+const canCustomSize = computed(() => Boolean(caps.value.customSize))
 
 /**
  * 质量下拉的档位。
  *
- * 走中转站时按该站收窄（多米API 只认 low / medium / high），免得选了个
- * 上游根本不认的 max，钱照扣、画质没升。与存储侧的收敛共用同一个函数，
- * 界面就不会出现「下拉有 max、存进去变 low」这种自相矛盾。
+ * 走中转站时按该站收窄（多米API 只认 low / medium / high），个别线路还要再窄
+ * （ToAPIs 普通版没有画质可调，发过去也会被忽略）。与存储侧的收敛读同一个
+ * resolveCapabilities()，界面就不会出现「下拉有 max、存进去变 low」这种自相矛盾。
  */
-const qualityOptions = computed(() => resolveQualityOptions(providerDef.value, cfg.value.relay))
+const qualityOptions = computed(() => caps.value.qualities)
 
-/** 比例下拉选项：预设比例 + （支持时）自定义 */
+/** 背景下拉的档位（个别线路留不住透明通道，那就不提供透明） */
+const backgroundOptions = computed(() => caps.value.backgrounds)
+
+/** 比例下拉选项：当前能力允许的比例 + （支持时）自定义 */
 const ratioOptions = computed(() => {
-  const base = providerDef.value.ratios.map((r) => ({ value: r, label: r }))
+  const base = caps.value.ratios.map((r) => ({ value: r, label: r }))
   return canCustomSize.value ? [...base, { value: CUSTOM_RATIO, label: '自定义' }] : base
 })
 
@@ -214,7 +227,7 @@ const isCustomRatio = computed(() => cfg.value.ratio === CUSTOM_RATIO && canCust
  * 对齐到 step（官方表里所有边长都是 16 的倍数）而不是随便接受任意整数：
  * 不对齐的话自定义模式发出的像素和预设模式是两种口径，部分中转站会直接 422。
  */
-const customSize = computed(() => providerDef.value.customSize)
+const customSize = computed(() => caps.value.customSize)
 const dimMin = computed(() => customSize.value?.min ?? 256)
 const dimMax = computed(() => customSize.value?.max ?? 4096)
 const dimStep = computed(() => customSize.value?.step ?? 16)
@@ -466,8 +479,9 @@ async function onGenerate() {
     errorMsg.value = '请先填写提示词'
     return
   }
-  // 比例与分辨率在表里没有对应格子（或自定义宽高异常）时，先拦住，别发一个 size 为空的请求
-  if (!outputSize.value.pixels) {
+  // 比例与分辨率在表里没有对应格子（或自定义宽高异常）时，先拦住，别发一个 size 为空的请求。
+  // pixelFree 的线路例外：它本来就不发像素，pixels 为空是正常的，别把它当错误拦住
+  if (!outputSize.value.pixels && !outputSize.value.pixelFree) {
     errorMsg.value = '当前比例与分辨率没有对应的尺寸，请换一组参数'
     return
   }
@@ -505,7 +519,8 @@ async function onGenerate() {
         background: cfg.value.background,
         moderation: cfg.value.moderation,
       },
-      providerDef.value.buildBody,
+      // 线路自己的请求体优先：ToAPIs 普通版发的是「比例 + resolution」，不是像素
+      caps.value.buildBody ?? providerDef.value.buildBody,
       providerDef.value.parseResponse,
       {
         signal: controller.signal,
@@ -954,7 +969,7 @@ onBeforeUnmount(() => {
               </select>
             </div>
 
-            <div v-if="providerDef.backgrounds?.length" class="flex items-center gap-1.5">
+            <div v-if="backgroundOptions?.length" class="flex items-center gap-1.5">
               <span :class="paramLabelClass">背景</span>
               <select
                 :value="cfg.background"
@@ -963,7 +978,7 @@ onBeforeUnmount(() => {
                 :disabled="generating"
                 @change="persistParams({ background: ($event.target as HTMLSelectElement).value })"
               >
-                <option v-for="b in providerDef.backgrounds" :key="b.value" :value="b.value">
+                <option v-for="b in backgroundOptions" :key="b.value" :value="b.value">
                   {{ b.label }}
                 </option>
               </select>

@@ -579,7 +579,12 @@ const imageRelayHint = computed(() => {
     return '不选＝直连官方，按标准 /images/generations 一次性返回；只有提交只回 task_id 的站才需要选。'
   }
   const addr = relay.baseUrl ? `接口地址已填为 ${relay.baseUrl}，` : ''
-  return `${addr}该站提交后只返回任务 id，生图时会自动轮询任务接口取图。`
+  // 有的站一个名字下挂几条线路，能力（比例 / 质量 / 是否收像素）各不相同，
+  // 模型名选错线路就会「提交成功、几十秒后才失败」，所以这里先提醒一句
+  const lines = relay.modelRules?.length
+    ? '该站同一模型有不同线路，能力按模型名区分（生成面板里的比例 · 质量 · 背景会随之变化）。'
+    : ''
+  return `${addr}该站提交后只返回任务 id，生图时会自动轮询任务接口取图。${lines}`
 })
 
 /**
@@ -1953,6 +1958,13 @@ async function manualCheckUpdate() {
           </select>
           <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
             {{ imageRelayHint }}
+          </p>
+          <!--
+            Key 是按厂商存的（一家一份），换站不会连带换 Key：上一家的 Key 拿去新站用
+            必然认证失败，而报错看着像「Key 填错了」，所以这里点名说清要重填。
+          -->
+          <p class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-0.5">
+            切换中转站后，请重新填写该站的 API Key——各站 Key 不通用。
           </p>
         </div>
 
