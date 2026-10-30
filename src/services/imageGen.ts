@@ -136,7 +136,26 @@ async function submitGeneration(
     const bodyText = await res.text().catch(() => '')
     throw new Error(describeHttpError(res.status, bodyText, '生成图片'))
   }
-  return res.json().catch(() => null)
+  const json = await res.json().catch(() => null)
+  assertRelayApiError(cfg.relay, json)
+  return json
+}
+
+/**
+ * 拦下「HTTP 200 但响应体里其实是错误」的站点。
+ *
+ * 多米API 这类站点把失败塞在 200 里，实测两种都出现过：
+ * - Key 不对 → `{"code":403,"msg":"请求密钥KEY不正确！"}`
+ * - 余额不足 → `{"code":400,"msg":"请求失败，API账户余额不足或没有权限"}`
+ * 不拦的话：提交会被当成「没给任务 id 的同步响应」而降级成同步解析，
+ * 查询会被当成「还在跑」而一直轮询到超时——两种报错都与真实原因无关。
+ *
+ * 文案直接用对方给的 msg：它本来就是中文，且**只有站点自己知道** 403 是 Key 问题
+ * 还是账户问题，我们不要在这里猜。
+ */
+function assertRelayApiError(relay: ImageRelayDef | undefined, json: unknown): void {
+  const message = relay?.apiError?.(json) || ''
+  if (message) throw new Error(message)
 }
 
 /** 可被中止的等待，用于轮询间隔 */
@@ -195,6 +214,7 @@ async function pollRelayTask(
     }
 
     const json = await res.json().catch(() => null)
+    assertRelayApiError(relay, json)
     const state = relay.parseTask(json)
     opts.onTaskState?.(state)
 
@@ -409,12 +429,69 @@ export async function listImageModels(
   }
 }
 
-/** 测试连接：调用 /models 验证地址与 Key 是否可用 */
+/**
+ * 中转站的鉴权探活：请求一个**不存在的任务**，只看对方认不认这把 Key。
+ *
+ * 用来给「没有 /models 列表接口」的站（多米API）提供测试连接：地址通、Key 有效时，
+ * 对方会老实回「任务不存在」，而不是鉴权失败。查询一个不存在的 id 没有副作用，
+ * 也不产生费用，比随便提交一次生图去试要干净得多。
+ */
+async function probeRelayAuth(
+  cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
+  relay: ImageRelayDef,
+  probePath: string,
+): Promise<void> {
+  const baseUrl = normalizeBaseUrl(cfg.baseUrl)
+  if (!baseUrl || !cfg.apiKey) {
+    throw new Error('请先填写接口地址与 API Key')
+  }
+  const { signal, cleanup } = withTimeout(Math.min(cfg.timeoutSec, 30))
+  try {
+    const probeId = `probe-${Date.now().toString(36)}`
+    const url = `${baseUrl}${probePath.replace('{id}', encodeURIComponent(probeId))}`
+    let res: Response
+    try {
+      res = await fetch(url, { headers: { Authorization: `Bearer ${cfg.apiKey}` }, signal })
+    } catch (e: unknown) {
+      if (isAbortError(e)) throw new Error('测试连接超时')
+      throw new Error('无法连接到接口地址，请检查接口地址与网络')
+    }
+    const bodyText = await res.text().catch(() => '')
+    let json: unknown = null
+    try {
+      json = bodyText ? JSON.parse(bodyText) : null
+    } catch {
+      json = null
+    }
+    // 有的站把「Key 不对 / 余额不足」包在 HTTP 200 里，先让厂商自己认一遍
+    const relayMessage = relay.apiError?.(json) || ''
+    if (relayMessage) throw new Error(relayMessage)
+    // 鉴权类与服务器类错误才是真失败；其余（任务不存在、参数不全）说明路由通了、Key 也过了
+    if (res.status === 401 || res.status === 403 || res.status >= 500) {
+      throw new Error(describeHttpError(res.status, bodyText, '测试连接'))
+    }
+  } finally {
+    cleanup()
+  }
+}
+
+/**
+ * 测试连接：验证地址与 Key 是否可用。
+ *
+ * 优先用中转站声明的 `probePath` 探活（没有 /models 的站只能这样），
+ * 否则照旧拉一次 /models —— 能顺带证明模型列表可用。
+ */
 export async function testImageConnection(
   cfg: Pick<ImageGenConfig, 'baseUrl' | 'apiKey' | 'timeoutSec'>,
   pattern: RegExp,
   strict?: RegExp,
+  relay?: ImageRelayDef,
 ): Promise<string[]> {
+  const probePath = relay?.probePath
+  if (relay && probePath) {
+    await probeRelayAuth(cfg, relay, probePath)
+    return []
+  }
   return listImageModels(cfg, pattern, strict)
 }
 

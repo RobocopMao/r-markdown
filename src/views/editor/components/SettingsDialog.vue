@@ -492,8 +492,13 @@ function refreshImageConfig() {
 }
 
 function patchImageConfig(patch: Partial<ImageGenProviderConfig>) {
-  imageConfig.value = { ...imageConfig.value, ...patch }
   setProviderConfig(imageProviderId.value, patch)
+  /**
+   * 写回后重新读一次，而不是本地合并补丁。
+   * 存储侧会把值收敛（切中转站时质量档位要从 max 收到 low、非自定义比例下宽高归零），
+   * 直接合并会让界面上留着「其实没存进去」的值。
+   */
+  imageConfig.value = getProviderConfig(imageProviderId.value)
 }
 
 function switchImageProvider(id: string) {
@@ -557,9 +562,19 @@ function saveImageRelay(val: string) {
   imageModelList.value = []
 }
 
+/** 当前选中的中转站 def（没选时为 undefined） */
+const imageRelay = computed(() => IMAGE_RELAYS.find((r) => r.id === imageConfig.value.relay))
+
+/**
+ * 能不能按「获取模型列表」去拉一次。
+ * 中转站可能压根没有 /models（多米API 就是 404），那种情况把按钮藏掉，
+ * 换成一句手填说明 —— 留个按下去必然失败的按钮只会让人怀疑地址或 Key 错了。
+ */
+const canFetchImageModels = computed(() => imageRelay.value?.modelList !== false)
+
 /** 当前选中中转站的说明（未选时说清默认行为） */
 const imageRelayHint = computed(() => {
-  const relay = IMAGE_RELAYS.find((r) => r.id === imageConfig.value.relay)
+  const relay = imageRelay.value
   if (!relay) {
     return '不选＝直连官方，按标准 /images/generations 一次性返回；只有提交只回 task_id 的站才需要选。'
   }
@@ -616,6 +631,9 @@ async function handleTestImageConnection() {
         timeoutSec: imageConfig.value.timeoutSec,
       },
       imageDef.value.modelIdPattern,
+      // 这里不传 strict：测试连接只关心「通不通」，不该因为清单被过滤空了就判失败
+      undefined,
+      imageRelay.value,
     )
     imageTestResult.value = 'ok'
   } catch (e: unknown) {
@@ -1978,6 +1996,7 @@ async function manualCheckUpdate() {
           <div class="flex items-center justify-between mb-1.5">
             <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
             <button
+              v-if="canFetchImageModels"
               class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
               :disabled="imageModelLoading"
               @click="handleFetchImageModels"
@@ -2005,6 +2024,9 @@ async function manualCheckUpdate() {
             已获取
             {{ imageModelList.length }}
             个本厂商可用的模型，勾选常用的几个即可；排在最前的一个就是默认。
+          </p>
+          <p v-else-if="!canFetchImageModels" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            该中转站没有模型列表接口，模型名请在上面的输入框手动填写。
           </p>
           <p v-else-if="imageDef.modelHint" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
             {{ imageDef.modelHint }}

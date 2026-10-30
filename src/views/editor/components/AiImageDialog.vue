@@ -53,6 +53,7 @@ import {
   setActiveProviderId,
   setProviderConfig,
   resolveOutputSize,
+  resolveQualityOptions,
   supportsCustomSize,
   getImageRelay,
   isImageProviderConfigured,
@@ -188,6 +189,15 @@ const outputSize = computed(() => resolveOutputSize(providerDef.value, cfg.value
 
 /** 该厂商是否支持自定义像素宽高 */
 const canCustomSize = computed(() => supportsCustomSize(providerDef.value))
+
+/**
+ * 质量下拉的档位。
+ *
+ * 走中转站时按该站收窄（多米API 只认 low / medium / high），免得选了个
+ * 上游根本不认的 max，钱照扣、画质没升。与存储侧的收敛共用同一个函数，
+ * 界面就不会出现「下拉有 max、存进去变 low」这种自相矛盾。
+ */
+const qualityOptions = computed(() => resolveQualityOptions(providerDef.value, cfg.value.relay))
 
 /** 比例下拉选项：预设比例 + （支持时）自定义 */
 const ratioOptions = computed(() => {
@@ -929,7 +939,7 @@ onBeforeUnmount(() => {
               />
             </div>
 
-            <div v-if="providerDef.qualities?.length" class="flex items-center gap-1.5">
+            <div v-if="qualityOptions?.length" class="flex items-center gap-1.5">
               <span :class="paramLabelClass">质量</span>
               <select
                 :value="cfg.quality"
@@ -938,7 +948,7 @@ onBeforeUnmount(() => {
                 :disabled="generating"
                 @change="persistParams({ quality: ($event.target as HTMLSelectElement).value })"
               >
-                <option v-for="q in providerDef.qualities" :key="q.value" :value="q.value">
+                <option v-for="q in qualityOptions" :key="q.value" :value="q.value">
                   {{ q.label }}
                 </option>
               </select>

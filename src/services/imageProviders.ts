@@ -74,10 +74,44 @@ export interface ImageRelayDef {
   pollIntervalSec: number
   /** 状态中文名，用于面板上的进度文案；未知状态直接显示原文 */
   statusText?: Record<string, string>
+  /**
+   * 该站只认的图片质量档位；不声明则沿用厂商那一套。
+   *
+   * 中转站对 quality 的接受度可以比官方窄（多米API 文档只列 low / medium / high，
+   * 没有 xhigh / max）。声明之后面板下拉收窄到这几档，一是避免选了最高档实际被
+   * 上游悄悄降级、钱花了效果没到，二是把「这个站能选什么」直接摆在界面上。
+   */
+  qualities?: ImageOption[]
+  /**
+   * 该站是否提供 /models 列表接口；不声明视为提供（官方与多数中转站都有）。
+   *
+   * 多米API 就没有（`GET /v1/models` 直接 404）。设置页据此藏掉「获取模型列表」
+   * 按钮、换成一句「模型名请手填」的说明——留一个按下去必然失败的按钮，
+   * 只会让人怀疑是接口地址或 Key 填错了。
+   */
+  modelList?: boolean
+  /**
+   * 「测试连接」用的探活路径，相对接口基址；`{id}` 会被替换成一个不存在的任务 id。
+   *
+   * 测试连接本质上只回答「地址通不通、Key 有没有效」，没有列表接口的站可以拿
+   * 一个无副作用的查询接口顶上：查一个不存在的任务，Key 有效时对方会老实回
+   * 「任务不存在」（HTTP 400 或者 200 包错误），而不是鉴权失败。
+   * 不声明则退化为查 /models。
+   */
+  probePath?: string
   /** 从「提交生图」的响应里取任务 id；取不到返回空串（表示对方是同步返回） */
   parseTaskId(json: unknown): string
   /** 从「查询任务」的响应里取状态与结果 */
   parseTask(json: unknown): ImageRelayTaskState
+  /**
+   * 识别「HTTP 200 但响应体里其实是错误」的站点，返回空串表示没错误。
+   *
+   * 有的中转站把失败塞在 200 的响应里（多米API 的 Key 错误就是
+   * `{"code":403,"msg":"请求密钥KEY不正确！"}`），HTTP 层完全看不出来。
+   * 不在这里拦一道，提交会被当成「没有 task_id」而降级成同步解析、
+   * 查询会被当成「还在跑」而一直轮询到超时 —— 两种都报错报得莫名其妙。
+   */
+  apiError?(json: unknown): string
 }
 
 /** 面板与设置页共用的厂商能力描述 */
@@ -340,8 +374,88 @@ const APIMART_RELAY: ImageRelayDef = {
   },
 }
 
+/**
+ * 多米API：不直接回图，先回一个任务 id，再 GET /v1/tasks/{id} 拿结果。
+ *
+ * 响应结构（实测 + 官方 Apifox 文档）：
+ * - 提交 `{"id":"6fc003fe-…"}` —— **顶层 id**，没有 code/data 包装，也不叫 task_id
+ * - 查询 `{"id","state":"pending|running|succeeded|error","progress":0,"data":{"images":[{"url":"..."}]}}`
+ * - 成功态是 `succeeded`（不是 completed），失败态 `error`，没有 cancelled
+ * - `data` 在 pending/running 时**整个不存在**，`progress` 实测恒为 0（只有状态可用）
+ * - 图片在 `data.images[0].url`，**字符串**不是数组，带签名有时效
+ */
+const DUOMI_RELAY: ImageRelayDef = {
+  id: 'duomi',
+  name: '多米API',
+  docUrl: 'https://duomiapi.com/doc/55',
+  baseUrl: 'https://duomiapi.com/v1',
+  taskPath: '/tasks/{id}',
+  // 实测一张 1K 图约 30–60 秒，3 秒一问足够，又不至于把对方打烦
+  pollIntervalSec: 3,
+  // 实测 GET /v1/models 直接 404，全站没有模型列表接口，只能手填
+  modelList: false,
+  // 没有列表接口，「测试连接」改查一个不存在的任务：Key 有效时会回 task_not_found
+  probePath: '/tasks/{id}',
+  statusText: {
+    pending: '排队中',
+    running: '生成中',
+    succeeded: '已完成',
+    error: '已失败',
+  },
+  // 官方文档的 quality 表（标题写「思考深度」）只有这三档，没有 xhigh / max
+  qualities: [
+    { value: 'low', label: '低' },
+    { value: 'medium', label: '中' },
+    { value: 'high', label: '高' },
+  ],
+  parseTaskId(json: unknown) {
+    const id = (json as { id?: unknown } | null)?.id
+    return typeof id === 'string' ? id : ''
+  },
+  parseTask(json: unknown) {
+    const data = (json as { state?: unknown; progress?: unknown; data?: unknown } | null) ?? {}
+    const status = typeof data.state === 'string' ? data.state : ''
+    const progress = Number(data.progress)
+    const state: ImageRelayTaskState = {
+      status,
+      done: status === 'succeeded',
+      failed: status === 'error',
+      progress: Number.isFinite(progress) ? progress : 0,
+    }
+    if (state.failed) {
+      const err = (json as { error?: { message?: unknown } } | null)?.error
+      state.message =
+        typeof err?.message === 'string' && err.message ? err.message : '任务已失败，请稍后重试'
+      return state
+    }
+    // data.images[0].url 是字符串（不是 APIMart 那种字符串数组）
+    const images = (data.data as { images?: unknown } | null)?.images
+    const first = Array.isArray(images) ? (images[0] as { url?: unknown } | null) : null
+    const url = first?.url
+    if (typeof url === 'string' && url) {
+      state.url = url
+      state.done = true
+    }
+    return state
+  },
+  apiError(json: unknown) {
+    /**
+     * 多米API 的失败常以 **HTTP 200 + `{"code":非200,"msg":"…"}`** 的形式返回，
+     * HTTP 层完全看不出来。实测两种：Key 不对 → `code:403 请求密钥KEY不正确！`；
+     * 余额不足 → `code:400 请求失败，API账户余额不足或没有权限`。
+     * 提交与查询都是如此，所以两处都要拦一下。
+     * 只认「有 msg 且 code 不是 200」这一种形状，避免把正常响应里的 code 字段误判。
+     */
+    const body = json as { code?: unknown; msg?: unknown } | null
+    const code = Number(body?.code)
+    const msg = body?.msg
+    if (typeof msg === 'string' && msg && Number.isFinite(code) && code !== 200) return msg
+    return ''
+  },
+}
+
 /** 全部中转站描述，供设置页渲染下拉；新增一家在这里加一条即可 */
-export const IMAGE_RELAYS: ImageRelayDef[] = [APIMART_RELAY]
+export const IMAGE_RELAYS: ImageRelayDef[] = [APIMART_RELAY, DUOMI_RELAY]
 
 const agnes: ImageProviderDef = {
   id: 'agnes',
@@ -610,6 +724,10 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
   if (models.length === 0) models.push(def.defaultModel)
   const model = models.includes(storedModel) ? storedModel : models[0]
 
+  // 中转站只认该厂商声明过的；不认识就回退空串（走同步接口），不会留下无效 id
+  const relayId = (def.relays || []).some((r) => r.id === stored.relay) ? stored.relay! : ''
+  const relay = getImageRelay(relayId)
+
   return {
     apiKey: typeof stored.apiKey === 'string' ? stored.apiKey : '',
     baseUrl: (typeof stored.baseUrl === 'string' && stored.baseUrl.trim()) || def.baseUrl,
@@ -623,12 +741,26 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
         : def.defaultTimeoutSec,
     width,
     height,
-    quality: pickOption(def.qualities, stored.quality, def.defaultQuality),
+    // 中转站声明了 qualities 就按它的收窄：选了 xhigh / max 发过去也不会报错，
+    // 但对方可能悄悄降级，与其让用户以为买到了最高档，不如界面上就不给这几档
+    quality: pickOption(relay?.qualities ?? def.qualities, stored.quality, def.defaultQuality),
     background: pickOption(def.backgrounds, stored.background, def.defaultBackground),
     moderation: pickOption(def.moderations, stored.moderation, def.defaultModeration),
-    // 中转站只认该厂商声明过的；不认识就回退空串（走同步接口），不会留下无效 id
-    relay: (def.relays || []).some((r) => r.id === stored.relay) ? stored.relay! : '',
+    relay: relayId,
   }
+}
+
+/**
+ * 面板质量下拉应显示的档位：选中转站且该站声明了 qualities 时用它自己的那套。
+ *
+ * 与 normalizeConfig() 的收敛口径必须一致——否则会出现「下拉里有 max、存进去却被
+ * 收敛成 low」这种自相矛盾的界面。
+ */
+export function resolveQualityOptions(
+  def: ImageProviderDef,
+  relayId: string,
+): ImageOption[] | undefined {
+  return getImageRelay(relayId)?.qualities ?? def.qualities
 }
 
 /** 读取某厂商的配置（已合并默认值） */
