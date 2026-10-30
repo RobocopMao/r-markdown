@@ -52,6 +52,51 @@ export interface ImageRelayTaskState {
 }
 
 /**
+ * 中转站内部**按模型区分的**能力差异。
+ *
+ * 一家站可能同时挂几条线路，能力并不一致：ToAPIs 的普通版只吃「比例 + 分辨率档位」，
+ * 不收像素尺寸、没有画质可调、留不住透明通道；而 `-vip` / `-official` 两条线路
+ * 吃精确像素、六档质量、透明背景。差异只体现在模型名上，所以按模型给覆盖项，
+ * 未声明的字段一律沿用厂商默认（这样新增一条线路只要加一条规则）。
+ */
+export interface ImageRelayModelOverrides {
+  /** 该模型只认这几个比例；不声明则用厂商那一套 */
+  ratios?: string[]
+  /** 覆盖自定义像素能力；`null` 表示这条线路完全不收像素尺寸 */
+  customSize?: ImageCustomSize | null
+  /** 覆盖质量档位；空数组表示这条线路没有画质可调 */
+  qualities?: ImageOption[]
+  /** 覆盖背景档位；缺 transparent 表示这条线路留不住 alpha */
+  backgrounds?: ImageOption[]
+  /**
+   * 这条线路按「比例 + 分辨率档位」出图，不接受像素尺寸。
+   *
+   * 与 `customSize: null` 是两件事：前者说「怎么出图」，后者说「界面给不给宽高输入框」。
+   * 分开表达是因为实际像素由上游按档位自己定（ToAPIs 的 2K 是 2560×1440，
+   * 和官方尺寸表里同档的 2048×1152 并不相同），我们不能拿本地表冒充它会出的尺寸。
+   */
+  pixelFree?: boolean
+}
+
+/**
+ * 一条「模型 → 能力」规则。
+ *
+ * 按顺序匹配，第一条命中的生效；`match` 用宽松包含式正则（中转站常给模型名加
+ * 前缀 / 后缀），所以更具体的规则要写在前面（如 `-vip|-official` 先于兜底规则）。
+ */
+export interface ImageRelayModelRule {
+  match: RegExp
+  overrides?: ImageRelayModelOverrides
+  /**
+   * 覆盖请求体组装。
+   *
+   * 有的线路参数形状和官方不一样（ToAPIs 普通版要 `size` 传比例、另给 `resolution`），
+   * 这种差异写在这里，调用层照旧只调 buildBody，不需要知道是哪一家。
+   */
+  buildBody?(ctx: ImageRequestContext): Record<string, unknown>
+}
+
+/**
  * 中转站的「异步任务」描述。
  *
  * 有些中转站（如 APIMart）不直接回图片，而是回一个 task_id，要再查一次任务接口；
@@ -74,10 +119,51 @@ export interface ImageRelayDef {
   pollIntervalSec: number
   /** 状态中文名，用于面板上的进度文案；未知状态直接显示原文 */
   statusText?: Record<string, string>
+  /**
+   * 该站只认的图片质量档位；不声明则沿用厂商那一套。
+   *
+   * 中转站对 quality 的接受度可以比官方窄（多米API 文档只列 low / medium / high，
+   * 没有 xhigh / max）。声明之后面板下拉收窄到这几档，一是避免选了最高档实际被
+   * 上游悄悄降级、钱花了效果没到，二是把「这个站能选什么」直接摆在界面上。
+   */
+  qualities?: ImageOption[]
+  /**
+   * 该站是否提供 /models 列表接口；不声明视为提供（官方与多数中转站都有）。
+   *
+   * 多米API 就没有（`GET /v1/models` 直接 404）。设置页据此藏掉「获取模型列表」
+   * 按钮、换成一句「模型名请手填」的说明——留一个按下去必然失败的按钮，
+   * 只会让人怀疑是接口地址或 Key 填错了。
+   */
+  modelList?: boolean
+  /**
+   * 「测试连接」用的探活路径，相对接口基址；`{id}` 会被替换成一个不存在的任务 id。
+   *
+   * 测试连接本质上只回答「地址通不通、Key 有没有效」，没有列表接口的站可以拿
+   * 一个无副作用的查询接口顶上：查一个不存在的任务，Key 有效时对方会老实回
+   * 「任务不存在」（HTTP 400 或者 200 包错误），而不是鉴权失败。
+   * 不声明则退化为查 /models。
+   */
+  probePath?: string
+  /**
+   * 该站内部按模型区分的能力与请求体差异（可选）。
+   *
+   * 有些站一个模型族挂好几条线路，能力天差地别（见 TOAPIS_RELAY）。规则按顺序匹配，
+   * 第一条命中的生效，所以更具体的要写在前面。不声明则整站一套能力。
+   */
+  modelRules?: ImageRelayModelRule[]
   /** 从「提交生图」的响应里取任务 id；取不到返回空串（表示对方是同步返回） */
   parseTaskId(json: unknown): string
   /** 从「查询任务」的响应里取状态与结果 */
   parseTask(json: unknown): ImageRelayTaskState
+  /**
+   * 识别「HTTP 200 但响应体里其实是错误」的站点，返回空串表示没错误。
+   *
+   * 有的中转站把失败塞在 200 的响应里（多米API 的 Key 错误就是
+   * `{"code":403,"msg":"请求密钥KEY不正确！"}`），HTTP 层完全看不出来。
+   * 不在这里拦一道，提交会被当成「没有 task_id」而降级成同步解析、
+   * 查询会被当成「还在跑」而一直轮询到超时 —— 两种都报错报得莫名其妙。
+   */
+  apiError?(json: unknown): string
 }
 
 /** 面板与设置页共用的厂商能力描述 */
@@ -340,8 +426,186 @@ const APIMART_RELAY: ImageRelayDef = {
   },
 }
 
+/**
+ * 多米API：不直接回图，先回一个任务 id，再 GET /v1/tasks/{id} 拿结果。
+ *
+ * 响应结构（实测 + 官方 Apifox 文档）：
+ * - 提交 `{"id":"6fc003fe-…"}` —— **顶层 id**，没有 code/data 包装，也不叫 task_id
+ * - 查询 `{"id","state":"pending|running|succeeded|error","progress":0,"data":{"images":[{"url":"..."}]}}`
+ * - 成功态是 `succeeded`（不是 completed），失败态 `error`，没有 cancelled
+ * - `data` 在 pending/running 时**整个不存在**，`progress` 实测恒为 0（只有状态可用）
+ * - 图片在 `data.images[0].url`，**字符串**不是数组，带签名有时效
+ */
+const DUOMI_RELAY: ImageRelayDef = {
+  id: 'duomi',
+  name: '多米API',
+  docUrl: 'https://duomiapi.com/doc/55',
+  baseUrl: 'https://duomiapi.com/v1',
+  taskPath: '/tasks/{id}',
+  // 实测一张 1K 图约 30–60 秒，3 秒一问足够，又不至于把对方打烦
+  pollIntervalSec: 3,
+  // 实测 GET /v1/models 直接 404，全站没有模型列表接口，只能手填
+  modelList: false,
+  // 没有列表接口，「测试连接」改查一个不存在的任务：Key 有效时会回 task_not_found
+  probePath: '/tasks/{id}',
+  statusText: {
+    pending: '排队中',
+    running: '生成中',
+    succeeded: '已完成',
+    error: '已失败',
+  },
+  // 官方文档的 quality 表（标题写「思考深度」）只有这三档，没有 xhigh / max
+  qualities: [
+    { value: 'low', label: '低' },
+    { value: 'medium', label: '中' },
+    { value: 'high', label: '高' },
+  ],
+  parseTaskId(json: unknown) {
+    const id = (json as { id?: unknown } | null)?.id
+    return typeof id === 'string' ? id : ''
+  },
+  parseTask(json: unknown) {
+    const data = (json as { state?: unknown; progress?: unknown; data?: unknown } | null) ?? {}
+    const status = typeof data.state === 'string' ? data.state : ''
+    const progress = Number(data.progress)
+    const state: ImageRelayTaskState = {
+      status,
+      done: status === 'succeeded',
+      failed: status === 'error',
+      progress: Number.isFinite(progress) ? progress : 0,
+    }
+    if (state.failed) {
+      const err = (json as { error?: { message?: unknown } } | null)?.error
+      state.message =
+        typeof err?.message === 'string' && err.message ? err.message : '任务已失败，请稍后重试'
+      return state
+    }
+    // data.images[0].url 是字符串（不是 APIMart 那种字符串数组）
+    const images = (data.data as { images?: unknown } | null)?.images
+    const first = Array.isArray(images) ? (images[0] as { url?: unknown } | null) : null
+    const url = first?.url
+    if (typeof url === 'string' && url) {
+      state.url = url
+      state.done = true
+    }
+    return state
+  },
+  apiError(json: unknown) {
+    /**
+     * 多米API 的失败常以 **HTTP 200 + `{"code":非200,"msg":"…"}`** 的形式返回，
+     * HTTP 层完全看不出来。实测两种：Key 不对 → `code:403 请求密钥KEY不正确！`；
+     * 余额不足 → `code:400 请求失败，API账户余额不足或没有权限`。
+     * 提交与查询都是如此，所以两处都要拦一下。
+     * 只认「有 msg 且 code 不是 200」这一种形状，避免把正常响应里的 code 字段误判。
+     */
+    const body = json as { code?: unknown; msg?: unknown } | null
+    const code = Number(body?.code)
+    const msg = body?.msg
+    if (typeof msg === 'string' && msg && Number.isFinite(code) && code !== 200) return msg
+    return ''
+  },
+}
+
+/**
+ * ToAPIs：三条线路挂在同一个模型族上，能力并不一致。
+ *
+ * 响应结构（实测）：
+ * - 提交 `{"id":"tsk_img_01M65Q…","object":"generation.task","status":"pending","progress":0}`
+ * - 查询 `GET /images/generations/{id}` → `pending / queued / in_progress / completed / failed`
+ * - `progress` 是**真实的 0→100**（少数站点里少见的靠谱）
+ * - 成功 `result.data[0].url`（域名 files.toapis.cn，24 小时过期），另有 billing / usage
+ * - 失败 `error:{code,message,reason}`
+ *
+ * 三条线路（仅模型名不同）：
+ * - 普通版 `gpt-image-2.5-flare` / `-sunburst`：`size` **只能传比例**，另给 `resolution`
+ *   档位；quality 传了不报错但被忽略；transparent 出图是 RGB，alpha 会丢。
+ * - `-vip` / `-official`：`size` 吃精确像素、六档质量真实生效（按 token 计价）、
+ *   透明背景输出 RGBA PNG。实测两者行为完全一致。
+ *
+ * 普通版还有个坑：传像素尺寸不会立刻报错，**提交成功、约 45 秒后任务才 failed**
+ * （`invalid_input: 不支持像素尺寸`）。所以比例/像素的差异必须在面板上就体现出来，
+ * 等到失败才提示，用户已经白等了一分钟。
+ */
+const TOAPIS_RELAY: ImageRelayDef = {
+  id: 'toapis',
+  name: 'ToAPIs',
+  docUrl: 'https://next-docs.toapis.cn/docs/zh/api-reference/images/gpt-image-2.5/generation',
+  // 只有 .cn 能解析；.com 在国内 DNS 查不到
+  baseUrl: 'https://api.toapis.cn/v1',
+  taskPath: '/images/generations/{id}',
+  // progress 是真值，3 秒一问就能给出像样的百分比
+  pollIntervalSec: 3,
+  // 有 /models（实测 180 个），「测试连接」仍用无副作用的探活查询
+  probePath: '/images/generations/{id}',
+  statusText: {
+    pending: '排队中',
+    queued: '排队中',
+    in_progress: '生成中',
+    completed: '已完成',
+    failed: '已失败',
+  },
+  modelRules: [
+    {
+      // vip / official 两条线路：官方口径的完整能力
+      match: /-(vip|official)$/i,
+      buildBody({ model, prompt, pixels, quality, background, moderation }) {
+        return { model, prompt, size: pixels, quality, background, moderation }
+      },
+    },
+    {
+      // 其余（普通版）：比例 + 分辨率档位，像素与画质都不收
+      match: /.*/,
+      overrides: {
+        ratios: ['1:1', '16:9', '9:16', '4:3', '3:4', '3:2', '2:3', '5:4', '4:5', '21:9'],
+        customSize: null,
+        pixelFree: true,
+        // 传了也不报错，但被静默忽略——与其让用户以为选了 max，不如不给
+        qualities: [],
+        // 实测 transparent 出的是 RGB PNG，alpha 保不住，索性不提供
+        backgrounds: [
+          { value: 'auto', label: '自动' },
+          { value: 'opaque', label: '不透明' },
+        ],
+      },
+      buildBody({ model, prompt, ratio, size, background, moderation }) {
+        return { model, prompt, size: ratio, resolution: size, background, moderation }
+      },
+    },
+  ],
+  parseTaskId(json: unknown) {
+    const id = (json as { id?: unknown } | null)?.id
+    return typeof id === 'string' ? id : ''
+  },
+  parseTask(json: unknown) {
+    const body = (json as { status?: unknown; progress?: unknown; result?: unknown } | null) ?? {}
+    const status = typeof body.status === 'string' ? body.status : ''
+    const progress = Number(body.progress)
+    const state: ImageRelayTaskState = {
+      status,
+      done: status === 'completed',
+      failed: status === 'failed',
+      progress: Number.isFinite(progress) ? progress : 0,
+    }
+    if (state.failed) {
+      const err = (json as { error?: { message?: unknown } } | null)?.error
+      state.message =
+        typeof err?.message === 'string' && err.message ? err.message : '任务已失败，请稍后重试'
+      return state
+    }
+    // 结果在 result.data[0].url，字符串（与 APIMart 的 result.images[0].url[0] 不同）
+    const data = (body.result as { data?: unknown } | null)?.data
+    const first = Array.isArray(data) ? (data[0] as { url?: unknown } | null) : null
+    const url = first?.url
+    if (typeof url === 'string' && url) {
+      state.url = url
+      state.done = true
+    }
+    return state
+  },
+}
+
 /** 全部中转站描述，供设置页渲染下拉；新增一家在这里加一条即可 */
-export const IMAGE_RELAYS: ImageRelayDef[] = [APIMART_RELAY]
+export const IMAGE_RELAYS: ImageRelayDef[] = [APIMART_RELAY, DUOMI_RELAY, TOAPIS_RELAY]
 
 const agnes: ImageProviderDef = {
   id: 'agnes',
@@ -430,7 +694,7 @@ const gptImage: ImageProviderDef = {
   // 末尾的 (?![a-z]) 是必要的一道：没有它 gpt-image-2.5-flareless 也会命中。
   modelIdValid: /gpt[-_ ]?image[-_ ]?2[._-]5[-_ ]?(flare|sunburst)(?![a-z])/i,
   modelIdWarn:
-    '只认 gpt-image-2.5-flare 与 gpt-image-2.5-sunburst。其他模型（含 gpt-image-2.5-ext 这类聚合路由）不吃本面板的比例 · 质量 · 背景参数，生图会失败。',
+    '只认 gpt-image-2.5-flare 与 gpt-image-2.5-sunburst（部分中转站还有 -vip / -official 后缀的同名线路）。其他模型（含 gpt-image-2.5-ext 这类聚合路由）不吃本面板的比例 · 质量 · 背景参数，生图会失败。',
   intro:
     '官方接口与中转站都按 OpenAI 标准字段发送（size / quality / background / moderation）：地址填 https://api.openai.com/v1，或中转站的 …/v1 即可；尺寸、质量等参数在生成面板里按次选择。',
   customSize: { min: 256, max: 4096, step: 16 },
@@ -529,11 +793,6 @@ function clampDimension(value: unknown, custom: ImageCustomSize, fallback: numbe
   return Math.min(custom.max, Math.max(custom.min, stepped))
 }
 
-/** 该厂商是否支持自定义像素宽高（不支持时面板不出现「自定义」比例与宽高输入框） */
-export function supportsCustomSize(def: ImageProviderDef): boolean {
-  return Boolean(def.customSize)
-}
-
 /** 该厂商是否有可选的中转站（没有则设置页不显示「中转站」下拉） */
 export function supportsRelay(def: ImageProviderDef): boolean {
   return Boolean(def.relays?.length)
@@ -568,21 +827,58 @@ function pickOption(
   return options.some((o) => o.value === value) ? value : (fallback ?? options[0].value)
 }
 
+/** 命中该模型对应的中转站规则；没声明规则或不匹配返回 undefined */
+function matchRelayRule(
+  relay: ImageRelayDef | undefined,
+  model: string,
+): ImageRelayModelRule | undefined {
+  return relay?.modelRules?.find((rule) => rule.match.test(model))
+}
+
+/**
+ * 当前「厂商 + 中转站 + 模型」三者组合下的实际能力。
+ *
+ * 界面（下拉里有哪些项）与存储（值收敛到哪个）必须用同一个来源，
+ * 否则会出现「下拉里有 max、存进去却被收敛成 low」这种自相矛盾的界面。
+ */
+export interface ImageCapabilities {
+  /** 实际生效的厂商能力，已叠加中转站与模型规则的覆盖 */
+  ratios: string[]
+  /** 自定义像素区间；undefined 表示不支持自填宽高 */
+  customSize?: ImageCustomSize
+  /** 按「比例 + 档位」出图，上游自己决定像素（本地面板不显示像素） */
+  pixelFree: boolean
+  qualities?: ImageOption[]
+  backgrounds?: ImageOption[]
+  /** 该模型专属的请求体组装（线路参数形状与厂商默认不同时才有） */
+  buildBody?: (ctx: ImageRequestContext) => Record<string, unknown>
+}
+
+export function resolveCapabilities(
+  def: ImageProviderDef,
+  relayId: string,
+  model: string,
+): ImageCapabilities {
+  const relay = getImageRelay(relayId)
+  const rule = matchRelayRule(relay, model)
+  const overrides = rule?.overrides
+  // customSize 的 null 是显式「这条线路不收像素」，与 undefined（未声明、沿用厂商）不同，
+  // 所以不能用 ?? 一把合并
+  const customSize =
+    overrides && 'customSize' in overrides ? (overrides.customSize ?? undefined) : def.customSize
+  return {
+    ratios: overrides?.ratios ?? def.ratios,
+    customSize,
+    pixelFree: Boolean(overrides?.pixelFree),
+    qualities: overrides?.qualities ?? relay?.qualities ?? def.qualities,
+    backgrounds: overrides?.backgrounds ?? def.backgrounds,
+    buildBody: rule?.buildBody,
+  }
+}
+
 /** 把存储值收敛成合法配置：缺失字段回退厂商默认值，越界值与白名单外的值一并纠正 */
 function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProviderConfig>) {
-  const size = def.sizes.includes(stored.size || '') ? stored.size! : def.defaultSize
-  const allowedRatios = supportsCustomSize(def) ? [...def.ratios, CUSTOM_RATIO] : def.ratios
-  const ratio = allowedRatios.includes(stored.ratio || '') ? stored.ratio! : def.defaultRatio
   const timeout = Number(stored.timeoutSec)
-
-  // 自定义像素的兜底：默认比例的默认档位那一格，这样切到「自定义」时框里不会是空的
-  const fallbackPixels = def.sizeTable[def.defaultRatio]?.[def.defaultSize] || ''
-  const [fallbackW, fallbackH] = fallbackPixels.split('x').map((n) => Number(n) || 0)
-  const custom = def.customSize
-  const width =
-    custom && ratio === CUSTOM_RATIO ? clampDimension(stored.width, custom, fallbackW) : 0
-  const height =
-    custom && ratio === CUSTOM_RATIO ? clampDimension(stored.height, custom, fallbackH) : 0
 
   /**
    * 常用模型清单与当前模型的收敛。
@@ -610,6 +906,24 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
   if (models.length === 0) models.push(def.defaultModel)
   const model = models.includes(storedModel) ? storedModel : models[0]
 
+  // 中转站只认该厂商声明过的；不认识就回退空串（走同步接口），不会留下无效 id
+  const relayId = (def.relays || []).some((r) => r.id === stored.relay) ? stored.relay! : ''
+  // 能力要按「中转站 + 模型」算：同一家站的普通版与 vip 线路能选的比例都不一样
+  const caps = resolveCapabilities(def, relayId, model)
+
+  const size = def.sizes.includes(stored.size || '') ? stored.size! : def.defaultSize
+  const allowedRatios = caps.customSize ? [...caps.ratios, CUSTOM_RATIO] : caps.ratios
+  const ratio = allowedRatios.includes(stored.ratio || '') ? stored.ratio! : def.defaultRatio
+
+  // 自定义像素的兜底：默认比例的默认档位那一格，这样切到「自定义」时框里不会是空的
+  const fallbackPixels = def.sizeTable[def.defaultRatio]?.[def.defaultSize] || ''
+  const [fallbackW, fallbackH] = fallbackPixels.split('x').map((n) => Number(n) || 0)
+  const custom = caps.customSize
+  const width =
+    custom && ratio === CUSTOM_RATIO ? clampDimension(stored.width, custom, fallbackW) : 0
+  const height =
+    custom && ratio === CUSTOM_RATIO ? clampDimension(stored.height, custom, fallbackH) : 0
+
   return {
     apiKey: typeof stored.apiKey === 'string' ? stored.apiKey : '',
     baseUrl: (typeof stored.baseUrl === 'string' && stored.baseUrl.trim()) || def.baseUrl,
@@ -623,11 +937,12 @@ function normalizeConfig(def: ImageProviderDef, stored: Partial<ImageGenProvider
         : def.defaultTimeoutSec,
     width,
     height,
-    quality: pickOption(def.qualities, stored.quality, def.defaultQuality),
-    background: pickOption(def.backgrounds, stored.background, def.defaultBackground),
+    // 能力收窄后只给界面上真能选的档：选了 max 发过去不一定报错，
+    // 但对方可能悄悄降级，与其让人以为买到了最高档，不如界面上就不给
+    quality: pickOption(caps.qualities, stored.quality, def.defaultQuality),
+    background: pickOption(caps.backgrounds, stored.background, def.defaultBackground),
     moderation: pickOption(def.moderations, stored.moderation, def.defaultModeration),
-    // 中转站只认该厂商声明过的；不认识就回退空串（走同步接口），不会留下无效 id
-    relay: (def.relays || []).some((r) => r.id === stored.relay) ? stored.relay! : '',
+    relay: relayId,
   }
 }
 
@@ -665,46 +980,63 @@ function gcd(a: number, b: number): number {
 }
 
 export interface ResolvedOutputSize {
-  /** 真正发给接口的像素尺寸，形如 "1024x1024"；查不到对应格子时为空串 */
+  /** 真正发给接口的像素尺寸，形如 "1024x1024"；查不到对应格子、或该线路不收像素时为空串 */
   pixels: string
-  /** 给人看的完整描述，如 "2K · 2048x1152" 或 "1080×1440 · 3:4" */
+  /** 给人看的完整描述，如 "2K · 2048x1152"、"1080×1440 · 3:4" 或 "2K · 16:9" */
   label: string
+  /**
+   * 该线路按「比例 + 分辨率档位」出图，像素由上游自己定。
+   *
+   * 这时 pixels 必然为空串，但这不是「这组参数没有对应尺寸」的错误状态，
+   * 界面据此区分「别生成」与「照常生成」。
+   */
+  pixelFree: boolean
 }
 
 /**
  * 把面板上的选择换算成接口要的像素尺寸 —— 全项目只在这里做换算。
  *
- * 两种模式：
+ * 三种模式：
  * - 预设：比例 + 分辨率档位 → 查厂商尺寸表；
- * - 自定义：比例选 CUSTOM_RATIO，直接用用户填的宽高，分辨率档位不参与。
+ * - 自定义：比例选 CUSTOM_RATIO，直接用用户填的宽高，分辨率档位不参与；
+ * - 不收像素的线路（ToAPIs 普通版）：只给档位与比例，pixels 留空。
  *
- * 调用方（面板 / 提示词扩写 / buildImage）都必须用这里的 pixels，不要自己拼 WxH。
+ * 调用方（面板 / 提示词扩写 / buildImage）都必须用这里的返回值，不要自己拼 WxH。
  */
 export function resolveOutputSize(
   def: ImageProviderDef,
-  cfg: Pick<ImageGenProviderConfig, 'size' | 'ratio' | 'width' | 'height'>,
+  cfg: Pick<ImageGenProviderConfig, 'size' | 'ratio' | 'width' | 'height' | 'model' | 'relay'>,
 ): ResolvedOutputSize {
-  if (cfg.ratio === CUSTOM_RATIO && def.customSize) {
-    const custom = def.customSize
+  const caps = resolveCapabilities(def, cfg.relay, cfg.model)
+
+  if (caps.pixelFree) {
+    // 上游按档位自己定像素（ToAPIs 的 2K + 16:9 是 2560×1440，和本地表里同档的
+    // 2048×1152 并不一样），所以这里不报像素，免得给出一个它并不会用的数字
+    return { pixels: '', label: `${cfg.size} · ${cfg.ratio}`, pixelFree: true }
+  }
+
+  if (cfg.ratio === CUSTOM_RATIO && caps.customSize) {
+    const custom = caps.customSize
     const fallback = def.sizeTable[def.defaultRatio]?.[def.defaultSize] || ''
     const [fbW, fbH] = fallback.split('x').map((n) => Number(n) || 0)
     const width = clampDimension(cfg.width, custom, fbW)
     const height = clampDimension(cfg.height, custom, fbH)
     const divisor = gcd(width, height)
     /**
-     * 只在化简结果正好是厂商预设比例时才显示它：1080×1440 → "3:4"，而 1920×1088（1080 被
+     * 只在化简结果正好是预设比例时才显示它：1080×1440 → "3:4"，而 1920×1088（1080 被
      * 对齐成 1088 后）会化简出 "30:17" 这种噪音，不如只给像素。
      */
     const simplified = divisor > 0 ? `${width / divisor}:${height / divisor}` : ''
-    const ratioText = def.ratios.includes(simplified) ? simplified : ''
+    const ratioText = caps.ratios.includes(simplified) ? simplified : ''
     return {
       pixels: `${width}x${height}`,
       label: ratioText ? `${width}×${height} · ${ratioText}` : `${width}×${height}`,
+      pixelFree: false,
     }
   }
 
   const pixels = def.sizeTable[cfg.ratio]?.[cfg.size] || ''
-  return { pixels, label: pixels ? `${cfg.size} · ${pixels}` : '' }
+  return { pixels, label: pixels ? `${cfg.size} · ${pixels}` : '', pixelFree: false }
 }
 
 /** 广告位：厂商是否支持传入参考图（图生图/多图合成，本期未开放） */
