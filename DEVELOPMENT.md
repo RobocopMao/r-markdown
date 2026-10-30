@@ -528,7 +528,7 @@ style: 调整深色模式下卡片边框颜色
 
 示例：`v0.4.3`
 
-> 打 tag 后需同步 `package.json` 与 `src-tauri/tauri.conf.json` 的 `version` 字段保持一致，`build-desktop.yml` 会以 tag 版本生成 `latest.json`。
+> 打 tag 前先确认版本号四处一致：`package.json`、`README.md` 首行、`DEVELOPMENT.md` 首行，以及子模块的 `src-tauri/tauri.conf.json`（同一子模块里的 `Cargo.toml` / `Cargo.lock` 也要跟着改）。`build-desktop.yml` 会以 tag 版本生成 `latest.json`。
 
 ### ⚠️ Git 操作规则（强制）
 
@@ -544,28 +544,53 @@ style: 调整深色模式下卡片边框颜色
 
 > 以下每一步均需用户明确指示后才执行，AI 不得自行 commit / push / merge / tag。
 
+**顺序不能反：先子模块、后主仓。** 主仓里的子模块指针必须指向子模块 `main` 上真实存在的 commit；先合主仓的话，指针会落在子模块 develop 的提交上，CI 的 `checkout submodules` 直接失败。
+
 ```bash
 # 1. 在 develop 分支开发（用户指示"提交"后执行 commit）
 git add .
 git commit -m "feat: xxx"
 
-# 2. 用户确认后合并到 main
-git checkout main
-git merge develop
+# 2. 用户确认后，逐个把子模块的 develop 合进各自 main 并推送
+#    能快进就 --ff-only；各自 main 上已有合并提交时（历史遗留）改用 --no-ff
+git -C src-tauri checkout main && git -C src-tauri merge --ff-only develop
+git -C src-tauri push origin main
+git -C src/views-private checkout main && git -C src/views-private merge --no-ff develop
+git -C src/views-private push origin main
+#    src/extension 视有无改动决定；它 main / develop 目前指向同一 commit
 
-# 3. 用户确认后推送 main
+# 3. 用户确认后合并主仓到 main
+git checkout main
+git merge --no-ff develop        # 先加 --no-commit 试跑，确认无冲突再真合
+
+# 4. 核对主仓的子模块指针落在子模块的 main 上（不是 develop）
+git ls-tree HEAD src-tauri src/extension src/views-private
+git -C src-tauri rev-parse origin/main           # 与上面第二列逐行比对
+git -C src/views-private rev-parse origin/main
+#    不一致就显式改指针：
+#    git update-index --cacheinfo 160000,<子模块 main 的 commit>,src/views-private
+
+# 5. 推送 main
 git push origin main
 
-# 4. 用户确认后删除旧 tag 并重新打 tag
-git tag -d v0.4.x
-git push origin :refs/tags/v0.4.x
-git tag v0.4.x
-git push origin v0.4.x
+# 6. 用户确认后打 tag（用附注 tag，v0.4.9 起统一如此；轻量 tag 只有 v0.4.4–v0.4.8）
+git tag -a v0.x.y -F -           # 正文写本次发版条目
+git push origin v0.x.y
 
-# 5. 用户确认后推送 develop
+# 7. 三个子模块的本地检出切回 main，避免工作区停在 develop 造成的困惑
+for d in src-tauri src/extension src/views-private; do git -C "$d" checkout main; done
+git submodule status             # 三行都应是干净状态，前面没有 +/- 号
+
+# 8. 退回 develop 继续开发
 git checkout develop
 git push origin develop
 ```
+
+> 版本号要改**四处**，常被漏掉的是文档那两处：`package.json`、`README.md` 首行、`DEVELOPMENT.md` 首行，以及子模块内的 `src-tauri/Cargo.toml` / `Cargo.lock` / `tauri.conf.json`。锁文件 `package-lock.json` / `pnpm-lock.yaml` 不参与版本 bump。
+>
+> **子模块的 main / develop 可能指向同一 commit**，此时指针写哪一个都一样——`src/extension` 目前就是这种状态。判断依据是 `git rev-parse origin/main` 与 `origin/develop` 是否相等，不是本地检出的分支名。
+>
+> 打 tag 后 `build-desktop.yml` 自动构建并在 Release 里按 tag 正文生成条目；`deploy.yml`（GitHub Pages）是 `workflow_dispatch` 手动触发，要发站点得自己跑一次。
 
 ## 构建与部署
 
