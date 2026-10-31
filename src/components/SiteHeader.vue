@@ -154,8 +154,14 @@ const menuItems = computed<MenuEntry[]>(() => {
   return [...mapped, ...extra]
 })
 
-/** PC 端铺在 logo 后面的那排文字导航：只取路由项，且排除编辑器（右侧已有 CTA 按钮） */
-const desktopLinks = computed(() => menuItems.value.filter((i) => i.to && i.to !== props.editorTo))
+/**
+ * PC 端铺在 logo 后面的那排文字导航：只取路由项，
+ * 排除编辑器（右侧已有 CTA 按钮）和统计面板（统计入口只在编辑器侧栏 / 移动端菜单里）。
+ */
+const PC_HIDDEN_PATHS: string[] = ['/dashboard']
+const desktopLinks = computed(() =>
+  menuItems.value.filter((i) => i.to && i.to !== props.editorTo && !PC_HIDDEN_PATHS.includes(i.to)),
+)
 
 /** 与编辑器一致：同一时刻只允许一个下拉展开，所以走共享的 useDropdownGroup */
 const { toggle: groupToggle, isVisible: menuOpen } = useDropdownGroup('site-menu')
@@ -252,7 +258,8 @@ onBeforeUnmount(() => {
 
         <!-- 没有页内锚点的页面（扩展组件 / 素材库 / 帮助文档）：把这套站点菜单
              在 PC 端铺开到 logo 后面，样式与首页的文字导航一致。
-             编辑器不进这排导航（右侧已有「打开编辑器」按钮），也不做选中态高亮。
+             编辑器不进这排导航（右侧已有「打开编辑器」按钮），统计面板也不进
+             （入口只在编辑器侧栏与移动端菜单里），两者都不做选中态高亮。
              拆成两段渲染（锚点项 / 路由项），和首页导航同一套写法，顺序稳定。 -->
         <nav
           v-else-if="menuItems.length"

@@ -1,20 +1,32 @@
 <script setup lang="ts">
 /**
- * 三源一致性面板（P1）。
+ * 数据源状态 + 一致性检查（P1）。
  *
- * 检查两件具体的事：
+ * 编辑器同一时刻只用一个工作区，所以「文章源」只有当前那一个：
+ * 切到本地目录就只显示本地磁盘，切到仓库就只显示 GitHub。
+ * 把没在用的那个也列出来（哪怕标灰），只会让人以为它坏了。
+ *
+ * 一致性检查两件事：
  *   1. 磁盘上有 .md 文件，但 tree.json 里没有对应节点 → 孤儿文件
  *   2. tree.json 里有节点，但正文拉不到 → 缺失正文
  *
  * 这两种情况在真实使用里会真的出现（手动放文件、切换工作区、云端删了本地没同步），
  * 所以值得单独列出来，并在有数据时给出可操作的提示。
  */
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   orphanFiles: string[]
   missingContents: string[]
   sources: { drafts: boolean; local: boolean; github: boolean }
+  /** 本次统计用的文章源，决定第二个点显示「本地磁盘」还是「GitHub」 */
+  mode: 'local' | 'github'
   warnings: string[]
 }>()
+
+const articleSourceOk = computed(() =>
+  props.mode === 'local' ? props.sources.local : props.sources.github,
+)
 
 function sourceState(ok: boolean): string {
   return ok ? 'text-[var(--accent)]' : 'text-[var(--text-muted)]'
@@ -27,19 +39,17 @@ function sourceDot(ok: boolean): string {
 
 <template>
   <div class="space-y-3">
-    <!-- 数据源状态 -->
+    <!-- 数据源状态：草稿库 + 当前文章源 -->
     <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">
       <span class="flex items-center gap-1.5">
         <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(sources.drafts)" />
         <span :class="sourceState(sources.drafts)">草稿库</span>
       </span>
       <span class="flex items-center gap-1.5">
-        <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(sources.local)" />
-        <span :class="sourceState(sources.local)">本地磁盘</span>
-      </span>
-      <span class="flex items-center gap-1.5">
-        <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(sources.github)" />
-        <span :class="sourceState(sources.github)">GitHub</span>
+        <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(articleSourceOk)" />
+        <span :class="sourceState(articleSourceOk)">{{
+          mode === 'local' ? '本地磁盘' : 'GitHub'
+        }}</span>
       </span>
     </div>
 

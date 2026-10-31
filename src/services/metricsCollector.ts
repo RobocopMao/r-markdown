@@ -17,7 +17,11 @@ import { DraftStorage } from '@/services/DraftStorage'
 import { LocalTreeService } from '@/services/LocalTreeService'
 import { GitHubTreeService, type TreeNode } from '@/services/GitHubTreeService'
 import { GitHubArticleCache } from '@/services/GitHubArticleCache'
-import { getActiveWorkspace } from '@/services/articleWorkspace'
+import {
+  ensureWorkspaces,
+  getActiveWorkspace,
+  getWorkspaceToken,
+} from '@/services/articleWorkspace'
 import { getArticleFilesDir, getArticlesDir } from '@/services/localArticlePath'
 import { resolveArticleFileBase } from '@/utils/articleNaming'
 import { analyzeArticle, type ArticleHealth } from '@/services/articleHealth'
@@ -77,7 +81,15 @@ export interface DashboardData {
   articles: ArticleStat[]
   drafts: DraftStat[]
   activity: ActivityDay[]
-  /** 各数据源当前是否可用 */
+  /**
+   * 本次统计用的文章源。
+   *
+   * 编辑器同一时刻只用一个工作区，所以文章只可能来自一处：
+   * 桌面端按 `articleStorageMode` 选本地磁盘或 GitHub，浏览器端固定 GitHub。
+   * UI 上「数据来源」应当只展示这一个，把没在用的那个也列出来只会让人以为它挂了。
+   */
+  mode: 'local' | 'github'
+  /** 各数据源当前是否可用（只查当前 mode 对应的那个，另一个恒为 false） */
   sources: { drafts: boolean; local: boolean; github: boolean }
   /** 本地磁盘有文件、树里没有 */
   orphanFiles: string[]
@@ -400,6 +412,30 @@ function githubNamespace(): string {
   return cfg ? `github:${cfg.owner}/${cfg.repo}:${cfg.branch}` : 'github:legacy'
 }
 
+/**
+ * 把激活的 github 工作区同步到底层配置。
+ *
+ * 编辑器里由 useGitHubTree 的 applyActiveWorkspace 做这件事，但统计页可能
+ * 是用户直接打开的（没经过编辑器），此时 cloudArticleRepo / cloudArticleToken
+ * 这两个「镜像设置」可能还是空的，GitHubTreeService.getConfig() 就会返回 null，
+ * 明明配了工作区却统计不到仓库。这里补上同一次同步，口径与编辑器一致。
+ */
+function syncActiveGithubWorkspace(): void {
+  ensureWorkspaces()
+  const ws = getActiveWorkspace('github')
+  if (!ws) return
+  const repo = ws.repo ?? ''
+  if (!repo.includes('/')) return
+  const idx = repo.indexOf('/')
+  // 值未变化时 setConfig 内部会跳过写入，不会触发 setting-changed
+  GitHubTreeService.setConfig(
+    repo.substring(0, idx),
+    repo.substring(idx + 1),
+    getWorkspaceToken(ws.id),
+    ws.branch || 'main',
+  )
+}
+
 /* ────────────────────────── 汇总 ────────────────────────── */
 
 /** 把各源的日期事件按本地天聚合成热力图序列 */
@@ -438,12 +474,28 @@ function buildActivity(
 }
 
 /**
+ * 当前生效的文章存储方式。
+ *
+ * 编辑器同一时刻只挂一个工作区，统计面板必须跟着它走：
+ * 切到本地目录就只统计本地磁盘，切到 GitHub 就只统计仓库，
+ * 不能把两个都算进来（否则同一篇文章会出现两份）。
+ *
+ * Web 端 `articleStorageMode` 是桌面端专用设置，那边固定走 GitHub。
+ */
+export function currentStorageMode(): 'local' | 'github' {
+  return IS_TAURI ? getSetting<'github' | 'local'>('articleStorageMode') : 'github'
+}
+
+/**
  * 采集全量统计数据。
- * 桌面端按当前存储模式取一棵树；Web 端只有草稿箱。
+ *
+ * 数据源可用性与平台的关系：
+ *   - 草稿库（IndexedDB）：两端都有
+ *   - 文章源：本地磁盘（仅桌面端，依赖 plugin-fs）或 GitHub 仓库，二选一
  */
 export async function collectDashboardData(): Promise<DashboardData> {
   const warnings: string[] = []
-  const mode = getSetting<'github' | 'local'>('articleStorageMode')
+  const mode = currentStorageMode()
 
   const { drafts, ok: draftsOk } = await collectDrafts(warnings)
 
@@ -454,47 +506,45 @@ export async function collectDashboardData(): Promise<DashboardData> {
   let githubAvailable = false
   let localAvailable = false
 
-  if (IS_TAURI) {
-    try {
-      if (mode === 'local') {
-        const tree = await LocalTreeService.fetchTree()
-        const result = await collectLocalArticles(tree.nodes, warnings)
-        articles = result.articles
-        orphanFiles = result.orphanFiles
-        missingContents = result.missingContents
-        localAvailable = true
-        if (tree.nodes.filter((n) => n.type === 'article').length === 0) {
-          warnings.push('本地文章树为空，可以在编辑器里新建文章')
-        }
+  try {
+    if (mode === 'local') {
+      const tree = await LocalTreeService.fetchTree()
+      const result = await collectLocalArticles(tree.nodes, warnings)
+      articles = result.articles
+      orphanFiles = result.orphanFiles
+      missingContents = result.missingContents
+      localAvailable = true
+      if (tree.nodes.filter((n) => n.type === 'article').length === 0) {
+        warnings.push('本地文章树为空，可以在编辑器里新建文章')
+      }
+    } else {
+      syncActiveGithubWorkspace()
+      const cfg = GitHubTreeService.getConfig()
+      if (!cfg) {
+        warnings.push('还没有配置 GitHub 文章仓库，本次只统计草稿箱')
       } else {
-        const cfg = GitHubTreeService.getConfig()
-        if (!cfg) {
-          warnings.push('未配置 GitHub 云端文章，只统计本地草稿')
-        } else {
-          githubAvailable = true
-          try {
-            const tree = await GitHubTreeService.fetchTree()
-            const result = await collectGithubArticles(tree.nodes, warnings)
-            articles = result.articles
-            missingContents = result.missingContents
-            commitAll = result.commitAll
-          } catch {
-            warnings.push('GitHub 文章树拉取失败，本次只有草稿数据')
-            githubAvailable = false
-          }
+        githubAvailable = true
+        try {
+          const tree = await GitHubTreeService.fetchTree()
+          const result = await collectGithubArticles(tree.nodes, warnings)
+          articles = result.articles
+          missingContents = result.missingContents
+          commitAll = result.commitAll
+        } catch {
+          warnings.push('GitHub 文章树拉取失败，本次只有草稿数据')
+          githubAvailable = false
         }
       }
-    } catch {
-      warnings.push('文章数据读取失败，本次只有草稿数据')
     }
-  } else {
-    warnings.push('浏览器版没有本地磁盘与仓库数据，只统计草稿箱')
+  } catch {
+    warnings.push('文章数据读取失败，本次只有草稿数据')
   }
 
   return {
     articles,
     drafts,
     activity: buildActivity(articles, drafts, commitAll),
+    mode,
     sources: {
       drafts: draftsOk,
       local: localAvailable,
@@ -507,10 +557,14 @@ export async function collectDashboardData(): Promise<DashboardData> {
   }
 }
 
-/** 当前工作目录（仅用于 UI 上标注数据来源） */
-export async function currentStorageLabel(): Promise<string> {
-  if (!IS_TAURI) return '浏览器草稿箱'
-  const mode = getSetting<'github' | 'local'>('articleStorageMode')
+/**
+ * 当前工作目录（仅用于 UI 上标注数据来源）。
+ *
+ * 传入 `mode` 时按该 mode 计算标签：UI 上「数据来自…」和「· xxx」两处必须同源，
+ * 否则采集过程中模式被别处改动（例如 ensureWorkspaces 自动回退到本地）会出现
+ * 「数据来自草稿库与 GitHub 仓库 · 本地目录」这种自相矛盾的显示。
+ */
+export async function currentStorageLabel(mode = currentStorageMode()): Promise<string> {
   if (mode === 'local') {
     try {
       return await getArticlesDir()
@@ -518,6 +572,8 @@ export async function currentStorageLabel(): Promise<string> {
       return '本地目录'
     }
   }
+  const ws = getActiveWorkspace('github')
+  if (ws?.repo) return `${ws.repo}@${ws.branch || 'main'}`
   const cfg = GitHubTreeService.getConfig()
   return cfg ? `${cfg.owner}/${cfg.repo}@${cfg.branch}` : '未配置仓库'
 }

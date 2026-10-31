@@ -5,8 +5,11 @@
  * 用 CSS Grid 排（7 行 × N 列），行对应周一~周日，列对应自然周。
  * 每格的颜色由 --accent 叠加不同透明度得到，所以换主题色会整体跟着变。
  * 不用 SVG 是因为格子要 hover 出 tooltip，DOM 元素上做交互更省事。
+ *
+ * 格子边长不写死：容器宽就放大铺满，窄到一定程度才退回最小尺寸并出横向滚动条。
+ * 写死 13px 的话，一年 53 列只占 870px，卡片通栏一千多像素时右边会空一大块。
  */
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
 export interface HeatCell {
   day: string | null
@@ -20,6 +23,15 @@ const props = defineProps<{
   longestStreak: number
   coverage: number
 }>()
+
+/** 格子最小值：再小就点不中、也看不清 */
+const CELL_MIN = 13
+/** 格子最大值：再大就变成色块墙，不好扫读 */
+const CELL_MAX = 22
+/** 列间距 / 行间距的基准值 */
+const GAP = 3
+/** 左侧星期标尺占的宽度（标尺 18px + 右边距 4px） */
+const RULER_WIDTH = 22
 
 /** 把线性排列的格子切成「每周一列」的分组 */
 const columns = computed(() => {
@@ -66,10 +78,67 @@ function titleOf(cell: HeatCell): string {
   if (!cell.day) return ''
   return cell.count > 0 ? `${cell.day} · ${cell.count} 项动过` : `${cell.day} · 没动`
 }
+
+/* ── 自适应格子尺寸 ── */
+
+const rootRef = ref<HTMLElement | null>(null)
+const cellSize = ref(CELL_MIN)
+const gapSize = ref(GAP)
+let observer: ResizeObserver | null = null
+
+/**
+ * 按容器宽度算格子边长。
+ *
+ * 关键是不取整：一年 53 列，若把每格取整到整数或两位小数，误差会累积成
+ * 几像素的余量，看起来就是右边空了一条。直接用小数像素，交给浏览器排版，
+ * 恰好铺满。宽度不够（算出来小于 CELL_MIN）时才退回最小尺寸，由外层出滚动条。
+ *
+ * 注意 flex 里星期标尺也是一个子元素，所以间距数量是「列数」而不是「列数 - 1」，
+ * 少算一个 gap 就会比容器宽出 3px。
+ */
+function measure(): void {
+  const el = rootRef.value
+  if (!el) return
+  const count = columns.value.length
+  if (!count) return
+
+  const available = el.clientWidth - RULER_WIDTH
+  let size = (available - GAP * count) / count
+
+  if (size > CELL_MAX) {
+    // 格子到顶了，剩下的宽度摊给列间距
+    size = CELL_MAX
+    gapSize.value = (available - size * count) / count
+  } else {
+    gapSize.value = GAP
+  }
+  if (size < CELL_MIN) size = CELL_MIN
+
+  cellSize.value = size
+}
+
+onMounted(() => {
+  measure()
+  if (typeof ResizeObserver !== 'undefined' && rootRef.value) {
+    observer = new ResizeObserver(() => measure())
+    observer.observe(rootRef.value)
+  }
+})
+
+onBeforeUnmount(() => {
+  observer?.disconnect()
+  observer = null
+})
+
+// 数据刷新（比如换了一批稿子）导致列数变化时重算一次
+watch(
+  () => columns.value.length,
+  () => measure(),
+)
 </script>
 
 <template>
-  <div>
+  <div ref="rootRef" class="min-w-0">
     <div
       class="mb-3 flex flex-wrap items-baseline gap-x-5 gap-y-1 text-[12px] text-[var(--text-secondary)]"
     >
@@ -85,26 +154,35 @@ function titleOf(cell: HeatCell): string {
       <span>覆盖率 {{ coverage }}%</span>
     </div>
 
-    <div class="overflow-x-auto pb-1">
-      <div class="inline-block min-w-full">
+    <!--
+      卡片够宽时格子跟着放大铺满整行；窄到 13px 还放不下时，
+      只有这一块出横向滚动条，不把外层页面撑出横向滚动。
+    -->
+    <div class="w-full overflow-x-auto pb-1">
+      <div class="w-max">
         <!-- 月份标尺 -->
-        <div class="mb-1 flex gap-[3px] pl-[22px]">
+        <div class="mb-1 flex" :style="{ gap: `${gapSize}px`, paddingLeft: `${RULER_WIDTH}px` }">
           <div
             v-for="(label, index) in monthLabels"
             :key="index"
-            class="w-[13px] shrink-0 text-[10px] leading-none text-[var(--text-muted)]"
+            class="shrink-0 text-[10px] leading-none whitespace-nowrap text-[var(--text-muted)]"
+            :style="{ width: `${cellSize}px` }"
           >
             {{ label ?? '' }}
           </div>
         </div>
 
-        <div class="flex gap-[3px]">
+        <div class="flex" :style="{ gap: `${gapSize}px` }">
           <!-- 星期标尺：隔行标注，避免挤成一片 -->
-          <div class="mr-1 flex w-[18px] shrink-0 flex-col gap-[3px]">
+          <div
+            class="flex shrink-0 flex-col"
+            :style="{ width: `${RULER_WIDTH - 4}px`, marginRight: '4px', gap: `${gapSize}px` }"
+          >
             <div
               v-for="(label, index) in WEEK_ROWS"
               :key="index"
-              class="h-[13px] text-[10px] leading-[13px] text-[var(--text-muted)]"
+              class="text-[10px] leading-none text-[var(--text-muted)]"
+              :style="{ height: `${cellSize}px`, lineHeight: `${cellSize}px` }"
             >
               {{ label }}
             </div>
@@ -113,12 +191,14 @@ function titleOf(cell: HeatCell): string {
           <div
             v-for="(column, colIndex) in columns"
             :key="colIndex"
-            class="flex flex-col gap-[3px]"
+            class="flex shrink-0 flex-col"
+            :style="{ gap: `${gapSize}px` }"
           >
             <div
               v-for="(cell, rowIndex) in column"
               :key="rowIndex"
-              class="h-[13px] w-[13px] rounded-[3px] transition-transform duration-150"
+              class="rounded-[3px] transition-transform duration-150"
+              :style="{ width: `${cellSize}px`, height: `${cellSize}px` }"
               :class="[
                 cell.day ? LEVEL_CLASS[cell.level] : 'bg-transparent',
                 cell.day ? 'hover:scale-125' : '',

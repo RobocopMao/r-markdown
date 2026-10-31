@@ -4,33 +4,64 @@
  * 数据获取只做一次（进页面 / 主动刷新），派生指标全部用 computed 从快照算出来，
  * 这样切换时间范围、排序方式都不再触发 IO。
  *
- * 缓存策略：sessionStorage 存 5 分钟快照，防止来回切路由反复拉 GitHub。
+ * 缓存策略：sessionStorage 存 10 分钟快照，防止来回切路由反复拉 GitHub。
  * 只缓存「聚合后的快照」，不缓存原始正文，避免把整篇文章塞进 sessionStorage（配额通常 5MB）。
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import {
   collectDashboardData,
   currentStorageLabel,
+  currentStorageMode,
   toDayKey,
   type ArticleStat,
   type DashboardData,
   type DraftStat,
 } from '@/services/metricsCollector'
 import { scoreBand } from '@/services/articleHealth'
+import { getSetting, setSetting } from '@/config/settings'
 
 const CACHE_KEY = 'r-markdown-dashboard-cache'
-const CACHE_TTL = 5 * 60 * 1000
 
-export type RangeKey = '30d' | '90d' | '365d'
+/**
+ * 快照有效期（10 分钟）。
+ *
+ * 注意：这里**没有定时器**，面板开着不动不会自己更新。
+ * 这个时长只决定「下次读快照时还能不能用」——
+ * 过期后必须重新进入面板或点「刷新」才会重新采集。
+ * 页脚文案也用这个常量，改一处就同步。
+ */
+export const CACHE_TTL = 10 * 60 * 1000
 
-export const RANGE_OPTIONS: { key: RangeKey; label: string; days: number }[] = [
-  { key: '30d', label: '近 30 天', days: 30 },
-  { key: '90d', label: '近 90 天', days: 90 },
-  { key: '365d', label: '近一年', days: 365 },
-]
+/** 页脚文案用的分钟数 */
+export const CACHE_TTL_MINUTES = Math.round(CACHE_TTL / 60000)
+
+/**
+ * 统计窗口固定为近一年。
+ *
+ * 一开始做了 30 天 / 90 天 / 一年三个档位，但热力图是按自然周对齐的，
+ * 90 天一档只能排出十几列，看起来空得很；而且切档位换来的信息量有限，
+ * 不如固定一年，把「今年写过多少天」这件事一次说清楚。
+ */
+export const RANGE_DAYS = 365
+
+/** 用在洞察文案里的窗口名 */
+export const RANGE_LABEL = '近一年'
 
 /** 超过这个天数没动过的草稿算「僵尸稿」 */
 export const STALE_DRAFT_DAYS = 14
+
+/** 「文章体检」忽略名单存这个设置项 */
+const IGNORED_SETTING_KEY = 'dashboardIgnoredHealthKeys'
+
+/**
+ * 栏目显示名映射：仓库里的文件夹名 → 面板上展示的名字。
+ *
+ * 只影响「按栏目」的显示文字，分组口径仍按真实顶层文件夹名，
+ * 所以同一篇稿子该归哪栏不会因为这个表而变。
+ */
+export const FOLDER_DISPLAY_NAMES: Record<string, string> = {
+  微信公众号: '文章',
+}
 
 interface CachePayload {
   at: number
@@ -44,6 +75,8 @@ function readCache(): DashboardData | null {
     const parsed = JSON.parse(raw) as CachePayload
     if (!parsed?.at || Date.now() - parsed.at > CACHE_TTL) return null
     if (!parsed.data || !Array.isArray(parsed.data.drafts)) return null
+    // 换了工作区（本地 ↔ 仓库）旧快照就作废，否则会拿上一处的数据当当前数据
+    if (parsed.data.mode !== currentStorageMode()) return null
     return parsed.data
   } catch {
     return null
@@ -87,11 +120,64 @@ export function useDashboard() {
   const data = ref<DashboardData | null>(null)
   const loading = ref(false)
   const error = ref('')
-  const range = ref<RangeKey>('90d')
   const storageLabel = ref('')
   const refreshing = ref(false)
 
-  const rangeDays = computed(() => RANGE_OPTIONS.find((o) => o.key === range.value)?.days ?? 90)
+  /* ── 体检忽略名单（持久化在 setting 里，跟着用户配置走） ── */
+
+  const ignoredKeys = ref<string[]>(readIgnoredKeys())
+
+  function readIgnoredKeys(): string[] {
+    const stored = getSetting<string[]>(IGNORED_SETTING_KEY)
+    return Array.isArray(stored) ? stored.filter((k) => typeof k === 'string') : []
+  }
+
+  function persistIgnoredKeys(next: string[]): void {
+    ignoredKeys.value = next
+    setSetting(IGNORED_SETTING_KEY, next)
+  }
+
+  /** 忽略一篇（已经忽略过的不会重复写入） */
+  function ignoreHealthRow(key: string): void {
+    if (!key || ignoredKeys.value.includes(key)) return
+    persistIgnoredKeys([...ignoredKeys.value, key])
+  }
+
+  /** 取消忽略 */
+  function unignoreHealthRow(key: string): void {
+    if (!ignoredKeys.value.includes(key)) return
+    persistIgnoredKeys(ignoredKeys.value.filter((k) => k !== key))
+  }
+
+  /** 清空忽略名单 */
+  function clearIgnoredHealthRows(): void {
+    if (!ignoredKeys.value.length) return
+    persistIgnoredKeys([])
+  }
+
+  // 设置变了要跟着变：
+  //  · 忽略名单 → 只重算派生的体检表，不用重新采集
+  //  · 存储方式 / 激活工作区 → 文章源整个换了，必须重新采集，
+  //    否则面板会一直显示切走之前那个工作区的数据
+  const onSettingChanged = (e: Event): void => {
+    const detail = (e as CustomEvent).detail as { key?: string } | undefined
+    const key = detail?.key
+    if (!key) return
+    if (key === IGNORED_SETTING_KEY) {
+      ignoredKeys.value = readIgnoredKeys()
+      return
+    }
+    if (
+      key === 'articleStorageMode' ||
+      key === 'articleWorkspaces' ||
+      key === 'activeGithubWorkspaceId' ||
+      key === 'activeLocalWorkspaceId'
+    ) {
+      if (!loading.value) void refresh()
+    }
+  }
+  onMounted(() => window.addEventListener('setting-changed', onSettingChanged))
+  onUnmounted(() => window.removeEventListener('setting-changed', onSettingChanged))
 
   async function load(force = false): Promise<void> {
     if (loading.value) return
@@ -102,7 +188,7 @@ export function useDashboard() {
         const cached = readCache()
         if (cached) {
           data.value = cached
-          storageLabel.value = await currentStorageLabel().catch(() => '')
+          storageLabel.value = await currentStorageLabel(cached.mode).catch(() => '')
           loading.value = false
           return
         }
@@ -110,7 +196,7 @@ export function useDashboard() {
       const snapshot = await collectDashboardData()
       data.value = snapshot
       writeCache(snapshot)
-      storageLabel.value = await currentStorageLabel().catch(() => '')
+      storageLabel.value = await currentStorageLabel(snapshot.mode).catch(() => '')
     } catch (e) {
       error.value = e instanceof Error ? e.message : '统计数据加载失败'
     } finally {
@@ -135,7 +221,7 @@ export function useDashboard() {
   const articles = computed<ArticleStat[]>(() => data.value?.articles ?? [])
   const drafts = computed<DraftStat[]>(() => data.value?.drafts ?? [])
 
-  const rangeStart = computed(() => startOfToday() - (rangeDays.value - 1) * DAY_MS)
+  const rangeStart = computed(() => startOfToday() - (RANGE_DAYS - 1) * DAY_MS)
 
   /** 时间范围内有过动作的文章（用于「本期产出」等） */
   const recentArticles = computed(() =>
@@ -278,8 +364,10 @@ export function useDashboard() {
    * 体检范围 = 已入库文章 + 草稿。
    * 草稿也一起体检：刚写完还没归档的稿子恰恰最需要看结构，
    * 而且浏览器版没有文章树，只算文章的话这个表会永远空着。
+   *
+   * 这里只产出「全量」，是否被忽略由下面的 visibleHealthRows / ignoredHealthRows 决定。
    */
-  const healthRows = computed(() => {
+  const allHealthRows = computed(() => {
     const fromArticles = articles.value
       .filter((a) => a.health !== null)
       .map((a) => {
@@ -288,7 +376,7 @@ export function useDashboard() {
           key: a.key,
           id: a.id,
           title: a.title,
-          folder: a.folder,
+          folder: FOLDER_DISPLAY_NAMES[a.folder] ?? a.folder,
           source: a.source as 'local' | 'github' | 'draft',
           chars: health.chars,
           minutes: health.minutes,
@@ -334,8 +422,21 @@ export function useDashboard() {
     return [...fromArticles, ...fromDrafts].sort((a, b) => a.score - b.score)
   })
 
-  /** 有问题的篇数（结构分 < 85） */
-  const problemCount = computed(() => healthRows.value.filter((r) => r.score < 85).length)
+  /** 全部体检行（含被忽略的），按分数升序 */
+  const healthRows = computed(() => [...allHealthRows.value].sort((a, b) => a.score - b.score))
+
+  /** 实际展示的体检行：去掉被忽略的 */
+  const visibleHealthRows = computed(() =>
+    healthRows.value.filter((r) => !ignoredKeys.value.includes(r.key)),
+  )
+
+  /** 被忽略的体检行 */
+  const ignoredHealthRows = computed(() =>
+    healthRows.value.filter((r) => ignoredKeys.value.includes(r.key)),
+  )
+
+  /** 有问题的篇数（结构分 < 85，不含被忽略的） */
+  const problemCount = computed(() => visibleHealthRows.value.filter((r) => r.score < 85).length)
 
   /* ── 产量分布 ── */
 
@@ -346,10 +447,11 @@ export function useDashboard() {
   const byFolder = computed(() => {
     const map = new Map<string, { folder: string; count: number; chars: number }>()
     const add = (folder: string, chars: number) => {
-      const item = map.get(folder) ?? { folder, count: 0, chars: 0 }
+      const label = FOLDER_DISPLAY_NAMES[folder] ?? folder
+      const item = map.get(label) ?? { folder: label, count: 0, chars: 0 }
       item.count++
       item.chars += chars
-      map.set(folder, item)
+      map.set(label, item)
     }
     for (const article of articles.value) add(article.folder, article.chars)
     for (const draft of drafts.value) add('草稿箱', draft.chars)
@@ -439,7 +541,7 @@ export function useDashboard() {
     } else if (act.activeDays > 0) {
       list.push({
         tone: 'info',
-        text: `${RANGE_OPTIONS.find((o) => o.key === range.value)?.label}内有 ${act.activeDays} 天动过稿子，占 ${act.coverage}%。`,
+        text: `${RANGE_LABEL}内有 ${act.activeDays} 天动过稿子，占 ${act.coverage}%。`,
       })
     }
 
@@ -473,7 +575,7 @@ export function useDashboard() {
       const top = byFolder.value[0]
       list.push({
         tone: 'info',
-        text: `栏目「${top.folder}」文章最多（${top.count} 篇）。`,
+        text: `栏目「${top.folder}」最多（${top.count} 篇）。`,
       })
     }
 
@@ -492,8 +594,6 @@ export function useDashboard() {
     loading,
     refreshing,
     error,
-    range,
-    rangeDays,
     storageLabel,
     load,
     refresh,
@@ -505,6 +605,12 @@ export function useDashboard() {
     heatmap,
     activityStats,
     healthRows,
+    visibleHealthRows,
+    ignoredHealthRows,
+    ignoredKeys,
+    ignoreHealthRow,
+    unignoreHealthRow,
+    clearIgnoredHealthRows,
     problemCount,
     byFolder,
     charBuckets,
