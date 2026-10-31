@@ -24,6 +24,7 @@ import {
   ArrowRight,
   BookOpenText,
   Bot,
+  ChartColumn,
   Download,
   EllipsisVertical,
   HelpCircle,
@@ -114,6 +115,7 @@ const SITE_MENU: MenuEntry[] = [
   { label: '编辑器', to: props.editorTo, icon: PenLine },
   { label: '扩展组件', to: '/components', icon: LayoutGrid },
   { label: '素材库', to: '/materials', icon: Library },
+  { label: '统计', to: '/dashboard', icon: ChartColumn },
   { label: '帮助文档', to: '/help', icon: HelpCircle },
 ]
 
