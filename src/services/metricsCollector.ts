@@ -356,7 +356,7 @@ async function collectGithubArticles(
   const ns = githubNamespace()
   const cfg = GitHubTreeService.getConfig()
   if (!cfg) {
-    warnings.push('未配置 GitHub 云端文章，本次未包含仓库数据')
+    warnings.push('未配置 GitHub 文章仓库，本次未包含仓库数据')
     return { articles: [], orphanFiles: [], missingContents: [], commitAll: [] }
   }
 
@@ -490,7 +490,7 @@ export function currentStorageMode(): 'local' | 'github' {
  * 采集全量统计数据。
  *
  * 数据源可用性与平台的关系：
- *   - 草稿库（IndexedDB）：两端都有
+ *   - 草稿箱（IndexedDB）：两端都有
  *   - 文章源：本地磁盘（仅桌面端，依赖 plugin-fs）或 GitHub 仓库，二选一
  */
 export async function collectDashboardData(): Promise<DashboardData> {
@@ -562,7 +562,7 @@ export async function collectDashboardData(): Promise<DashboardData> {
  *
  * 传入 `mode` 时按该 mode 计算标签：UI 上「数据来自…」和「· xxx」两处必须同源，
  * 否则采集过程中模式被别处改动（例如 ensureWorkspaces 自动回退到本地）会出现
- * 「数据来自草稿库与 GitHub 仓库 · 本地目录」这种自相矛盾的显示。
+ * 「数据来自草稿箱与 GitHub 仓库 · 本地目录」这种自相矛盾的显示。
  */
 export async function currentStorageLabel(mode = currentStorageMode()): Promise<string> {
   if (mode === 'local') {

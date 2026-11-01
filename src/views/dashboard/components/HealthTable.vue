@@ -7,6 +7,8 @@
  *
  * 每行右侧有「忽略」：忽略后不进列表、不计入「有可改项」，
  * 收藏在设置项里（跨会话保留）。底部可以「显示忽略」把它们调出来取消忽略。
+ *
+ * 100 分的稿子不展示：它们没有可改项，混在列表里只是噪音。
  */
 import { computed, ref } from 'vue'
 import type { HealthIssue } from '@/services/articleHealth'
@@ -49,16 +51,30 @@ const emit = defineEmits<{
 
 const expanded = ref<string | null>(null)
 
-/** 默认只显示最差的前 12 篇，其余折叠起来 */
-const SHOW_LIMIT = 12
+/**
+ * 100 分的稿子不进列表：已经没有可改项，排在表里只是噪音。
+ * 分数计算见 articleHealth.ts，满分需要同时满足字数、段落、标题、配图等全部条件。
+ */
+const PERFECT_SCORE = 100
+
+/** 默认只显示最差的前 10 篇，其余折叠起来 */
+const SHOW_LIMIT = 10
 const showAll = ref(false)
 
 /** 底部「显示忽略」开关 */
 const showIgnored = ref(false)
 
-const visibleRows = computed(() => (showAll.value ? props.rows : props.rows.slice(0, SHOW_LIMIT)))
+/** 需要展示的行：去掉满分（100）的 */
+const listableRows = computed(() => props.rows.filter((r) => r.score < PERFECT_SCORE))
 
-const hiddenCount = computed(() => Math.max(0, props.rows.length - SHOW_LIMIT))
+const visibleRows = computed(() =>
+  showAll.value ? listableRows.value : listableRows.value.slice(0, SHOW_LIMIT),
+)
+
+const hiddenCount = computed(() => Math.max(0, listableRows.value.length - SHOW_LIMIT))
+
+/** 满分的篇数（只在空态文案里提一句，让用户知道不是没数据） */
+const perfectCount = computed(() => props.rows.length - listableRows.value.length)
 
 const ignored = computed<HealthRow[]>(() => props.ignoredRows ?? [])
 
@@ -84,7 +100,7 @@ function barColor(band: HealthRow['band']): string {
 }
 
 function sourceLabel(source: HealthRow['source']): string {
-  if (source === 'github') return '云端'
+  if (source === 'github') return 'GitHub'
   if (source === 'local') return '本地'
   return '草稿'
 }
@@ -103,8 +119,15 @@ function fmtDate(ms?: number): string {
 
 <template>
   <div>
-    <div v-if="rows.length === 0" class="py-8 text-center text-[13px] text-[var(--text-muted)]">
-      {{ ignored.length ? '剩下的都已经被忽略了。' : '还没有可体检的文章。' }}
+    <div
+      v-if="listableRows.length === 0"
+      class="py-8 text-center text-[13px] text-[var(--text-muted)]"
+    >
+      <template v-if="ignored.length">剩下的都已经被忽略了。</template>
+      <template v-else-if="perfectCount > 0">
+        没有可改项，{{ perfectCount }} 篇都是满分。
+      </template>
+      <template v-else>还没有可体检的文章。</template>
     </div>
 
     <div v-else class="divide-y divide-[var(--border-color)]">
@@ -273,7 +296,7 @@ function fmtDate(ms?: number): string {
       class="mt-2 w-full rounded-lg py-1.5 text-[12px] text-[var(--text-secondary)]"
       @click="showAll = !showAll"
     >
-      {{ showAll ? '只看最差的 12 篇' : `再看其余 ${hiddenCount} 篇` }}
+      {{ showAll ? '收起来' : `再看其余 ${hiddenCount} 篇` }}
     </button>
 
     <!-- 已忽略：默认收起，点开后可以逐条取消忽略 -->

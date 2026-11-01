@@ -7,7 +7,7 @@
  *   · 编辑器左侧菜单的「统计」入口（嵌在编辑区里，不显示文章树/编辑器/预览/缩略图）
  *
  * 数据全部来自已有存储，不新增任何埋点或数据库：
- *   · 草稿库（IndexedDB）
+ *   · 草稿箱（IndexedDB）
  *   · 当前工作区的文章源：本地磁盘 articles/（桌面端）或 GitHub 仓库（两端）
  *
  * 文章源跟着编辑器当前工作区走——同一时刻只有一个，面板上也就只标这一个。
@@ -66,7 +66,7 @@ const {
  */
 const sourceLine = computed(() => {
   const mode = data.value?.mode ?? currentStorageMode()
-  return mode === 'local' ? '数据来自草稿库与本地磁盘' : '数据来自草稿库与 GitHub 仓库'
+  return mode === 'local' ? '数据来自草稿箱与本地磁盘' : '数据来自草稿箱与 GitHub 仓库'
 })
 
 const toastVisible = ref(false)
@@ -227,7 +227,8 @@ onMounted(() => {
                 </span>
               </div>
               <p class="mb-2 text-[11px] text-[var(--text-muted)]">
-                按结构分从低到高排，点一行展开细节；不想看的可以「忽略」，之后在底部恢复
+                按结构分从低到高排，点一行展开细节；满分 100
+                的不列出，不想看的可以「忽略」，之后在底部恢复
               </p>
               <HealthTable
                 :rows="visibleHealthRows"

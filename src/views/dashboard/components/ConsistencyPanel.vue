@@ -10,7 +10,7 @@
  *   1. 磁盘上有 .md 文件，但 tree.json 里没有对应节点 → 孤儿文件
  *   2. tree.json 里有节点，但正文拉不到 → 缺失正文
  *
- * 这两种情况在真实使用里会真的出现（手动放文件、切换工作区、云端删了本地没同步），
+ * 这两种情况在真实使用里会真的出现（手动放文件、切换工作区、GitHub 删了本地没同步），
  * 所以值得单独列出来，并在有数据时给出可操作的提示。
  */
 import { computed } from 'vue'
@@ -39,11 +39,11 @@ function sourceDot(ok: boolean): string {
 
 <template>
   <div class="space-y-3">
-    <!-- 数据源状态：草稿库 + 当前文章源 -->
+    <!-- 数据源状态：草稿箱 + 当前文章源 -->
     <div class="flex flex-wrap gap-x-4 gap-y-1.5 text-[11px]">
       <span class="flex items-center gap-1.5">
         <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(sources.drafts)" />
-        <span :class="sourceState(sources.drafts)">草稿库</span>
+        <span :class="sourceState(sources.drafts)">草稿箱</span>
       </span>
       <span class="flex items-center gap-1.5">
         <span class="h-1.5 w-1.5 rounded-full" :class="sourceDot(articleSourceOk)" />
