@@ -1,5 +1,5 @@
 import { ref, computed, watch, type Ref, type ComputedRef } from 'vue'
-import { DraftStorage, type Draft } from '@/services/DraftStorage'
+import { DraftStorage, type Draft } from '@/services/draftStorage'
 import { extractTitle, sanitizeFilename } from '@/utils/extractTitle'
 
 export function useDraft(

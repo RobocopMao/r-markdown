@@ -98,7 +98,7 @@ import {
   type PaletteItem,
   type PaletteKind,
 } from '@/utils/commandPalette'
-import { DraftStorage } from '@/services/DraftStorage'
+import { DraftStorage } from '@/services/draftStorage'
 import { MaterialStorage } from '@/services/materialStorage'
 import CommandPalette from './components/CommandPalette.vue'
 
@@ -194,7 +194,7 @@ function onStatsOpenDraft(payload: { id: number; title: string }) {
  */
 function onMobileTreeEditArticle(
   content: string,
-  node: import('@/services/GitHubTreeService').TreeNode,
+  node: import('@/services/githubTreeService').TreeNode,
 ) {
   onTreeEditArticle(content, node)
 }
@@ -315,12 +315,12 @@ function onSettingsOpen(tab: string) {
 const articleLoadConfirmVisible = ref(false)
 const pendingArticleLoad = ref<{
   content: string
-  node: import('@/services/GitHubTreeService').TreeNode
+  node: import('@/services/githubTreeService').TreeNode
 } | null>(null)
 
 async function onTreeEditArticle(
   content: string,
-  node: import('@/services/GitHubTreeService').TreeNode,
+  node: import('@/services/githubTreeService').TreeNode,
 ) {
   // 编辑器有内容且与文章内容不一致时，弹出确认
   if (markdown.value.trim() && markdown.value.trim() !== content.trim()) {

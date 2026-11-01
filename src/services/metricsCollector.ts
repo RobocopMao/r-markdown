@@ -13,10 +13,10 @@
  * - 并发有上限（磁盘 8 / 网络 4），单文件失败只丢那一篇；
  * - 时间戳统一转成毫秒数，切天用本地时区，热力图才和用户认知一致。
  */
-import { DraftStorage } from '@/services/DraftStorage'
-import { LocalTreeService } from '@/services/LocalTreeService'
-import { GitHubTreeService, type TreeNode } from '@/services/GitHubTreeService'
-import { GitHubArticleCache } from '@/services/GitHubArticleCache'
+import { DraftStorage } from '@/services/draftStorage'
+import { LocalTreeService } from '@/services/localTreeService'
+import { GitHubTreeService, type TreeNode } from '@/services/githubTreeService'
+import { GitHubArticleCache } from '@/services/githubArticleCache'
 import {
   ensureWorkspaces,
   getActiveWorkspace,

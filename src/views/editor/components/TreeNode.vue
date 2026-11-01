@@ -2,7 +2,7 @@
 import { computed, inject } from 'vue'
 import { Folder, FileText, ChevronRight, ChevronDown, SquarePen } from 'lucide-vue-next'
 import BaseTooltip from '@/components/BaseTooltip.vue'
-import type { TreeNode } from '@/services/GitHubTreeService'
+import type { TreeNode } from '@/services/githubTreeService'
 
 const props = defineProps<{
   node: TreeNode

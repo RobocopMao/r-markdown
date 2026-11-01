@@ -2,7 +2,7 @@
 import { ref, computed, watch } from 'vue'
 import { Folder } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'
-import type { TreeNode } from '@/services/GitHubTreeService'
+import type { TreeNode } from '@/services/githubTreeService'
 import BaseDialog from '@/components/BaseDialog.vue'
 import { extractTitle } from '@/utils/extractTitle'
 import PushToCloudTree from './PushToCloudTree.vue'

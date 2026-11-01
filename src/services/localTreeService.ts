@@ -9,7 +9,7 @@
  * 仅桌面端可用。Web 端调用会抛错。
  */
 
-import type { TreeNode, TreeData } from './GitHubTreeService'
+import type { TreeNode, TreeData } from './githubTreeService'
 import { getArticleFilesDir, getTreeFilePath } from './localArticlePath'
 import {
   buildArticleFileBase,
