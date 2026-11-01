@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Folder, FileText, ChevronRight, ChevronDown } from 'lucide-vue-next'
-import type { TreeNode } from '@/services/GitHubTreeService'
+import type { TreeNode } from '@/services/githubTreeService'
 
 const props = defineProps<{
   nodes: TreeNode[]

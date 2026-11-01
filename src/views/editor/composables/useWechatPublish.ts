@@ -1,6 +1,6 @@
 import { ref, type Ref, type ComputedRef } from 'vue'
 import { getSetting } from '@/config/settings'
-import { DraftStorage } from '@/services/DraftStorage'
+import { DraftStorage } from '@/services/draftStorage'
 
 export function useWechatPublish(
   markdown: Ref<string>,

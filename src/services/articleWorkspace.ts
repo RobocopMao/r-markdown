@@ -183,7 +183,7 @@ function workspaceNamespace(ws: ArticleWorkspace): string {
 
 /** 删除工作区在 IndexedDB 中对应的缓存（异步，不阻塞移除流程） */
 function clearWorkspaceCache(ws: ArticleWorkspace): void {
-  import('@/services/GitHubArticleCache').then(({ GitHubArticleCache }) => {
+  import('@/services/githubArticleCache').then(({ GitHubArticleCache }) => {
     GitHubArticleCache.clearNamespace(workspaceNamespace(ws)).catch(() => {})
   })
 }

@@ -30,6 +30,11 @@ const router = createRouter({
       component: () => import('@/views-private/material/MaterialLibraryPage.vue'),
     },
     {
+      path: '/dashboard',
+      name: 'dashboard',
+      component: () => import('../views/dashboard/DashboardPage.vue'),
+    },
+    {
       path: '/help',
       name: 'help',
       component: () => import('@/views-private/help/TutorialList.vue'),

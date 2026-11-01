@@ -132,6 +132,12 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   /** 违禁词检测：白名单（命中的词直接忽略） */
   bannedWhitelist: { default: [] },
   /**
+   * 统计面板「文章体检」里被忽略的稿子 key 列表。
+   * key 形如 `art-xxxx`（仓库/磁盘文章，即节点 id）或 `draft:12`（草稿）。
+   * 被忽略的行不进列表、不计入「有可改项」的计数，但数据本身照常统计。
+   */
+  dashboardIgnoredHealthKeys: { default: [] },
+  /**
    * AI 排版：OpenAI 兼容接口基址（必填，无默认值）。
    * 可填 https://api.deepseek.com 这类裸域名，缺失版本段时自动补 /v1。
    */

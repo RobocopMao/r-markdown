@@ -25,7 +25,7 @@ import {
   paraIndent,
 } from '@/composables/useParagraphSettings'
 import { testConnection } from '@/services/githubUploader'
-import { GitHubTreeService } from '@/services/GitHubTreeService'
+import { GitHubTreeService } from '@/services/githubTreeService'
 import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
 import {
   isSupportedImageModel,

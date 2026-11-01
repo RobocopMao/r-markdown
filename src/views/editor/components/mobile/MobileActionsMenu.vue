@@ -17,6 +17,7 @@ import {
   Library,
   BookMarked,
   ShieldAlert,
+  ChartColumn,
   HelpCircle,
 } from 'lucide-vue-next'
 
@@ -47,6 +48,8 @@ const emit = defineEmits<{
   'open-ai-format': []
   'open-ai-image': []
   'open-help': []
+  /** 切换到统计面板（与桌面端左侧栏的「统计」同一入口） */
+  'toggle-stats': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -92,6 +95,13 @@ onBeforeUnmount(() => {
     >
       <!-- 编辑模式：AI 写作/排版/配图 → 上传图片 → 保存到仓库 → 扩展组件 → 加载示例 -->
       <template v-if="mode === 'editor'">
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('toggle-stats'))"
+        >
+          <ChartColumn :size="14" />
+          统计面板
+        </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-write'))"

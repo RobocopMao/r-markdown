@@ -3,7 +3,7 @@ import { ref, computed } from 'vue'
 import { Pencil, Trash2 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
-import type { Draft } from '@/services/DraftStorage'
+import type { Draft } from '@/services/draftStorage'
 
 const props = defineProps<{
   visible: boolean
