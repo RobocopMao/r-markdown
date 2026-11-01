@@ -66,7 +66,9 @@ const {
  */
 const sourceLine = computed(() => {
   const mode = data.value?.mode ?? currentStorageMode()
-  return mode === 'local' ? '数据来自草稿箱与本地磁盘' : '数据来自草稿箱与 GitHub 仓库'
+  return mode === 'local'
+    ? '数据来自草稿箱与当前工作区的本地磁盘'
+    : '数据来自草稿箱与当前工作区的 GitHub 仓库'
 })
 
 const toastVisible = ref(false)
