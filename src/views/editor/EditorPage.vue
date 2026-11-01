@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount, watch, computed, nextTick } from 'vue'
+import {
+  ref,
+  onMounted,
+  onBeforeUnmount,
+  watch,
+  computed,
+  nextTick,
+  defineAsyncComponent,
+} from 'vue'
 import { useRouter } from 'vue-router'
 import { invoke } from '@tauri-apps/api/core'
 import { useTheme } from '@/composables/useTheme'
@@ -121,6 +129,8 @@ import ImageCacheDialog from './components/ImageCacheDialog.vue'
 import SaveMaterialDialog from './components/SaveMaterialDialog.vue'
 import MaterialLibraryPanel from './components/MaterialLibraryPanel.vue'
 import PublishToWechatDialog from '@/views/editor/components/PublishToWechatDialog.vue'
+// 统计面板体积不小（含热力图/体检表等），只在用户点开「统计」时才加载
+const DashboardBoard = defineAsyncComponent(() => import('@/views/dashboard/DashboardBoard.vue'))
 import Toast from '@/components/Toast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import pkg from '../../../package.json'
@@ -143,9 +153,35 @@ const treePanelVisible = ref(
 const pushCloudVisible = ref(false)
 const pushingCloud = ref(false)
 
+/**
+ * 统计模式：左侧菜单点「统计」后，编辑区整块换成统计面板，
+ * 文章树 / 编辑器 / 预览 / 缩略图都不显示；再点一次还原。
+ *
+ * 用 v-show 而不是 v-if 藏起编辑器与预览：它们内部有撤销栈、滚动位置、
+ * iframe 渲染结果，卸载一次就全丢，来回切一次成本很高。
+ */
+const statsActive = ref(false)
+
+function onToggleStats() {
+  statsActive.value = !statsActive.value
+}
+
 function onToggleTreePanel() {
+  // 统计模式下点「文章」= 退出统计并打开文章树，比让它静默无反应更符合直觉
+  if (statsActive.value) {
+    statsActive.value = false
+    treePanelVisible.value = true
+    setSetting('treeSidebarExpanded', true)
+    return
+  }
   treePanelVisible.value = !treePanelVisible.value
   setSetting('treeSidebarExpanded', treePanelVisible.value)
+}
+
+/** 统计面板里点「搁置最久」的草稿：退出统计，走既有的覆盖确认流程 */
+function onStatsOpenDraft(payload: { id: number; title: string }) {
+  statsActive.value = false
+  onDraftConfirmLoad({ draftId: payload.id, title: payload.title })
 }
 
 // ── 移动端文章树（底部「文章」Tab）──
@@ -518,7 +554,8 @@ function closeFind() {
  * 快捷键（⌘F）仍走 openFind，保持「按快捷键总是打开并聚焦」的常见行为。
  */
 function toggleFind() {
-  findVisible.value ? closeFind() : openFind(false)
+  if (findVisible.value) closeFind()
+  else openFind(false)
 }
 
 // ── 字数统计状态栏 ──
@@ -962,7 +999,8 @@ function onPaletteGlobalKeydown(e: KeyboardEvent) {
   if (!matchShortcut(spec, e, isMac())) return
   e.preventDefault()
   // 已打开时再按一次关闭，与查找面板的切换手感一致
-  paletteVisible.value ? closePalette() : openPalette()
+  if (paletteVisible.value) closePalette()
+  else openPalette()
 }
 
 // ── Toolbar（表格插入、布局插入、组件对话框、标签解析）──
@@ -1415,6 +1453,7 @@ function loadDemo() {
           @open-ai-write="aiWriteVisible = true"
           @open-ai-format="aiFormatVisible = true"
           @open-ai-image="aiImageVisible = true"
+          @toggle-stats="onToggleStats"
           @open-help="onOpenHelp"
         />
         <ThemePicker
@@ -1440,6 +1479,7 @@ function loadDemo() {
       想调透明度必须改这里，改样式表的 fallback 是没有效果的。
     -->
     <div
+      v-if="!statsActive"
       class="mobile-tab-bar md:hidden"
       :style="{
         '--accent': accent,
@@ -1479,6 +1519,7 @@ function loadDemo() {
             :active-tab="sidebarTab"
             :draft-count="draftCount"
             :tree-panel-visible="treePanelVisible"
+            :stats-active="statsActive"
             @select="onSidebarSelect"
             @open-gallery="showGallery = true"
             @open-banned-words="bannedWordsVisible = true"
@@ -1489,142 +1530,259 @@ function loadDemo() {
             @example-action="onExampleAction"
             @open-import="onImportClick"
             @toggle-tree-panel="onToggleTreePanel"
+            @toggle-stats="onToggleStats"
           />
         </div>
-        <!-- Tree Panel -->
-        <Transition name="tree-panel">
+        <!--
+          编辑区整块。统计模式激活时用 v-show 收起（不是 v-if）：
+          编辑器与预览内部有撤销栈 / 滚动位置 / 已渲染的 iframe，卸载一次就全丢。
+        -->
+        <div v-show="!statsActive" class="flex flex-1 min-w-0 overflow-hidden">
+          <!-- Tree Panel -->
+          <Transition name="tree-panel">
+            <div
+              v-if="treePanelVisible"
+              :style="{ width: treePanelWidth + 'px' }"
+              class="overflow-hidden"
+            >
+              <TreeSidebar
+                @open-settings="onSettingsOpen"
+                @edit-article="onTreeEditArticle"
+                @toast="showToast"
+                @clear-editor="onClearEditor"
+              />
+            </div>
+          </Transition>
+          <!-- Tree Resize Handle -->
           <div
             v-if="treePanelVisible"
-            :style="{ width: treePanelWidth + 'px' }"
-            class="overflow-hidden"
+            ref="treeResizeHandleRef"
+            class="resize-handle shrink-0 hidden md:block"
+            @mousedown="onTreeDragStart"
+            @mouseenter="onTreeHandleEnter"
+            @mousemove="onTreeHandleMove"
+            @mouseleave="onTreeHandleLeave"
+          >
+            <div
+              class="resize-handle-btn"
+              :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
+              :style="{ top: treeHandleBtnTop + 'px' }"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="17 8 21 12 17 16" />
+                <polyline points="7 8 3 12 7 16" />
+              </svg>
+            </div>
+          </div>
+          <!-- 移动端「文章」Tab：文章树铺满整屏，标题栏那排操作直接用文章树自带的（可横向滚动） -->
+          <div
+            v-if="isMobile && mobileTreeMounted"
+            class="flex flex-col flex-1 min-w-0 overflow-hidden"
+            :class="{ hidden: mobileTab !== 'articles' }"
+            style="background: var(--bg-primary)"
           >
             <TreeSidebar
+              compact
               @open-settings="onSettingsOpen"
-              @edit-article="onTreeEditArticle"
+              @edit-article="onMobileTreeEditArticle"
               @toast="showToast"
               @clear-editor="onClearEditor"
             />
           </div>
-        </Transition>
-        <!-- Tree Resize Handle -->
-        <div
-          v-if="treePanelVisible"
-          ref="treeResizeHandleRef"
-          class="resize-handle shrink-0 hidden md:block"
-          @mousedown="onTreeDragStart"
-          @mouseenter="onTreeHandleEnter"
-          @mousemove="onTreeHandleMove"
-          @mouseleave="onTreeHandleLeave"
-        >
+          <!-- Editor Panel -->
           <div
-            class="resize-handle-btn"
-            :class="{ 'resize-handle-btn--visible': treeHandleBtnVisible }"
-            :style="{ top: treeHandleBtnTop + 'px' }"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="17 8 21 12 17 16" />
-              <polyline points="7 8 3 12 7 16" />
-            </svg>
-          </div>
-        </div>
-        <!-- 移动端「文章」Tab：文章树铺满整屏，标题栏那排操作直接用文章树自带的（可横向滚动） -->
-        <div
-          v-if="isMobile && mobileTreeMounted"
-          class="flex flex-col flex-1 min-w-0 overflow-hidden"
-          :class="{ hidden: mobileTab !== 'articles' }"
-          style="background: var(--bg-primary)"
-        >
-          <TreeSidebar
-            compact
-            @open-settings="onSettingsOpen"
-            @edit-article="onMobileTreeEditArticle"
-            @toast="showToast"
-            @clear-editor="onClearEditor"
-          />
-        </div>
-        <!-- Editor Panel -->
-        <div
-          class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
-          style="background: var(--bg-primary)"
-          :class="{
-            'hidden md:flex': mobileTab !== 'editor',
-            'mobile-near-bottom': nearBottom && isMobile,
-            'rounded-xl': !isMobile,
-          }"
-        >
-          <div
-            class="panel-header hidden md:flex items-center gap-x-2 px-2 py-2 border-b text-xs font-semibold shrink-0"
+            class="flex flex-col overflow-x-hidden flex-1 min-w-0 relative"
             style="background: var(--bg-primary)"
+            :class="{
+              'hidden md:flex': mobileTab !== 'editor',
+              'mobile-near-bottom': nearBottom && isMobile,
+              'rounded-xl': !isMobile,
+            }"
           >
-            <span class="flex flex-wrap items-center gap-2 flex-auto min-w-0">
-              <!-- 操作按钮组：图标+文字 -->
-              <span class="flex flex-wrap items-center gap-1">
-                <!-- 基础语法 -->
-                <span class="relative inline-flex items-center group">
-                  <button
-                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
-                    :class="
-                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.isAtLineStart"
-                  >
-                    <component
-                      :is="markdownInsertOptions[1].icon"
-                      :size="14"
-                      class="w-3.5 h-3.5"
-                      :style="{ color: colors.accent }"
-                    />
-                    <span>基础</span>
-                  </button>
-                  <span
-                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
-                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                  >
-                    <template v-for="opt in markdownInsertOptions" :key="opt.label">
-                      <div
-                        v-if="opt.table"
-                        class="relative"
-                        :class="
-                          editorRef?.isAtLineStart ? 'group/table' : 'cursor-not-allowed opacity-40'
-                        "
-                        @mouseenter="resetGridSelection"
-                      >
-                        <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none">
+            <div
+              class="panel-header hidden md:flex items-center gap-x-2 px-2 py-2 border-b text-xs font-semibold shrink-0"
+              style="background: var(--bg-primary)"
+            >
+              <span class="flex flex-wrap items-center gap-2 flex-auto min-w-0">
+                <!-- 操作按钮组：图标+文字 -->
+                <span class="flex flex-wrap items-center gap-1">
+                  <!-- 基础语法 -->
+                  <span class="relative inline-flex items-center group">
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
+                      :class="
+                        editorRef?.isAtLineStart
+                          ? 'cursor-pointer'
+                          : 'cursor-not-allowed opacity-40'
+                      "
+                      :disabled="!editorRef?.isAtLineStart"
+                    >
+                      <component
+                        :is="markdownInsertOptions[1].icon"
+                        :size="14"
+                        class="w-3.5 h-3.5"
+                        :style="{ color: colors.accent }"
+                      />
+                      <span>基础</span>
+                    </button>
+                    <span
+                      class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                    >
+                      <template v-for="opt in markdownInsertOptions" :key="opt.label">
+                        <div
+                          v-if="opt.table"
+                          class="relative"
+                          :class="
+                            editorRef?.isAtLineStart
+                              ? 'group/table'
+                              : 'cursor-not-allowed opacity-40'
+                          "
+                          @mouseenter="resetGridSelection"
+                        >
+                          <div class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none">
+                            <component
+                              :is="opt.icon"
+                              :size="14"
+                              class="w-3.5 h-3.5 flex-shrink-0"
+                              :style="{ color: colors.accent }"
+                            />
+                            <span class="text-[#333] dark:text-white font-medium">表格</span>
+                            <span class="text-[#999] dark:text-white/40 ml-auto">{{
+                              opt.label
+                            }}</span>
+                          </div>
+                          <div
+                            class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/table:opacity-100 group-hover/table:visible transition-all duration-150 z-50"
+                            :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                          >
+                            <div
+                              class="grid gap-0.5"
+                              :style="{ gridTemplateColumns: `repeat(${MAX_GRID_COLS}, 22px)` }"
+                            >
+                              <button
+                                v-for="i in MAX_GRID_ROWS * MAX_GRID_COLS"
+                                :key="i"
+                                class="w-[22px] h-[22px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                                :class="getGridCellClass(i)"
+                                :style="
+                                  isGridCellActive(i)
+                                    ? {
+                                        borderColor: colors.accent,
+                                        backgroundColor: colors.accent + '20',
+                                      }
+                                    : {}
+                                "
+                                :disabled="!editorRef?.isAtLineStart"
+                                @mousemove="
+                                  editorRef?.isAtLineStart &&
+                                  (tableGridHovered = {
+                                    rows: Math.ceil(i / MAX_GRID_COLS),
+                                    cols: ((i - 1) % MAX_GRID_COLS) + 1,
+                                  })
+                                "
+                                @click="
+                                  editorRef?.isAtLineStart &&
+                                  insertTable(tableGridHovered.rows, tableGridHovered.cols)
+                                "
+                              />
+                            </div>
+                            <div
+                              class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                            >
+                              {{
+                                tableGridHovered.rows === 0
+                                  ? '选择行列'
+                                  : `${tableGridHovered.rows} 行 × ${tableGridHovered.cols} 列`
+                              }}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          v-else
+                          class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                          :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                          :disabled="!editorRef?.isAtLineStart"
+                          @click="editorRef?.isAtLineStart && editorRef?.insertAtCursor(opt.syntax)"
+                        >
                           <component
                             :is="opt.icon"
                             :size="14"
                             class="w-3.5 h-3.5 flex-shrink-0"
                             :style="{ color: colors.accent }"
                           />
-                          <span class="text-[#333] dark:text-white font-medium">表格</span>
+                          <span class="text-[#333] dark:text-white font-medium">{{
+                            opt.display
+                          }}</span>
                           <span class="text-[#999] dark:text-white/40 ml-auto">{{
                             opt.label
                           }}</span>
+                        </button>
+                      </template>
+                    </span>
+                  </span>
+                  <!-- 容器/布局 -->
+                  <span class="relative inline-flex items-center group">
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
+                      :class="
+                        editorRef?.isAtLineStart
+                          ? 'cursor-pointer'
+                          : 'cursor-not-allowed opacity-40'
+                      "
+                      :disabled="!editorRef?.isAtLineStart"
+                    >
+                      <Box :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>容器</span>
+                    </button>
+                    <span
+                      class="absolute top-full left-0 mt-0.5 py-1 min-w-[100px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
+                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                    >
+                      <!-- 列 -->
+                      <div
+                        class="relative"
+                        :class="
+                          editorRef?.isAtLineStart ? 'group/col' : 'cursor-not-allowed opacity-40'
+                        "
+                        @mouseenter="resetGridSelection"
+                      >
+                        <div
+                          class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                        >
+                          <Columns2
+                            :size="14"
+                            class="w-3.5 h-3.5 flex-shrink-0"
+                            :style="{ color: colors.accent }"
+                          />
+                          <span class="text-[#333] dark:text-white font-medium">列</span>
+                          <span class="text-[#999] dark:text-white/40 ml-auto">水平分栏</span>
                         </div>
                         <div
-                          class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/table:opacity-100 group-hover/table:visible transition-all duration-150 z-50"
+                          class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/col:opacity-100 group-hover/col:visible transition-all duration-150 z-50"
                           :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
                         >
-                          <div
-                            class="grid gap-0.5"
-                            :style="{ gridTemplateColumns: `repeat(${MAX_GRID_COLS}, 22px)` }"
-                          >
+                          <div class="flex gap-0.5">
                             <button
-                              v-for="i in MAX_GRID_ROWS * MAX_GRID_COLS"
+                              v-for="i in MAX_COLS"
                               :key="i"
-                              class="w-[22px] h-[22px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                              :class="getGridCellClass(i)"
+                              class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                              :class="
+                                isColCellActive(i)
+                                  ? ''
+                                  : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                              "
                               :style="
-                                isGridCellActive(i)
+                                isColCellActive(i)
                                   ? {
                                       borderColor: colors.accent,
                                       backgroundColor: colors.accent + '20',
@@ -1632,733 +1790,647 @@ function loadDemo() {
                                   : {}
                               "
                               :disabled="!editorRef?.isAtLineStart"
-                              @mousemove="
-                                editorRef?.isAtLineStart &&
-                                (tableGridHovered = {
-                                  rows: Math.ceil(i / MAX_GRID_COLS),
-                                  cols: ((i - 1) % MAX_GRID_COLS) + 1,
-                                })
-                              "
+                              @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
                               @click="
-                                editorRef?.isAtLineStart &&
-                                insertTable(tableGridHovered.rows, tableGridHovered.cols)
+                                editorRef?.isAtLineStart && insertColumnLayout(colGridHovered)
                               "
                             />
                           </div>
                           <div
                             class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
                           >
-                            {{
-                              tableGridHovered.rows === 0
-                                ? '选择行列'
-                                : `${tableGridHovered.rows} 行 × ${tableGridHovered.cols} 列`
-                            }}
+                            {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列均分` }}
                           </div>
                         </div>
                       </div>
+                      <!-- 列（独立，无 Row 包裹） -->
+                      <div
+                        class="relative"
+                        :class="
+                          editorRef?.isAtLineStart
+                            ? 'group/colstack'
+                            : 'cursor-not-allowed opacity-40'
+                        "
+                        @mouseenter="resetGridSelection"
+                      >
+                        <div
+                          class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                        >
+                          <Columns2
+                            :size="14"
+                            class="w-3.5 h-3.5 flex-shrink-0"
+                            :style="{ color: colors.accent }"
+                          />
+                          <span class="text-[#333] dark:text-white font-medium">列堆叠</span>
+                          <span class="text-[#999] dark:text-white/40 ml-auto">独立排列</span>
+                        </div>
+                        <div
+                          class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/colstack:opacity-100 group-hover/colstack:visible transition-all duration-150 z-50"
+                          :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                        >
+                          <div class="flex gap-0.5">
+                            <button
+                              v-for="i in MAX_COLS"
+                              :key="i"
+                              class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                              :class="
+                                isColCellActive(i)
+                                  ? ''
+                                  : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                              "
+                              :style="
+                                isColCellActive(i)
+                                  ? {
+                                      borderColor: colors.accent,
+                                      backgroundColor: colors.accent + '20',
+                                    }
+                                  : {}
+                              "
+                              :disabled="!editorRef?.isAtLineStart"
+                              @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
+                              @click="editorRef?.isAtLineStart && insertColumnStack(colGridHovered)"
+                            />
+                          </div>
+                          <div
+                            class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                          >
+                            {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列独立` }}
+                          </div>
+                        </div>
+                      </div>
+                      <!-- 行 -->
+                      <div
+                        class="relative"
+                        :class="
+                          editorRef?.isAtLineStart ? 'group/row' : 'cursor-not-allowed opacity-40'
+                        "
+                        @mouseenter="resetGridSelection"
+                      >
+                        <div
+                          class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                        >
+                          <Rows2
+                            :size="14"
+                            class="w-3.5 h-3.5 flex-shrink-0"
+                            :style="{ color: colors.accent }"
+                          />
+                          <span class="text-[#333] dark:text-white font-medium">行</span>
+                          <span class="text-[#999] dark:text-white/40 ml-auto">纵向堆叠</span>
+                        </div>
+                        <div
+                          class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/row:opacity-100 group-hover/row:visible transition-all duration-150 z-50"
+                          :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                        >
+                          <div class="flex flex-col gap-1">
+                            <button
+                              v-for="i in MAX_ROWS"
+                              :key="i"
+                              class="w-[80px] h-[20px] rounded-[3px] border cursor-pointer transition-colors duration-75"
+                              :class="
+                                isRowCellActive(i)
+                                  ? ''
+                                  : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
+                              "
+                              :style="
+                                isRowCellActive(i)
+                                  ? {
+                                      borderColor: colors.accent,
+                                      backgroundColor: colors.accent + '20',
+                                    }
+                                  : {}
+                              "
+                              :disabled="!editorRef?.isAtLineStart"
+                              @mousemove="editorRef?.isAtLineStart && (rowGridHovered = i)"
+                              @click="editorRef?.isAtLineStart && insertRowStack(rowGridHovered)"
+                            />
+                          </div>
+                          <div
+                            class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
+                          >
+                            {{ rowGridHovered === 0 ? '选择行数' : `${rowGridHovered} 行纵向堆叠` }}
+                          </div>
+                        </div>
+                      </div>
+                      <!-- 层叠 -->
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        @click="editorRef?.isAtLineStart && insertStack()"
+                      >
+                        <Layers
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">层叠</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">多层叠加</span>
+                      </div>
+                      <!-- 容器 -->
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        @click="editorRef?.isAtLineStart && insertContainer()"
+                      >
+                        <Package
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">块容器</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">通用包裹</span>
+                      </div>
+                      <!-- 文本 -->
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        @click="editorRef?.isAtLineStart && insertText()"
+                      >
+                        <Type
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">文本</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">样式文字</span>
+                      </div>
+                      <!-- HTML 容器 -->
+                      <div
+                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        @click="editorRef?.isAtLineStart && insertHtmlContainer()"
+                      >
+                        <Code2
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">HTML 容器</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">内联样式</span>
+                      </div>
+                    </span>
+                  </span>
+                  <span
+                    class="relative inline-flex items-center"
+                    @mouseenter="openImageMenu"
+                    @mouseleave="closeImageMenu"
+                  >
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
+                      :class="
+                        editorRef?.isAtLineStart
+                          ? 'cursor-pointer'
+                          : 'cursor-not-allowed opacity-40'
+                      "
+                      :disabled="!editorRef?.isAtLineStart"
+                    >
+                      <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>图片</span>
+                    </button>
+                    <span
+                      v-show="imageMenuOpen"
+                      class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 transition-all duration-150 z-50"
+                      :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                    >
                       <button
-                        v-else
                         class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
                         :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
                         :disabled="!editorRef?.isAtLineStart"
-                        @click="editorRef?.isAtLineStart && editorRef?.insertAtCursor(opt.syntax)"
+                        @click="editorRef?.isAtLineStart && handleInsertImage()"
                       >
-                        <component
-                          :is="opt.icon"
+                        <Image
                           :size="14"
                           class="w-3.5 h-3.5 flex-shrink-0"
                           :style="{ color: colors.accent }"
                         />
-                        <span class="text-[#333] dark:text-white font-medium">{{
-                          opt.display
-                        }}</span>
-                        <span class="text-[#999] dark:text-white/40 ml-auto">{{ opt.label }}</span>
+                        <span class="text-[#333] dark:text-white font-medium">临时存储</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">本地临时图片</span>
                       </button>
-                    </template>
-                  </span>
-                </span>
-                <!-- 容器/布局 -->
-                <span class="relative inline-flex items-center group">
-                  <button
-                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
-                    :class="
-                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.isAtLineStart"
-                  >
-                    <Box :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>容器</span>
-                  </button>
-                  <span
-                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[100px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-150 z-50"
-                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                  >
-                    <!-- 列 -->
-                    <div
-                      class="relative"
-                      :class="
-                        editorRef?.isAtLineStart ? 'group/col' : 'cursor-not-allowed opacity-40'
-                      "
-                      @mouseenter="resetGridSelection"
-                    >
-                      <div
-                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
+                      <button
+                        class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        :disabled="!editorRef?.isAtLineStart"
+                        @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
                       >
-                        <Columns2
+                        <ImagePlus
                           :size="14"
                           class="w-3.5 h-3.5 flex-shrink-0"
                           :style="{ color: colors.accent }"
                         />
-                        <span class="text-[#333] dark:text-white font-medium">列</span>
-                        <span class="text-[#999] dark:text-white/40 ml-auto">水平分栏</span>
-                      </div>
-                      <div
-                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/col:opacity-100 group-hover/col:visible transition-all duration-150 z-50"
-                        :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
+                        <span class="text-[#333] dark:text-white font-medium">长期存储</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">本地长期图片</span>
+                      </button>
+                      <button
+                        v-if="isTauri"
+                        class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
+                        :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
+                        :disabled="!editorRef?.isAtLineStart"
+                        @click="editorRef?.isAtLineStart && handleUploadToDisk()"
                       >
-                        <div class="flex gap-0.5">
-                          <button
-                            v-for="i in MAX_COLS"
-                            :key="i"
-                            class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                            :class="
-                              isColCellActive(i)
-                                ? ''
-                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
-                            "
-                            :style="
-                              isColCellActive(i)
-                                ? {
-                                    borderColor: colors.accent,
-                                    backgroundColor: colors.accent + '20',
-                                  }
-                                : {}
-                            "
-                            :disabled="!editorRef?.isAtLineStart"
-                            @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
-                            @click="editorRef?.isAtLineStart && insertColumnLayout(colGridHovered)"
-                          />
-                        </div>
-                        <div
-                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
-                        >
-                          {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列均分` }}
-                        </div>
-                      </div>
-                    </div>
-                    <!-- 列（独立，无 Row 包裹） -->
-                    <div
-                      class="relative"
+                        <HardDrive
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">磁盘存储</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">本地磁盘图片</span>
+                      </button>
+                      <button
+                        class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100"
+                        :class="
+                          !editorRef?.isAtLineStart || githubUploading
+                            ? 'cursor-not-allowed opacity-40'
+                            : 'cursor-pointer'
+                        "
+                        :disabled="!editorRef?.isAtLineStart || githubUploading"
+                        @click="
+                          editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()
+                        "
+                      >
+                        <ImageUp
+                          :size="14"
+                          class="w-3.5 h-3.5 flex-shrink-0"
+                          :style="{ color: colors.accent }"
+                        />
+                        <span class="text-[#333] dark:text-white font-medium">上传图床</span>
+                        <span class="text-[#999] dark:text-white/40 ml-auto">{{
+                          githubUploading ? '上传中...' : uploadHostingLabel
+                        }}</span>
+                      </button>
+                    </span>
+                  </span>
+                  <BaseTooltip text="插入组件">
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                       :class="
                         editorRef?.isAtLineStart
-                          ? 'group/colstack'
+                          ? 'cursor-pointer'
                           : 'cursor-not-allowed opacity-40'
                       "
-                      @mouseenter="resetGridSelection"
+                      :disabled="!editorRef?.isAtLineStart"
+                      @click="editorRef?.isAtLineStart && (componentDialogVisible = true)"
                     >
-                      <div
-                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
-                      >
-                        <Columns2
-                          :size="14"
-                          class="w-3.5 h-3.5 flex-shrink-0"
-                          :style="{ color: colors.accent }"
-                        />
-                        <span class="text-[#333] dark:text-white font-medium">列堆叠</span>
-                        <span class="text-[#999] dark:text-white/40 ml-auto">独立排列</span>
-                      </div>
-                      <div
-                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/colstack:opacity-100 group-hover/colstack:visible transition-all duration-150 z-50"
-                        :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                      >
-                        <div class="flex gap-0.5">
-                          <button
-                            v-for="i in MAX_COLS"
-                            :key="i"
-                            class="w-[28px] h-[28px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                            :class="
-                              isColCellActive(i)
-                                ? ''
-                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
-                            "
-                            :style="
-                              isColCellActive(i)
-                                ? {
-                                    borderColor: colors.accent,
-                                    backgroundColor: colors.accent + '20',
-                                  }
-                                : {}
-                            "
-                            :disabled="!editorRef?.isAtLineStart"
-                            @mousemove="editorRef?.isAtLineStart && (colGridHovered = i)"
-                            @click="editorRef?.isAtLineStart && insertColumnStack(colGridHovered)"
-                          />
-                        </div>
-                        <div
-                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
-                        >
-                          {{ colGridHovered === 0 ? '选择列数' : `${colGridHovered} 列独立` }}
-                        </div>
-                      </div>
-                    </div>
-                    <!-- 行 -->
-                    <div
-                      class="relative"
-                      :class="
-                        editorRef?.isAtLineStart ? 'group/row' : 'cursor-not-allowed opacity-40'
-                      "
-                      @mouseenter="resetGridSelection"
-                    >
-                      <div
-                        class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap"
-                      >
-                        <Rows2
-                          :size="14"
-                          class="w-3.5 h-3.5 flex-shrink-0"
-                          :style="{ color: colors.accent }"
-                        />
-                        <span class="text-[#333] dark:text-white font-medium">行</span>
-                        <span class="text-[#999] dark:text-white/40 ml-auto">纵向堆叠</span>
-                      </div>
-                      <div
-                        class="absolute left-full top-0 ml-1 p-2 rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 opacity-0 invisible group-hover/row:opacity-100 group-hover/row:visible transition-all duration-150 z-50"
-                        :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
-                      >
-                        <div class="flex flex-col gap-1">
-                          <button
-                            v-for="i in MAX_ROWS"
-                            :key="i"
-                            class="w-[80px] h-[20px] rounded-[3px] border cursor-pointer transition-colors duration-75"
-                            :class="
-                              isRowCellActive(i)
-                                ? ''
-                                : 'border-[#d0d0d0] dark:border-white/15 bg-transparent'
-                            "
-                            :style="
-                              isRowCellActive(i)
-                                ? {
-                                    borderColor: colors.accent,
-                                    backgroundColor: colors.accent + '20',
-                                  }
-                                : {}
-                            "
-                            :disabled="!editorRef?.isAtLineStart"
-                            @mousemove="editorRef?.isAtLineStart && (rowGridHovered = i)"
-                            @click="editorRef?.isAtLineStart && insertRowStack(rowGridHovered)"
-                          />
-                        </div>
-                        <div
-                          class="text-center text-[11px] text-[#666] dark:text-white/50 mt-1.5 leading-none"
-                        >
-                          {{ rowGridHovered === 0 ? '选择行数' : `${rowGridHovered} 行纵向堆叠` }}
-                        </div>
-                      </div>
-                    </div>
-                    <!-- 层叠 -->
-                    <div
-                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      @click="editorRef?.isAtLineStart && insertStack()"
-                    >
-                      <Layers
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">层叠</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">多层叠加</span>
-                    </div>
-                    <!-- 容器 -->
-                    <div
-                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      @click="editorRef?.isAtLineStart && insertContainer()"
-                    >
-                      <Package
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">块容器</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">通用包裹</span>
-                    </div>
-                    <!-- 文本 -->
-                    <div
-                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      @click="editorRef?.isAtLineStart && insertText()"
-                    >
-                      <Type
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">文本</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">样式文字</span>
-                    </div>
-                    <!-- HTML 容器 -->
-                    <div
-                      class="flex items-center gap-2 px-3 py-1.5 text-[11px] leading-none whitespace-nowrap cursor-pointer hover:bg-[#f5f5f5] dark:hover:bg-white/5 transition-colors duration-75"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      @click="editorRef?.isAtLineStart && insertHtmlContainer()"
-                    >
-                      <Code2
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">HTML 容器</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">内联样式</span>
-                    </div>
-                  </span>
-                </span>
-                <span
-                  class="relative inline-flex items-center"
-                  @mouseenter="openImageMenu"
-                  @mouseleave="closeImageMenu"
-                >
-                  <button
-                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
-                    :class="
-                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
+                      <Puzzle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>组件</span>
+                    </button>
+                  </BaseTooltip>
+                  <BaseTooltip
+                    :text="
+                      tagInfo
+                        ? '解析 <' + tagInfo.tagName + '> 属性'
+                        : '解析标签 — 选中组件标签或光标在标签后可用'
                     "
-                    :disabled="!editorRef?.isAtLineStart"
-                  >
-                    <Image :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>图片</span>
-                  </button>
-                  <span
-                    v-show="imageMenuOpen"
-                    class="absolute top-full left-0 mt-0.5 py-1 min-w-[120px] rounded-lg bg-white dark:bg-[#1a1a1a] shadow-lg border border-[#e5e5e5] dark:border-white/10 transition-all duration-150 z-50"
-                    :class="!editorRef?.isAtLineStart ? 'pointer-events-none' : ''"
                   >
                     <button
-                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      :disabled="!editorRef?.isAtLineStart"
-                      @click="editorRef?.isAtLineStart && handleInsertImage()"
-                    >
-                      <Image
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">临时存储</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">本地临时图片</span>
-                    </button>
-                    <button
-                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      :disabled="!editorRef?.isAtLineStart"
-                      @click="editorRef?.isAtLineStart && handleInsertImagePersist()"
-                    >
-                      <ImagePlus
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">长期存储</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">本地长期图片</span>
-                    </button>
-                    <button
-                      v-if="isTauri"
-                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100 cursor-pointer"
-                      :class="!editorRef?.isAtLineStart ? 'cursor-not-allowed opacity-40' : ''"
-                      :disabled="!editorRef?.isAtLineStart"
-                      @click="editorRef?.isAtLineStart && handleUploadToDisk()"
-                    >
-                      <HardDrive
-                        :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
-                        :style="{ color: colors.accent }"
-                      />
-                      <span class="text-[#333] dark:text-white font-medium">磁盘存储</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">本地磁盘图片</span>
-                    </button>
-                    <button
-                      class="flex items-center gap-2 w-full px-3 py-1.5 text-[11px] leading-none text-left whitespace-nowrap border-none bg-transparent hover:bg-black/5 dark:hover:bg-white/10 transition-colors duration-100"
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
                       :class="
-                        !editorRef?.isAtLineStart || githubUploading
-                          ? 'cursor-not-allowed opacity-40'
-                          : 'cursor-pointer'
+                        tagInfo && !showTagDialog && !isMobile
+                          ? 'cursor-pointer'
+                          : 'cursor-not-allowed opacity-40'
                       "
-                      :disabled="!editorRef?.isAtLineStart || githubUploading"
+                      :disabled="!tagInfo || showTagDialog || isMobile"
+                      @click="tagInfo && !showTagDialog && !isMobile && (showTagDialog = true)"
+                    >
+                      <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>解析</span>
+                    </button>
+                  </BaseTooltip>
+                  <!-- 行内样式按钮组 -->
+                  <BaseTooltip
+                    v-for="opt in inlineFormatOptions"
+                    :key="opt.syntax"
+                    :text="opt.label + '：' + opt.hint"
+                  >
+                    <button
+                      class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn"
+                      :class="
+                        editorRef?.hasInlineSelection
+                          ? 'cursor-pointer'
+                          : 'cursor-not-allowed opacity-40'
+                      "
+                      :disabled="!editorRef?.hasInlineSelection"
                       @click="
-                        editorRef?.isAtLineStart && !githubUploading && handleUploadToGitHub()
+                        editorRef?.hasInlineSelection &&
+                        editorRef?.applyInlineFormat(opt.syntax, opt.wrapType ?? 'delim')
                       "
                     >
-                      <ImageUp
+                      <component
+                        :is="formatIcons[opt.syntax]"
                         :size="14"
-                        class="w-3.5 h-3.5 flex-shrink-0"
+                        class="w-3.5 h-3.5"
                         :style="{ color: colors.accent }"
                       />
-                      <span class="text-[#333] dark:text-white font-medium">上传图床</span>
-                      <span class="text-[#999] dark:text-white/40 ml-auto">{{
-                        githubUploading ? '上传中...' : uploadHostingLabel
-                      }}</span>
                     </button>
-                  </span>
+                  </BaseTooltip>
+                  <!-- 帮助提示 -->
+                  <BaseTooltip placement="bottom">
+                    <CircleQuestionMark :size="14" />
+                    <template #content>
+                      选中非标签内文字后可加样式<br />基础/语法/图片/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
+                    </template>
+                  </BaseTooltip>
                 </span>
-                <BaseTooltip text="插入组件">
+              </span>
+              <span
+                class="flex flex-row flex-wrap items-center justify-end gap-1 ml-auto shrink min-w-[152px]"
+              >
+                <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
-                    :class="
-                      editorRef?.isAtLineStart ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.isAtLineStart"
-                    @click="editorRef?.isAtLineStart && (componentDialogVisible = true)"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="saveContent(markdown, true)"
                   >
-                    <Puzzle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>组件</span>
+                    <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>暂存</span>
                   </button>
                 </BaseTooltip>
-                <BaseTooltip
-                  :text="
-                    tagInfo
-                      ? '解析 <' + tagInfo.tagName + '> 属性'
-                      : '解析标签 — 选中组件标签或光标在标签后可用'
-                  "
-                >
+                <BaseTooltip text="保存草稿">
                   <button
-                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium whitespace-nowrap"
-                    :class="
-                      tagInfo && !showTagDialog && !isMobile
-                        ? 'cursor-pointer'
-                        : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!tagInfo || showTagDialog || isMobile"
-                    @click="tagInfo && !showTagDialog && !isMobile && (showTagDialog = true)"
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="handleOpenSaveDraft"
                   >
-                    <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                    <span>解析</span>
-                  </button>
-                </BaseTooltip>
-                <!-- 行内样式按钮组 -->
-                <BaseTooltip
-                  v-for="opt in inlineFormatOptions"
-                  :key="opt.syntax"
-                  :text="opt.label + '：' + opt.hint"
-                >
-                  <button
-                    class="inline-flex items-center justify-center w-7 h-7 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn"
-                    :class="
-                      editorRef?.hasInlineSelection
-                        ? 'cursor-pointer'
-                        : 'cursor-not-allowed opacity-40'
-                    "
-                    :disabled="!editorRef?.hasInlineSelection"
-                    @click="
-                      editorRef?.hasInlineSelection &&
-                      editorRef?.applyInlineFormat(opt.syntax, opt.wrapType ?? 'delim')
-                    "
-                  >
-                    <component
-                      :is="formatIcons[opt.syntax]"
+                    <SquareBottomDashedScissors
                       :size="14"
                       class="w-3.5 h-3.5"
                       :style="{ color: colors.accent }"
                     />
+                    <span>草稿</span>
                   </button>
                 </BaseTooltip>
-                <!-- 帮助提示 -->
-                <BaseTooltip placement="bottom">
-                  <CircleQuestionMark :size="14" />
-                  <template #content>
-                    选中非标签内文字后可加样式<br />基础/语法/图片/组件：仅空行可点击<br />解析：选中组件标签或光标在标签后可点击。
-                  </template>
+                <BaseTooltip text="本地导出">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="handleOpenFinalize"
+                  >
+                    <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span>定稿</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip
+                  v-if="cloudConfigured"
+                  :text="articleStorageMode === 'local' ? '保存到本地' : '推送到远程仓库'"
+                >
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="pushCloudVisible = true"
+                  >
+                    <Cloud
+                      v-if="articleStorageMode === 'github'"
+                      :size="14"
+                      class="w-3.5 h-3.5"
+                      :style="{ color: colors.accent }"
+                    />
+                    <HardDrive
+                      v-else
+                      :size="14"
+                      class="w-3.5 h-3.5"
+                      :style="{ color: colors.accent }"
+                    />
+                    <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip :text="findVisible ? '关闭查找' : findReplaceTooltip">
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="toggleFind"
+                  >
+                    <Search :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span :style="findVisible ? { color: colors.accent } : undefined">查找</span>
+                  </button>
+                </BaseTooltip>
+                <BaseTooltip
+                  v-if="outlineEnabled"
+                  :text="outlinePanelVisible ? '隐藏大纲' : '显示大纲'"
+                >
+                  <button
+                    class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                    @click="onToggleOutline"
+                  >
+                    <ListTree :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                    <span :style="outlinePanelVisible ? { color: colors.accent } : undefined"
+                      >大纲</span
+                    >
+                  </button>
                 </BaseTooltip>
               </span>
-            </span>
-            <span
-              class="flex flex-row flex-wrap items-center justify-end gap-1 ml-auto shrink min-w-[152px]"
+            </div>
+            <!-- 图床上传进度 -->
+            <div
+              v-if="githubUploading"
+              class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl bg-[#111] text-white text-sm shadow-lg"
             >
-              <BaseTooltip v-if="isTauri && !autoSaveEnabled" text="暂存">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="saveContent(markdown, true)"
-                >
-                  <Save :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>暂存</span>
-                </button>
-              </BaseTooltip>
-              <BaseTooltip text="保存草稿">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="handleOpenSaveDraft"
-                >
-                  <SquareBottomDashedScissors
-                    :size="14"
-                    class="w-3.5 h-3.5"
-                    :style="{ color: colors.accent }"
-                  />
-                  <span>草稿</span>
-                </button>
-              </BaseTooltip>
-              <BaseTooltip text="本地导出">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="handleOpenFinalize"
-                >
-                  <CheckCircle :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span>定稿</span>
-                </button>
-              </BaseTooltip>
-              <BaseTooltip
-                v-if="cloudConfigured"
-                :text="articleStorageMode === 'local' ? '保存到本地' : '推送到远程仓库'"
-              >
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="pushCloudVisible = true"
-                >
-                  <Cloud
-                    v-if="articleStorageMode === 'github'"
-                    :size="14"
-                    class="w-3.5 h-3.5"
-                    :style="{ color: colors.accent }"
-                  />
-                  <HardDrive
-                    v-else
-                    :size="14"
-                    class="w-3.5 h-3.5"
-                    :style="{ color: colors.accent }"
-                  />
-                  <span>{{ articleStorageMode === 'local' ? '本地' : '仓库' }}</span>
-                </button>
-              </BaseTooltip>
-              <BaseTooltip :text="findVisible ? '关闭查找' : findReplaceTooltip">
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="toggleFind"
-                >
-                  <Search :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span :style="findVisible ? { color: colors.accent } : undefined">查找</span>
-                </button>
-              </BaseTooltip>
-              <BaseTooltip
-                v-if="outlineEnabled"
-                :text="outlinePanelVisible ? '隐藏大纲' : '显示大纲'"
-              >
-                <button
-                  class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
-                  @click="onToggleOutline"
-                >
-                  <ListTree :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
-                  <span :style="outlinePanelVisible ? { color: colors.accent } : undefined"
-                    >大纲</span
-                  >
-                </button>
-              </BaseTooltip>
-            </span>
-          </div>
-          <!-- 图床上传进度 -->
-          <div
-            v-if="githubUploading"
-            class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl bg-[#111] text-white text-sm shadow-lg"
-          >
-            <div class="flex items-center gap-2 mb-1.5">
-              <span>正在上传到 {{ uploadHostingLabel }}...</span>
-              <span class="font-medium text-[var(--accent)]">{{ githubUploadProgress }}%</span>
+              <div class="flex items-center gap-2 mb-1.5">
+                <span>正在上传到 {{ uploadHostingLabel }}...</span>
+                <span class="font-medium text-[var(--accent)]">{{ githubUploadProgress }}%</span>
+              </div>
+              <div class="h-1 w-48 rounded-full bg-[#444] overflow-hidden">
+                <div
+                  class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
+                  :style="{ width: githubUploadProgress + '%' }"
+                />
+              </div>
             </div>
-            <div class="h-1 w-48 rounded-full bg-[#444] overflow-hidden">
-              <div
-                class="h-full rounded-full bg-[var(--accent)] transition-all duration-300"
-                :style="{ width: githubUploadProgress + '%' }"
-              />
-            </div>
-          </div>
-          <!--
+            <!--
             移动端快捷工具栏：PC 那排按钮在标题栏里（hidden md:flex），触屏也没有 hover 展开
             二级菜单，所以单做一条可横向滚动的图标条，同一套插入逻辑回传上来。
           -->
-          <MobileEditorToolbar
-            v-if="isMobile"
-            :at-line-start="!!editorRef?.isAtLineStart"
-            :has-selection="!!editorRef?.hasInlineSelection"
-            :accent="colors.accent"
-            :is-tauri="isTauri"
-            :uploading="githubUploading"
-            :upload-label="uploadHostingLabel"
-            :tag-available="!!tagInfo"
-            :can-undo="!!editorRef?.canUndo"
-            @undo="editorRef?.undo()"
-            @inline-format="(s, w) => editorRef?.applyInlineFormat(s, w)"
-            @insert-syntax="(s) => editorRef?.insertAtCursor(s)"
-            @insert-table="(r, c) => insertTable(r, c)"
-            @insert-column="(c) => insertColumnLayout(c)"
-            @insert-column-stack="(c) => insertColumnStack(c)"
-            @insert-row="(r) => insertRowStack(r)"
-            @insert-stack="insertStack()"
-            @insert-container="insertContainer()"
-            @insert-text="insertText()"
-            @insert-html="insertHtmlContainer()"
-            @image-temp="handleInsertImage()"
-            @image-persist="handleInsertImagePersist()"
-            @image-disk="handleUploadToDisk()"
-            @image-hosting="handleUploadToGitHub()"
-            @open-components="componentDialogVisible = true"
-            @open-tag="showTagDialog = true"
-          />
-          <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
-          <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
-            <Editor
-              ref="editorRef"
-              class="flex-1"
-              :model-value="markdown"
-              @update:model-value="onInput"
-              @scroll="onEditorScrollAll"
-              @tag-selected="onTagSelected"
-              @paste-image="handlePasteImage"
-              @paste-multiple-images="handlePasteMultipleImages"
-              @paste-text="onPasteText"
-              @undo-redo="onUndoRedo"
-              @drop-image="handleDropImage"
-              @drop-multiple-images="handleDropMultipleImages"
-              @drop-non-image="handleDropNonImage"
-              @open-find="openFind"
+            <MobileEditorToolbar
+              v-if="isMobile"
+              :at-line-start="!!editorRef?.isAtLineStart"
+              :has-selection="!!editorRef?.hasInlineSelection"
+              :accent="colors.accent"
+              :is-tauri="isTauri"
+              :uploading="githubUploading"
+              :upload-label="uploadHostingLabel"
+              :tag-available="!!tagInfo"
+              :can-undo="!!editorRef?.canUndo"
+              @undo="editorRef?.undo()"
+              @inline-format="(s, w) => editorRef?.applyInlineFormat(s, w)"
+              @insert-syntax="(s) => editorRef?.insertAtCursor(s)"
+              @insert-table="(r, c) => insertTable(r, c)"
+              @insert-column="(c) => insertColumnLayout(c)"
+              @insert-column-stack="(c) => insertColumnStack(c)"
+              @insert-row="(r) => insertRowStack(r)"
+              @insert-stack="insertStack()"
+              @insert-container="insertContainer()"
+              @insert-text="insertText()"
+              @insert-html="insertHtmlContainer()"
+              @image-temp="handleInsertImage()"
+              @image-persist="handleInsertImagePersist()"
+              @image-disk="handleUploadToDisk()"
+              @image-hosting="handleUploadToGitHub()"
+              @open-components="componentDialogVisible = true"
+              @open-tag="showTagDialog = true"
             />
-            <input
-              ref="imageInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="onImageSelected"
-            />
-            <input
-              ref="githubImageInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="onGithubImageSelected"
-            />
-            <input
-              ref="persistImageInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="onImagePersistSelected"
-            />
-            <input
-              v-if="isTauri"
-              ref="diskImageInputRef"
-              type="file"
-              accept="image/*"
-              class="hidden"
-              @change="onDiskImageSelected"
-            />
-            <!-- 解析标签属性：移动端工具栏也有「解析」入口，所以这里不再排除 isMobile -->
-            <TagPropsForm
-              :visible="showTagDialog"
-              :tag-info="tagInfo"
-              @close="onTagDialogClose"
-              @update="onTagDialogUpdate"
-            />
-            <OutlinePanel
-              v-if="outlineVisible && !isMobile"
-              :items="outlineItems"
-              :active-line="editorCursorLine"
-              @jump="onOutlineJump"
-            />
-            <!-- 查找替换面板：浮在编辑器右上角 -->
-            <FindReplacePanel
-              ref="findPanelRef"
-              :visible="findVisible"
-              :total="findTotal"
-              :current="findCurrent"
-              :invalid="findInvalid"
-              @change="onFindChange"
-              @next="onFindNext"
-              @prev="onFindPrev"
-              @replace-one="onFindReplaceOne"
-              @replace-all="onFindReplaceAll"
-              @close="closeFind"
-            />
-          </div>
-          <!-- 字数统计状态栏 -->
-          <div
-            v-if="statusBarEnabled"
-            class="hidden md:flex items-center justify-between px-3 h-7 shrink-0 border-t border-[var(--border-color)] text-[11px]"
-            style="background: var(--bg-primary); color: var(--text-secondary)"
-          >
-            <span class="opacity-70">行 {{ editorCursorLine }}，列 {{ editorCursorCol }}</span>
-            <span class="flex items-center gap-3">
-              <span
-                v-if="editorSelectedChars > 0"
-                class="font-medium"
-                :style="{ color: colors.accent }"
-              >
-                已选 {{ editorSelectedChars }} 字
-              </span>
-              <span class="opacity-70">字数 {{ statusStats.chars }}</span>
-              <span class="opacity-70">约 {{ statusStats.minutes }} 分钟读完</span>
-            </span>
-          </div>
-        </div>
-
-        <!-- Resize Handle -->
-        <div
-          ref="resizeHandleRef"
-          class="resize-handle hidden md:block"
-          @mousedown="onDragStart"
-          @mouseenter="onHandleEnter"
-          @mousemove="onHandleMove"
-          @mouseleave="onHandleLeave"
-        >
-          <div
-            class="resize-handle-btn"
-            :class="{ 'resize-handle-btn--visible': handleBtnVisible }"
-            :style="{ top: handleBtnTop + 'px' }"
-          >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2.5"
-              stroke-linecap="round"
-              stroke-linejoin="round"
+            <!-- data-find-anchor：查找面板 Teleport 到 body 后靠它定位默认位置 -->
+            <div class="flex flex-1 overflow-hidden relative" data-find-anchor>
+              <Editor
+                ref="editorRef"
+                class="flex-1"
+                :model-value="markdown"
+                @update:model-value="onInput"
+                @scroll="onEditorScrollAll"
+                @tag-selected="onTagSelected"
+                @paste-image="handlePasteImage"
+                @paste-multiple-images="handlePasteMultipleImages"
+                @paste-text="onPasteText"
+                @undo-redo="onUndoRedo"
+                @drop-image="handleDropImage"
+                @drop-multiple-images="handleDropMultipleImages"
+                @drop-non-image="handleDropNonImage"
+                @open-find="openFind"
+              />
+              <input
+                ref="imageInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onImageSelected"
+              />
+              <input
+                ref="githubImageInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onGithubImageSelected"
+              />
+              <input
+                ref="persistImageInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onImagePersistSelected"
+              />
+              <input
+                v-if="isTauri"
+                ref="diskImageInputRef"
+                type="file"
+                accept="image/*"
+                class="hidden"
+                @change="onDiskImageSelected"
+              />
+              <!-- 解析标签属性：移动端工具栏也有「解析」入口，所以这里不再排除 isMobile -->
+              <TagPropsForm
+                :visible="showTagDialog"
+                :tag-info="tagInfo"
+                @close="onTagDialogClose"
+                @update="onTagDialogUpdate"
+              />
+              <OutlinePanel
+                v-if="outlineVisible && !isMobile"
+                :items="outlineItems"
+                :active-line="editorCursorLine"
+                @jump="onOutlineJump"
+              />
+              <!-- 查找替换面板：浮在编辑器右上角 -->
+              <FindReplacePanel
+                ref="findPanelRef"
+                :visible="findVisible"
+                :total="findTotal"
+                :current="findCurrent"
+                :invalid="findInvalid"
+                @change="onFindChange"
+                @next="onFindNext"
+                @prev="onFindPrev"
+                @replace-one="onFindReplaceOne"
+                @replace-all="onFindReplaceAll"
+                @close="closeFind"
+              />
+            </div>
+            <!-- 字数统计状态栏 -->
+            <div
+              v-if="statusBarEnabled"
+              class="hidden md:flex items-center justify-between px-3 h-7 shrink-0 border-t border-[var(--border-color)] text-[11px]"
+              style="background: var(--bg-primary); color: var(--text-secondary)"
             >
-              <polyline points="17 8 21 12 17 16" />
-              <polyline points="7 8 3 12 7 16" />
-            </svg>
+              <span class="opacity-70">行 {{ editorCursorLine }}，列 {{ editorCursorCol }}</span>
+              <span class="flex items-center gap-3">
+                <span
+                  v-if="editorSelectedChars > 0"
+                  class="font-medium"
+                  :style="{ color: colors.accent }"
+                >
+                  已选 {{ editorSelectedChars }} 字
+                </span>
+                <span class="opacity-70">字数 {{ statusStats.chars }}</span>
+                <span class="opacity-70">约 {{ statusStats.minutes }} 分钟读完</span>
+              </span>
+            </div>
           </div>
-        </div>
 
-        <!-- Preview Panel -->
-        <div
-          class="flex flex-col overflow-hidden flex-1 md:flex-none"
-          :class="{
-            'hidden md:flex': mobileTab !== 'preview',
-            'mobile-near-bottom': nearBottom && isMobile,
-            'rounded-xl': !isMobile,
-          }"
-          data-theme="light"
-          :style="
-            isMobile
-              ? { background: 'var(--bg-primary)' }
-              : { width: previewWidth + 'px', background: 'var(--bg-primary)' }
-          "
-        >
-          <Preview
-            ref="previewRef"
+          <!-- Resize Handle -->
+          <div
+            ref="resizeHandleRef"
+            class="resize-handle hidden md:block"
+            @mousedown="onDragStart"
+            @mouseenter="onHandleEnter"
+            @mousemove="onHandleMove"
+            @mouseleave="onHandleLeave"
+          >
+            <div
+              class="resize-handle-btn"
+              :class="{ 'resize-handle-btn--visible': handleBtnVisible }"
+              :style="{ top: handleBtnTop + 'px' }"
+            >
+              <svg
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <polyline points="17 8 21 12 17 16" />
+                <polyline points="7 8 3 12 7 16" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Preview Panel -->
+          <div
+            class="flex flex-col overflow-hidden flex-1 md:flex-none"
+            :class="{
+              'hidden md:flex': mobileTab !== 'preview',
+              'mobile-near-bottom': nearBottom && isMobile,
+              'rounded-xl': !isMobile,
+            }"
+            data-theme="light"
+            :style="
+              isMobile
+                ? { background: 'var(--bg-primary)' }
+                : { width: previewWidth + 'px', background: 'var(--bg-primary)' }
+            "
+          >
+            <Preview
+              ref="previewRef"
+              :markdown="resolvedMarkdown"
+              :colors="colors"
+              :is-mobile="isMobile"
+              @click-line="onPreviewClickLine"
+            />
+          </div>
+
+          <!-- Minimap -->
+          <Minimap
+            v-if="minimapEnabled && !isMobile"
             :markdown="resolvedMarkdown"
             :colors="colors"
-            :is-mobile="isMobile"
-            @click-line="onPreviewClickLine"
+            :scroll-ratio="minimapScrollRatio"
+            :viewport-ratio="minimapViewportRatio"
+            :preview-width="previewWidth"
+            @navigate="onMinimapNavigate"
           />
         </div>
 
-        <!-- Minimap -->
-        <Minimap
-          v-if="minimapEnabled && !isMobile"
-          :markdown="resolvedMarkdown"
-          :colors="colors"
-          :scroll-ratio="minimapScrollRatio"
-          :viewport-ratio="minimapViewportRatio"
-          :preview-width="previewWidth"
-          @navigate="onMinimapNavigate"
-        />
+        <!-- 统计面板：激活时占满编辑区，文章树 / 编辑器 / 预览 / 缩略图全部不显示 -->
+        <div
+          v-if="statsActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <DashboardBoard embedded @close="statsActive = false" @open-draft="onStatsOpenDraft" />
+        </div>
       </div>
     </div>
   </div>

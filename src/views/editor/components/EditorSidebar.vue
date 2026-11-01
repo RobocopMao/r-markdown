@@ -20,6 +20,7 @@ import {
   BookMarked,
   Folder,
   ShieldAlert,
+  ChartColumn,
 } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -53,6 +54,8 @@ const props = defineProps<{
   activeTab?: string
   draftCount?: number
   treePanelVisible?: boolean
+  /** 统计面板是否激活（激活时编辑区只剩面板） */
+  statsActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -66,6 +69,7 @@ const emit = defineEmits<{
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
   (e: 'aiAction', action: 'write' | 'format' | 'image'): void
+  (e: 'toggleStats'): void
 }>()
 
 const showExamples = ref(false)
@@ -258,6 +262,23 @@ function toggleCollapse() {
               :style="{ background: 'var(--accent)' }"
               >{{ draftCount > 99 ? '99+' : draftCount }}</span
             >
+          </button>
+          <!-- 统计 button：激活后编辑区只剩统计面板，再点一次还原 -->
+          <button
+            class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.statsActive }"
+            :style="
+              props.statsActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
+            @click="emit('toggleStats')"
+          >
+            <ChartColumn :size="24" class="shrink-0" />
+            <span class="text-[10px] leading-tight">统计</span>
           </button>
           <!-- 导入 button -->
           <button
