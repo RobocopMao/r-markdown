@@ -32,6 +32,19 @@ const CELL_MAX = 22
 const GAP = 3
 /** 左侧星期标尺占的宽度（标尺 18px + 右边距 4px） */
 const RULER_WIDTH = 22
+/**
+ * 滚动容器上、下、右三边留的余量（左边不留，见下）。
+ *
+ * 格子悬停时会 scale-125 往四周探出去（22px 的格子单边约 2.75px），
+ * 滚动容器是 overflow-x-auto，探出去的部分会被裁掉——最右一列尤其明显。
+ * 留 4px 让放大的方块完整露出来，同时下面的 measure() 要把这 4px 减掉，
+ * 否则内容会比容器宽，白白多出一条横向滚动条。
+ *
+ * 左边故意不留：格子都在星期标尺右侧，左侧没有需要露出的悬停内容；
+ * 而一旦留了左边距，sticky 标尺只贴内容盒左沿，滑过去的格子会从那 4px 缝里
+ * 露出半截边角（实测最右一列有 7 个格子漏出来）。去掉左边距就彻底没缝了。
+ */
+const HOVER_PAD = 4
 
 /** 把线性排列的格子切成「每周一列」的分组 */
 const columns = computed(() => {
@@ -82,9 +95,33 @@ function titleOf(cell: HeatCell): string {
 /* ── 自适应格子尺寸 ── */
 
 const rootRef = ref<HTMLElement | null>(null)
+const scrollerRef = ref<HTMLElement | null>(null)
 const cellSize = ref(CELL_MIN)
 const gapSize = ref(GAP)
 let observer: ResizeObserver | null = null
+
+/**
+ * 是否「贴着最右边」。
+ *
+ * 一年 53 列在窄屏（尤其移动端）放不下，而人最想看的是最近几天，
+ * 所以初始化时直接把滚动条拉到最右。之后如果用户自己往左滑走了，
+ * 就不能再把他拽回来——只有还贴着右边时，尺寸变化才继续跟着滚到底。
+ */
+let pinnedToRight = true
+
+function scrollToRight(): void {
+  const el = scrollerRef.value
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  if (max > 0) el.scrollLeft = max
+}
+
+function onScroll(): void {
+  const el = scrollerRef.value
+  if (!el) return
+  const max = el.scrollWidth - el.clientWidth
+  pinnedToRight = max <= 0 ? true : max - el.scrollLeft < 2
+}
 
 /**
  * 按容器宽度算格子边长。
@@ -102,7 +139,7 @@ function measure(): void {
   const count = columns.value.length
   if (!count) return
 
-  const available = el.clientWidth - RULER_WIDTH
+  const available = el.clientWidth - RULER_WIDTH - HOVER_PAD
   let size = (available - GAP * count) / count
 
   if (size > CELL_MAX) {
@@ -115,10 +152,20 @@ function measure(): void {
   if (size < CELL_MIN) size = CELL_MIN
 
   cellSize.value = size
+
+  // 尺寸变了可滚动范围也会变，贴着右边时跟着滚到新的最右
+  if (pinnedToRight) {
+    requestAnimationFrame(() => {
+      if (pinnedToRight) scrollToRight()
+    })
+  }
 }
 
 onMounted(() => {
   measure()
+  scrollToRight()
+  // 首屏字体/布局稳定后再对一次，避免量出来的宽度比实际小、滚不到底
+  requestAnimationFrame(() => scrollToRight())
   if (typeof ResizeObserver !== 'undefined' && rootRef.value) {
     observer = new ResizeObserver(() => measure())
     observer.observe(rootRef.value)
@@ -157,8 +204,11 @@ watch(
     <!--
       卡片够宽时格子跟着放大铺满整行；窄到 13px 还放不下时，
       只有这一块出横向滚动条，不把外层页面撑出横向滚动。
+      上下右各留 4px 给悬停放大（见 HOVER_PAD），左边不留 —— 否则 sticky 标尺
+      和格子之间会有一条 4px 缝，滑到中间时格子从缝里露出边角。
+      窄屏默认滚到最右（最近的日子），星期标尺 sticky 在左边一直看得见。
     -->
-    <div class="w-full overflow-x-auto pb-1">
+    <div ref="scrollerRef" class="w-full overflow-x-auto pt-1 pr-1 pb-1" @scroll.passive="onScroll">
       <div class="w-max">
         <!-- 月份标尺 -->
         <div class="mb-1 flex" :style="{ gap: `${gapSize}px`, paddingLeft: `${RULER_WIDTH}px` }">
@@ -173,10 +223,18 @@ watch(
         </div>
 
         <div class="flex" :style="{ gap: `${gapSize}px` }">
-          <!-- 星期标尺：隔行标注，避免挤成一片 -->
+          <!--
+            星期标尺：隔行标注，避免挤成一片。
+            sticky 是为了横向滑到右边时它还在——否则一年 53 列在移动端一滚，星期就没了，
+            看到的是一排不知星期几的方块。底色必须不透明，否则格子会从字底下穿过去。
+          -->
           <div
-            class="flex shrink-0 flex-col"
-            :style="{ width: `${RULER_WIDTH - 4}px`, marginRight: '4px', gap: `${gapSize}px` }"
+            class="sticky left-0 z-10 flex shrink-0 flex-col bg-[var(--bg-primary)]"
+            :style="{
+              width: `${RULER_WIDTH - 4}px`,
+              marginRight: '4px',
+              gap: `${gapSize}px`,
+            }"
           >
             <div
               v-for="(label, index) in WEEK_ROWS"
