@@ -24,7 +24,6 @@ import {
   ArrowRight,
   BookOpenText,
   Bot,
-  ChartColumn,
   Download,
   EllipsisVertical,
   HelpCircle,
@@ -106,6 +105,12 @@ interface MenuEntry {
 }
 
 /**
+ * 桌面客户端里 `/` 就是编辑器本身，没有「首页」这个概念，
+ * 点进去只会原地跳到编辑器，所以客户端里不显示这一项。
+ */
+const isTauri = import.meta.env.VITE_TAURI === 'true'
+
+/**
  * 站点级导航：没有页内锚点的页面（扩展组件 / 素材库 / 帮助文档）用的那套。
  * 编辑器放最后：PC 上右侧有「打开编辑器」按钮会把这一项过滤掉，
  * 只有移动端（按钮被 max-xl:hidden 收起）才靠这一项进编辑器。
@@ -115,9 +120,8 @@ const SITE_MENU: MenuEntry[] = [
   { label: '编辑器', to: props.editorTo, icon: PenLine },
   { label: '扩展组件', to: '/components', icon: LayoutGrid },
   { label: '素材库', to: '/materials', icon: Library },
-  { label: '统计', to: '/dashboard', icon: ChartColumn },
   { label: '帮助文档', to: '/help', icon: HelpCircle },
-]
+].filter((entry) => !(isTauri && entry.to === '/'))
 
 /** 首页那种页内锚点的图标，按 label 对齐；没登记的用通用图标兜底 */
 const ANCHOR_ICONS: Record<string, unknown> = {
