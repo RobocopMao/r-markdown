@@ -909,7 +909,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('setting-changed', onSettingChanged)
 })
 
-/** SettingsDialog 保存云端配置、切换存储模式或更改本地目录后自动同步 */
+/** SettingsBoard 保存云端配置、切换存储模式或更改本地目录后自动同步 */
 function onSettingChanged(e: Event) {
   const { key } = (e as CustomEvent).detail || {}
   if (key === 'cloudArticleToken' || key === 'cloudArticleRepo' || key === 'articleStorageMode') {

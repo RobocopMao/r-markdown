@@ -56,6 +56,14 @@ const props = defineProps<{
   treePanelVisible?: boolean
   /** 统计面板是否激活（激活时编辑区只剩面板） */
   statsActive?: boolean
+  /** 草稿箱面板是否激活（激活时编辑区只剩面板） */
+  draftBoardActive?: boolean
+  /** 图库面板是否激活（激活时编辑区只剩面板） */
+  galleryBoardActive?: boolean
+  /** 「我的素材」面板是否激活（激活时编辑区只剩面板） */
+  materialBoardActive?: boolean
+  /** 「违禁词检测」面板是否激活（激活时编辑区只剩面板） */
+  bannedBoardActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -249,9 +257,18 @@ function toggleCollapse() {
             <Folder :size="24" class="shrink-0" />
             <span class="text-[10px] leading-tight">文章</span>
           </button>
-          <!-- 草稿列表 button -->
+          <!-- 草稿箱 button：激活后编辑区只剩草稿箱面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.draftBoardActive }"
+            :style="
+              props.draftBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openDrafts')"
           >
             <SquareBottomDashedScissors :size="24" class="shrink-0" />
@@ -345,9 +362,18 @@ function toggleCollapse() {
             <Puzzle :size="24" class="shrink-0" />
             <span class="text-[10px] leading-tight">组件</span>
           </button>
-          <!-- 图库 button -->
+          <!-- 图库 button：激活后编辑区只剩图库面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.galleryBoardActive }"
+            :style="
+              props.galleryBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openGallery')"
           >
             <Images :size="24" class="shrink-0" />
@@ -362,6 +388,15 @@ function toggleCollapse() {
             <button
               ref="materialBtnRef"
               class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+              :class="{ active: props.materialBoardActive }"
+              :style="
+                props.materialBoardActive
+                  ? {
+                      color: 'var(--accent)',
+                      background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                    }
+                  : undefined
+              "
             >
               <Package :size="24" class="shrink-0" />
               <span class="text-[10px] leading-tight">素材</span>
@@ -396,9 +431,18 @@ function toggleCollapse() {
               </button>
             </div>
           </div>
-          <!-- 违禁词检测 button -->
+          <!-- 违禁词检测 button：激活后编辑区只剩检测面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.bannedBoardActive }"
+            :style="
+              props.bannedBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openBannedWords')"
           >
             <ShieldAlert :size="24" class="shrink-0" />

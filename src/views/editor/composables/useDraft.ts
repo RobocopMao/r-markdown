@@ -10,7 +10,8 @@ export function useDraft(
   currentCloudArticleId: Ref<string | null>,
   matchCloudArticle: (title: string | null) => boolean,
 ) {
-  const draftListVisible = ref(false)
+  /** 草稿箱面板是否激活（编辑区内嵌面板，占满编辑区，与统计面板同款呈现） */
+  const draftBoardVisible = ref(false)
   const saveDraftVisible = ref(false)
   const finalizeVisible = ref(false)
   const finalizeDeleteConfirmVisible = ref(false)
@@ -154,7 +155,7 @@ export function useDraft(
       setTimeout(() => matchCloudArticle(extractTitle(markdown.value)), 300)
       resetMinimap()
       showToast('已加载草稿')
-      draftListVisible.value = false
+      draftBoardVisible.value = false
     }
   }
 
@@ -253,7 +254,7 @@ export function useDraft(
   }
 
   return {
-    draftListVisible,
+    draftBoardVisible,
     saveDraftVisible,
     finalizeVisible,
     finalizeDeleteConfirmVisible,

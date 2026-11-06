@@ -78,10 +78,16 @@ export function useImport(
   currentCloudArticleId: Ref<string | null>,
   matchCloudArticle?: (title: string | null) => boolean,
 ) {
-  async function onImportClick() {
+  /**
+   * 选文件导入正文。
+   * 返回 true 表示确实导入了内容，false 表示用户取消或失败 ——
+   * 调用方（侧栏「导入」）靠这个返回值决定要不要顺带切换视图，
+   * 用户点「取消」时不该有任何副作用。
+   */
+  async function onImportClick(): Promise<boolean> {
     try {
       const picked = await pickDocumentFile()
-      if (!picked) return
+      if (!picked) return false
 
       markdown.value = picked.text
       localStorage.setItem(STORAGE_KEY, markdown.value)
@@ -92,9 +98,11 @@ export function useImport(
         matchCloudArticle?.(extractTitle(markdown.value))
       }, 300)
       showToast('导入成功')
+      return true
     } catch (e: unknown) {
       showToast(getErrorMessage(e) || '导入失败')
       console.error('导入失败:', e)
+      return false
     }
   }
 

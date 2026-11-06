@@ -317,29 +317,29 @@ r-markdown/
 
 ### 编辑器组件一览（`src/views/editor/components/`）
 
-| 组件                                                                   | 用途                                                                             |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `Editor.vue`                                                           | CodeMirror 编辑器封装                                                            |
-| `Preview.vue`                                                          | 预览区渲染与复制                                                                 |
-| `EditorSidebar.vue`                                                    | 左侧竖排功能入口（文章 / 草稿 / 导入 / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助） |
-| `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点                                                                 |
-| `OutlinePanel.vue`                                                     | 文档大纲面板                                                                     |
-| `FindReplacePanel.vue`                                                 | 查找替换面板                                                                     |
-| `CommandPalette.vue`                                                   | 命令面板（⌘K）                                                                   |
-| `Minimap.vue`                                                          | 预览区缩略图（可开关）                                                           |
-| `BannedWordsDialog.vue`                                                | 违禁词检测弹窗                                                                   |
-| `SettingsDialog.vue`                                                   | 设置弹窗（基础 / 图片 / 文章存储 / 公众号 / 关于）                               |
-| `ThemePicker.vue`                                                      | 主题色选择                                                                       |
-| `ComponentPickerDialog.vue` `TagPropsForm.vue`                         | 组件插入与属性编辑                                                               |
-| `ImageCacheDialog.vue`                                                 | 图库弹窗                                                                         |
-| `DraftListDialog.vue` `SaveDraftDialog.vue`                            | 草稿列表与保存草稿                                                               |
-| `PushToCloudDialog.vue` `PushToCloudTree.vue`                          | 推送到云端文章树                                                                 |
-| `PublishToWechatDialog.vue`                                            | 发布到公众号                                                                     |
-| `MaterialLibraryPanel.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 素材面板与卡片                                                                   |
-| `XhsExporter.vue`                                                      | 小红书图导出                                                                     |
-| `FinalizeDialog.vue`                                                   | 定稿（本地导出 Markdown）                                                        |
-| `Dropdown.vue`                                                         | 通用下拉                                                                         |
-| `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单                                                                   |
+| 组件                                                            | 用途                                                                             |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `Editor.vue`                                                    | CodeMirror 编辑器封装                                                            |
+| `Preview.vue`                                                   | 预览区渲染与复制                                                                 |
+| `EditorSidebar.vue`                                             | 左侧竖排功能入口（文章 / 草稿 / 导入 / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助） |
+| `TreeSidebar.vue` `TreeNode.vue`                                | 文章树侧栏与节点                                                                 |
+| `OutlinePanel.vue`                                              | 文档大纲面板                                                                     |
+| `FindReplacePanel.vue`                                          | 查找替换面板                                                                     |
+| `CommandPalette.vue`                                            | 命令面板（⌘K）                                                                   |
+| `Minimap.vue`                                                   | 预览区缩略图（可开关）                                                           |
+| `BannedBoard.vue`                                               | 违禁词检测面板（内嵌编辑区）                                                     |
+| `SettingsBoard.vue`                                             | 设置面板（内嵌编辑区；基础 / 图片 / 文章存储 / 公众号 / AI / 关于）              |
+| `ThemePicker.vue`                                               | 主题色选择                                                                       |
+| `ComponentPickerDialog.vue` `TagPropsForm.vue`                  | 组件插入与属性编辑                                                               |
+| `GalleryBoard.vue`                                              | 图库面板（选图插入 / 多选清理图片缓存）                                          |
+| `DraftBoard.vue` `SaveDraftDialog.vue`                          | 草稿列表与保存草稿                                                               |
+| `PushToCloudDialog.vue` `PushToCloudTree.vue`                   | 推送到云端文章树                                                                 |
+| `PublishToWechatDialog.vue`                                     | 发布到公众号                                                                     |
+| `MaterialBoard.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 我的素材面板（内嵌编辑区）与素材卡片                                             |
+| `XhsExporter.vue`                                               | 小红书图导出                                                                     |
+| `FinalizeDialog.vue`                                            | 定稿（本地导出 Markdown）                                                        |
+| `Dropdown.vue`                                                  | 通用下拉                                                                         |
+| `mobile/MobileActionsMenu.vue`                                  | 移动端操作菜单                                                                   |
 
 ## 🌐 在线体验
 

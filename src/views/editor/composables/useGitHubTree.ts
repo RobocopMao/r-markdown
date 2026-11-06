@@ -205,7 +205,7 @@ export function useGitHubTree() {
   }
 
   /**
-   * 重新检查配置：用于 SettingsDialog 保存配置后，
+   * 重新检查配置：用于 SettingsBoard 保存配置后，
    * TreeSidebar 通过 window focus 事件触发更新 isConfigured 状态
    */
   function checkConfig() {

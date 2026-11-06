@@ -3,7 +3,7 @@
  * 统一的勾选框。
  *
  * 项目里不用浏览器原生 <input type="checkbox">：素材卡片（MaterialCard）与图库
- * （ImageCacheDialog）一直都是「圆角方块 + 白色对勾、选中变主题色」的自绘样式。
+ * （图库 GalleryBoard）一直都是「圆角方块 + 白色对勾、选中变主题色」的自绘样式。
  * 这里把该样式收敛成一个组件，新增勾选场景一律用它，避免各处长相不一致。
  *
  * 用法：`<BaseCheckbox :checked="x" @change="x = !x" />`，

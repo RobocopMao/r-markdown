@@ -7,8 +7,8 @@ export function useWechatPublish(
   extractedTitle: ComputedRef<string>,
   currentDraftId: Ref<number | null>,
   showToast: (msg: string) => void,
-  settingsVisible: Ref<boolean>,
-  settingsInitialTab: Ref<string>,
+  /** 缺公众号配置时跳到「设置 → 公众号」：设置现在是编辑区内嵌面板，由父级负责打开 */
+  openSettings: (tab?: string) => void,
 ) {
   const wechatPublishVisible = ref(false)
   const wechatMediaId = ref('')
@@ -30,8 +30,7 @@ export function useWechatPublish(
     const appsecret = getSetting<string>('wechatAppSecret')
     if (!appid || !appsecret) {
       showToast('请先在设置中配置公众号 AppID 和 AppSecret')
-      settingsInitialTab.value = 'wechat'
-      settingsVisible.value = true
+      openSettings('wechat')
       return
     }
     if (!currentDraftId.value) {

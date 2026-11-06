@@ -1,0 +1,3072 @@
+<script setup lang="ts">
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
+import { invoke } from '@tauri-apps/api/core'
+import { open } from '@tauri-apps/plugin-shell'
+import pkg from '../../../../package.json'
+import { Check, Trash2 } from 'lucide-vue-next'
+import BaseCheckbox from '@/components/BaseCheckbox.vue'
+import ModelMultiSelect from '@/components/ModelMultiSelect.vue'
+import BaseTooltip from '@/components/BaseTooltip.vue'
+import ConfirmDialog from '@/components/ConfirmDialog.vue'
+import { getSetting, setSetting } from '@/config/settings'
+import {
+  autoUpdateEnabled,
+  autoUpdatePending,
+  autoUpdateRid,
+  checkForUpdates,
+} from '@/composables/useAutoUpdater'
+import { autoSaveEnabled, autoSaveInterval } from '@/composables/useEditorSettings'
+import {
+  paraFontSize,
+  paraLineHeight,
+  paraFontWeight,
+  paraMargin,
+  paraIndent,
+} from '@/composables/useParagraphSettings'
+import { testConnection } from '@/services/githubUploader'
+import { GitHubTreeService } from '@/services/githubTreeService'
+import { resolveAiConfig, listModels, testAiConnection } from '@/services/aiFormat'
+import {
+  isSupportedImageModel,
+  IMAGE_PROVIDERS,
+  IMAGE_RELAYS,
+  getActiveProviderId,
+  getImageProvider,
+  getProviderConfig,
+  setActiveProviderId,
+  setProviderConfig,
+  type ImageGenProviderConfig,
+} from '@/services/imageProviders'
+import { listImageModels, testImageConnection } from '@/services/imageGen'
+import { useTheme } from '@/composables/useTheme'
+import { useIsMobileWeb } from '@/composables/useIsMobile'
+import { testConnection as testLetaConnection } from '@/services/letaUploader'
+import { getErrorMessage } from '@/utils/helpers'
+import {
+  isMac,
+  modKeyLabel,
+  ctrlKeyLabel,
+  altKeyLabel,
+  shiftKeyLabel,
+  modifierKeyList,
+} from '@/utils/platform'
+import {
+  parseShortcut,
+  formatShortcutSpec,
+  specFromEvent,
+  shortcutDisplay,
+  DEFAULT_PALETTE_SHORTCUT,
+  type ShortcutSpec,
+} from '@/utils/commandPalette'
+import {
+  activeGithubWorkspaceId,
+  activeLocalWorkspaceId,
+  ensureWorkspaces,
+  listWorkspaces,
+  addWorkspace,
+  updateWorkspace,
+  removeWorkspace,
+  getWorkspaceById,
+  getWorkspaceToken,
+  setWorkspaceToken,
+  setActiveWorkspace,
+} from '@/services/articleWorkspace'
+import { useGitHubTree } from '../composables/useGitHubTree'
+import { ARTICLE_NAMING_ID, ARTICLE_NAMING_TITLE } from '@/utils/articleNaming'
+import { MAX_SESSION_HOURS, MIN_SESSION_HOURS, normalizeHours } from '@/utils/aiWriteSession'
+import {
+  DEFAULT_WRITE_MAX_TOKENS,
+  DEFAULT_WRITE_TEMPERATURE,
+  MAX_WRITE_MAX_TOKENS,
+  MIN_WRITE_MAX_TOKENS,
+} from '@/services/aiWrite'
+
+const { switchToWorkspace } = useGitHubTree()
+ensureWorkspaces()
+
+const props = defineProps<{
+  initialTab?: string
+}>()
+
+const emit = defineEmits<{
+  close: []
+  toast: [message: string]
+}>()
+
+const ZOOM_PRESETS = [50, 75, 80, 90, 100, 110, 125, 150, 175, 200]
+const SAVE_INTERVAL_PRESETS = [0.5, 1, 2, 3, 5, 8, 10]
+const isTauri = import.meta.env.VITE_TAURI === 'true'
+/** 移动端 Web：无本地存储，图片相关只提供 GitHub/乐塔图床（桌面客户端不受影响） */
+const isMobile = useIsMobileWeb()
+const { colors } = useTheme()
+
+const selectChevronStyle = {
+  backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+}
+
+// ── 设置 tab ──
+const settingsTab = ref('basic')
+
+/**
+ * 「AI 设置」tab 内的二级子页：text（文本：写作 + 排版共用一份接口配置）| image（图片）。
+ * 写作与排版共用同一个接口地址 / API Key / 模型名，所以合并成一个子页；
+ * 两者不同的采样参数在 text 子页内分区展示。
+ */
+const aiPane = ref<'text' | 'image'>('text')
+
+/**
+ * 按 initialTab 落到对应标签页。
+ * 'ai-write' / 'ai-format' / 'ai-image' 是「打开 AI tab 且停在某个子页」的入口约定，
+ * 写作与排版现在同属「AI 文本」，前两个都落到 text 子页。
+ */
+function applyInitialTab(tab?: string) {
+  if (tab === 'ai-write' || tab === 'ai-format' || tab === 'ai-image') {
+    settingsTab.value = 'ai'
+    aiPane.value = tab === 'ai-image' ? 'image' : 'text'
+  } else if (tab) {
+    settingsTab.value = tab
+    if (tab === 'ai') aiPane.value = 'text'
+  }
+}
+
+/**
+ * 设置面板是编辑区里的内嵌面板（父级用 v-if 挂载 / 卸载），所以「打开时初始化」
+ * 就等价于 onMounted：按 initialTab 落到对应 tab，并刷新需要回显的配置。
+ */
+onMounted(() => {
+  applyInitialTab(props.initialTab)
+  refreshImageConfig()
+  refreshWriteConfig()
+  // 同步回显存储位置（用户在树下拉中切换工作区时会持久化 articleStorageMode）
+  articleStorageMode.value = getSetting<'github' | 'local'>('articleStorageMode')
+  // 同步回显文章文件命名开关（可能被其他入口或磁盘配置改动）
+  articleTitleNaming.value = getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE
+})
+
+/**
+ * 面板已经开着时，从别的入口再点进来（顶栏齿轮 / AI 面板的「去设置」/ 文章树的「前往设置」）
+ * 只会改 initialTab，面板不会重新挂载，所以这里要跟着切 tab。
+ */
+watch(
+  () => props.initialTab,
+  (tab) => applyInitialTab(tab),
+)
+// 图床上传子 tab：upload | github | leta
+const hostingTab = ref('upload')
+
+// ── 图床配置 ──
+const githubRepo = ref(getSetting<string>('githubRepo'))
+const githubToken = ref(getSetting<string>('githubToken'))
+const githubBranch = ref(getSetting<string>('githubBranch'))
+
+const githubTesting = ref(false)
+const githubTestResult = ref<'ok' | 'fail' | ''>('')
+const githubTestError = ref('')
+
+const letaToken = ref(getSetting<string>('letaToken'))
+const letaStorageId = ref(getSetting<string>('letaStorageId'))
+
+const letaTesting = ref(false)
+const letaTestResult = ref<'ok' | 'fail' | ''>('')
+const letaTestError = ref('')
+
+function saveGitHubRepo(val: string) {
+  githubRepo.value = val
+  setSetting('githubRepo', val)
+  githubTestResult.value = ''
+  githubTestError.value = ''
+}
+
+function saveGitHubToken(val: string) {
+  githubToken.value = val
+  setSetting('githubToken', val)
+  githubTestResult.value = ''
+  githubTestError.value = ''
+}
+
+function saveGitHubBranch(val: string) {
+  githubBranch.value = val
+  setSetting('githubBranch', val)
+  githubTestResult.value = ''
+  githubTestError.value = ''
+}
+
+function saveLetuToken(val: string) {
+  letaToken.value = val
+  setSetting('letaToken', val)
+  letaTestResult.value = ''
+  letaTestError.value = ''
+}
+
+function saveLetuStorageId(val: string) {
+  letaStorageId.value = val
+  setSetting('letaStorageId', val)
+  letaTestResult.value = ''
+  letaTestError.value = ''
+}
+
+// ── 粘贴/拖拽上传方式（移动端固定走 GitHub 图床，此项不展示）──
+const pasteDropMode = ref(getSetting<string>('pasteDropMode'))
+
+function savePasteDropMode(val: string) {
+  pasteDropMode.value = val
+  setSetting('pasteDropMode', val)
+}
+
+// ── 默认图床（工具栏上传按钮使用）──
+const defaultHosting = ref(getSetting<string>('defaultHosting'))
+
+function saveDefaultHosting(val: string) {
+  defaultHosting.value = val
+  setSetting('defaultHosting', val)
+}
+
+// ── 压缩质量 ──
+const compressQuality = ref(getSetting<number>('compressQuality'))
+
+function saveCompressQuality(val: number) {
+  compressQuality.value = val
+  setSetting('compressQuality', val)
+}
+
+// ── 磁盘图片上传名称规则 ──
+const diskImageNaming = ref(getSetting<string>('diskImageNaming'))
+
+function saveDiskImageNaming(val: string) {
+  diskImageNaming.value = val
+  setSetting('diskImageNaming', val)
+}
+
+// ── Minimap 缩略图 ──
+const minimapEnabled = ref(getSetting<boolean>('minimapEnabled'))
+watch(minimapEnabled, (val) => setSetting('minimapEnabled', val))
+
+// ── 文档大纲 ──
+const outlineEnabled = ref(getSetting<boolean>('outlineEnabled'))
+watch(outlineEnabled, (val) => setSetting('outlineEnabled', val))
+
+// ── 底部状态栏 ──
+const statusBarEnabled = ref(getSetting<boolean>('statusBarEnabled'))
+watch(statusBarEnabled, (val) => setSetting('statusBarEnabled', val))
+
+// ── 命令面板 ──
+/** 持久化的是 'Mod+K' 这类描述串，展示时按平台渲染 */
+const commandPaletteShortcut = ref(getSetting<string>('commandPaletteShortcut'))
+const shortcutRecording = ref(false)
+const shortcutButtonRef = ref<HTMLButtonElement | null>(null)
+
+const commandPaletteShortcutText = computed(() => displayShortcut(commandPaletteShortcut.value))
+
+/** 解析配置里的快捷键，失败（如旧版存的 Option 组合字符）时回退默认值 */
+function resolveShortcut(raw: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(DEFAULT_PALETTE_SHORTCUT)
+}
+
+function displayShortcut(raw: string): string {
+  const spec = resolveShortcut(raw)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+function startShortcutRecording() {
+  shortcutRecording.value = true
+  // keydown 需要焦点，点击后主动聚焦按钮本身（否则按键会落到别处）
+  nextTick(() => shortcutButtonRef.value?.focus())
+}
+
+/**
+ * 录制新的快捷键。
+ * Esc 恢复默认；按下合法组合则保存；其余按键一律拦截，避免误触其他控件。
+ */
+function onShortcutKeydown(e: KeyboardEvent) {
+  if (!shortcutRecording.value) return
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (e.key === 'Escape') {
+    shortcutRecording.value = false
+    commandPaletteShortcut.value = DEFAULT_PALETTE_SHORTCUT
+    setSetting('commandPaletteShortcut', DEFAULT_PALETTE_SHORTCUT)
+    return
+  }
+
+  const spec = specFromEvent(e, isMac())
+  if (!spec) return // 仅按修饰键或无修饰键，继续等待
+  shortcutRecording.value = false
+  const text = formatShortcutSpec(spec)
+  commandPaletteShortcut.value = text
+  setSetting('commandPaletteShortcut', text)
+}
+
+// ── 编辑器主题 ──
+const editorTheme = ref(getSetting<string>('editorTheme'))
+function saveEditorTheme(theme: string) {
+  editorTheme.value = theme
+  setSetting('editorTheme', theme)
+}
+
+// ── 编辑区字号（仅影响编辑器显示，不影响预览与导出排版）──
+const editorFontSize = ref(getSetting<number>('editorFontSize'))
+function saveEditorFontSize(val: number) {
+  editorFontSize.value = val
+  setSetting('editorFontSize', val)
+}
+function resetEditorFontSize() {
+  saveEditorFontSize(13)
+}
+
+// ── AI 文本（写作与排版共用一份接口配置，只有采样参数分开）──
+/**
+ * 「AI 文本」= 写作 + 排版。两者用同一个接口地址、API Key、模型名，
+ * 因此这三项在这里只出现一次（原来写作子页那份「模型覆盖」已去掉）。
+ * 与任务性质相关的采样温度 / 最大输出分开存、分区展示。
+ */
+const aiBaseUrl = ref(getSetting<string>('aiBaseUrl'))
+const aiApiKey = ref(getSetting<string>('aiApiKey'))
+const aiTemperature = ref(getSetting<number>('aiTemperature'))
+const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
+const aiStream = ref(getSetting<boolean>('aiStream'))
+
+/**
+ * 结果保留时长（小时）——**三个面板各自独立**。
+ * 口径都是「从最后一次请求算起」的滑动续期：一直在用就一直留得住。
+ *
+ * 分开是因为使用节奏不同：写作一次常聊几十分钟，排版/配图多是「生成一次就用掉」。
+ */
+const aiWriteSessionHours = ref(getSetting<number>('aiWriteSessionHours'))
+const aiFormatSessionHours = ref(getSetting<number>('aiFormatSessionHours'))
+const aiImageSessionHours = ref(getSetting<number>('aiImageSessionHours'))
+
+type SessionHoursSettingKey = 'aiWriteSessionHours' | 'aiFormatSessionHours' | 'aiImageSessionHours'
+
+/** 三个面板共用一个写回实现，避免三段重复代码；收敛逻辑与面板侧一致 */
+function saveSessionHours(key: SessionHoursSettingKey, val: number) {
+  const n = normalizeHours(val)
+  if (key === 'aiWriteSessionHours') aiWriteSessionHours.value = n
+  else if (key === 'aiFormatSessionHours') aiFormatSessionHours.value = n
+  else aiImageSessionHours.value = n
+  setSetting(key, n)
+}
+
+/** 模型列表查询状态 */
+const modelList = ref<string[]>([])
+const modelListLoading = ref(false)
+const modelListError = ref('')
+
+/** 连接测试状态 */
+const aiTesting = ref(false)
+const aiTestResult = ref<'ok' | 'fail' | ''>('')
+const aiTestError = ref('')
+/** 测试/查询后展示的提示信息 */
+const aiHint = ref('')
+
+function resetAiTestState() {
+  aiTestResult.value = ''
+  aiTestError.value = ''
+  aiHint.value = ''
+}
+
+function saveAiBaseUrl(val: string) {
+  aiBaseUrl.value = val
+  setSetting('aiBaseUrl', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+function saveAiApiKey(val: string) {
+  aiApiKey.value = val
+  setSetting('aiApiKey', val)
+  resetAiTestState()
+  modelList.value = []
+}
+
+/**
+ * 把「清单首项」同步进旧字段 `aiModel`。
+ *
+ * 这个字段已经没有对应设置项了（用户明确不要单独的默认模型），留着是为了：
+ * 一是老配置读得回来，二是监听 `aiModel` 的面板（配图里的「优化提示词」就绪判定）
+ * 能收到变更事件。别因为「没人读」就删掉这行写入——那是兼容层。
+ */
+function saveAiModel(val: string) {
+  setSetting('aiModel', val)
+  resetAiTestState()
+}
+
+/**
+ * 文本常用模型清单（多选维护）。
+ *
+ * 没有单独的「默认模型」设置：**清单首项即默认**。面板各自记的当前模型
+ * 失效时也回落到首项。
+ *
+ * 升级迁移：装过旧版本的用户只有单个 `aiModel`、没有这份清单，
+ * 直接取空数组会让多选控件显示「还没有选中任何模型」、面板也没模型可发。
+ * 所以清单为空而 `aiModel` 有值时，用它兜底成一份只有一项的清单。
+ */
+function initAiModels(): string[] {
+  const listed = getSetting<string[]>('aiModels')
+  const out: string[] = []
+  for (const m of Array.isArray(listed) ? listed : []) {
+    if (typeof m === 'string' && m.trim() && !out.includes(m.trim())) out.push(m.trim())
+  }
+  if (out.length === 0) {
+    const legacy = (getSetting<string>('aiModel') || '').trim()
+    if (legacy) out.push(legacy)
+  }
+  return out
+}
+
+const aiModels = ref(initAiModels())
+
+function saveAiModels(val: string[]) {
+  aiModels.value = val
+  setSetting('aiModels', val)
+  // 清单首项即默认，顺手同步进旧字段 aiModel：老配置读得回来，
+  // 监听 aiModel 的面板（如配图里的「优化提示词」）也能收到变更。
+  // saveAiModel 内部会 resetAiTestState()。
+  saveAiModel(val[0] || '')
+}
+
+function saveAiTemperature(val: number) {
+  aiTemperature.value = val
+  setSetting('aiTemperature', val)
+}
+
+function saveAiMaxTokens(val: number) {
+  aiMaxTokens.value = val
+  setSetting('aiMaxTokens', val)
+}
+
+function saveAiStream(val: boolean) {
+  aiStream.value = val
+  setSetting('aiStream', val)
+}
+
+// ── AI 配图（按厂商配置；各家参数不一致，字段由厂商注册表驱动）──
+/** 当前厂商 id（响应式，用于切换厂商时刷新配置回显） */
+const imageProviderId = ref(getActiveProviderId())
+/** 当前厂商的能力描述 */
+const imageDef = computed(() => getImageProvider(imageProviderId.value))
+/** 当前厂商的配置（写回时按厂商分开存储） */
+const imageConfig = ref<ImageGenProviderConfig>(getProviderConfig(imageProviderId.value))
+
+/** 模型列表查询状态 */
+const imageModelList = ref<string[]>([])
+const imageModelLoading = ref(false)
+const imageModelError = ref('')
+/**
+ * 清单里哪些模型名可能不被本厂商支持（只提示、不阻止保存）。
+ *
+ * 检查**整份清单**而不只是「当前用的那个」：面板参数行的下拉就是这份清单，
+ * 用户随手切到一个不支持的模型就会失败，所以勾选时就得知道。
+ * 「获取模型列表」已经按同一规则过滤过了，剩下的只可能是**手填**进来的
+ * ——手填入口故意不受过滤限制（中转站常漏项），所以这条提醒是手填的兜底。
+ */
+const imageInvalidModels = computed<string[]>(() =>
+  imageConfig.value.models.filter((m) => Boolean(m) && !isSupportedImageModel(imageDef.value, m)),
+)
+/** 提醒文案：把具体是哪几个模型点出来，比一句泛泛的「可能不支持」有用 */
+const imageModelWarnText = computed(() => {
+  const names = imageInvalidModels.value
+  if (names.length === 0) return ''
+  return `手填的 ${names.join('、')} 可能不支持。${imageDef.value.modelIdWarn || ''}`
+})
+/** 连接测试状态 */
+const imageTesting = ref(false)
+const imageTestResult = ref<'ok' | 'fail' | ''>('')
+const imageTestError = ref('')
+const imageHint = ref('')
+
+function resetImageTestState() {
+  imageTestResult.value = ''
+  imageTestError.value = ''
+  imageHint.value = ''
+}
+
+/** 从设置里重新读取当前厂商配置（面板打开、切换厂商时调用） */
+function refreshImageConfig() {
+  imageProviderId.value = getActiveProviderId()
+  imageConfig.value = getProviderConfig(imageProviderId.value)
+  imageModelList.value = []
+  imageModelError.value = ''
+  resetImageTestState()
+}
+
+function patchImageConfig(patch: Partial<ImageGenProviderConfig>) {
+  setProviderConfig(imageProviderId.value, patch)
+  /**
+   * 写回后重新读一次，而不是本地合并补丁。
+   * 存储侧会把值收敛（切中转站时质量档位要从 max 收到 low、非自定义比例下宽高归零），
+   * 直接合并会让界面上留着「其实没存进去」的值。
+   */
+  imageConfig.value = getProviderConfig(imageProviderId.value)
+}
+
+function switchImageProvider(id: string) {
+  setActiveProviderId(id)
+  refreshImageConfig()
+}
+
+function saveImageBaseUrl(val: string) {
+  patchImageConfig({ baseUrl: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+function saveImageApiKey(val: string) {
+  patchImageConfig({ apiKey: val })
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+/**
+ * 保存图片常用模型清单。
+ *
+ * 没有单独的「默认模型」设置：**清单首项即默认**（`normalizeConfig()` 里兜底）。
+ * 当前使用的模型必须留在清单里——清单是配图面板下拉的数据源，
+ * 删掉当前项会让下拉没有可选项，所以这里顺手把当前模型纠到清单首项。
+ */
+function saveImageModels(val: string[]) {
+  patchImageConfig({
+    models: val,
+    model: val.includes(imageConfig.value.model) ? imageConfig.value.model : val[0] || '',
+  })
+  resetImageTestState()
+}
+
+function saveImageTimeout(val: number) {
+  patchImageConfig({ timeoutSec: val })
+}
+
+/**
+ * 选中转站。
+ *
+ * 选中后生图改走「提交 → 轮询任务 → 取图」；选「不使用」则回到标准同步接口。
+ * 每个中转站的查询路径与结果结构不同，由厂商 def 的 relays 描述，这里只存 id。
+ */
+function saveImageRelay(val: string) {
+  const relay = IMAGE_RELAYS.find((r) => r.id === val)
+  if (relay?.baseUrl) {
+    // 选中转站时顺手把接口地址换成该站的（省得手抄）
+    patchImageConfig({ relay: val, baseUrl: relay.baseUrl })
+  } else {
+    /**
+     * 取消选择：地址如果还停在某家中转站的地址上，就退回厂商默认地址。
+     * 否则会留在「地址是中转站、却按同步接口解析」的状态，那边只回 task_id，
+     * 生成时只会得到「接口未返回图片」，看不出是哪里错了。
+     */
+    const current = imageConfig.value.baseUrl
+    const staleRelay = IMAGE_RELAYS.find((r) => r.baseUrl === current)
+    patchImageConfig({ relay: val, baseUrl: staleRelay ? imageDef.value.baseUrl : current })
+  }
+  resetImageTestState()
+  imageModelList.value = []
+}
+
+/** 当前选中的中转站 def（没选时为 undefined） */
+const imageRelay = computed(() => IMAGE_RELAYS.find((r) => r.id === imageConfig.value.relay))
+
+/**
+ * 能不能按「获取模型列表」去拉一次。
+ * 中转站可能压根没有 /models（多米API 就是 404），那种情况把按钮藏掉，
+ * 换成一句手填说明 —— 留个按下去必然失败的按钮只会让人怀疑地址或 Key 错了。
+ */
+const canFetchImageModels = computed(() => imageRelay.value?.modelList !== false)
+
+/** 当前选中中转站的说明（未选时说清默认行为） */
+const imageRelayHint = computed(() => {
+  const relay = imageRelay.value
+  if (!relay) {
+    return '不选＝直连官方，按标准 /images/generations 一次性返回；只有提交只回 task_id 的站才需要选。'
+  }
+  const addr = relay.baseUrl ? `接口地址已填为 ${relay.baseUrl}，` : ''
+  // 有的站一个名字下挂几条线路，能力（比例 / 质量 / 是否收像素）各不相同，
+  // 模型名选错线路就会「提交成功、几十秒后才失败」，所以这里先提醒一句
+  const lines = relay.modelRules?.length
+    ? '该站同一模型有不同线路，能力按模型名区分（生成面板里的比例 · 质量 · 背景会随之变化）。'
+    : ''
+  return `${addr}该站提交后只返回任务 id，生图时会自动轮询任务接口取图。${lines}`
+})
+
+/**
+ * 查询该厂商的可用图像模型。
+ *
+ * 筛两道：先按 modelIdPattern 挑出图像模型，再按 modelIdValid 去掉本厂商用不了的。
+ * 中转站的 /models 把几十个别家图像模型一起列出来，全塞进勾选清单只会让人选错、
+ * 生成才失败；过滤掉之后清单里就是「勾了就能用」的部分。
+ *
+ * 手填入口照样不受过滤限制——中转站常漏项、也常改写法，写死过滤会挡住能用的配置。
+ */
+async function handleFetchImageModels() {
+  if (!imageConfig.value.baseUrl || !imageConfig.value.apiKey) {
+    imageModelError.value = '请先填写接口地址与 API Key'
+    imageModelList.value = []
+    return
+  }
+  imageModelLoading.value = true
+  imageModelError.value = ''
+  imageModelList.value = []
+  try {
+    const strict = imageDef.value.modelIdValid
+    imageModelList.value = await listImageModels(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+      strict,
+    )
+    imageHint.value = `已获取 ${imageModelList.value.length} 个${strict ? '可用' : '图像'}模型`
+  } catch (e: unknown) {
+    imageModelError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    imageModelLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestImageConnection() {
+  imageTesting.value = true
+  resetImageTestState()
+  try {
+    await testImageConnection(
+      {
+        baseUrl: imageConfig.value.baseUrl,
+        apiKey: imageConfig.value.apiKey,
+        timeoutSec: imageConfig.value.timeoutSec,
+      },
+      imageDef.value.modelIdPattern,
+      // 这里不传 strict：测试连接只关心「通不通」，不该因为清单被过滤空了就判失败
+      undefined,
+      imageRelay.value,
+    )
+    imageTestResult.value = 'ok'
+  } catch (e: unknown) {
+    imageTestResult.value = 'fail'
+    imageTestError.value = getErrorMessage(e, '连接失败')
+  }
+  imageTesting.value = false
+}
+
+/** 查询接口可用模型列表 */
+async function handleFetchModels() {
+  if (!aiBaseUrl.value || !aiApiKey.value) {
+    modelListError.value = '请先填写接口地址与 API Key'
+    modelList.value = []
+    return
+  }
+  modelListLoading.value = true
+  modelListError.value = ''
+  modelList.value = []
+  try {
+    modelList.value = await listModels(resolveAiConfig())
+    aiHint.value = `已获取 ${modelList.value.length} 个模型`
+  } catch (e: unknown) {
+    modelListError.value = getErrorMessage(e, '获取模型列表失败')
+  } finally {
+    modelListLoading.value = false
+  }
+}
+
+/** 测试连接：复用 /models 校验地址与 Key */
+async function handleTestAiConnection() {
+  aiTesting.value = true
+  resetAiTestState()
+  try {
+    await testAiConnection(resolveAiConfig())
+    aiTestResult.value = 'ok'
+  } catch (e: unknown) {
+    aiTestResult.value = 'fail'
+    aiTestError.value = getErrorMessage(e, '连接失败')
+  }
+  aiTesting.value = false
+}
+
+// ── AI 写作（写作与排版共用「AI 文本」的地址 / Key / 模型，这里只放写作专属项）──
+/**
+ * 与「AI 文本」公共配置不同的部分：采样温度、最大输出，以及写作独有的长期补充要求。
+ *
+ * 「附带参考资料」不在这里——它和「四层自检」一样是「这一轮怎么写」的开关，
+ * 已挪到 AI 写作面板的参数行（排在四层自检后面），开关值仍存在同一个设置项里。
+ * 「结果保留时长」是三个面板**各自独立**的，写作那份见 aiWriteSessionHours。
+ */
+const writeTemperature = ref(getSetting<number>('aiWriteTemperature'))
+const writeMaxTokens = ref(getSetting<number>('aiWriteMaxTokens'))
+const writeExtraInstruction = ref(getSetting<string>('aiWriteExtraInstruction'))
+
+/** 面板打开时重新读取（可能被其他标签页或磁盘配置改动） */
+function refreshWriteConfig() {
+  writeTemperature.value = getSetting<number>('aiWriteTemperature')
+  writeMaxTokens.value = getSetting<number>('aiWriteMaxTokens')
+  writeExtraInstruction.value = getSetting<string>('aiWriteExtraInstruction')
+}
+
+function saveWriteTemperature(val: number) {
+  writeTemperature.value = val
+  setSetting('aiWriteTemperature', val)
+}
+
+function saveWriteMaxTokens(val: number) {
+  writeMaxTokens.value = val
+  setSetting('aiWriteMaxTokens', val)
+}
+
+function saveWriteExtraInstruction(val: string) {
+  writeExtraInstruction.value = val
+  setSetting('aiWriteExtraInstruction', val)
+}
+
+// ── 普通段落设置（使用共享 ref，变更时预览自动响应）──
+function saveParaFontSize(val: number) {
+  paraFontSize.value = val
+}
+function saveParaLineHeight(val: number) {
+  paraLineHeight.value = val
+}
+function saveParaFontWeight(val: string) {
+  paraFontWeight.value = val
+}
+function saveParaMargin(val: number) {
+  paraMargin.value = val
+}
+function saveParaIndent(val: string) {
+  paraIndent.value = val
+}
+
+function resetParaDefaults() {
+  saveParaFontSize(16)
+  saveParaLineHeight(1.85)
+  saveParaFontWeight('400')
+  saveParaMargin(24)
+  saveParaIndent('')
+}
+
+async function handleTestConnection() {
+  if (!githubRepo.value || !githubToken.value) return
+  githubTesting.value = true
+  githubTestResult.value = ''
+  githubTestError.value = ''
+  try {
+    await testConnection({
+      repo: githubRepo.value,
+      token: githubToken.value,
+      branch: githubBranch.value || 'main',
+    })
+    githubTestResult.value = 'ok'
+  } catch (e: unknown) {
+    githubTestResult.value = 'fail'
+    githubTestError.value = getErrorMessage(e, '连接失败')
+  }
+  githubTesting.value = false
+}
+
+async function handleTestLetuConnection() {
+  if (!letaToken.value) return
+  letaTesting.value = true
+  letaTestResult.value = ''
+  letaTestError.value = ''
+  try {
+    await testLetaConnection({
+      token: letaToken.value,
+      storageId: letaStorageId.value || '1',
+    })
+    letaTestResult.value = 'ok'
+  } catch (e: unknown) {
+    letaTestResult.value = 'fail'
+    letaTestError.value = getErrorMessage(e, '连接失败')
+  }
+  letaTesting.value = false
+}
+
+const currentZoom = ref(getSetting<number>('pageZoom'))
+
+const updateChecking = ref(false)
+const updateMessage = ref('')
+const updateError = ref(false)
+
+// ── 公众号配置 ──
+const wechatAppId = ref(getSetting<string>('wechatAppId'))
+const wechatAppSecret = ref(getSetting<string>('wechatAppSecret'))
+const wechatDefaultAuthor = ref(getSetting<string>('wechatDefaultAuthor'))
+
+function saveWechatAppId(val: string) {
+  wechatAppId.value = val
+  setSetting('wechatAppId', val)
+}
+function saveWechatAppSecret(val: string) {
+  wechatAppSecret.value = val
+  setSetting('wechatAppSecret', val)
+}
+function saveWechatDefaultAuthor(val: string) {
+  wechatDefaultAuthor.value = val
+  setSetting('wechatDefaultAuthor', val)
+}
+
+// ── 云端文章 GitHub 配置（Token 按工作区单独配置）──
+
+// ── 文章存储模式（仅桌面端）──
+const articleStorageMode = ref<'github' | 'local'>(
+  getSetting<'github' | 'local'>('articleStorageMode'),
+)
+
+function saveArticleStorageMode(mode: 'github' | 'local') {
+  if (mode === articleStorageMode.value) return
+  articleStorageMode.value = mode
+  setSetting('articleStorageMode', mode)
+}
+
+// ── 文章文件命名方式（桌面端 / Web 端均适用）──
+/** 是否用「菜单树文章名 + 短哈希」命名文章文件，默认关闭 */
+const articleTitleNaming = ref<boolean>(
+  getSetting<string>('articleFileNaming') === ARTICLE_NAMING_TITLE,
+)
+watch(articleTitleNaming, (val) =>
+  setSetting('articleFileNaming', val ? ARTICLE_NAMING_TITLE : ARTICLE_NAMING_ID),
+)
+
+// ── 本地存储目录（仅桌面端、local 模式）──
+const articleStorageDir = ref<string>(getSetting<string>('articleStorageDir'))
+const dirChanging = ref(false)
+const dirError = ref('')
+
+function clearDirError() {
+  dirError.value = ''
+}
+
+async function onSelectStorageDir() {
+  // 默认工作区的目录操作总是作用于第一个本地工作区
+  bindPrimaryActive()
+  dirChanging.value = true
+  clearDirError()
+  try {
+    const { pickArticleDir } = await import('@/services/localArticleStorage')
+    const dir = await pickArticleDir()
+    if (dir) {
+      articleStorageDir.value = dir
+      bindPrimaryLocalDir(dir)
+      // 通知编辑器重新加载本地树
+      window.dispatchEvent(
+        new CustomEvent('setting-changed', {
+          detail: { key: 'articleStorageDir', value: dir },
+        }),
+      )
+    }
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '选择目录失败')
+    console.error('[SettingsBoard] select storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
+async function onChangeStorageDir() {
+  // 先让用户选目标目录，再执行剪切移动
+  clearDirError()
+  // 移动前先切到默认工作区，确保移动的是「默认工作区」的文件
+  bindPrimaryActive()
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const target = await open({
+    directory: true,
+    title: '选择文章存储目录（原有文章将移动到此处）',
+    canCreateDirectories: true,
+  })
+  if (typeof target !== 'string' || !target) return
+
+  dirChanging.value = true
+  try {
+    const { moveArticleDir } = await import('@/services/localArticleStorage')
+    await moveArticleDir(target)
+    articleStorageDir.value = target
+    bindPrimaryLocalDir(target)
+    window.dispatchEvent(
+      new CustomEvent('setting-changed', {
+        detail: { key: 'articleStorageDir', value: target },
+      }),
+    )
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '移动目录失败，请选择空目录后重试')
+    console.error('[SettingsBoard] move storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
+async function onResetStorageDir() {
+  // 默认工作区的目录操作总是作用于第一个本地工作区
+  bindPrimaryActive()
+  dirChanging.value = true
+  clearDirError()
+  try {
+    const { resetToDefaultDir } = await import('@/services/localArticleStorage')
+    await resetToDefaultDir()
+    articleStorageDir.value = ''
+    bindPrimaryLocalDir('')
+    window.dispatchEvent(
+      new CustomEvent('setting-changed', {
+        detail: { key: 'articleStorageDir', value: '' },
+      }),
+    )
+  } catch (e: unknown) {
+    dirError.value = getErrorMessage(e, '恢复默认目录失败')
+    console.error('[SettingsBoard] reset storage dir failed:', e)
+  } finally {
+    dirChanging.value = false
+  }
+}
+
+/** 当前正在测试中的工作区 id（空表示无） */
+const cloudTestingWsId = ref<string | null>(null)
+/** 各工作区的测试结果：'ok' | 'fail' | ''，以及失败信息 */
+const cloudTestResult = ref<Record<string, 'ok' | 'fail' | ''>>({})
+const cloudTestError = ref<Record<string, string>>({})
+
+function onCloudTokenInput(id: string, val: string) {
+  setWorkspaceToken(id, val)
+}
+
+// ── 文章工作区管理（github 多仓库/分支 + local 多目录）──
+const localWorkspaces = computed(() => listWorkspaces('local'))
+const githubWorkspaces = computed(() => listWorkspaces('github'))
+
+/** 待删除的工作区（确认弹窗用，null 表示未在确认中） */
+const pendingDeleteWorkspace = ref<{ kind: 'github' | 'local'; id: string } | null>(null)
+const deleteConfirmVisible = ref(false)
+const deletingWorkspace = ref(false)
+
+function requestDeleteWorkspace(kind: 'github' | 'local', id: string) {
+  pendingDeleteWorkspace.value = { kind, id }
+  deleteConfirmVisible.value = true
+}
+
+const deleteWorkspaceName = computed(() => {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return ''
+  const ws = getWorkspaceById(target.id)
+  if (!ws) return ''
+  if (ws.kind === 'github') return ws.repo ? `「${ws.repo}」` : ''
+  return ws.dir ? `「${ws.dir}」` : ''
+})
+
+/** 删除确认文案：按工作区类型区分远程/本地 */
+const deleteWorkspaceMessage = computed(() => {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return ''
+  const kindLabel = target.kind === 'github' ? '远程' : '本地'
+  return `确定删除该工作区${deleteWorkspaceName.value}？删除后其 tree.json 缓存将被清除，但${kindLabel}数据文件不会被删除。`
+})
+
+async function confirmDeleteWorkspace() {
+  const target = pendingDeleteWorkspace.value
+  if (!target) return
+  deletingWorkspace.value = true
+  try {
+    if (target.kind === 'github') {
+      await removeCloudWorkspace(target.id)
+    } else {
+      await removeLocalWorkspace(target.id)
+    }
+  } finally {
+    deletingWorkspace.value = false
+    pendingDeleteWorkspace.value = null
+    deleteConfirmVisible.value = false
+  }
+}
+
+function isCloudActive(id: string): boolean {
+  return activeGithubWorkspaceId.value === id
+}
+
+function isLocalActive(id: string): boolean {
+  return activeLocalWorkspaceId.value === id
+}
+
+function onCloudRepoInput(id: string, val: string) {
+  updateWorkspace(id, { repo: val.trim() })
+}
+
+function onCloudBranchInput(id: string, val: string) {
+  updateWorkspace(id, { branch: val.trim() || 'main' })
+}
+
+function onCloudRepoBlur(id: string) {
+  const ws = getWorkspaceById(id)
+  if (!ws) return
+  // 正在编辑的是激活工作区时，失焦即应用并重载
+  if (isCloudActive(id)) {
+    switchToWorkspace('github', id)
+  }
+}
+
+function addCloudWorkspace() {
+  addWorkspace('github', { repo: '', branch: 'main' })
+}
+
+async function onSwitchCloudWorkspace(id: string) {
+  await switchToWorkspace('github', id)
+}
+
+async function removeCloudWorkspace(id: string) {
+  const wasActive = isCloudActive(id)
+  removeWorkspace(id)
+  if (wasActive) {
+    const remains = listWorkspaces('github')
+    if (remains.length > 0) {
+      await switchToWorkspace('github', remains[0].id)
+    } else {
+      // 删光所有仓库 → 视为未配置
+      if (getSetting<string>('cloudArticleRepo')) GitHubTreeService.clearRepo()
+      // 桌面端且仍有本地工作区：提示是否切到本地磁盘模式，避免树结构空置
+      if (isTauri && localWorkspaces.value.length > 0) {
+        switchToLocalPromptVisible.value = true
+      }
+    }
+  }
+}
+
+/** 删光 github 仓库后，询问是否切换到本地磁盘模式的弹窗 */
+const switchToLocalPromptVisible = ref(false)
+
+async function confirmSwitchToLocal() {
+  const primary = localWorkspaces.value[0]
+  if (primary) await switchToWorkspace('local', primary.id)
+  // 同步设置弹窗内的存储位置高亮（本地工作区「设为当前」由共享 ref 自动更新）
+  articleStorageMode.value = 'local'
+  switchToLocalPromptVisible.value = false
+}
+
+async function onAddLocalWorkspace() {
+  const { open } = await import('@tauri-apps/plugin-dialog')
+  const selected = await open({
+    directory: true,
+    title: '选择本地工作区目录（将自动创建 tree.json / articles / images）',
+    canCreateDirectories: true,
+  })
+  if (typeof selected !== 'string' || !selected) return
+  const dir = selected.trim().replace(/\/+$/, '')
+  const exists = localWorkspaces.value.some((ws) => ws.dir === dir)
+  if (exists) {
+    emit('toast', '该目录已添加为本地工作区，请勿重复添加')
+    return
+  }
+  addWorkspace('local', { dir })
+}
+
+async function removeLocalWorkspace(id: string) {
+  const wasActive = isLocalActive(id)
+  removeWorkspace(id)
+  if (wasActive) {
+    const remains = listWorkspaces('local')
+    if (remains.length > 0) {
+      await switchToWorkspace('local', remains[0].id)
+    } else {
+      setSetting('articleStorageDir', '')
+    }
+  }
+}
+
+function onSwitchLocalWorkspace(id: string) {
+  switchToWorkspace('local', id)
+}
+
+/** 绑定「默认/第一个」本地工作区目录（移动/选择/恢复操作后调用） */
+function bindPrimaryLocalDir(dir: string) {
+  articleStorageDir.value = dir
+  const primary = localWorkspaces.value[0]
+  if (primary) {
+    updateWorkspace(primary.id, { dir })
+    setActiveWorkspace('local', primary.id)
+  }
+}
+
+/** 切换激活到「默认/第一个」本地工作区（不改变目录内容） */
+function bindPrimaryActive() {
+  const primary = localWorkspaces.value[0]
+  if (primary) setActiveWorkspace('local', primary.id)
+}
+
+async function handleCloudTestConnection(id: string) {
+  const ws = getWorkspaceById(id)
+  const token = ws ? getWorkspaceToken(ws.id) : ''
+  if (!token || !ws?.repo || !ws.repo.includes('/')) {
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'fail' }
+    cloudTestError.value = { ...cloudTestError.value, [id]: '请填写 Token 和仓库' }
+    return
+  }
+  const slashIdx = ws.repo.indexOf('/')
+  const owner = ws.repo.substring(0, slashIdx)
+  const repoName = ws.repo.substring(slashIdx + 1)
+
+  cloudTestingWsId.value = id
+  cloudTestResult.value = { ...cloudTestResult.value, [id]: '' }
+  cloudTestError.value = { ...cloudTestError.value, [id]: '' }
+  try {
+    await GitHubTreeService.testConnection(owner, repoName, token, ws.branch || 'main')
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'ok' }
+  } catch (e: unknown) {
+    cloudTestResult.value = { ...cloudTestResult.value, [id]: 'fail' }
+    cloudTestError.value = { ...cloudTestError.value, [id]: getErrorMessage(e, '连接失败') }
+  }
+  cloudTestingWsId.value = null
+}
+
+async function applyZoom(scale: number) {
+  currentZoom.value = scale
+  setSetting('pageZoom', scale)
+  try {
+    await invoke('set_page_zoom', { scale: scale / 100 })
+  } catch {
+    // 非 Tauri 环境忽略
+  }
+}
+
+/** 打开 GitHub 仓库主页（桌面端在系统浏览器新开页面） */
+function openGitHubRepo() {
+  const url = 'https://github.com/RobocopMao/r-markdown'
+  if (isTauri) {
+    open(url).catch(() => window.open(url, '_blank'))
+  } else {
+    window.open(url, '_blank')
+  }
+}
+
+/**
+ * 手动检查更新。复用 EditorPage 的更新弹窗：
+ * 检查成功后把结果写入共享的 autoUpdatePending / autoUpdateRid，
+ * 由 EditorPage 的 watcher 统一弹出「发现新版本」弹窗并处理下载。
+ */
+async function manualCheckUpdate() {
+  updateChecking.value = true
+  updateMessage.value = ''
+  updateError.value = false
+
+  const result = await checkForUpdates()
+
+  if (result.error) {
+    updateMessage.value = result.error
+    updateError.value = true
+  } else if (result.update) {
+    autoUpdatePending.value = result.update
+    autoUpdateRid.value = result.rid
+  } else {
+    autoUpdatePending.value = null
+    updateMessage.value = '已是最新版本'
+    updateError.value = false
+  }
+
+  updateChecking.value = false
+}
+</script>
+
+<template>
+  <div class="h-full overflow-y-auto">
+    <div class="px-4 py-4">
+      <!-- 顶部工具条：与统计 / 草稿箱 / 图库面板同版式（标题 + 返回编辑 + 右侧 tab 胶囊） -->
+      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-2">
+            <h1 class="text-[16px] font-semibold tracking-tight">设置</h1>
+            <button
+              type="button"
+              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
+              @click="emit('close')"
+            >
+              返回编辑
+            </button>
+          </div>
+          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">
+            排版、图床、文章存储与 AI 接口都在这里调
+          </p>
+        </div>
+
+        <div class="settings-tabs flex flex-wrap items-center justify-end gap-1">
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'basic'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'basic'"
+          >
+            基础设置
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'github'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'github'"
+          >
+            图片设置
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'cloud'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'cloud'"
+          >
+            {{ isTauri ? '文章存储' : '文章仓库' }}
+          </button>
+          <button
+            v-if="isTauri"
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'wechat'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'wechat'"
+          >
+            公众号
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'ai'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'ai'"
+          >
+            AI 设置
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
+            :class="
+              settingsTab === 'other'
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
+            "
+            @click="settingsTab = 'other'"
+          >
+            关于
+          </button>
+        </div>
+      </div>
+
+      <!-- 基础设置 -->
+      <template v-if="settingsTab === 'basic'">
+        <!-- 普通段落 -->
+        <section class="mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">普通段落</h3>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              @click="resetParaDefaults"
+            >
+              恢复默认
+            </button>
+          </div>
+
+          <div class="grid grid-cols-2 gap-x-5 gap-y-4">
+            <!-- 字体大小 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">字体大小</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                  >{{ paraFontSize }}px</span
+                >
+              </div>
+              <input
+                type="range"
+                min="12"
+                max="24"
+                step="1"
+                :value="paraFontSize"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveParaFontSize(Number(($event.target as HTMLInputElement).value))"
+              />
+              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                <span>12px</span>
+                <span>24px</span>
+              </div>
+            </div>
+
+            <!-- 字重 -->
+            <div>
+              <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
+              <select
+                :value="paraFontWeight"
+                class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+                :style="selectChevronStyle"
+                @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
+              >
+                <option value="300">300（更细）</option>
+                <option value="400">400（常规）</option>
+                <option value="500">500（中等）</option>
+                <option value="600">600（半粗）</option>
+                <option value="700">700（粗体）</option>
+              </select>
+            </div>
+
+            <!-- 行高 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">行高</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+                  paraLineHeight
+                }}</span>
+              </div>
+              <input
+                type="range"
+                min="1.2"
+                max="3.0"
+                step="0.05"
+                :value="paraLineHeight"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveParaLineHeight(Number(($event.target as HTMLInputElement).value))"
+              />
+              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                <span>1.2</span>
+                <span>3.0</span>
+              </div>
+            </div>
+
+            <!-- 首行缩进 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">首行缩进</label>
+                <span
+                  v-if="paraIndent"
+                  class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                  >{{ paraIndent }}</span
+                >
+              </div>
+              <input
+                type="text"
+                :value="paraIndent"
+                placeholder="如 2em（不填则不缩进）"
+                class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
+                @input="saveParaIndent(($event.target as HTMLInputElement).value)"
+              />
+            </div>
+
+            <!-- 间距 -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">段落间距</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                  >{{ paraMargin }}px</span
+                >
+              </div>
+              <input
+                type="range"
+                min="8"
+                max="48"
+                step="1"
+                :value="paraMargin"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveParaMargin(Number(($event.target as HTMLInputElement).value))"
+              />
+              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                <span>8px</span>
+                <span>48px</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 页面缩放 -->
+        <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            页面缩放
+          </h3>
+          <div class="flex flex-nowrap gap-2">
+            <button
+              v-for="p in ZOOM_PRESETS"
+              :key="p"
+              class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0"
+              :class="
+                currentZoom === p
+                  ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
+                  : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
+              "
+              @click="applyZoom(p)"
+            >
+              {{ p }}%
+            </button>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
+            当前缩放：{{ currentZoom }}%（设置会自动保存）
+          </p>
+        </section>
+
+        <!-- 自动保存（仅桌面端） -->
+        <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            自动保存
+          </h3>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">启用自动保存</span>
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="autoSaveEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="autoSaveEnabled"
+              @click="autoSaveEnabled = !autoSaveEnabled"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="autoSaveEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <p
+            v-if="!autoSaveEnabled"
+            class="text-[12px] text-[var(--accent)] bg-[var(--accent-light)] rounded-lg px-3 py-2 mb-3"
+          >
+            自动保存已关闭，请及时手动保存（工具栏「暂存」按钮）
+          </p>
+          <div>
+            <span
+              class="text-[12px] text-[#666] dark:text-[#999] mb-2 block"
+              :class="{ 'opacity-40': !autoSaveEnabled }"
+              >保存间隔</span
+            >
+            <div class="flex flex-nowrap gap-2">
+              <button
+                v-for="s in SAVE_INTERVAL_PRESETS"
+                :key="s"
+                :disabled="!autoSaveEnabled"
+                class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0 disabled:cursor-not-allowed disabled:opacity-30"
+                :class="
+                  autoSaveInterval === s
+                    ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
+                "
+                @click="autoSaveInterval = s"
+              >
+                {{ s }}s
+              </button>
+            </div>
+            <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
+              当前间隔：{{ autoSaveInterval }}s（停止输入后触发保存）
+            </p>
+          </div>
+        </section>
+
+        <!-- Minimap 缩略图（移动端预览区不显示缩略图） -->
+        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            预览缩略图
+          </h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] text-[#666] dark:text-[#999]"
+              >在预览区右侧显示文档全貌缩略图</span
+            >
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="minimapEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="minimapEnabled"
+              @click="minimapEnabled = !minimapEnabled"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="minimapEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666]">
+            开启后可在预览区右侧看到文档全貌缩略图，点击可快速跳转
+          </p>
+        </section>
+
+        <!-- 文档大纲（移动端不显示右侧大纲面板） -->
+        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            文档大纲
+          </h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">启用编辑器右侧标题大纲</span>
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="outlineEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="outlineEnabled"
+              @click="outlineEnabled = !outlineEnabled"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="outlineEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666]">
+            关闭后工具栏「大纲」按钮与右侧面板一起隐藏；开启后用工具栏按钮展开或收起
+          </p>
+        </section>
+
+        <!-- 底部状态栏（移动端不显示状态栏） -->
+        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            底部状态栏
+          </h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">显示编辑器底部状态栏</span>
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="statusBarEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="statusBarEnabled"
+              @click="statusBarEnabled = !statusBarEnabled"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="statusBarEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666]">
+            显示光标所在行列、选中字数、总字数与预估阅读时长
+          </p>
+        </section>
+
+        <!-- 命令面板（移动端无物理键盘，快捷键设置无意义） -->
+        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            命令面板
+          </h3>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">快捷键</span>
+            <button
+              ref="shortcutButtonRef"
+              class="min-w-[112px] rounded-lg border px-3 py-1.5 text-[12px] cursor-pointer transition-colors"
+              :class="
+                shortcutRecording
+                  ? 'border-[var(--accent)] text-[var(--accent)]'
+                  : 'border-[#e5e5e5] text-[#333] dark:border-[#444] dark:text-[#e5e5e5]'
+              "
+              @click="startShortcutRecording"
+              @keydown="onShortcutKeydown"
+            >
+              {{ shortcutRecording ? '请按下快捷键…' : commandPaletteShortcutText }}
+            </button>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666]">
+            用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
+            {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
+          </p>
+        </section>
+
+        <!-- 编辑区字号 -->
+        <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <div class="flex items-center justify-between mb-3">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">编辑区字号</h3>
+            <button
+              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+              @click="resetEditorFontSize"
+            >
+              恢复默认
+            </button>
+          </div>
+          <div class="flex items-center justify-between mb-1">
+            <label class="text-[12px] text-[#666] dark:text-[#999]">字号</label>
+            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+              >{{ editorFontSize }}px</span
+            >
+          </div>
+          <input
+            type="range"
+            min="11"
+            max="20"
+            step="1"
+            :value="editorFontSize"
+            class="compress-slider w-full cursor-pointer"
+            @input="saveEditorFontSize(Number(($event.target as HTMLInputElement).value))"
+          />
+          <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+            <span>11px</span>
+            <span>20px</span>
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
+            仅调整左侧编辑区（Markdown
+            输入区）的显示字号，不影响预览效果与导出排版。行距会随字号等比放大。
+          </p>
+        </section>
+
+        <!-- 编辑器主题 -->
+        <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            编辑器主题
+          </h3>
+          <select
+            :value="editorTheme"
+            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+            :style="selectChevronStyle"
+            @change="saveEditorTheme(($event.target as HTMLSelectElement).value)"
+          >
+            <optgroup label="浅色主题">
+              <option value="default">默认</option>
+              <option value="github-light">GitHub Light</option>
+              <option value="solarized-light">Solarized Light</option>
+              <option value="material-light">Material Light</option>
+            </optgroup>
+            <optgroup label="深色主题">
+              <option value="one-dark">One Dark</option>
+              <option value="github-dark">GitHub Dark</option>
+              <option value="solarized-dark">Solarized Dark</option>
+              <option value="material-dark">Material Dark</option>
+              <option value="dracula">Dracula</option>
+              <option value="monokai">Monokai</option>
+            </optgroup>
+          </select>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
+            仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
+          </p>
+        </section>
+      </template>
+
+      <!-- AI 设置（内部再分「AI 文本 / AI 图片」两个子页，共用同一个设置 tab） -->
+      <template v-if="settingsTab === 'ai'">
+        <div class="flex gap-1.5 mb-4">
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+            :class="
+              aiPane === 'text'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+            "
+            @click="aiPane = 'text'"
+          >
+            AI 文本
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+            :class="
+              aiPane === 'image'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+            "
+            @click="aiPane = 'image'"
+          >
+            AI 图片
+          </button>
+        </div>
+
+        <!--
+        AI 文本 = 写作 + 排版。
+        接口地址 / API Key / 模型名三项是两者共用的，只出现一次；
+        「AI 排版」「AI 写作」两个小节只放与任务相关、两边取值不同的采样参数。
+      -->
+        <section v-if="aiPane === 'text'">
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+            「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
+            排版」（把文章转成 R-Markdown 排版稿）与「AI
+            写作」（用内置的卡兹克写作技能以对话方式出长文）。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
+            加密后仅保存在本地。但请注意：<span class="text-[#666] dark:text-[#999]"
+              >你发的内容会发送给你配置的模型服务商</span
+            >。
+          </p>
+
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">接口地址</label>
+            <input
+              :value="aiBaseUrl"
+              placeholder="https://api.deepseek.com/v1"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveAiBaseUrl(($event.target as HTMLInputElement).value)"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              兼容 /chat/completions 的地址；省略版本段时会自动补 /v1。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+            <input
+              :value="aiApiKey"
+              type="password"
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveAiApiKey(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+              <button
+                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+                :disabled="modelListLoading"
+                @click="handleFetchModels"
+              >
+                {{ modelListLoading ? '查询中…' : '获取模型列表' }}
+              </button>
+            </div>
+            <!--
+            勾选顺序有意义：**第一项就是默认模型**，面板没单独选过时用它。
+            所以这里不再另设「默认模型」下拉——同一份清单选两次，纯属多余。
+          -->
+            <ModelMultiSelect
+              :models="aiModels"
+              :options="modelList"
+              placeholder="手填模型名后回车添加，如 deepseek-chat"
+              @update:models="saveAiModels"
+            />
+            <p v-if="modelListError" class="text-[10px] text-[#e74c3c] mt-1">
+              {{ modelListError }}
+            </p>
+            <p
+              v-else-if="modelList.length > 0"
+              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
+            >
+              已获取 {{ modelList.length }} 个模型，勾选常用的几个即可；排在最前的一个就是默认。
+            </p>
+          </div>
+
+          <div class="flex items-center gap-3 mb-4">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+              :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
+              @click="handleTestAiConnection"
+            >
+              {{ aiTesting ? '测试中…' : '测试连接' }}
+            </button>
+            <span v-if="aiTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }"
+              >连接成功</span
+            >
+            <span v-if="aiTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+              aiTestError
+            }}</span>
+            <span v-else-if="aiHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+              aiHint
+            }}</span>
+          </div>
+
+          <BaseCheckbox
+            class="mb-5"
+            size="sm"
+            :checked="aiStream"
+            label="流式输出（边生成边显示）"
+            @change="saveAiStream"
+          />
+
+          <!-- ── 以下是两边取值不同的采样参数，按用途分区 ── -->
+          <section class="pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">
+              AI 排版
+            </h3>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+              把文章按组件规范重排。任务确定性高，温度与输出上限都比写作低。
+            </p>
+
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
+                  aiTemperature
+                }}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.1"
+                :value="aiTemperature"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                  >{{ aiMaxTokens }} tokens</span
+                >
+              </div>
+              <input
+                type="range"
+                min="1024"
+                max="32768"
+                step="1024"
+                :value="aiMaxTokens"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                长文排版结果被截断时调大此值。
+              </p>
+            </div>
+
+            <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                  {{ aiFormatSessionHours }} 小时
+                </span>
+              </div>
+              <input
+                type="range"
+                :min="MIN_SESSION_HOURS"
+                :max="MAX_SESSION_HOURS"
+                step="1"
+                :value="aiFormatSessionHours"
+                class="compress-slider w-full cursor-pointer"
+                @input="
+                  saveSessionHours(
+                    'aiFormatSessionHours',
+                    Number(($event.target as HTMLInputElement).value),
+                  )
+                "
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                排版结果的面板保留时长，从最后一次请求算起；到期后不再恢复。
+              </p>
+            </div>
+          </section>
+
+          <section class="mt-5 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">
+              AI 写作
+            </h3>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
+              用内置的卡兹克写作技能（khazix-writer）以对话方式出公众号长文。长文更吃发散度与输出余量。
+            </p>
+
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                  {{ writeTemperature.toFixed(1) }}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1.5"
+                step="0.1"
+                :value="writeTemperature"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveWriteTemperature(Number(($event.target as HTMLInputElement).value))"
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                默认 {{ DEFAULT_WRITE_TEMPERATURE }}。写作需要比排版更高的发散度；调太低会写得很平。
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                  >{{ writeMaxTokens }} tokens</span
+                >
+              </div>
+              <input
+                type="range"
+                :min="MIN_WRITE_MAX_TOKENS"
+                :max="MAX_WRITE_MAX_TOKENS"
+                step="1024"
+                :value="writeMaxTokens"
+                class="compress-slider w-full cursor-pointer"
+                @input="saveWriteMaxTokens(Number(($event.target as HTMLInputElement).value))"
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                单次输出上限（token），默认 {{ DEFAULT_WRITE_MAX_TOKENS }}。公众号长文 4000-8000
+                字，比排版需要更大余量；结果被截断时调大。
+              </p>
+            </div>
+
+            <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+            <div class="mb-3">
+              <div class="flex items-center justify-between mb-1">
+                <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                  {{ aiWriteSessionHours }} 小时
+                </span>
+              </div>
+              <input
+                type="range"
+                :min="MIN_SESSION_HOURS"
+                :max="MAX_SESSION_HOURS"
+                step="1"
+                :value="aiWriteSessionHours"
+                class="compress-slider w-full cursor-pointer"
+                @input="
+                  saveSessionHours(
+                    'aiWriteSessionHours',
+                    Number(($event.target as HTMLInputElement).value),
+                  )
+                "
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+                写作对话与稿件的面板保留时长，从最后一次请求算起；到期后打开面板会开启新会话。
+              </p>
+            </div>
+
+            <div class="mb-3">
+              <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">
+                长期补充要求（可留空）
+              </label>
+              <textarea
+                :value="writeExtraInstruction"
+                rows="3"
+                placeholder="例如：结尾不要行动呼吁 / 不要出现「我」/ 每篇开头先讲一个具体场景"
+                class="w-full resize-y rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                @input="saveWriteExtraInstruction(($event.target as HTMLTextAreaElement).value)"
+              />
+              <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+                每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
+              </p>
+            </div>
+          </section>
+        </section>
+
+        <!-- AI 图片（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
+        <section v-if="aiPane === 'image'">
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">{{ imageDef.intro }}</p>
+
+          <!-- 厂商下拉常显：即便当前只有一家，也让「配置按厂商分开存」这件事可见 -->
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">厂商</label>
+            <select
+              :value="imageProviderId"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="switchImageProvider(($event.target as HTMLSelectElement).value)"
+            >
+              <option v-for="p in IMAGE_PROVIDERS" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              各厂商参数不同，配置按厂商分开保存；当前可选：{{
+                IMAGE_PROVIDERS.map((p) => p.name).join('、')
+              }}。
+            </p>
+          </div>
+
+          <!--
+          中转站紧跟在厂商下面：选了哪家站才决定下面「接口地址」填什么，
+          所以顺序是 厂商 → 中转站 → 接口地址。不声明 relays 的厂商（如 Agnes）整块不渲染。
+        -->
+          <div v-if="imageDef.relays?.length" class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">中转站</label>
+            <select
+              :value="imageConfig.relay"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="saveImageRelay(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="">不使用（官方直连 / 标准同步接口）</option>
+              <option v-for="relay in imageDef.relays" :key="relay.id" :value="relay.id">
+                {{ relay.name }}
+              </option>
+            </select>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              {{ imageRelayHint }}
+            </p>
+            <!--
+            Key 是按厂商存的（一家一份），换站不会连带换 Key：上一家的 Key 拿去新站用
+            必然认证失败，而报错看着像「Key 填错了」，所以这里点名说清要重填。
+          -->
+            <p class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-0.5">
+              切换中转站后，请重新填写该站的 API Key——各站 Key 不通用。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">接口地址</label>
+              <button
+                v-for="alt in imageDef.altBaseUrls"
+                :key="alt.url"
+                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+                :disabled="imageConfig.baseUrl === alt.url"
+                @click="saveImageBaseUrl(alt.url)"
+              >
+                {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
+              </button>
+            </div>
+            <input
+              :value="imageConfig.baseUrl"
+              :placeholder="imageDef.baseUrl"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
+              >；省略版本段时会自动补 /v1。
+            </p>
+          </div>
+
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
+            <input
+              :value="imageConfig.apiKey"
+              type="password"
+              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1.5">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+              <button
+                v-if="canFetchImageModels"
+                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+                :disabled="imageModelLoading"
+                @click="handleFetchImageModels"
+              >
+                {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
+              </button>
+            </div>
+            <!--
+            勾选顺序有意义：**第一项就是默认模型**，配图面板没单独选过时用它。
+            手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
+          -->
+            <ModelMultiSelect
+              :models="imageConfig.models"
+              :options="imageModelList"
+              :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
+              @update:models="saveImageModels"
+            />
+            <p v-if="imageModelError" class="text-[10px] text-[#e74c3c] mt-1">
+              {{ imageModelError }}
+            </p>
+            <p
+              v-else-if="imageModelList.length > 0"
+              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
+            >
+              已获取
+              {{ imageModelList.length }}
+              个本厂商可用的模型，勾选常用的几个即可；排在最前的一个就是默认。
+            </p>
+            <p
+              v-else-if="!canFetchImageModels"
+              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
+            >
+              该中转站没有模型列表接口，模型名请在上面的输入框手动填写。
+            </p>
+            <p v-else-if="imageDef.modelHint" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+              {{ imageDef.modelHint }}
+            </p>
+            <!--
+            「可能不支持」的提醒：只提示、不拦保存。
+            列表已经过滤过，能命中这里的只剩**手填**的模型名（手填故意不受过滤限制）。
+          -->
+            <p
+              v-if="imageModelWarnText"
+              class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-1"
+            >
+              {{ imageModelWarnText }}
+            </p>
+          </div>
+
+          <!--
+          测试连接紧跟模型名：地址 / Key / 模型名三项填完就能立刻验一次，
+          不必先滚过「单次超时」「结果保留时长」这些与连通性无关的调参项。
+          位置与「AI 文本」子页保持一致（那边也是模型名之后紧接着测试）。
+        -->
+          <div class="flex items-center gap-3 mb-3">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+              :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
+              @click="handleTestImageConnection"
+            >
+              {{ imageTesting ? '测试中…' : '测试连接' }}
+            </button>
+            <span
+              v-if="imageTestResult === 'ok'"
+              class="text-[12px]"
+              :style="{ color: colors.accent }"
+              >连接成功</span
+            >
+            <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+              imageTestError
+            }}</span>
+            <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
+              imageHint
+            }}</span>
+          </div>
+
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">单次超时</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ imageConfig.timeoutSec }}s</span
+              >
+            </div>
+            <input
+              type="range"
+              :min="imageDef.minTimeoutSec"
+              :max="imageDef.maxTimeoutSec"
+              step="10"
+              :value="imageConfig.timeoutSec"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveImageTimeout(Number(($event.target as HTMLInputElement).value))"
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
+              秒；复杂提示词与大尺寸 需要更久。走中转站时这段时间是「提交 + 轮询」的总时长。
+            </p>
+          </div>
+
+          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+          <div class="mb-3">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
+                {{ aiImageSessionHours }} 小时
+              </span>
+            </div>
+            <input
+              type="range"
+              :min="MIN_SESSION_HOURS"
+              :max="MAX_SESSION_HOURS"
+              step="1"
+              :value="aiImageSessionHours"
+              class="compress-slider w-full cursor-pointer"
+              @input="
+                saveSessionHours(
+                  'aiImageSessionHours',
+                  Number(($event.target as HTMLInputElement).value),
+                )
+              "
+            />
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
+            </p>
+          </div>
+
+          <p class="text-[10px] text-[#999] dark:text-[#666]">
+            生成结果不会上传到别处：插入时按「图片设置 →
+            粘贴/拖拽上传方式」保存（本地存储、本地磁盘、GitHub 图床或乐塔图床）。
+          </p>
+        </section>
+      </template>
+
+      <!-- 图床设置 -->
+      <template v-if="settingsTab === 'github'">
+        <!-- 图床子 tab -->
+        <div class="flex gap-1.5 mb-4">
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+            :class="
+              hostingTab === 'upload'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+            "
+            @click="hostingTab = 'upload'"
+          >
+            上传设置
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+            :class="
+              hostingTab === 'github'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+            "
+            @click="hostingTab = 'github'"
+          >
+            GitHub 图床
+          </button>
+          <button
+            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
+            :class="
+              hostingTab === 'leta'
+                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
+                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
+            "
+            @click="hostingTab = 'leta'"
+          >
+            乐塔图床
+          </button>
+        </div>
+
+        <section v-if="hostingTab === 'upload'">
+          <!-- 上传方式（移动端固定走 GitHub 图床，无需展示） -->
+          <template v-if="!isMobile">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+              {{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}
+            </h3>
+            <div class="flex gap-2">
+              <label
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  pasteDropMode === 'local'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="local"
+                  :checked="pasteDropMode === 'local'"
+                  @change="savePasteDropMode('local')"
+                />
+                本地存储
+              </label>
+              <label
+                v-if="isTauri"
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  pasteDropMode === 'disk'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="disk"
+                  :checked="pasteDropMode === 'disk'"
+                  @change="savePasteDropMode('disk')"
+                />
+                磁盘存储
+              </label>
+              <label
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  pasteDropMode === 'github'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="github"
+                  :checked="pasteDropMode === 'github'"
+                  @change="savePasteDropMode('github')"
+                />
+                GitHub 图床
+              </label>
+              <label
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  pasteDropMode === 'leta'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="leta"
+                  :checked="pasteDropMode === 'leta'"
+                  @change="savePasteDropMode('leta')"
+                />
+                乐塔图床
+              </label>
+            </div>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+              本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
+              磁盘存储：图片保存到文章存储目录下的
+              <code class="text-[var(--accent)]">images/</code>
+              子目录，文件名规则可在下方配置，文章中以相对路径引用（压缩后单张 ≤ 10MB）<br />
+              GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
+              乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
+            </p>
+          </template>
+
+          <!-- 默认图床（工具栏上传按钮使用） -->
+          <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+              默认图床
+            </h3>
+            <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+              点击工具栏「图床」按钮上传时使用的图床服务，独立于粘贴/拖拽方式。
+            </p>
+            <div class="flex gap-2">
+              <label
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  defaultHosting === 'github'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="github"
+                  :checked="defaultHosting === 'github'"
+                  @change="saveDefaultHosting('github')"
+                />
+                GitHub 图床
+              </label>
+              <label
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  defaultHosting === 'leta'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+              >
+                <input
+                  type="radio"
+                  class="sr-only"
+                  value="leta"
+                  :checked="defaultHosting === 'leta'"
+                  @change="saveDefaultHosting('leta')"
+                />
+                乐塔图床
+              </label>
+            </div>
+          </div>
+
+          <!-- 压缩质量 -->
+          <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+            <div class="flex items-center justify-between mb-1">
+              <label class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]"
+                >压缩质量</label
+              >
+              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
+                >{{ compressQuality }}%</span
+              >
+            </div>
+            <input
+              type="range"
+              min="10"
+              max="100"
+              step="5"
+              :value="compressQuality"
+              class="compress-slider w-full cursor-pointer"
+              @input="saveCompressQuality(Number(($event.target as HTMLInputElement).value))"
+            />
+            <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
+              <span>低（小体积）</span>
+              <span>高（高画质）</span>
+            </div>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+              对应 JPEG
+              压缩质量，值越高图片越清晰，体积越大。压缩比100%时，不会对图片做任何处理。压缩后图片将统一转为
+              JPEG 格式。
+            </p>
+          </div>
+
+          <!-- 磁盘图片上传名称 -->
+          <div v-if="isTauri" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
+            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+              磁盘图片上传名称
+            </h3>
+            <select
+              :value="diskImageNaming"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              :style="selectChevronStyle"
+              @change="saveDiskImageNaming(($event.target as HTMLSelectElement).value)"
+            >
+              <option value="original">原图名称</option>
+              <option value="datetime">按日期时间（年月日时分秒）</option>
+            </select>
+            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+              磁盘存储模式下，上传图片的命名规则：原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如
+              20260818231010）。
+            </p>
+          </div>
+        </section>
+
+        <section v-if="hostingTab === 'github'">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            GitHub 图床
+          </h3>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+            图片通过 GitHub API 上传后，使用 jsDelivr CDN 返回链接。 需要公共仓库 + Personal Access
+            Token（repo 权限）。
+          </p>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
+            <input
+              :value="githubRepo"
+              placeholder="用户名/仓库名"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveGitHubRepo(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block"
+              >Personal Access Token</label
+            >
+            <input
+              :value="githubToken"
+              type="password"
+              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveGitHubToken(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">分支</label>
+            <input
+              :value="githubBranch"
+              placeholder="main"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveGitHubBranch(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="flex items-center gap-3">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="!githubRepo || !githubToken || githubTesting"
+              @click="handleTestConnection"
+            >
+              {{ githubTesting ? '测试中…' : '测试连接' }}
+            </button>
+            <span
+              v-if="githubTestResult === 'ok'"
+              class="text-[12px]"
+              :style="{ color: colors.accent }"
+              >连接成功</span
+            >
+            <span v-if="githubTestResult === 'fail'" class="text-[12px] text-[#e74c3c]"
+              >连接失败</span
+            >
+          </div>
+        </section>
+
+        <section v-if="hostingTab === 'leta'">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            乐塔图床
+          </h3>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+            通过乐塔图床 API 上传图片，返回直链地址。
+          </p>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
+            <input
+              :value="letaToken"
+              type="password"
+              placeholder="Token"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveLetuToken(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">存储 ID</label>
+            <input
+              :value="letaStorageId"
+              placeholder="1"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveLetuStorageId(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+            登录乐塔图床，按F12打开控制台，切换到Network标签，上传一张图片，点击upload接口，点击Payload，找到storage_id的值。
+          </p>
+          <div class="flex items-center gap-3">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="!letaToken || letaTesting"
+              @click="handleTestLetuConnection"
+            >
+              {{ letaTesting ? '测试中…' : '测试连接' }}
+            </button>
+            <span
+              v-if="letaTestResult === 'ok'"
+              class="text-[12px]"
+              :style="{ color: colors.accent }"
+              >连接成功</span
+            >
+            <span v-if="letaTestResult === 'fail'" class="text-[12px] text-[#e74c3c]"
+              >连接失败</span
+            >
+          </div>
+        </section>
+      </template>
+
+      <!-- 公众号设置（仅桌面端） -->
+      <template v-if="settingsTab === 'wechat'">
+        <section>
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            微信公众号配置
+          </h3>
+          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
+            用于将文章直接发布到微信公众号草稿箱。需要公众号的开发者 ID 和密钥。
+          </p>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">AppID</label>
+            <input
+              :value="wechatAppId"
+              placeholder="wx0000000000000000"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveWechatAppId(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">AppSecret</label>
+            <input
+              :value="wechatAppSecret"
+              type="password"
+              placeholder="请输入 AppSecret"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveWechatAppSecret(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+          <div class="mb-3">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">默认作者名</label>
+            <input
+              :value="wechatDefaultAuthor"
+              placeholder="用于草稿 author 字段的默认值"
+              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+              @input="saveWechatDefaultAuthor(($event.target as HTMLInputElement).value)"
+            />
+          </div>
+        </section>
+      </template>
+
+      <!-- 文章仓库 -->
+      <template v-if="settingsTab === 'cloud'">
+        <section>
+          <!-- 存储模式切换（仅桌面端） -->
+          <div v-if="isTauri" class="mb-5">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">存储位置</label>
+            <div class="flex gap-2">
+              <button
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  articleStorageMode === 'github'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+                @click="saveArticleStorageMode('github')"
+              >
+                GitHub 仓库
+              </button>
+              <button
+                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
+                :class="
+                  articleStorageMode === 'local'
+                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
+                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
+                "
+                @click="saveArticleStorageMode('local')"
+              >
+                本地磁盘
+              </button>
+            </div>
+            <p class="text-[11px] mt-2" style="color: var(--text-secondary)">
+              <template v-if="articleStorageMode === 'local'">
+                文章与图片存储在本地磁盘；卸载重装后，可在下方「选择已有目录」加载之前的文件。
+              </template>
+              <template v-else>
+                切换到本地模式后，GitHub 仓库配置会保留但暂不使用；两种模式各自独立，不会互相影响。
+              </template>
+            </p>
+
+            <!-- 本地存储目录管理（仅 local 模式） -->
+            <div v-if="articleStorageMode === 'local'" class="mt-4 rounded-lg">
+              <div class="flex items-center justify-between mb-2">
+                <label class="text-[12px] text-[#666] dark:text-[#999] block"
+                  >本地工作区（多目录）</label
+                >
+                <span class="text-[11px]" style="color: var(--text-secondary)"
+                  >{{ localWorkspaces.length }} 个</span
+                >
+              </div>
+
+              <!-- 第一个（默认）工作区：保留原有移动/选择/恢复功能 -->
+              <div
+                v-for="(ws, idx) in localWorkspaces"
+                :key="ws.id"
+                class="mb-3 rounded-md border p-2.5"
+                :class="
+                  isLocalActive(ws.id)
+                    ? 'border-[var(--accent)]'
+                    : 'border-[var(--border-color,#e5e5e5)]'
+                "
+              >
+                <div class="flex items-center gap-2 mb-2">
+                  <span class="text-[12px] font-medium" style="color: var(--text-primary)">
+                    {{ idx === 0 ? '默认工作区' : '工作区' + (idx + 1) }}
+                  </span>
+                  <span
+                    v-if="isLocalActive(ws.id)"
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style="
+                      background: var(--accent-light, rgba(77, 166, 255, 0.12));
+                      color: var(--accent);
+                    "
+                    >当前</span
+                  >
+                  <span class="ml-auto flex items-center gap-1">
+                    <BaseTooltip v-if="!isLocalActive(ws.id)" text="设为当前" placement="top">
+                      <button
+                        class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
+                        @click="onSwitchLocalWorkspace(ws.id)"
+                      >
+                        <Check :size="14" />
+                      </button>
+                    </BaseTooltip>
+                    <BaseTooltip v-if="idx > 0" text="删除" placement="top">
+                      <button
+                        class="flex h-6 w-6 items-center justify-center rounded-md text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                        @click="requestDeleteWorkspace('local', ws.id)"
+                      >
+                        <Trash2 :size="14" />
+                      </button>
+                    </BaseTooltip>
+                  </span>
+                </div>
+                <div
+                  class="text-[12px] break-all rounded-md px-2.5 py-2 mb-2"
+                  style="background: var(--bg-secondary, #f5f5f5); color: var(--text-secondary)"
+                >
+                  {{ ws.dir || 'Documents/R-Markdown/articles/（默认）' }}
+                </div>
+
+                <!-- 仅默认工作区保留移动/选择/恢复功能 -->
+                <template v-if="idx === 0">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] font-medium transition-colors min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      :disabled="dirChanging"
+                      @click="onChangeStorageDir"
+                    >
+                      {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
+                    </button>
+                    <button
+                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="dirChanging"
+                      @click="onSelectStorageDir"
+                    >
+                      选择已有目录
+                    </button>
+                    <button
+                      v-if="articleStorageDir"
+                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                      :disabled="dirChanging"
+                      @click="onResetStorageDir"
+                    >
+                      恢复默认目录
+                    </button>
+                  </div>
+                  <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
+                    更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。恢复默认目录不会移动文章。<br />修改目录后如果遇到当前编辑图片加载异常，建议先重启客户端。
+                  </p>
+                </template>
+              </div>
+
+              <button
+                class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+                @click="onAddLocalWorkspace"
+              >
+                添加工作区
+              </button>
+              <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
+                新增工作区只需选择目录（不存在时自动创建 tree.json / articles /
+                images），移除仅从列表移出，不会删除任何文件。
+              </p>
+              <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
+                {{ dirError }}
+              </p>
+            </div>
+          </div>
+
+          <!-- GitHub 仓库配置（仅 github 模式显示） -->
+          <template v-if="articleStorageMode === 'github'">
+            <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
+              GitHub
+              私有仓库（文章仓库存储），支持多个仓库/分支/账号，<strong>每个仓库单独配置</strong>Personal
+              Access Token（<code class="text-[var(--accent)]">repo</code>
+              scope）。
+            </p>
+
+            <!-- 仓库工作区列表 -->
+            <div class="mb-3 space-y-2">
+              <div
+                v-for="(ws, i) in githubWorkspaces"
+                :key="ws.id"
+                class="rounded-lg border p-2.5"
+                :class="
+                  isCloudActive(ws.id)
+                    ? 'border-[var(--accent)]'
+                    : 'border-[var(--border-color,#e5e5e5)]'
+                "
+              >
+                <div class="flex items-center gap-2 mb-1.5">
+                  <span class="text-[12px] font-medium" style="color: var(--text-primary)">{{
+                    `工作区${i + 1}`
+                  }}</span>
+                  <span
+                    v-if="isCloudActive(ws.id)"
+                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
+                    style="
+                      background: var(--accent-light, rgba(77, 166, 255, 0.12));
+                      color: var(--accent);
+                    "
+                    >当前</span
+                  >
+                  <span class="ml-auto flex items-center gap-1">
+                    <BaseTooltip v-if="!isCloudActive(ws.id)" text="设为当前" placement="top">
+                      <button
+                        class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
+                        @click="onSwitchCloudWorkspace(ws.id)"
+                      >
+                        <Check :size="14" />
+                      </button>
+                    </BaseTooltip>
+                    <BaseTooltip text="删除" placement="top">
+                      <button
+                        class="flex h-6 w-6 items-center justify-center rounded text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                        @click="requestDeleteWorkspace('github', ws.id)"
+                      >
+                        <Trash2 :size="14" />
+                      </button>
+                    </BaseTooltip>
+                  </span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                  <div>
+                    <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block"
+                      >仓库名</label
+                    >
+                    <input
+                      :value="ws.repo"
+                      placeholder="用户名/仓库名"
+                      class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                      @input="onCloudRepoInput(ws.id, ($event.target as HTMLInputElement).value)"
+                      @blur="onCloudRepoBlur(ws.id)"
+                    />
+                  </div>
+                  <div>
+                    <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">分支</label>
+                    <input
+                      :value="ws.branch"
+                      placeholder="main"
+                      class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                      @input="onCloudBranchInput(ws.id, ($event.target as HTMLInputElement).value)"
+                      @blur="onCloudRepoBlur(ws.id)"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">Token</label>
+                  <input
+                    :value="getWorkspaceToken(ws.id)"
+                    type="password"
+                    placeholder="ghp_xxxxxxxxxxxx"
+                    class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                    @input="onCloudTokenInput(ws.id, ($event.target as HTMLInputElement).value)"
+                    @blur="onCloudRepoBlur(ws.id)"
+                  />
+                </div>
+                <div class="flex items-center gap-3 mt-2">
+                  <button
+                    class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-3 py-1 text-[12px] text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                    :disabled="cloudTestingWsId === ws.id"
+                    @click="handleCloudTestConnection(ws.id)"
+                  >
+                    {{ cloudTestingWsId === ws.id ? '测试中…' : '测试连接' }}
+                  </button>
+                  <span
+                    v-if="cloudTestResult[ws.id] === 'ok'"
+                    class="text-[12px]"
+                    style="color: var(--accent-green, #27ae60)"
+                  >
+                    连接成功
+                  </span>
+                  <span
+                    v-if="cloudTestResult[ws.id] === 'fail'"
+                    class="text-[12px]"
+                    style="color: #e74c3c"
+                  >
+                    {{ cloudTestError[ws.id] || '连接失败' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <button
+              class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors mb-3 border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
+              @click="addCloudWorkspace"
+            >
+              添加工作区
+            </button>
+          </template>
+
+          <!-- 文章文件命名（两种存储模式、桌面端与 Web 端均适用；
+             放在 section 最末尾，保证各平台显示位置一致） -->
+          <div class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
+            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">文章文件命名</label>
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-[12px] text-[#666] dark:text-[#999]"
+                >用菜单树中的文章名命名文件</span
+              >
+              <button
+                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+                :class="articleTitleNaming ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+                role="switch"
+                :aria-checked="articleTitleNaming"
+                @click="articleTitleNaming = !articleTitleNaming"
+              >
+                <span
+                  class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                  :class="articleTitleNaming ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+                />
+              </button>
+            </div>
+            <p class="text-[11px] leading-relaxed" style="color: var(--text-secondary)">
+              <template v-if="articleTitleNaming">
+                开启后，新建文章的存储文件名为「文章名-短哈希」，例如
+                <code class="text-[var(--accent)]">公众号排版技巧-k3f9a2b1.md</code
+                >；短哈希用于避免同名文章的文件名冲突。重命名文章时，文件名会同步修改，已有文章也在此时自动迁移为新命名。
+              </template>
+              <template v-else>
+                关闭时沿用内部编号命名（如
+                <code class="text-[var(--accent)]">art-m3k2x9-a1b2c3.md</code
+                >），与历史版本一致。开启后仅影响新建与重命名的文章，已有文章不会自动改名。
+              </template>
+            </p>
+          </div>
+        </section>
+      </template>
+
+      <!-- 关于 -->
+      <template v-if="settingsTab === 'other'">
+        <!-- 应用介绍 -->
+        <section class="flex flex-col items-center text-center mb-6 pt-2">
+          <svg viewBox="0 0 24 24" width="56" height="56" class="mb-3">
+            <rect width="24" height="24" rx="6" :fill="colors.accent" />
+            <text
+              x="3.5"
+              y="16"
+              font-family="Arial, sans-serif"
+              font-size="11"
+              font-weight="bold"
+              fill="white"
+            >
+              RM
+            </text>
+          </svg>
+          <BaseTooltip placement="bottom" :delay="300" :content-width="300">
+            <span class="relative inline-block">
+              <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">
+                R-Markdown
+              </h3>
+              <span class="sponsor-bubble">
+                <span
+                  class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
+                  style="background: #ff8c42"
+                >
+                  请我喝杯咖啡
+                </span>
+                <span class="sponsor-bubble-tail" />
+              </span>
+            </span>
+            <template #content>
+              <div class="flex flex-col items-center gap-2 pt-2 pb-1">
+                <img
+                  src="/wechat-qr.jpg"
+                  alt="微信公众号二维码"
+                  class="qr-light w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+                />
+                <img
+                  src="/wechat-qr-dark.jpg"
+                  alt="微信公众号二维码"
+                  class="qr-dark w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+                />
+                <span class="text-center leading-relaxed">
+                  微信搜索「<span class="text-[var(--accent)] font-medium">五味杂陈杂货铺</span
+                  >」关注，文章末尾可赞赏
+                </span>
+              </div>
+            </template>
+          </BaseTooltip>
+          <p class="m-0 mt-1 text-[12px] text-[#666] dark:text-[#999]">版本 v{{ pkg.version }}</p>
+          <p class="m-0 mt-2 text-[12px] text-[#999] dark:text-[#666]">
+            面向公众号排版的一站式 Markdown 扩展免费写作工具
+          </p>
+          <button
+            class="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] hover:text-[#333] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] dark:hover:text-[#ccc]"
+            @click="openGitHubRepo"
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
+              <path
+                d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
+              />
+            </svg>
+            GitHub 仓库
+          </button>
+          <p class="m-0 mt-2 text-[11px] text-[#bbb] dark:text-[#555]">
+            Copyright © 2026 R-Markdown
+          </p>
+        </section>
+
+        <!-- 版本更新 -->
+        <section v-if="isTauri" class="mt-6 pt-6 border-t border-[#f0f0f0] dark:border-[#333]">
+          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
+            版本更新
+          </h3>
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[12px] text-[#666] dark:text-[#999]">启动时自动检查更新</span>
+            <button
+              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
+              :class="autoUpdateEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+              role="switch"
+              :aria-checked="autoUpdateEnabled"
+              @click="autoUpdateEnabled = !autoUpdateEnabled"
+            >
+              <span
+                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
+                :class="autoUpdateEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
+              />
+            </button>
+          </div>
+          <div class="flex items-center gap-3 flex-wrap">
+            <button
+              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="updateChecking"
+              @click="manualCheckUpdate"
+            >
+              {{ updateChecking ? '检查中…' : '检查更新' }}
+            </button>
+            <span
+              v-if="updateMessage"
+              class="text-[12px]"
+              :class="updateError ? 'text-[#e74c3c]' : 'text-[var(--accent-green)]'"
+            >
+              {{ updateMessage }}
+            </span>
+          </div>
+        </section>
+      </template>
+    </div>
+  </div>
+
+  <!-- 删除工作区确认弹窗 -->
+  <ConfirmDialog
+    v-model:visible="deleteConfirmVisible"
+    title="删除工作区"
+    :message="deleteWorkspaceMessage"
+    confirm-text="删除"
+    confirm-type="danger"
+    :loading="deletingWorkspace"
+    loading-text="正在删除..."
+    @confirm="confirmDeleteWorkspace"
+    @cancel="pendingDeleteWorkspace = null"
+  />
+
+  <!-- 删光云端仓库后，询问是否切换到本地磁盘模式 -->
+  <ConfirmDialog
+    v-model:visible="switchToLocalPromptVisible"
+    title="切换到本地磁盘"
+    message="已删除所有云端仓库，当前将停留在空的 GitHub 模式。是否切换到本地磁盘模式以继续使用文章树？"
+    confirm-text="切换到本地磁盘"
+    cancel-text="保持 GitHub 模式"
+    @confirm="confirmSwitchToLocal"
+  />
+</template>
+
+<style scoped>
+/* 窄屏收紧标签间距与内边距，保证「设置」标题 + 全部标签 + 关闭按钮同行不重叠 */
+@media (max-width: 639px) {
+  .settings-tabs {
+    gap: 2px;
+  }
+  .settings-tabs > button {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+}
+
+/* 超窄屏（≤360px）进一步缩小字号，让全部标签无需滚动即可完整显示 */
+@media (max-width: 360px) {
+  .settings-tabs {
+    gap: 1px;
+  }
+  .settings-tabs > button {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 11px;
+  }
+}
+
+.compress-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  background: #e5e5e5;
+  border-radius: 2px;
+  outline: none;
+  accent-color: var(--accent);
+}
+
+:global(.dark) .compress-slider {
+  background: #444;
+}
+
+.compress-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+.compress-slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent);
+  cursor: pointer;
+  border: none;
+}
+
+.compress-slider::-moz-range-track {
+  height: 4px;
+  background: #e5e5e5;
+  border-radius: 2px;
+}
+
+/* 收款码明暗切换（与首页公众号二维码一致） */
+.qr-dark {
+  display: none;
+}
+[data-theme='dark'] .qr-light {
+  display: none;
+}
+[data-theme='dark'] .qr-dark {
+  display: block;
+}
+
+/* 标题右上方气泡：上下轻轻摇动，气泡悬于标题右上角 */
+.sponsor-bubble {
+  position: absolute;
+  top: -22px;
+  right: -72px;
+  animation: sponsor-bob 1.6s ease-in-out infinite;
+}
+@keyframes sponsor-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+.sponsor-bubble-tail {
+  position: absolute;
+  top: calc(100% - 4px);
+  left: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 5px 4px 0 4px;
+  border-color: #ff8c42 transparent transparent transparent;
+  transform: rotate(30deg);
+}
+</style>

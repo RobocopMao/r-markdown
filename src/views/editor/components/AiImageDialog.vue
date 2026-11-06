@@ -1292,7 +1292,7 @@ onBeforeUnmount(() => {
 </template>
 <style scoped>
 /*
-  结果图右上角预览按钮的显隐：与图库（ImageCacheDialog 的 .card-action-hint）同一套口径。
+  结果图右上角预览按钮的显隐：与图库（GalleryBoard 的 .card-action-hint）同一套口径。
   - 鼠标设备（hover: hover）：默认隐藏，悬停整图才出现
   - 触屏设备（hover: none）：常驻显示，否则手机上就没有入口
   隐藏时一并关掉 pointer-events，否则看不见的按钮仍会吃点击、并触发它的 tooltip。
