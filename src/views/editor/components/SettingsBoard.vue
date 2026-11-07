@@ -3,8 +3,35 @@ import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
-import { Check, Trash2 } from 'lucide-vue-next'
-import BaseCheckbox from '@/components/BaseCheckbox.vue'
+import {
+  BarChart3,
+  Check,
+  Cloud,
+  Command,
+  FileText,
+  FolderOpen,
+  Gauge,
+  Github,
+  Image,
+  Images,
+  Info,
+  KeyRound,
+  MessageCircle,
+  Palette,
+  PenLine,
+  RotateCcw,
+  Save,
+  SlidersHorizontal,
+  Sparkles,
+  Trash2,
+  Upload,
+  Zap,
+  ZoomIn,
+} from 'lucide-vue-next'
+import BoardHeader from './BoardHeader.vue'
+import SettingsCard from './SettingsCard.vue'
+import SettingsSlider from './SettingsSlider.vue'
+import MasonryFlow from './MasonryFlow.vue'
 import ModelMultiSelect from '@/components/ModelMultiSelect.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
@@ -748,6 +775,18 @@ function resetParaDefaults() {
   saveParaIndent('')
 }
 
+/** 普通段落卡片自己的「恢复默认」 */
+function onResetPara() {
+  resetParaDefaults()
+  emit('toast', '普通段落已恢复默认')
+}
+
+/** 编辑区字号卡片自己的「恢复默认」 */
+function onResetEditorFontSize() {
+  resetEditorFontSize()
+  emit('toast', '编辑区字号已恢复默认')
+}
+
 async function handleTestConnection() {
   if (!githubRepo.value || !githubToken.value) return
   githubTesting.value = true
@@ -1167,489 +1206,377 @@ async function manualCheckUpdate() {
 <template>
   <div class="h-full overflow-y-auto">
     <div class="px-4 py-4">
-      <!-- 顶部工具条：与统计 / 草稿箱 / 图库面板同版式（标题 + 返回编辑 + 右侧 tab 胶囊） -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16px] font-semibold tracking-tight">设置</h1>
-            <button
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">
-            排版、图床、文章存储与 AI 接口都在这里调
-          </p>
-        </div>
-
-        <div class="settings-tabs flex flex-wrap items-center justify-end gap-1">
+      <BoardHeader
+        title="设置"
+        description="排版、图床、文章存储与 AI 接口都在这里调"
+        @close="emit('close')"
+      >
+        <!-- 标签页：统一放在标题下面一行靠左 -->
+        <template #tabs>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'basic'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'basic' }"
             @click="settingsTab = 'basic'"
           >
             基础设置
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'github'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'github' }"
             @click="settingsTab = 'github'"
           >
             图片设置
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'cloud'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'cloud' }"
             @click="settingsTab = 'cloud'"
           >
             {{ isTauri ? '文章存储' : '文章仓库' }}
           </button>
           <button
             v-if="isTauri"
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'wechat'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'wechat' }"
             @click="settingsTab = 'wechat'"
           >
             公众号
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'ai'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'ai' }"
             @click="settingsTab = 'ai'"
           >
             AI 设置
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-[5px] text-xs transition-colors"
-            :class="
-              settingsTab === 'other'
-                ? 'bg-[var(--accent)] text-white'
-                : 'bg-transparent text-[#999] hover:text-[#333] dark:hover:text-[#ccc]'
-            "
+            class="board-tab"
+            :class="{ active: settingsTab === 'other' }"
             @click="settingsTab = 'other'"
           >
             关于
           </button>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- 基础设置 -->
       <template v-if="settingsTab === 'basic'">
-        <!-- 普通段落 -->
-        <section class="mb-4">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">普通段落</h3>
-            <button
-              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
-              @click="resetParaDefaults"
-            >
-              恢复默认
-            </button>
-          </div>
+        <MasonryFlow>
+          <!-- 普通段落：三列子卡 + 两列补充 -->
+          <SettingsCard title="普通段落" description="设置默认的文字排版参数" icon-text="A">
+            <template #action>
+              <button class="settings-reset-btn" @click="onResetPara">
+                <RotateCcw :size="12" :stroke-width="2" />
+                <span>恢复默认</span>
+              </button>
+            </template>
+            <div class="grid gap-3 sm:grid-cols-3">
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">字体大小</span>
+                  <span class="settings-subcard-value">{{ paraFontSize }}px</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="paraFontSize"
+                  :min="12"
+                  :max="24"
+                  @update:model-value="saveParaFontSize"
+                />
+                <div class="settings-subcard-range">
+                  <span>12px</span>
+                  <span>24px</span>
+                </div>
+              </div>
 
-          <div class="grid grid-cols-2 gap-x-5 gap-y-4">
-            <!-- 字体大小 -->
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">字体大小</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                  >{{ paraFontSize }}px</span
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">行高</span>
+                  <span class="settings-subcard-value">{{ paraLineHeight }}</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="paraLineHeight"
+                  :min="1.2"
+                  :max="3"
+                  :step="0.05"
+                  @update:model-value="saveParaLineHeight"
+                />
+                <div class="settings-subcard-range">
+                  <span>1.2</span>
+                  <span>3.0</span>
+                </div>
+              </div>
+
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">段落间距</span>
+                  <span class="settings-subcard-value">{{ paraMargin }}px</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="paraMargin"
+                  :min="8"
+                  :max="48"
+                  @update:model-value="saveParaMargin"
+                />
+                <div class="settings-subcard-range">
+                  <span>8px</span>
+                  <span>48px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">字重</span>
+                <select
+                  :value="paraFontWeight"
+                  class="settings-select mt-2 w-full"
+                  :style="selectChevronStyle"
+                  @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
                 >
+                  <option value="300">300（更细）</option>
+                  <option value="400">400（常规）</option>
+                  <option value="500">500（中等）</option>
+                  <option value="600">600（半粗）</option>
+                  <option value="700">700（粗体）</option>
+                </select>
               </div>
-              <input
-                type="range"
-                min="12"
-                max="24"
-                step="1"
-                :value="paraFontSize"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveParaFontSize(Number(($event.target as HTMLInputElement).value))"
-              />
-              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                <span>12px</span>
-                <span>24px</span>
+
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">首行缩进</span>
+                  <span v-if="paraIndent" class="settings-subcard-value">{{ paraIndent }}</span>
+                </div>
+                <input
+                  type="text"
+                  :value="paraIndent"
+                  placeholder="如 2em（不填则不缩进）"
+                  class="settings-input mt-2 w-full"
+                  @input="saveParaIndent(($event.target as HTMLInputElement).value)"
+                />
               </div>
             </div>
+          </SettingsCard>
 
-            <!-- 字重 -->
-            <div>
-              <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">字重</label>
-              <select
-                :value="paraFontWeight"
-                class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-                :style="selectChevronStyle"
-                @change="saveParaFontWeight(($event.target as HTMLSelectElement).value)"
-              >
-                <option value="300">300（更细）</option>
-                <option value="400">400（常规）</option>
-                <option value="500">500（中等）</option>
-                <option value="600">600（半粗）</option>
-                <option value="700">700（粗体）</option>
-              </select>
-            </div>
-
-            <!-- 行高 -->
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">行高</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
-                  paraLineHeight
-                }}</span>
-              </div>
-              <input
-                type="range"
-                min="1.2"
-                max="3.0"
-                step="0.05"
-                :value="paraLineHeight"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveParaLineHeight(Number(($event.target as HTMLInputElement).value))"
-              />
-              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                <span>1.2</span>
-                <span>3.0</span>
-              </div>
-            </div>
-
-            <!-- 首行缩进 -->
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">首行缩进</label>
-                <span
-                  v-if="paraIndent"
-                  class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                  >{{ paraIndent }}</span
-                >
-              </div>
-              <input
-                type="text"
-                :value="paraIndent"
-                placeholder="如 2em（不填则不缩进）"
-                class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#bbb] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#666]"
-                @input="saveParaIndent(($event.target as HTMLInputElement).value)"
-              />
-            </div>
-
-            <!-- 间距 -->
-            <div>
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">段落间距</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                  >{{ paraMargin }}px</span
-                >
-              </div>
-              <input
-                type="range"
-                min="8"
-                max="48"
-                step="1"
-                :value="paraMargin"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveParaMargin(Number(($event.target as HTMLInputElement).value))"
-              />
-              <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                <span>8px</span>
-                <span>48px</span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 页面缩放 -->
-        <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            页面缩放
-          </h3>
-          <div class="flex flex-nowrap gap-2">
-            <button
-              v-for="p in ZOOM_PRESETS"
-              :key="p"
-              class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0"
-              :class="
-                currentZoom === p
-                  ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
-                  : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
-              "
-              @click="applyZoom(p)"
-            >
-              {{ p }}%
-            </button>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
-            当前缩放：{{ currentZoom }}%（设置会自动保存）
-          </p>
-        </section>
-
-        <!-- 自动保存（仅桌面端） -->
-        <section v-if="isTauri" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            自动保存
-          </h3>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">启用自动保存</span>
-            <button
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="autoSaveEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-              role="switch"
-              :aria-checked="autoSaveEnabled"
-              @click="autoSaveEnabled = !autoSaveEnabled"
-            >
-              <span
-                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                :class="autoSaveEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-              />
-            </button>
-          </div>
-          <p
-            v-if="!autoSaveEnabled"
-            class="text-[12px] text-[var(--accent)] bg-[var(--accent-light)] rounded-lg px-3 py-2 mb-3"
+          <!-- 桌面端专属：页面缩放 + 自动保存 -->
+          <SettingsCard
+            v-if="isTauri"
+            title="页面缩放"
+            description="调整整个客户端的界面比例"
+            :icon="ZoomIn"
           >
-            自动保存已关闭，请及时手动保存（工具栏「暂存」按钮）
-          </p>
-          <div>
-            <span
-              class="text-[12px] text-[#666] dark:text-[#999] mb-2 block"
-              :class="{ 'opacity-40': !autoSaveEnabled }"
-              >保存间隔</span
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="p in ZOOM_PRESETS"
+                :key="p"
+                class="settings-chip"
+                :class="{ active: currentZoom === p }"
+                @click="applyZoom(p)"
+              >
+                {{ p }}%
+              </button>
+            </div>
+            <p class="settings-note mt-2.5">当前缩放：{{ currentZoom }}%（设置会自动保存）</p>
+          </SettingsCard>
+
+          <SettingsCard
+            v-if="isTauri"
+            title="自动保存"
+            description="停止输入后自动暂存当前文章"
+            :icon="Save"
+          >
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: autoSaveEnabled }"
+                role="switch"
+                :aria-checked="autoSaveEnabled"
+                @click="autoSaveEnabled = !autoSaveEnabled"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <p
+              v-if="!autoSaveEnabled"
+              class="mb-3 rounded-lg bg-[var(--accent-light)] px-3 py-2 text-[12px] text-[var(--accent)]"
             >
-            <div class="flex flex-nowrap gap-2">
+              自动保存已关闭，请及时手动保存（工具栏「暂存」按钮）
+            </p>
+            <span class="settings-subcard-label" :class="{ 'opacity-40': !autoSaveEnabled }">
+              保存间隔
+            </span>
+            <div class="mt-2 flex flex-wrap gap-2">
               <button
                 v-for="s in SAVE_INTERVAL_PRESETS"
                 :key="s"
+                class="settings-chip"
+                :class="{ active: autoSaveInterval === s }"
                 :disabled="!autoSaveEnabled"
-                class="cursor-pointer rounded-lg border px-3 py-1.5 text-[12px] font-medium transition-all duration-150 shrink-0 disabled:cursor-not-allowed disabled:opacity-30"
-                :class="
-                  autoSaveInterval === s
-                    ? 'border-[var(--accent)] bg-[var(--accent-light)] text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666]'
-                "
                 @click="autoSaveInterval = s"
               >
                 {{ s }}s
               </button>
             </div>
-            <p class="text-[11px] text-[#999] dark:text-[#666] mt-2.5">
+            <p class="settings-note mt-2.5">
               当前间隔：{{ autoSaveInterval }}s（停止输入后触发保存）
             </p>
-          </div>
-        </section>
+          </SettingsCard>
 
-        <!-- Minimap 缩略图（移动端预览区不显示缩略图） -->
-        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            预览缩略图
-          </h3>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[12px] text-[#666] dark:text-[#999]"
-              >在预览区右侧显示文档全貌缩略图</span
-            >
-            <button
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="minimapEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-              role="switch"
-              :aria-checked="minimapEnabled"
-              @click="minimapEnabled = !minimapEnabled"
-            >
-              <span
-                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                :class="minimapEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-              />
-            </button>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666]">
-            开启后可在预览区右侧看到文档全貌缩略图，点击可快速跳转
-          </p>
-        </section>
-
-        <!-- 文档大纲（移动端不显示右侧大纲面板） -->
-        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            文档大纲
-          </h3>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">启用编辑器右侧标题大纲</span>
-            <button
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="outlineEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-              role="switch"
-              :aria-checked="outlineEnabled"
-              @click="outlineEnabled = !outlineEnabled"
-            >
-              <span
-                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                :class="outlineEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-              />
-            </button>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666]">
-            关闭后工具栏「大纲」按钮与右侧面板一起隐藏；开启后用工具栏按钮展开或收起
-          </p>
-        </section>
-
-        <!-- 底部状态栏（移动端不显示状态栏） -->
-        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            底部状态栏
-          </h3>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">显示编辑器底部状态栏</span>
-            <button
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="statusBarEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-              role="switch"
-              :aria-checked="statusBarEnabled"
-              @click="statusBarEnabled = !statusBarEnabled"
-            >
-              <span
-                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                :class="statusBarEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-              />
-            </button>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666]">
-            显示光标所在行列、选中字数、总字数与预估阅读时长
-          </p>
-        </section>
-
-        <!-- 命令面板（移动端无物理键盘，快捷键设置无意义） -->
-        <section v-if="!isMobile" class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            命令面板
-          </h3>
-          <div class="flex items-center justify-between mb-2">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">快捷键</span>
-            <button
-              ref="shortcutButtonRef"
-              class="min-w-[112px] rounded-lg border px-3 py-1.5 text-[12px] cursor-pointer transition-colors"
-              :class="
-                shortcutRecording
-                  ? 'border-[var(--accent)] text-[var(--accent)]'
-                  : 'border-[#e5e5e5] text-[#333] dark:border-[#444] dark:text-[#e5e5e5]'
-              "
-              @click="startShortcutRecording"
-              @keydown="onShortcutKeydown"
-            >
-              {{ shortcutRecording ? '请按下快捷键…' : commandPaletteShortcutText }}
-            </button>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666]">
-            用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
-            {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
-          </p>
-        </section>
-
-        <!-- 编辑区字号 -->
-        <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <div class="flex items-center justify-between mb-3">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]">编辑区字号</h3>
-            <button
-              class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[4px] text-[11px] text-[#999] transition-colors hover:border-[#ccc] hover:text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666] dark:hover:text-[#ccc]"
-              @click="resetEditorFontSize"
-            >
-              恢复默认
-            </button>
-          </div>
-          <div class="flex items-center justify-between mb-1">
-            <label class="text-[12px] text-[#666] dark:text-[#999]">字号</label>
-            <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-              >{{ editorFontSize }}px</span
-            >
-          </div>
-          <input
-            type="range"
-            min="11"
-            max="20"
-            step="1"
-            :value="editorFontSize"
-            class="compress-slider w-full cursor-pointer"
-            @input="saveEditorFontSize(Number(($event.target as HTMLInputElement).value))"
-          />
-          <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-            <span>11px</span>
-            <span>20px</span>
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
-            仅调整左侧编辑区（Markdown
-            输入区）的显示字号，不影响预览效果与导出排版。行距会随字号等比放大。
-          </p>
-        </section>
-
-        <!-- 编辑器主题 -->
-        <section class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            编辑器主题
-          </h3>
-          <select
-            :value="editorTheme"
-            class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-            :style="selectChevronStyle"
-            @change="saveEditorTheme(($event.target as HTMLSelectElement).value)"
+          <!-- 预览与界面 -->
+          <SettingsCard
+            v-if="!isMobile"
+            title="预览缩略图"
+            description="在预览区右侧显示文档全貌缩略图"
+            :icon="Images"
           >
-            <optgroup label="浅色主题">
-              <option value="default">默认</option>
-              <option value="github-light">GitHub Light</option>
-              <option value="solarized-light">Solarized Light</option>
-              <option value="material-light">Material Light</option>
-            </optgroup>
-            <optgroup label="深色主题">
-              <option value="one-dark">One Dark</option>
-              <option value="github-dark">GitHub Dark</option>
-              <option value="solarized-dark">Solarized Dark</option>
-              <option value="material-dark">Material Dark</option>
-              <option value="dracula">Dracula</option>
-              <option value="monokai">Monokai</option>
-            </optgroup>
-          </select>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mt-2">
-            仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
-          </p>
-        </section>
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: minimapEnabled }"
+                role="switch"
+                :aria-checked="minimapEnabled"
+                @click="minimapEnabled = !minimapEnabled"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <p class="settings-note">开启后可在预览区右侧看到文档全貌缩略图，点击可快速跳转</p>
+          </SettingsCard>
+
+          <SettingsCard
+            v-if="!isMobile"
+            title="文档大纲"
+            description="启用编辑器右侧标题大纲"
+            :icon="FileText"
+          >
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: outlineEnabled }"
+                role="switch"
+                :aria-checked="outlineEnabled"
+                @click="outlineEnabled = !outlineEnabled"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <p class="settings-note">
+              关闭后工具栏「大纲」按钮与右侧面板一起隐藏；开启后用工具栏按钮展开或收起
+            </p>
+          </SettingsCard>
+
+          <SettingsCard
+            v-if="!isMobile"
+            title="底部状态栏"
+            description="显示编辑器底部状态栏"
+            :icon="BarChart3"
+          >
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: statusBarEnabled }"
+                role="switch"
+                :aria-checked="statusBarEnabled"
+                @click="statusBarEnabled = !statusBarEnabled"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <p class="settings-note">显示光标所在行列、选中字数、总字数与预估阅读时长</p>
+          </SettingsCard>
+
+          <SettingsCard v-if="!isMobile" title="命令面板" description="快捷键" :icon="Command">
+            <template #action>
+              <button
+                ref="shortcutButtonRef"
+                class="settings-shortcut"
+                :class="{ recording: shortcutRecording }"
+                @click="startShortcutRecording"
+                @keydown="onShortcutKeydown"
+              >
+                {{ shortcutRecording ? '请按下快捷键…' : commandPaletteShortcutText }}
+              </button>
+            </template>
+            <p class="settings-note">
+              用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
+              {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
+            </p>
+          </SettingsCard>
+
+          <SettingsCard
+            title="编辑区字号"
+            description="设置编辑区域（Markdown 输入区）的显示字号"
+            icon-text="Tt"
+          >
+            <template #action>
+              <button class="settings-reset-btn" @click="onResetEditorFontSize">
+                <RotateCcw :size="12" :stroke-width="2" />
+                <span>恢复默认</span>
+              </button>
+            </template>
+            <div class="settings-subcard">
+              <div class="flex items-end justify-between">
+                <span class="settings-subcard-label">字号</span>
+                <span class="settings-subcard-value">{{ editorFontSize }}px</span>
+              </div>
+              <SettingsSlider
+                class="mt-2.5"
+                :model-value="editorFontSize"
+                :min="11"
+                :max="20"
+                @update:model-value="saveEditorFontSize"
+              />
+              <div class="settings-subcard-range">
+                <span>11px</span>
+                <span>20px</span>
+              </div>
+            </div>
+            <p class="settings-note mt-2.5">
+              仅调整左侧编辑区（Markdown
+              输入区）的显示字号，不影响预览效果与导出排版。行距会随字号等比放大。
+            </p>
+          </SettingsCard>
+
+          <SettingsCard title="编辑器主题" description="切换编辑器界面主题" :icon="Palette">
+            <select
+              :value="editorTheme"
+              class="settings-select w-full"
+              :style="selectChevronStyle"
+              @change="saveEditorTheme(($event.target as HTMLSelectElement).value)"
+            >
+              <optgroup label="浅色主题">
+                <option value="default">默认</option>
+                <option value="github-light">GitHub Light</option>
+                <option value="solarized-light">Solarized Light</option>
+                <option value="material-light">Material Light</option>
+              </optgroup>
+              <optgroup label="深色主题">
+                <option value="one-dark">One Dark</option>
+                <option value="github-dark">GitHub Dark</option>
+                <option value="solarized-dark">Solarized Dark</option>
+                <option value="material-dark">Material Dark</option>
+                <option value="dracula">Dracula</option>
+                <option value="monokai">Monokai</option>
+              </optgroup>
+            </select>
+            <p class="settings-note mt-2.5">
+              仅切换语法高亮色，编辑器背景不受主题切换影响。切换后立即生效，设置自动保存。
+            </p>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
 
       <!-- AI 设置（内部再分「AI 文本 / AI 图片」两个子页，共用同一个设置 tab） -->
       <template v-if="settingsTab === 'ai'">
         <div class="flex gap-1.5 mb-4">
-          <button
-            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-            :class="
-              aiPane === 'text'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-            "
-            @click="aiPane = 'text'"
-          >
+          <button class="board-tab" :class="{ active: aiPane === 'text' }" @click="aiPane = 'text'">
             AI 文本
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-            :class="
-              aiPane === 'image'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-            "
+            class="board-tab"
+            :class="{ active: aiPane === 'image' }"
             @click="aiPane = 'image'"
           >
             AI 图片
@@ -1659,403 +1586,426 @@ async function manualCheckUpdate() {
         <!--
         AI 文本 = 写作 + 排版。
         接口地址 / API Key / 模型名三项是两者共用的，只出现一次；
-        「AI 排版」「AI 写作」两个小节只放与任务相关、两边取值不同的采样参数。
+        「AI 排版」「AI 写作」两张卡只放与任务相关、两边取值不同的采样参数。
       -->
-        <section v-if="aiPane === 'text'">
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
-            排版」（把文章转成 R-Markdown 排版稿）与「AI
-            写作」（用内置的卡兹克写作技能以对话方式出长文）。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
-            加密后仅保存在本地。但请注意：<span class="text-[#666] dark:text-[#999]"
-              >你发的内容会发送给你配置的模型服务商</span
-            >。
-          </p>
-
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">接口地址</label>
-            <input
-              :value="aiBaseUrl"
-              placeholder="https://api.deepseek.com/v1"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveAiBaseUrl(($event.target as HTMLInputElement).value)"
-            />
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-              兼容 /chat/completions 的地址；省略版本段时会自动补 /v1。
-            </p>
-          </div>
-
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
-            <input
-              :value="aiApiKey"
-              type="password"
-              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveAiApiKey(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
-              <button
-                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
-                :disabled="modelListLoading"
-                @click="handleFetchModels"
-              >
+        <MasonryFlow v-if="aiPane === 'text'">
+          <SettingsCard
+            title="接口配置"
+            description="写作与排版共用的 OpenAI 兼容接口"
+            :icon="KeyRound"
+          >
+            <template #action>
+              <button class="settings-chip" :disabled="modelListLoading" @click="handleFetchModels">
                 {{ modelListLoading ? '查询中…' : '获取模型列表' }}
               </button>
+            </template>
+
+            <p class="settings-note">
+              「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
+              排版」（把文章转成 R-Markdown 排版稿）与「AI
+              写作」（用内置的卡兹克写作技能以对话方式出长文）。接口地址、API&nbsp;Key、模型名均由你自己提供，应用不代付费用；API&nbsp;Key
+              加密后仅保存在本地。但请注意：<span class="text-[var(--text-primary)]"
+                >你发的内容会发送给你配置的模型服务商</span
+              >。
+            </p>
+
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">接口地址</span>
+                <input
+                  :value="aiBaseUrl"
+                  placeholder="https://api.deepseek.com/v1"
+                  class="settings-input mt-2 w-full"
+                  @input="saveAiBaseUrl(($event.target as HTMLInputElement).value)"
+                />
+                <p class="settings-note mt-1.5">
+                  兼容 /chat/completions 的地址；省略版本段时会自动补 /v1。
+                </p>
+              </div>
+
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">API Key</span>
+                <input
+                  :value="aiApiKey"
+                  type="password"
+                  placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                  class="settings-input mt-2 w-full"
+                  @input="saveAiApiKey(($event.target as HTMLInputElement).value)"
+                />
+                <p class="settings-note mt-1.5">加密后仅保存在本地，不会上传到别处。</p>
+              </div>
             </div>
+
             <!--
             勾选顺序有意义：**第一项就是默认模型**，面板没单独选过时用它。
             所以这里不再另设「默认模型」下拉——同一份清单选两次，纯属多余。
           -->
-            <ModelMultiSelect
-              :models="aiModels"
-              :options="modelList"
-              placeholder="手填模型名后回车添加，如 deepseek-chat"
-              @update:models="saveAiModels"
-            />
-            <p v-if="modelListError" class="text-[10px] text-[#e74c3c] mt-1">
-              {{ modelListError }}
-            </p>
-            <p
-              v-else-if="modelList.length > 0"
-              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
-            >
-              已获取 {{ modelList.length }} 个模型，勾选常用的几个即可；排在最前的一个就是默认。
-            </p>
-          </div>
-
-          <div class="flex items-center gap-3 mb-4">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
-              :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
-              @click="handleTestAiConnection"
-            >
-              {{ aiTesting ? '测试中…' : '测试连接' }}
-            </button>
-            <span v-if="aiTestResult === 'ok'" class="text-[12px]" :style="{ color: colors.accent }"
-              >连接成功</span
-            >
-            <span v-if="aiTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
-              aiTestError
-            }}</span>
-            <span v-else-if="aiHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
-              aiHint
-            }}</span>
-          </div>
-
-          <BaseCheckbox
-            class="mb-5"
-            size="sm"
-            :checked="aiStream"
-            label="流式输出（边生成边显示）"
-            @change="saveAiStream"
-          />
-
-          <!-- ── 以下是两边取值不同的采样参数，按用途分区 ── -->
-          <section class="pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">
-              AI 排版
-            </h3>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
-              把文章按组件规范重排。任务确定性高，温度与输出上限都比写作低。
-            </p>
-
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">{{
-                  aiTemperature
-                }}</span>
+            <div class="mt-3 settings-subcard">
+              <span class="settings-subcard-label">模型名</span>
+              <div class="mt-2">
+                <ModelMultiSelect
+                  :models="aiModels"
+                  :options="modelList"
+                  placeholder="手填模型名后回车添加，如 deepseek-chat"
+                  @update:models="saveAiModels"
+                />
               </div>
-              <input
-                type="range"
-                min="0"
-                max="1"
-                step="0.1"
-                :value="aiTemperature"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveAiTemperature(Number(($event.target as HTMLInputElement).value))"
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+              <p v-if="modelListError" class="mt-1.5 text-[11px] text-[#e74c3c]">
+                {{ modelListError }}
+              </p>
+              <p v-else-if="modelList.length > 0" class="settings-note mt-1.5">
+                已获取 {{ modelList.length }} 个模型，勾选常用的几个即可；排在最前的一个就是默认。
+              </p>
+              <p v-else class="settings-note mt-1.5">
+                手填模型名后回车添加；也可以点右上角「获取模型列表」从接口拉取。
               </p>
             </div>
 
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                  >{{ aiMaxTokens }} tokens</span
-                >
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                class="settings-chip"
+                :disabled="aiTesting || !aiBaseUrl || !aiApiKey"
+                @click="handleTestAiConnection"
+              >
+                {{ aiTesting ? '测试中…' : '测试连接' }}
+              </button>
+              <span
+                v-if="aiTestResult === 'ok'"
+                class="text-[12px]"
+                :style="{ color: colors.accent }"
+                >连接成功</span
+              >
+              <span v-if="aiTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+                aiTestError
+              }}</span>
+              <span v-else-if="aiHint" class="settings-note">{{ aiHint }}</span>
+            </div>
+          </SettingsCard>
+
+          <SettingsCard title="流式输出" description="边生成边显示，不用等整段返回" :icon="Zap">
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: aiStream }"
+                role="switch"
+                :aria-checked="aiStream"
+                @click="saveAiStream(!aiStream)"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <p class="settings-note">关闭后等整段生成完再一次性显示，适合网络不稳时使用。</p>
+          </SettingsCard>
+
+          <!-- ── 以下是两边取值不同的采样参数，按用途分卡 ── -->
+          <SettingsCard
+            title="AI 排版"
+            description="把文章按组件规范重排；确定性高，温度与输出上限都比写作低"
+            :icon="PenLine"
+          >
+            <div class="space-y-3">
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">采样温度</span>
+                  <span class="settings-subcard-value">{{ aiTemperature }}</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiTemperature"
+                  :min="0"
+                  :max="1"
+                  :step="0.1"
+                  @update:model-value="saveAiTemperature"
+                />
+                <div class="settings-subcard-range">
+                  <span>0（稳定）</span>
+                  <span>1（发散）</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  越低越稳定踏实，越高越有变化。排版任务建议 0.2–0.4。
+                </p>
               </div>
-              <input
-                type="range"
-                min="1024"
-                max="32768"
-                step="1024"
-                :value="aiMaxTokens"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveAiMaxTokens(Number(($event.target as HTMLInputElement).value))"
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                长文排版结果被截断时调大此值。
-              </p>
-            </div>
 
-            <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
-                  {{ aiFormatSessionHours }} 小时
-                </span>
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">最大输出</span>
+                  <span class="settings-subcard-value">{{ aiMaxTokens }}</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiMaxTokens"
+                  :min="1024"
+                  :max="32768"
+                  :step="1024"
+                  @update:model-value="saveAiMaxTokens"
+                />
+                <div class="settings-subcard-range">
+                  <span>1024</span>
+                  <span>32768 tokens</span>
+                </div>
+                <p class="settings-note mt-1.5">长文排版结果被截断时调大此值。</p>
               </div>
-              <input
-                type="range"
-                :min="MIN_SESSION_HOURS"
-                :max="MAX_SESSION_HOURS"
-                step="1"
-                :value="aiFormatSessionHours"
-                class="compress-slider w-full cursor-pointer"
-                @input="
-                  saveSessionHours(
-                    'aiFormatSessionHours',
-                    Number(($event.target as HTMLInputElement).value),
-                  )
-                "
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                排版结果的面板保留时长，从最后一次请求算起；到期后不再恢复。
-              </p>
-            </div>
-          </section>
 
-          <section class="mt-5 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-1">
-              AI 写作
-            </h3>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mb-3">
-              用内置的卡兹克写作技能（khazix-writer）以对话方式出公众号长文。长文更吃发散度与输出余量。
-            </p>
-
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">采样温度</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
-                  {{ writeTemperature.toFixed(1) }}
-                </span>
+              <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">结果保留时长</span>
+                  <span class="settings-subcard-value">{{ aiFormatSessionHours }}h</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiFormatSessionHours"
+                  :min="MIN_SESSION_HOURS"
+                  :max="MAX_SESSION_HOURS"
+                  :step="1"
+                  @update:model-value="(v: number) => saveSessionHours('aiFormatSessionHours', v)"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ MIN_SESSION_HOURS }}h</span>
+                  <span>{{ MAX_SESSION_HOURS }}h</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  排版结果的面板保留时长，从最后一次请求算起；到期后不再恢复。
+                </p>
               </div>
-              <input
-                type="range"
-                min="0"
-                max="1.5"
-                step="0.1"
-                :value="writeTemperature"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveWriteTemperature(Number(($event.target as HTMLInputElement).value))"
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                默认 {{ DEFAULT_WRITE_TEMPERATURE }}。写作需要比排版更高的发散度；调太低会写得很平。
-              </p>
             </div>
+          </SettingsCard>
 
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">最大输出</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                  >{{ writeMaxTokens }} tokens</span
-                >
+          <SettingsCard
+            title="AI 写作"
+            description="用内置的卡兹克写作技能以对话方式出公众号长文"
+            :icon="Sparkles"
+          >
+            <div class="space-y-3">
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">采样温度</span>
+                  <span class="settings-subcard-value">{{ writeTemperature.toFixed(1) }}</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="writeTemperature"
+                  :min="0"
+                  :max="1.5"
+                  :step="0.1"
+                  @update:model-value="saveWriteTemperature"
+                />
+                <div class="settings-subcard-range">
+                  <span>0（稳定）</span>
+                  <span>1.5（发散）</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  默认
+                  {{ DEFAULT_WRITE_TEMPERATURE }}。写作需要比排版更高的发散度；调太低会写得很平。
+                </p>
               </div>
-              <input
-                type="range"
-                :min="MIN_WRITE_MAX_TOKENS"
-                :max="MAX_WRITE_MAX_TOKENS"
-                step="1024"
-                :value="writeMaxTokens"
-                class="compress-slider w-full cursor-pointer"
-                @input="saveWriteMaxTokens(Number(($event.target as HTMLInputElement).value))"
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                单次输出上限（token），默认 {{ DEFAULT_WRITE_MAX_TOKENS }}。公众号长文 4000-8000
-                字，比排版需要更大余量；结果被截断时调大。
-              </p>
-            </div>
 
-            <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
-            <div class="mb-3">
-              <div class="flex items-center justify-between mb-1">
-                <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
-                <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
-                  {{ aiWriteSessionHours }} 小时
-                </span>
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">最大输出</span>
+                  <span class="settings-subcard-value">{{ writeMaxTokens }}</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="writeMaxTokens"
+                  :min="MIN_WRITE_MAX_TOKENS"
+                  :max="MAX_WRITE_MAX_TOKENS"
+                  :step="1024"
+                  @update:model-value="saveWriteMaxTokens"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ MIN_WRITE_MAX_TOKENS }}</span>
+                  <span>{{ MAX_WRITE_MAX_TOKENS }} tokens</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  单次输出上限，默认 {{ DEFAULT_WRITE_MAX_TOKENS }}。公众号长文 4000-8000
+                  字，比排版需要更大余量；结果被截断时调大。
+                </p>
               </div>
-              <input
-                type="range"
-                :min="MIN_SESSION_HOURS"
-                :max="MAX_SESSION_HOURS"
-                step="1"
-                :value="aiWriteSessionHours"
-                class="compress-slider w-full cursor-pointer"
-                @input="
-                  saveSessionHours(
-                    'aiWriteSessionHours',
-                    Number(($event.target as HTMLInputElement).value),
-                  )
-                "
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-                写作对话与稿件的面板保留时长，从最后一次请求算起；到期后打开面板会开启新会话。
-              </p>
-            </div>
 
-            <div class="mb-3">
-              <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">
-                长期补充要求（可留空）
-              </label>
-              <textarea
-                :value="writeExtraInstruction"
-                rows="3"
-                placeholder="例如：结尾不要行动呼吁 / 不要出现「我」/ 每篇开头先讲一个具体场景"
-                class="w-full resize-y rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-                @input="saveWriteExtraInstruction(($event.target as HTMLTextAreaElement).value)"
-              />
-              <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-                每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
-              </p>
+              <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">结果保留时长</span>
+                  <span class="settings-subcard-value">{{ aiWriteSessionHours }}h</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiWriteSessionHours"
+                  :min="MIN_SESSION_HOURS"
+                  :max="MAX_SESSION_HOURS"
+                  :step="1"
+                  @update:model-value="(v: number) => saveSessionHours('aiWriteSessionHours', v)"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ MIN_SESSION_HOURS }}h</span>
+                  <span>{{ MAX_SESSION_HOURS }}h</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  写作对话与稿件的面板保留时长，从最后一次请求算起；到期后打开面板会开启新会话。
+                </p>
+              </div>
+
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">长期补充要求（可留空）</span>
+                <textarea
+                  :value="writeExtraInstruction"
+                  rows="3"
+                  placeholder="例如：结尾不要行动呼吁 / 不要出现「我」/ 每篇开头先讲一个具体场景"
+                  class="settings-input mt-2 w-full resize-y"
+                  @input="saveWriteExtraInstruction(($event.target as HTMLTextAreaElement).value)"
+                />
+                <p class="settings-note mt-1.5">
+                  每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
+                </p>
+              </div>
             </div>
-          </section>
-        </section>
+          </SettingsCard>
+        </MasonryFlow>
 
         <!-- AI 图片（按厂商配置：各厂商参数不同，这里以厂商注册表为准逐项渲染） -->
-        <section v-if="aiPane === 'image'">
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">{{ imageDef.intro }}</p>
+        <MasonryFlow v-if="aiPane === 'image'">
+          <SettingsCard
+            title="厂商与接口"
+            description="配置按厂商分开保存，换厂商不会串配置"
+            :icon="Image"
+          >
+            <div class="grid gap-3 sm:grid-cols-2">
+              <!-- 厂商下拉常显：即便当前只有一家，也让「配置按厂商分开存」这件事可见 -->
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">厂商</span>
+                <select
+                  :value="imageProviderId"
+                  class="settings-select mt-2 w-full"
+                  :style="selectChevronStyle"
+                  @change="switchImageProvider(($event.target as HTMLSelectElement).value)"
+                >
+                  <option v-for="p in IMAGE_PROVIDERS" :key="p.id" :value="p.id">
+                    {{ p.name }}
+                  </option>
+                </select>
+                <p class="settings-note mt-1.5">
+                  各厂商参数不同，配置按厂商分开保存；当前可选：{{
+                    IMAGE_PROVIDERS.map((p) => p.name).join('、')
+                  }}。
+                </p>
+              </div>
 
-          <!-- 厂商下拉常显：即便当前只有一家，也让「配置按厂商分开存」这件事可见 -->
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">厂商</label>
-            <select
-              :value="imageProviderId"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-              :style="selectChevronStyle"
-              @change="switchImageProvider(($event.target as HTMLSelectElement).value)"
-            >
-              <option v-for="p in IMAGE_PROVIDERS" :key="p.id" :value="p.id">{{ p.name }}</option>
-            </select>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-              各厂商参数不同，配置按厂商分开保存；当前可选：{{
-                IMAGE_PROVIDERS.map((p) => p.name).join('、')
-              }}。
-            </p>
-          </div>
-
-          <!--
-          中转站紧跟在厂商下面：选了哪家站才决定下面「接口地址」填什么，
-          所以顺序是 厂商 → 中转站 → 接口地址。不声明 relays 的厂商（如 Agnes）整块不渲染。
-        -->
-          <div v-if="imageDef.relays?.length" class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">中转站</label>
-            <select
-              :value="imageConfig.relay"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
-              :style="selectChevronStyle"
-              @change="saveImageRelay(($event.target as HTMLSelectElement).value)"
-            >
-              <option value="">不使用（官方直连 / 标准同步接口）</option>
-              <option v-for="relay in imageDef.relays" :key="relay.id" :value="relay.id">
-                {{ relay.name }}
-              </option>
-            </select>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-              {{ imageRelayHint }}
-            </p>
-            <!--
-            Key 是按厂商存的（一家一份），换站不会连带换 Key：上一家的 Key 拿去新站用
-            必然认证失败，而报错看着像「Key 填错了」，所以这里点名说清要重填。
-          -->
-            <p class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-0.5">
-              切换中转站后，请重新填写该站的 API Key——各站 Key 不通用。
-            </p>
-          </div>
-
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="text-[12px] text-[#666] dark:text-[#999]">接口地址</label>
-              <button
-                v-for="alt in imageDef.altBaseUrls"
-                :key="alt.url"
-                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
-                :disabled="imageConfig.baseUrl === alt.url"
-                @click="saveImageBaseUrl(alt.url)"
-              >
-                {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
-              </button>
+              <!--
+              中转站紧跟在厂商下面：选了哪家站才决定下面「接口地址」填什么，
+              所以顺序是 厂商 → 中转站 → 接口地址。不声明 relays 的厂商（如 Agnes）整块不渲染。
+            -->
+              <div v-if="imageDef.relays?.length" class="settings-subcard">
+                <span class="settings-subcard-label">中转站</span>
+                <select
+                  :value="imageConfig.relay"
+                  class="settings-select mt-2 w-full"
+                  :style="selectChevronStyle"
+                  @change="saveImageRelay(($event.target as HTMLSelectElement).value)"
+                >
+                  <option value="">不使用（官方直连 / 标准同步接口）</option>
+                  <option v-for="relay in imageDef.relays" :key="relay.id" :value="relay.id">
+                    {{ relay.name }}
+                  </option>
+                </select>
+                <p class="settings-note mt-1.5">{{ imageRelayHint }}</p>
+                <!--
+                Key 是按厂商存的（一家一份），换站不会连带换 Key：上一家的 Key 拿去新站用
+                必然认证失败，而报错看着像「Key 填错了」，所以这里点名说清要重填。
+              -->
+                <p class="mt-1.5 text-[11px] text-[#d97706] dark:text-[#f0b429]">
+                  切换中转站后，请重新填写该站的 API Key——各站 Key 不通用。
+                </p>
+              </div>
             </div>
-            <input
-              :value="imageConfig.baseUrl"
-              :placeholder="imageDef.baseUrl"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
-            />
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1">
-              形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
-              >；省略版本段时会自动补 /v1。
-            </p>
-          </div>
 
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">API Key</label>
-            <input
-              :value="imageConfig.apiKey"
-              type="password"
-              placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
-            />
-          </div>
+            <p class="settings-note mt-3">{{ imageDef.intro }}</p>
+          </SettingsCard>
 
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1.5">
-              <label class="text-[12px] text-[#666] dark:text-[#999]">模型名</label>
+          <SettingsCard
+            title="接口与密钥"
+            description="填完地址、Key、模型名就能立刻测一次连通性"
+            :icon="KeyRound"
+          >
+            <template #action>
               <button
                 v-if="canFetchImageModels"
-                class="cursor-pointer rounded-full border border-[#e5e5e5] bg-white px-3 py-[3px] text-[11px] text-[#666] transition-colors hover:border-[#ccc] hover:text-[#333] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:text-[#ccc]"
+                class="settings-chip"
                 :disabled="imageModelLoading"
                 @click="handleFetchImageModels"
               >
                 {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
               </button>
+            </template>
+
+            <div class="settings-subcard">
+              <div class="flex items-end justify-between gap-2">
+                <span class="settings-subcard-label">接口地址</span>
+                <div class="flex flex-wrap justify-end gap-1.5">
+                  <button
+                    v-for="alt in imageDef.altBaseUrls"
+                    :key="alt.url"
+                    class="settings-chip"
+                    :disabled="imageConfig.baseUrl === alt.url"
+                    @click="saveImageBaseUrl(alt.url)"
+                  >
+                    {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
+                  </button>
+                </div>
+              </div>
+              <input
+                :value="imageConfig.baseUrl"
+                :placeholder="imageDef.baseUrl"
+                class="settings-input mt-2 w-full"
+                @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
+              />
+              <p class="settings-note mt-1.5">
+                形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
+                >；省略版本段时会自动补 /v1。
+              </p>
             </div>
-            <!--
-            勾选顺序有意义：**第一项就是默认模型**，配图面板没单独选过时用它。
-            手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
-          -->
-            <ModelMultiSelect
-              :models="imageConfig.models"
-              :options="imageModelList"
-              :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
-              @update:models="saveImageModels"
-            />
-            <p v-if="imageModelError" class="text-[10px] text-[#e74c3c] mt-1">
+
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">API Key</span>
+                <input
+                  :value="imageConfig.apiKey"
+                  type="password"
+                  placeholder="sk-xxxxxxxxxxxxxxxxxxxx"
+                  class="settings-input mt-2 w-full"
+                  @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+
+              <!--
+              勾选顺序有意义：**第一项就是默认模型**，配图面板没单独选过时用它。
+              手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
+            -->
+              <div class="settings-subcard">
+                <span class="settings-subcard-label">模型名</span>
+                <div class="mt-2">
+                  <ModelMultiSelect
+                    :models="imageConfig.models"
+                    :options="imageModelList"
+                    :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
+                    @update:models="saveImageModels"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p v-if="imageModelError" class="mt-2 text-[11px] text-[#e74c3c]">
               {{ imageModelError }}
             </p>
-            <p
-              v-else-if="imageModelList.length > 0"
-              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
-            >
+            <p v-else-if="imageModelList.length > 0" class="settings-note mt-2">
               已获取
               {{ imageModelList.length }}
               个本厂商可用的模型，勾选常用的几个即可；排在最前的一个就是默认。
             </p>
-            <p
-              v-else-if="!canFetchImageModels"
-              class="text-[10px] text-[#999] dark:text-[#666] mt-1"
-            >
+            <p v-else-if="!canFetchImageModels" class="settings-note mt-2">
               该中转站没有模型列表接口，模型名请在上面的输入框手动填写。
             </p>
-            <p v-else-if="imageDef.modelHint" class="text-[10px] text-[#999] dark:text-[#666] mt-1">
+            <p v-else-if="imageDef.modelHint" class="settings-note mt-2">
               {{ imageDef.modelHint }}
             </p>
             <!--
@@ -2064,149 +2014,131 @@ async function manualCheckUpdate() {
           -->
             <p
               v-if="imageModelWarnText"
-              class="text-[10px] text-[#d97706] dark:text-[#f0b429] mt-1"
+              class="mt-1.5 text-[11px] text-[#d97706] dark:text-[#f0b429]"
             >
               {{ imageModelWarnText }}
             </p>
-          </div>
 
-          <!--
-          测试连接紧跟模型名：地址 / Key / 模型名三项填完就能立刻验一次，
-          不必先滚过「单次超时」「结果保留时长」这些与连通性无关的调参项。
-          位置与「AI 文本」子页保持一致（那边也是模型名之后紧接着测试）。
-        -->
-          <div class="flex items-center gap-3 mb-3">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
-              :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
-              @click="handleTestImageConnection"
-            >
-              {{ imageTesting ? '测试中…' : '测试连接' }}
-            </button>
-            <span
-              v-if="imageTestResult === 'ok'"
-              class="text-[12px]"
-              :style="{ color: colors.accent }"
-              >连接成功</span
-            >
-            <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
-              imageTestError
-            }}</span>
-            <span v-else-if="imageHint" class="text-[12px] text-[#999] dark:text-[#666]">{{
-              imageHint
-            }}</span>
-          </div>
-
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[12px] text-[#666] dark:text-[#999]">单次超时</label>
-              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                >{{ imageConfig.timeoutSec }}s</span
+            <div class="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                class="settings-chip"
+                :disabled="imageTesting || !imageConfig.baseUrl || !imageConfig.apiKey"
+                @click="handleTestImageConnection"
               >
+                {{ imageTesting ? '测试中…' : '测试连接' }}
+              </button>
+              <span
+                v-if="imageTestResult === 'ok'"
+                class="text-[12px]"
+                :style="{ color: colors.accent }"
+                >连接成功</span
+              >
+              <span v-if="imageTestResult === 'fail'" class="text-[12px] text-[#e74c3c]">{{
+                imageTestError
+              }}</span>
+              <span v-else-if="imageHint" class="settings-note">{{ imageHint }}</span>
             </div>
-            <input
-              type="range"
-              :min="imageDef.minTimeoutSec"
-              :max="imageDef.maxTimeoutSec"
-              step="10"
-              :value="imageConfig.timeoutSec"
-              class="compress-slider w-full cursor-pointer"
-              @input="saveImageTimeout(Number(($event.target as HTMLInputElement).value))"
-            />
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-              官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
-              秒；复杂提示词与大尺寸 需要更久。走中转站时这段时间是「提交 + 轮询」的总时长。
-            </p>
-          </div>
+          </SettingsCard>
 
-          <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
-          <div class="mb-3">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[12px] text-[#666] dark:text-[#999]">结果保留时长</label>
-              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]">
-                {{ aiImageSessionHours }} 小时
-              </span>
+          <SettingsCard
+            title="生成参数"
+            description="单次请求的超时与结果在面板里的保留时长"
+            :icon="SlidersHorizontal"
+          >
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">单次超时</span>
+                  <span class="settings-subcard-value">{{ imageConfig.timeoutSec }}s</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="imageConfig.timeoutSec"
+                  :min="imageDef.minTimeoutSec"
+                  :max="imageDef.maxTimeoutSec"
+                  :step="10"
+                  @update:model-value="saveImageTimeout"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ imageDef.minTimeoutSec }}s</span>
+                  <span>{{ imageDef.maxTimeoutSec }}s</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  官方建议 {{ imageDef.minTimeoutSec }}–{{ imageDef.maxTimeoutSec }}
+                  秒；复杂提示词与大尺寸需要更久。走中转站时这段时间是「提交 + 轮询」的总时长。
+                </p>
+              </div>
+
+              <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">结果保留时长</span>
+                  <span class="settings-subcard-value">{{ aiImageSessionHours }}h</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiImageSessionHours"
+                  :min="MIN_SESSION_HOURS"
+                  :max="MAX_SESSION_HOURS"
+                  :step="1"
+                  @update:model-value="(v: number) => saveSessionHours('aiImageSessionHours', v)"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ MIN_SESSION_HOURS }}h</span>
+                  <span>{{ MAX_SESSION_HOURS }}h</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
+                </p>
+              </div>
             </div>
-            <input
-              type="range"
-              :min="MIN_SESSION_HOURS"
-              :max="MAX_SESSION_HOURS"
-              step="1"
-              :value="aiImageSessionHours"
-              class="compress-slider w-full cursor-pointer"
-              @input="
-                saveSessionHours(
-                  'aiImageSessionHours',
-                  Number(($event.target as HTMLInputElement).value),
-                )
-              "
-            />
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-              生成的图片在面板里保留多久，从最后一次请求算起；已插入编辑器的图片不受影响。
-            </p>
-          </div>
 
-          <p class="text-[10px] text-[#999] dark:text-[#666]">
-            生成结果不会上传到别处：插入时按「图片设置 →
-            粘贴/拖拽上传方式」保存（本地存储、本地磁盘、GitHub 图床或乐塔图床）。
-          </p>
-        </section>
+            <p class="settings-note mt-3">
+              生成结果不会上传到别处：插入时按「图片设置 →
+              粘贴/拖拽上传方式」保存（本地存储、本地磁盘、GitHub 图床或乐塔图床）。
+            </p>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
 
       <!-- 图床设置 -->
       <template v-if="settingsTab === 'github'">
         <!-- 图床子 tab -->
-        <div class="flex gap-1.5 mb-4">
+        <div class="mb-4 flex gap-1.5">
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-            :class="
-              hostingTab === 'upload'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-            "
+            class="board-tab"
+            :class="{ active: hostingTab === 'upload' }"
             @click="hostingTab = 'upload'"
           >
             上传设置
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-            :class="
-              hostingTab === 'github'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-            "
+            class="board-tab"
+            :class="{ active: hostingTab === 'github' }"
             @click="hostingTab = 'github'"
           >
             GitHub 图床
           </button>
           <button
-            class="cursor-pointer whitespace-nowrap rounded-full border px-3 py-[5px] text-xs transition-colors"
-            :class="
-              hostingTab === 'leta'
-                ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)] font-medium'
-                : 'border-[#e5e5e5] bg-white text-[#999] hover:border-[#ccc] dark:border-[#444] dark:bg-[#2a2a2a] dark:hover:border-[#666]'
-            "
+            class="board-tab"
+            :class="{ active: hostingTab === 'leta' }"
             @click="hostingTab = 'leta'"
           >
             乐塔图床
           </button>
         </div>
 
-        <section v-if="hostingTab === 'upload'">
+        <!-- 上传设置 -->
+        <MasonryFlow v-if="hostingTab === 'upload'">
           <!-- 上传方式（移动端固定走 GitHub 图床，无需展示） -->
-          <template v-if="!isMobile">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-              {{ isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式' }}
-            </h3>
-            <div class="flex gap-2">
-              <label
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  pasteDropMode === 'local'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
-              >
+          <SettingsCard
+            v-if="!isMobile"
+            :title="isTauri ? '粘贴上传方式' : '粘贴/拖拽上传方式'"
+            description="把图片粘进编辑器时走哪条链路"
+            :icon="Upload"
+          >
+            <div class="flex flex-wrap gap-2">
+              <label class="settings-chip" :class="{ active: pasteDropMode === 'local' }">
                 <input
                   type="radio"
                   class="sr-only"
@@ -2218,12 +2150,8 @@ async function manualCheckUpdate() {
               </label>
               <label
                 v-if="isTauri"
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  pasteDropMode === 'disk'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
+                class="settings-chip"
+                :class="{ active: pasteDropMode === 'disk' }"
               >
                 <input
                   type="radio"
@@ -2234,14 +2162,7 @@ async function manualCheckUpdate() {
                 />
                 磁盘存储
               </label>
-              <label
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  pasteDropMode === 'github'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
-              >
+              <label class="settings-chip" :class="{ active: pasteDropMode === 'github' }">
                 <input
                   type="radio"
                   class="sr-only"
@@ -2251,14 +2172,7 @@ async function manualCheckUpdate() {
                 />
                 GitHub 图床
               </label>
-              <label
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  pasteDropMode === 'leta'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
-              >
+              <label class="settings-chip" :class="{ active: pasteDropMode === 'leta' }">
                 <input
                   type="radio"
                   class="sr-only"
@@ -2269,7 +2183,7 @@ async function manualCheckUpdate() {
                 乐塔图床
               </label>
             </div>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+            <p class="settings-note mt-3">
               本地存储：图片以 base64 编码嵌入文档（压缩后单张 ≤ 5M），建议开启压缩以减少文档体积<br />
               磁盘存储：图片保存到文章存储目录下的
               <code class="text-[var(--accent)]">images/</code>
@@ -2277,25 +2191,16 @@ async function manualCheckUpdate() {
               GitHub 图床：上传至仓库后使用 CDN 链接（压缩后单张 ≤ 5MB）<br />
               乐塔图床：通过乐塔 API 上传，返回直链地址（压缩后单张 ≤ 10MB）
             </p>
-          </template>
+          </SettingsCard>
 
           <!-- 默认图床（工具栏上传按钮使用） -->
-          <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-              默认图床
-            </h3>
-            <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-              点击工具栏「图床」按钮上传时使用的图床服务，独立于粘贴/拖拽方式。
-            </p>
-            <div class="flex gap-2">
-              <label
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  defaultHosting === 'github'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
-              >
+          <SettingsCard
+            title="默认图床"
+            description="点击工具栏「图床」按钮上传时使用，独立于粘贴 / 拖拽方式"
+            :icon="Cloud"
+          >
+            <div class="flex flex-wrap gap-2">
+              <label class="settings-chip" :class="{ active: defaultHosting === 'github' }">
                 <input
                   type="radio"
                   class="sr-only"
@@ -2305,14 +2210,7 @@ async function manualCheckUpdate() {
                 />
                 GitHub 图床
               </label>
-              <label
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  defaultHosting === 'leta'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
-              >
+              <label class="settings-chip" :class="{ active: defaultHosting === 'leta' }">
                 <input
                   type="radio"
                   class="sr-only"
@@ -2323,238 +2221,242 @@ async function manualCheckUpdate() {
                 乐塔图床
               </label>
             </div>
-          </div>
+          </SettingsCard>
 
           <!-- 压缩质量 -->
-          <div class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
-            <div class="flex items-center justify-between mb-1">
-              <label class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5]"
-                >压缩质量</label
-              >
-              <span class="text-[12px] font-medium tabular-nums text-[var(--accent)]"
-                >{{ compressQuality }}%</span
-              >
+          <SettingsCard title="压缩质量" description="值越高图片越清晰，体积越大" :icon="Gauge">
+            <div class="settings-subcard">
+              <div class="flex items-end justify-between">
+                <span class="settings-subcard-label">质量</span>
+                <span class="settings-subcard-value">{{ compressQuality }}%</span>
+              </div>
+              <SettingsSlider
+                class="mt-2.5"
+                :model-value="compressQuality"
+                :min="10"
+                :max="100"
+                :step="5"
+                @update:model-value="saveCompressQuality"
+              />
+              <div class="settings-subcard-range">
+                <span>低（小体积）</span>
+                <span>高（高画质）</span>
+              </div>
             </div>
-            <input
-              type="range"
-              min="10"
-              max="100"
-              step="5"
-              :value="compressQuality"
-              class="compress-slider w-full cursor-pointer"
-              @input="saveCompressQuality(Number(($event.target as HTMLInputElement).value))"
-            />
-            <div class="flex justify-between text-[10px] text-[#999] dark:text-[#666] mt-0.5">
-              <span>低（小体积）</span>
-              <span>高（高画质）</span>
-            </div>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
+            <p class="settings-note mt-2">
               对应 JPEG
               压缩质量，值越高图片越清晰，体积越大。压缩比100%时，不会对图片做任何处理。压缩后图片将统一转为
               JPEG 格式。
             </p>
-          </div>
+          </SettingsCard>
 
           <!-- 磁盘图片上传名称 -->
-          <div v-if="isTauri" class="mt-4 pt-3 border-t border-[#eee] dark:border-[#444]">
-            <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-              磁盘图片上传名称
-            </h3>
+          <SettingsCard
+            v-if="isTauri"
+            title="磁盘图片上传名称"
+            description="磁盘存储模式下，上传图片的命名规则"
+            :icon="FolderOpen"
+          >
             <select
               :value="diskImageNaming"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none box-border cursor-pointer appearance-none bg-no-repeat bg-[right_8px_center] pr-7 transition-colors focus:border-[var(--accent)] focus:shadow-[0_0_0_2px_rgba(108,92,231,0.1)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5]"
+              class="settings-select w-full"
               :style="selectChevronStyle"
               @change="saveDiskImageNaming(($event.target as HTMLSelectElement).value)"
             >
               <option value="original">原图名称</option>
               <option value="datetime">按日期时间（年月日时分秒）</option>
             </select>
-            <p class="text-[10px] text-[#999] dark:text-[#666] mt-1.5">
-              磁盘存储模式下，上传图片的命名规则：原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如
+            <p class="settings-note mt-2">
+              原图名称保留原始文件名（重名时追加序号）；按日期时间则使用年月日时分秒命名（如
               20260818231010）。
             </p>
-          </div>
-        </section>
+          </SettingsCard>
+        </MasonryFlow>
 
-        <section v-if="hostingTab === 'github'">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            GitHub 图床
-          </h3>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            图片通过 GitHub API 上传后，使用 jsDelivr CDN 返回链接。 需要公共仓库 + Personal Access
-            Token（repo 权限）。
-          </p>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">仓库</label>
-            <input
-              :value="githubRepo"
-              placeholder="用户名/仓库名"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveGitHubRepo(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block"
-              >Personal Access Token</label
-            >
-            <input
-              :value="githubToken"
-              type="password"
-              placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveGitHubToken(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">分支</label>
-            <input
-              :value="githubBranch"
-              placeholder="main"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveGitHubBranch(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="flex items-center gap-3">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="!githubRepo || !githubToken || githubTesting"
-              @click="handleTestConnection"
-            >
-              {{ githubTesting ? '测试中…' : '测试连接' }}
-            </button>
-            <span
+        <!-- GitHub 图床 -->
+        <MasonryFlow v-if="hostingTab === 'github'">
+          <SettingsCard
+            title="GitHub 图床"
+            description="图片通过 GitHub API 上传后，使用 jsDelivr CDN 返回链接"
+            :icon="Github"
+          >
+            <template #action>
+              <button
+                class="settings-chip"
+                :disabled="!githubRepo || !githubToken || githubTesting"
+                @click="handleTestConnection"
+              >
+                {{ githubTesting ? '测试中…' : '测试连接' }}
+              </button>
+            </template>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">仓库</label>
+                <input
+                  :value="githubRepo"
+                  placeholder="用户名/仓库名"
+                  class="settings-input mt-2 w-full"
+                  @input="saveGitHubRepo(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">分支</label>
+                <input
+                  :value="githubBranch"
+                  placeholder="main"
+                  class="settings-input mt-2 w-full"
+                  @input="saveGitHubBranch(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+            <div class="settings-subcard mt-3">
+              <label class="settings-subcard-label">Personal Access Token</label>
+              <input
+                :value="githubToken"
+                type="password"
+                placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                class="settings-input mt-2 w-full"
+                @input="saveGitHubToken(($event.target as HTMLInputElement).value)"
+              />
+              <p class="settings-note mt-2">需要公共仓库 + Personal Access Token（repo 权限）。</p>
+            </div>
+            <p
               v-if="githubTestResult === 'ok'"
-              class="text-[12px]"
+              class="settings-note mt-3"
               :style="{ color: colors.accent }"
-              >连接成功</span
             >
-            <span v-if="githubTestResult === 'fail'" class="text-[12px] text-[#e74c3c]"
-              >连接失败</span
-            >
-          </div>
-        </section>
+              连接成功
+            </p>
+            <p v-if="githubTestResult === 'fail'" class="settings-note mt-3" style="color: #e74c3c">
+              连接失败
+            </p>
+          </SettingsCard>
+        </MasonryFlow>
 
-        <section v-if="hostingTab === 'leta'">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            乐塔图床
-          </h3>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            通过乐塔图床 API 上传图片，返回直链地址。
-          </p>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">Token</label>
-            <input
-              :value="letaToken"
-              type="password"
-              placeholder="Token"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveLetuToken(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">存储 ID</label>
-            <input
-              :value="letaStorageId"
-              placeholder="1"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveLetuStorageId(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            登录乐塔图床，按F12打开控制台，切换到Network标签，上传一张图片，点击upload接口，点击Payload，找到storage_id的值。
-          </p>
-          <div class="flex items-center gap-3">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="!letaToken || letaTesting"
-              @click="handleTestLetuConnection"
-            >
-              {{ letaTesting ? '测试中…' : '测试连接' }}
-            </button>
-            <span
+        <!-- 乐塔图床 -->
+        <MasonryFlow v-if="hostingTab === 'leta'">
+          <SettingsCard
+            title="乐塔图床"
+            description="通过乐塔图床 API 上传图片，返回直链地址"
+            :icon="Cloud"
+          >
+            <template #action>
+              <button
+                class="settings-chip"
+                :disabled="!letaToken || letaTesting"
+                @click="handleTestLetuConnection"
+              >
+                {{ letaTesting ? '测试中…' : '测试连接' }}
+              </button>
+            </template>
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">Token</label>
+                <input
+                  :value="letaToken"
+                  type="password"
+                  placeholder="Token"
+                  class="settings-input mt-2 w-full"
+                  @input="saveLetuToken(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">存储 ID</label>
+                <input
+                  :value="letaStorageId"
+                  placeholder="1"
+                  class="settings-input mt-2 w-full"
+                  @input="saveLetuStorageId(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+            <p class="settings-note mt-3">
+              登录乐塔图床，按 F12 打开控制台，切换到 Network 标签，上传一张图片，点击 upload
+              接口，点击 Payload，找到 storage_id 的值。
+            </p>
+            <p
               v-if="letaTestResult === 'ok'"
-              class="text-[12px]"
+              class="settings-note mt-2"
               :style="{ color: colors.accent }"
-              >连接成功</span
             >
-            <span v-if="letaTestResult === 'fail'" class="text-[12px] text-[#e74c3c]"
-              >连接失败</span
-            >
-          </div>
-        </section>
+              连接成功
+            </p>
+            <p v-if="letaTestResult === 'fail'" class="settings-note mt-2" style="color: #e74c3c">
+              连接失败
+            </p>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
 
       <!-- 公众号设置（仅桌面端） -->
       <template v-if="settingsTab === 'wechat'">
-        <section>
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            微信公众号配置
-          </h3>
-          <p class="text-[11px] text-[#999] dark:text-[#666] mb-3">
-            用于将文章直接发布到微信公众号草稿箱。需要公众号的开发者 ID 和密钥。
-          </p>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">AppID</label>
-            <input
-              :value="wechatAppId"
-              placeholder="wx0000000000000000"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveWechatAppId(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">AppSecret</label>
-            <input
-              :value="wechatAppSecret"
-              type="password"
-              placeholder="请输入 AppSecret"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveWechatAppSecret(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-          <div class="mb-3">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-1.5 block">默认作者名</label>
-            <input
-              :value="wechatDefaultAuthor"
-              placeholder="用于草稿 author 字段的默认值"
-              class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
-              @input="saveWechatDefaultAuthor(($event.target as HTMLInputElement).value)"
-            />
-          </div>
-        </section>
+        <MasonryFlow>
+          <SettingsCard
+            title="微信公众号配置"
+            description="用于将文章直接发布到微信公众号草稿箱，需要公众号的开发者 ID 和密钥"
+            :icon="MessageCircle"
+          >
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">AppID</label>
+                <input
+                  :value="wechatAppId"
+                  placeholder="wx0000000000000000"
+                  class="settings-input mt-2 w-full"
+                  @input="saveWechatAppId(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+              <div class="settings-subcard">
+                <label class="settings-subcard-label">AppSecret</label>
+                <input
+                  :value="wechatAppSecret"
+                  type="password"
+                  placeholder="请输入 AppSecret"
+                  class="settings-input mt-2 w-full"
+                  @input="saveWechatAppSecret(($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+            <div class="settings-subcard mt-3">
+              <label class="settings-subcard-label">默认作者名</label>
+              <input
+                :value="wechatDefaultAuthor"
+                placeholder="用于草稿 author 字段的默认值"
+                class="settings-input mt-2 w-full"
+                @input="saveWechatDefaultAuthor(($event.target as HTMLInputElement).value)"
+              />
+            </div>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
 
       <!-- 文章仓库 -->
       <template v-if="settingsTab === 'cloud'">
-        <section>
-          <!-- 存储模式切换（仅桌面端） -->
-          <div v-if="isTauri" class="mb-5">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">存储位置</label>
-            <div class="flex gap-2">
+        <MasonryFlow>
+          <!-- 存储位置（仅桌面端可切换） -->
+          <SettingsCard
+            v-if="isTauri"
+            title="存储位置"
+            description="文章与图片放在哪里"
+            :icon="FolderOpen"
+          >
+            <div class="flex flex-wrap gap-2">
               <button
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  articleStorageMode === 'github'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
+                class="settings-chip"
+                :class="{ active: articleStorageMode === 'github' }"
                 @click="saveArticleStorageMode('github')"
               >
                 GitHub 仓库
               </button>
               <button
-                class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px]"
-                :class="
-                  articleStorageMode === 'local'
-                    ? 'border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]'
-                    : 'border-[#e5e5e5] bg-white text-[#666] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]'
-                "
+                class="settings-chip"
+                :class="{ active: articleStorageMode === 'local' }"
                 @click="saveArticleStorageMode('local')"
               >
                 本地磁盘
               </button>
             </div>
-            <p class="text-[11px] mt-2" style="color: var(--text-secondary)">
+            <p class="settings-note mt-3">
               <template v-if="articleStorageMode === 'local'">
                 文章与图片存储在本地磁盘；卸载重装后，可在下方「选择已有目录」加载之前的文件。
               </template>
@@ -2562,46 +2464,35 @@ async function manualCheckUpdate() {
                 切换到本地模式后，GitHub 仓库配置会保留但暂不使用；两种模式各自独立，不会互相影响。
               </template>
             </p>
+          </SettingsCard>
 
-            <!-- 本地存储目录管理（仅 local 模式） -->
-            <div v-if="articleStorageMode === 'local'" class="mt-4 rounded-lg">
-              <div class="flex items-center justify-between mb-2">
-                <label class="text-[12px] text-[#666] dark:text-[#999] block"
-                  >本地工作区（多目录）</label
-                >
-                <span class="text-[11px]" style="color: var(--text-secondary)"
-                  >{{ localWorkspaces.length }} 个</span
-                >
-              </div>
+          <!-- 本地存储目录管理（仅 local 模式） -->
+          <SettingsCard
+            v-if="isTauri && articleStorageMode === 'local'"
+            title="本地工作区"
+            :description="`支持多目录，当前 ${localWorkspaces.length} 个`"
+            :icon="FolderOpen"
+          >
+            <template #action>
+              <button class="settings-chip" @click="onAddLocalWorkspace">添加工作区</button>
+            </template>
 
-              <!-- 第一个（默认）工作区：保留原有移动/选择/恢复功能 -->
+            <div class="space-y-3">
               <div
                 v-for="(ws, idx) in localWorkspaces"
                 :key="ws.id"
-                class="mb-3 rounded-md border p-2.5"
-                :class="
-                  isLocalActive(ws.id)
-                    ? 'border-[var(--accent)]'
-                    : 'border-[var(--border-color,#e5e5e5)]'
-                "
+                class="settings-subcard"
+                :class="{ 'is-active': isLocalActive(ws.id) }"
               >
-                <div class="flex items-center gap-2 mb-2">
-                  <span class="text-[12px] font-medium" style="color: var(--text-primary)">
+                <div class="mb-2 flex items-center gap-2">
+                  <span class="settings-subcard-label !text-[13px] !font-semibold">
                     {{ idx === 0 ? '默认工作区' : '工作区' + (idx + 1) }}
                   </span>
-                  <span
-                    v-if="isLocalActive(ws.id)"
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style="
-                      background: var(--accent-light, rgba(77, 166, 255, 0.12));
-                      color: var(--accent);
-                    "
-                    >当前</span
-                  >
+                  <span v-if="isLocalActive(ws.id)" class="settings-badge">当前</span>
                   <span class="ml-auto flex items-center gap-1">
                     <BaseTooltip v-if="!isLocalActive(ws.id)" text="设为当前" placement="top">
                       <button
-                        class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
+                        class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[var(--dropdown-hover)]"
                         @click="onSwitchLocalWorkspace(ws.id)"
                       >
                         <Check :size="14" />
@@ -2609,7 +2500,7 @@ async function manualCheckUpdate() {
                     </BaseTooltip>
                     <BaseTooltip v-if="idx > 0" text="删除" placement="top">
                       <button
-                        class="flex h-6 w-6 items-center justify-center rounded-md text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                        class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[var(--text-secondary)] transition-colors hover:bg-[var(--dropdown-hover)] hover:text-[#e74c3c]"
                         @click="requestDeleteWorkspace('local', ws.id)"
                       >
                         <Trash2 :size="14" />
@@ -2618,8 +2509,8 @@ async function manualCheckUpdate() {
                   </span>
                 </div>
                 <div
-                  class="text-[12px] break-all rounded-md px-2.5 py-2 mb-2"
-                  style="background: var(--bg-secondary, #f5f5f5); color: var(--text-secondary)"
+                  class="mb-2 break-all rounded-md px-2.5 py-2 text-[12px]"
+                  style="background: var(--bg-primary); color: var(--text-secondary)"
                 >
                   {{ ws.dir || 'Documents/R-Markdown/articles/（默认）' }}
                 </div>
@@ -2628,14 +2519,15 @@ async function manualCheckUpdate() {
                 <template v-if="idx === 0">
                   <div class="flex flex-wrap gap-2">
                     <button
-                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] font-medium transition-colors min-w-[110px] disabled:cursor-not-allowed disabled:opacity-50 border-[var(--accent)] bg-[var(--accent)]/10 text-[var(--accent)]"
+                      class="settings-chip"
+                      :class="{ active: true }"
                       :disabled="dirChanging"
                       @click="onChangeStorageDir"
                     >
                       {{ dirChanging ? '处理中…' : '更改目录（移动文件）' }}
                     </button>
                     <button
-                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                      class="settings-chip"
                       :disabled="dirChanging"
                       @click="onSelectStorageDir"
                     >
@@ -2643,73 +2535,54 @@ async function manualCheckUpdate() {
                     </button>
                     <button
                       v-if="articleStorageDir"
-                      class="cursor-pointer rounded-lg border px-4 py-2 text-center text-[12px] transition-colors min-w-[110px] border-[#e5e5e5] bg-white text-[#666] hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                      class="settings-chip"
                       :disabled="dirChanging"
                       @click="onResetStorageDir"
                     >
                       恢复默认目录
                     </button>
                   </div>
-                  <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
+                  <p class="settings-note mt-2">
                     更改目录会将现有文章与图片<strong>剪切移动</strong>到新位置。选择已有目录用于重装后加载旧数据。恢复默认目录不会移动文章。<br />修改目录后如果遇到当前编辑图片加载异常，建议先重启客户端。
                   </p>
                 </template>
               </div>
-
-              <button
-                class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
-                @click="onAddLocalWorkspace"
-              >
-                添加工作区
-              </button>
-              <p class="text-[11px] mt-2 leading-relaxed" style="color: var(--text-secondary)">
-                新增工作区只需选择目录（不存在时自动创建 tree.json / articles /
-                images），移除仅从列表移出，不会删除任何文件。
-              </p>
-              <p v-if="dirError" class="text-[11px] mt-2 leading-relaxed" style="color: #e74c3c">
-                {{ dirError }}
-              </p>
             </div>
-          </div>
+
+            <p class="settings-note mt-3">
+              新增工作区只需选择目录（不存在时自动创建 tree.json / articles /
+              images），移除仅从列表移出，不会删除任何文件。
+            </p>
+            <p v-if="dirError" class="settings-note mt-2" style="color: #e74c3c">{{ dirError }}</p>
+          </SettingsCard>
 
           <!-- GitHub 仓库配置（仅 github 模式显示） -->
-          <template v-if="articleStorageMode === 'github'">
-            <p class="text-[12px] text-[#666] dark:text-[#999] mb-4">
-              GitHub
-              私有仓库（文章仓库存储），支持多个仓库/分支/账号，<strong>每个仓库单独配置</strong>Personal
-              Access Token（<code class="text-[var(--accent)]">repo</code>
-              scope）。
-            </p>
+          <SettingsCard
+            v-if="articleStorageMode === 'github'"
+            title="GitHub 文章仓库"
+            description="支持多个仓库 / 分支 / 账号，每个仓库单独配置 Token"
+            :icon="Github"
+          >
+            <template #action>
+              <button class="settings-chip" @click="addCloudWorkspace">添加工作区</button>
+            </template>
 
-            <!-- 仓库工作区列表 -->
-            <div class="mb-3 space-y-2">
+            <div class="space-y-3">
               <div
                 v-for="(ws, i) in githubWorkspaces"
                 :key="ws.id"
-                class="rounded-lg border p-2.5"
-                :class="
-                  isCloudActive(ws.id)
-                    ? 'border-[var(--accent)]'
-                    : 'border-[var(--border-color,#e5e5e5)]'
-                "
+                class="settings-subcard"
+                :class="{ 'is-active': isCloudActive(ws.id) }"
               >
-                <div class="flex items-center gap-2 mb-1.5">
-                  <span class="text-[12px] font-medium" style="color: var(--text-primary)">{{
+                <div class="mb-2 flex items-center gap-2">
+                  <span class="settings-subcard-label !text-[13px] !font-semibold">{{
                     `工作区${i + 1}`
                   }}</span>
-                  <span
-                    v-if="isCloudActive(ws.id)"
-                    class="rounded-full px-2 py-0.5 text-[10px] font-medium"
-                    style="
-                      background: var(--accent-light, rgba(77, 166, 255, 0.12));
-                      color: var(--accent);
-                    "
-                    >当前</span
-                  >
+                  <span v-if="isCloudActive(ws.id)" class="settings-badge">当前</span>
                   <span class="ml-auto flex items-center gap-1">
                     <BaseTooltip v-if="!isCloudActive(ws.id)" text="设为当前" placement="top">
                       <button
-                        class="flex h-6 w-6 items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[#f0f0f0] dark:text-[var(--accent)] dark:hover:bg-[#333] cursor-pointer"
+                        class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[var(--accent)] transition-colors hover:bg-[var(--dropdown-hover)]"
                         @click="onSwitchCloudWorkspace(ws.id)"
                       >
                         <Check :size="14" />
@@ -2717,7 +2590,7 @@ async function manualCheckUpdate() {
                     </BaseTooltip>
                     <BaseTooltip text="删除" placement="top">
                       <button
-                        class="flex h-6 w-6 items-center justify-center rounded text-[#666] transition-colors hover:bg-[#f0f0f0] hover:text-[#e74c3c] dark:text-[#999] dark:hover:bg-[#333] dark:hover:text-[#e74c3c] cursor-pointer"
+                        class="flex h-6 w-6 cursor-pointer items-center justify-center rounded text-[var(--text-secondary)] transition-colors hover:bg-[var(--dropdown-hover)] hover:text-[#e74c3c]"
                         @click="requestDeleteWorkspace('github', ws.id)"
                       >
                         <Trash2 :size="14" />
@@ -2725,44 +2598,42 @@ async function manualCheckUpdate() {
                     </BaseTooltip>
                   </span>
                 </div>
-                <div class="grid grid-cols-2 gap-2 mb-2">
+                <div class="grid gap-2 sm:grid-cols-2">
                   <div>
-                    <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block"
-                      >仓库名</label
-                    >
+                    <label class="settings-subcard-label">仓库名</label>
                     <input
                       :value="ws.repo"
                       placeholder="用户名/仓库名"
-                      class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                      class="settings-input mt-1.5 w-full"
                       @input="onCloudRepoInput(ws.id, ($event.target as HTMLInputElement).value)"
                       @blur="onCloudRepoBlur(ws.id)"
                     />
                   </div>
                   <div>
-                    <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">分支</label>
+                    <label class="settings-subcard-label">分支</label>
                     <input
                       :value="ws.branch"
                       placeholder="main"
-                      class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                      class="settings-input mt-1.5 w-full"
                       @input="onCloudBranchInput(ws.id, ($event.target as HTMLInputElement).value)"
                       @blur="onCloudRepoBlur(ws.id)"
                     />
                   </div>
                 </div>
-                <div>
-                  <label class="text-[11px] text-[#666] dark:text-[#999] mb-1 block">Token</label>
+                <div class="mt-2">
+                  <label class="settings-subcard-label">Token</label>
                   <input
                     :value="getWorkspaceToken(ws.id)"
                     type="password"
                     placeholder="ghp_xxxxxxxxxxxx"
-                    class="w-full rounded-lg border border-[#e5e5e5] bg-white px-3 py-1.5 text-[12px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555]"
+                    class="settings-input mt-1.5 w-full"
                     @input="onCloudTokenInput(ws.id, ($event.target as HTMLInputElement).value)"
                     @blur="onCloudRepoBlur(ws.id)"
                   />
                 </div>
-                <div class="flex items-center gap-3 mt-2">
+                <div class="mt-2 flex items-center gap-3">
                   <button
-                    class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-3 py-1 text-[12px] text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="settings-chip"
                     :disabled="cloudTestingWsId === ws.id"
                     @click="handleCloudTestConnection(ws.id)"
                   >
@@ -2786,36 +2657,30 @@ async function manualCheckUpdate() {
               </div>
             </div>
 
-            <button
-              class="cursor-pointer rounded-lg border px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors mb-3 border-[#e5e5e5] bg-white hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333]"
-              @click="addCloudWorkspace"
-            >
-              添加工作区
-            </button>
-          </template>
+            <p class="settings-note mt-3">
+              GitHub 私有仓库（文章仓库存储），需要
+              <code class="text-[var(--accent)]">repo</code> scope 的 Personal Access Token。
+            </p>
+          </SettingsCard>
 
-          <!-- 文章文件命名（两种存储模式、桌面端与 Web 端均适用；
-             放在 section 最末尾，保证各平台显示位置一致） -->
-          <div class="mt-4 pt-4 border-t border-[#f0f0f0] dark:border-[#333]">
-            <label class="text-[12px] text-[#666] dark:text-[#999] mb-2 block">文章文件命名</label>
-            <div class="flex items-center justify-between mb-2">
-              <span class="text-[12px] text-[#666] dark:text-[#999]"
-                >用菜单树中的文章名命名文件</span
-              >
+          <!-- 文章文件命名 -->
+          <SettingsCard
+            title="文章文件命名"
+            description="新建文章时用什么名字存文件"
+            :icon="FileText"
+          >
+            <template #action>
               <button
-                class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-                :class="articleTitleNaming ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
+                class="settings-toggle"
+                :class="{ on: articleTitleNaming }"
                 role="switch"
                 :aria-checked="articleTitleNaming"
                 @click="articleTitleNaming = !articleTitleNaming"
               >
-                <span
-                  class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                  :class="articleTitleNaming ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-                />
+                <span class="settings-toggle-knob" />
               </button>
-            </div>
-            <p class="text-[11px] leading-relaxed" style="color: var(--text-secondary)">
+            </template>
+            <p class="settings-note">
               <template v-if="articleTitleNaming">
                 开启后，新建文章的存储文件名为「文章名-短哈希」，例如
                 <code class="text-[var(--accent)]">公众号排版技巧-k3f9a2b1.md</code
@@ -2827,210 +2692,151 @@ async function manualCheckUpdate() {
                 >），与历史版本一致。开启后仅影响新建与重命名的文章，已有文章不会自动改名。
               </template>
             </p>
-          </div>
-        </section>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
 
       <!-- 关于 -->
       <template v-if="settingsTab === 'other'">
-        <!-- 应用介绍 -->
-        <section class="flex flex-col items-center text-center mb-6 pt-2">
-          <svg viewBox="0 0 24 24" width="56" height="56" class="mb-3">
-            <rect width="24" height="24" rx="6" :fill="colors.accent" />
-            <text
-              x="3.5"
-              y="16"
-              font-family="Arial, sans-serif"
-              font-size="11"
-              font-weight="bold"
-              fill="white"
-            >
-              RM
-            </text>
-          </svg>
-          <BaseTooltip placement="bottom" :delay="300" :content-width="300">
-            <span class="relative inline-block">
-              <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">
-                R-Markdown
-              </h3>
-              <span class="sponsor-bubble">
-                <span
-                  class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
-                  style="background: #ff8c42"
-                >
-                  请我喝杯咖啡
-                </span>
-                <span class="sponsor-bubble-tail" />
-              </span>
-            </span>
-            <template #content>
-              <div class="flex flex-col items-center gap-2 pt-2 pb-1">
-                <img
-                  src="/wechat-qr.jpg"
-                  alt="微信公众号二维码"
-                  class="qr-light w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
-                />
-                <img
-                  src="/wechat-qr-dark.jpg"
-                  alt="微信公众号二维码"
-                  class="qr-dark w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
-                />
-                <span class="text-center leading-relaxed">
-                  微信搜索「<span class="text-[var(--accent)] font-medium">五味杂陈杂货铺</span
-                  >」关注，文章末尾可赞赏
-                </span>
-              </div>
-            </template>
-          </BaseTooltip>
-          <p class="m-0 mt-1 text-[12px] text-[#666] dark:text-[#999]">版本 v{{ pkg.version }}</p>
-          <p class="m-0 mt-2 text-[12px] text-[#999] dark:text-[#666]">
-            面向公众号排版的一站式 Markdown 扩展免费写作工具
-          </p>
-          <button
-            class="mt-2 inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] hover:text-[#333] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] dark:hover:text-[#ccc]"
-            @click="openGitHubRepo"
+        <MasonryFlow>
+          <SettingsCard
+            title="关于"
+            :description="`版本 v${pkg.version} · 面向公众号排版的一站式 Markdown 扩展免费写作工具`"
+            :icon="Info"
           >
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">
-              <path
-                d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
-              />
-            </svg>
-            GitHub 仓库
-          </button>
-          <p class="m-0 mt-2 text-[11px] text-[#bbb] dark:text-[#555]">
-            Copyright © 2026 R-Markdown
-          </p>
-        </section>
+            <div class="mx-auto flex max-w-[460px] flex-col items-center py-2 text-center">
+              <svg viewBox="0 0 24 24" width="56" height="56" class="mb-3">
+                <rect width="24" height="24" rx="6" :fill="colors.accent" />
+                <text
+                  x="3.5"
+                  y="16"
+                  font-family="Arial, sans-serif"
+                  font-size="11"
+                  font-weight="bold"
+                  fill="white"
+                >
+                  RM
+                </text>
+              </svg>
+              <BaseTooltip placement="bottom" :delay="300" :content-width="300">
+                <span class="relative inline-block">
+                  <h3 class="m-0 text-[15px] font-bold text-[#1a1a1a] dark:text-[#e5e5e5]">
+                    R-Markdown
+                  </h3>
+                  <span class="sponsor-bubble">
+                    <span
+                      class="whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-medium text-white shadow-sm"
+                      style="background: #ff8c42"
+                    >
+                      请我喝杯咖啡
+                    </span>
+                    <span class="sponsor-bubble-tail" />
+                  </span>
+                </span>
+                <template #content>
+                  <div class="flex flex-col items-center gap-2 pt-2 pb-1">
+                    <img
+                      src="/wechat-qr.jpg"
+                      alt="微信公众号二维码"
+                      class="qr-light w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+                    />
+                    <img
+                      src="/wechat-qr-dark.jpg"
+                      alt="微信公众号二维码"
+                      class="qr-dark w-[260px] rounded-lg border border-[#e5e5e5] dark:border-[#444]"
+                    />
+                    <span class="text-center leading-relaxed">
+                      微信搜索「<span class="text-[var(--accent)] font-medium">五味杂陈杂货铺</span
+                      >」关注，文章末尾可赞赏
+                    </span>
+                  </div>
+                </template>
+              </BaseTooltip>
+              <button
+                class="settings-chip mt-3 inline-flex items-center gap-1.5 whitespace-nowrap"
+                @click="openGitHubRepo"
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  width="14"
+                  height="14"
+                  fill="currentColor"
+                  aria-hidden="true"
+                  class="shrink-0"
+                >
+                  <path
+                    d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.55v-2.17c-3.2.7-3.87-1.36-3.87-1.36-.52-1.33-1.28-1.68-1.28-1.68-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.03 1.76 2.7 1.25 3.36.96.1-.75.4-1.25.72-1.54-2.55-.29-5.23-1.28-5.23-5.68 0-1.26.45-2.28 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.15 1.18a10.9 10.9 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.58.23 2.75.11 3.04.73.81 1.18 1.83 1.18 3.09 0 4.41-2.69 5.38-5.25 5.67.41.35.77 1.05.77 2.12v3.14c0 .3.21.66.8.55A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"
+                  />
+                </svg>
+                <span>GitHub 仓库</span>
+              </button>
+              <p class="m-0 mt-3 text-[11px] text-[#bbb] dark:text-[#555]">
+                Copyright © 2026 R-Markdown
+              </p>
+            </div>
+          </SettingsCard>
 
-        <!-- 版本更新 -->
-        <section v-if="isTauri" class="mt-6 pt-6 border-t border-[#f0f0f0] dark:border-[#333]">
-          <h3 class="text-[13px] font-semibold text-[#1a1a1a] dark:text-[#e5e5e5] mb-3">
-            版本更新
-          </h3>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-[12px] text-[#666] dark:text-[#999]">启动时自动检查更新</span>
-            <button
-              class="relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full transition-colors"
-              :class="autoUpdateEnabled ? 'bg-[var(--accent)]' : 'bg-[#ccc] dark:bg-[#555]'"
-              role="switch"
-              :aria-checked="autoUpdateEnabled"
-              @click="autoUpdateEnabled = !autoUpdateEnabled"
-            >
+          <SettingsCard
+            v-if="isTauri"
+            title="版本更新"
+            description="启动时自动检查更新，也可以手动检查一次"
+            :icon="RotateCcw"
+          >
+            <template #action>
+              <button
+                class="settings-toggle"
+                :class="{ on: autoUpdateEnabled }"
+                role="switch"
+                :aria-checked="autoUpdateEnabled"
+                @click="autoUpdateEnabled = !autoUpdateEnabled"
+              >
+                <span class="settings-toggle-knob" />
+              </button>
+            </template>
+            <div class="flex flex-wrap items-center gap-3">
+              <button class="settings-chip" :disabled="updateChecking" @click="manualCheckUpdate">
+                {{ updateChecking ? '检查中…' : '检查更新' }}
+              </button>
               <span
-                class="inline-block h-4 w-4 rounded-full bg-white shadow-sm transition-transform"
-                :class="autoUpdateEnabled ? 'translate-x-[18px]' : 'translate-x-[2px]'"
-              />
-            </button>
-          </div>
-          <div class="flex items-center gap-3 flex-wrap">
-            <button
-              class="cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-1.5 text-[12px] font-medium text-[#666] transition-colors hover:border-[#ccc] hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:border-[#666] dark:hover:bg-[#333] disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="updateChecking"
-              @click="manualCheckUpdate"
-            >
-              {{ updateChecking ? '检查中…' : '检查更新' }}
-            </button>
-            <span
-              v-if="updateMessage"
-              class="text-[12px]"
-              :class="updateError ? 'text-[#e74c3c]' : 'text-[var(--accent-green)]'"
-            >
-              {{ updateMessage }}
-            </span>
-          </div>
-        </section>
+                v-if="updateMessage"
+                class="text-[12px]"
+                :class="updateError ? 'text-[#e74c3c]' : 'text-[var(--accent)]'"
+              >
+                {{ updateMessage }}
+              </span>
+            </div>
+            <p class="settings-note mt-2.5">开启后启动客户端时自动检查；有新版本会提示下载。</p>
+          </SettingsCard>
+        </MasonryFlow>
       </template>
+
+      <!-- 删除工作区确认弹窗 -->
+      <ConfirmDialog
+        v-model:visible="deleteConfirmVisible"
+        title="删除工作区"
+        :message="deleteWorkspaceMessage"
+        confirm-text="删除"
+        confirm-type="danger"
+        :loading="deletingWorkspace"
+        loading-text="正在删除..."
+        @confirm="confirmDeleteWorkspace"
+        @cancel="pendingDeleteWorkspace = null"
+      />
+
+      <!-- 删光云端仓库后，询问是否切换到本地磁盘模式 -->
+      <ConfirmDialog
+        v-model:visible="switchToLocalPromptVisible"
+        title="切换到本地磁盘"
+        message="已删除所有云端仓库，当前将停留在空的 GitHub 模式。是否切换到本地磁盘模式以继续使用文章树？"
+        confirm-text="切换到本地磁盘"
+        cancel-text="保持 GitHub 模式"
+        @confirm="confirmSwitchToLocal"
+      />
     </div>
   </div>
-
-  <!-- 删除工作区确认弹窗 -->
-  <ConfirmDialog
-    v-model:visible="deleteConfirmVisible"
-    title="删除工作区"
-    :message="deleteWorkspaceMessage"
-    confirm-text="删除"
-    confirm-type="danger"
-    :loading="deletingWorkspace"
-    loading-text="正在删除..."
-    @confirm="confirmDeleteWorkspace"
-    @cancel="pendingDeleteWorkspace = null"
-  />
-
-  <!-- 删光云端仓库后，询问是否切换到本地磁盘模式 -->
-  <ConfirmDialog
-    v-model:visible="switchToLocalPromptVisible"
-    title="切换到本地磁盘"
-    message="已删除所有云端仓库，当前将停留在空的 GitHub 模式。是否切换到本地磁盘模式以继续使用文章树？"
-    confirm-text="切换到本地磁盘"
-    cancel-text="保持 GitHub 模式"
-    @confirm="confirmSwitchToLocal"
-  />
 </template>
 
 <style scoped>
-/* 窄屏收紧标签间距与内边距，保证「设置」标题 + 全部标签 + 关闭按钮同行不重叠 */
-@media (max-width: 639px) {
-  .settings-tabs {
-    gap: 2px;
-  }
-  .settings-tabs > button {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-}
-
-/* 超窄屏（≤360px）进一步缩小字号，让全部标签无需滚动即可完整显示 */
-@media (max-width: 360px) {
-  .settings-tabs {
-    gap: 1px;
-  }
-  .settings-tabs > button {
-    padding-left: 6px;
-    padding-right: 6px;
-    font-size: 11px;
-  }
-}
-
-.compress-slider {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 4px;
-  background: #e5e5e5;
-  border-radius: 2px;
-  outline: none;
-  accent-color: var(--accent);
-}
-
-:global(.dark) .compress-slider {
-  background: #444;
-}
-
-.compress-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  border: none;
-}
-
-.compress-slider::-moz-range-thumb {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--accent);
-  cursor: pointer;
-  border: none;
-}
-
-.compress-slider::-moz-range-track {
-  height: 4px;
-  background: #e5e5e5;
-  border-radius: 2px;
-}
-
 /* 收款码明暗切换（与首页公众号二维码一致） */
 .qr-dark {
   display: none;
@@ -3068,5 +2874,194 @@ async function manualCheckUpdate() {
   border-width: 5px 4px 0 4px;
   border-color: #ff8c42 transparent transparent transparent;
   transform: rotate(30deg);
+}
+
+/* ── 设置卡片内部控件（卡片外壳在 SettingsCard.vue）── */
+.settings-subcard {
+  border-radius: 12px;
+  background: var(--settings-subcard-bg);
+  padding: 12px 14px;
+}
+
+/* 工作区卡片：当前选中的那张加一圈 accent 边，替代原来整卡改边框色的写法 */
+.settings-subcard.is-active {
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* 「当前」小徽标 */
+.settings-badge {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.settings-subcard-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.settings-subcard-value {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.settings-subcard-range {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.settings-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.settings-input,
+.settings-select {
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-primary);
+  padding: 7px 11px;
+  font-size: 12.5px;
+  color: var(--text-primary);
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.settings-select {
+  box-sizing: border-box;
+  cursor: pointer;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.settings-input::placeholder {
+  color: var(--text-muted);
+}
+
+.settings-input:focus,
+.settings-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+
+/* 预设值胶囊（缩放比例 / 保存间隔） */
+.settings-chip {
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-primary);
+  padding: 4px 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-chip:hover:not(:disabled) {
+  border-color: var(--settings-hover-border);
+  color: var(--text-primary);
+}
+
+.settings-chip.active {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  color: var(--accent);
+}
+
+.settings-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.35;
+}
+
+/* 开关：40×22，比原来略大一点，贴合设计稿 */
+.settings-toggle {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--settings-track);
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.settings-toggle.on {
+  background: var(--accent);
+}
+
+.settings-toggle-knob {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transform: translateX(3px);
+  transition: transform 0.2s ease;
+}
+
+.settings-toggle.on .settings-toggle-knob {
+  transform: translateX(21px);
+}
+
+/* 快捷键按钮（命令面板卡右上角） */
+.settings-shortcut {
+  min-width: 64px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-primary);
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-shortcut:hover {
+  border-color: var(--settings-hover-border);
+}
+
+.settings-shortcut.recording {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* 卡片右上角的「恢复默认」（普通段落 / 编辑区字号各自一个） */
+.settings-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-primary);
+  padding: 3px 9px;
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.settings-reset-btn:hover {
+  border-color: var(--settings-hover-border);
+  color: var(--accent);
 }
 </style>

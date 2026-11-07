@@ -20,7 +20,8 @@ export function useExport(
   extractedTitle: ComputedRef<string>,
   previewRef: Ref<PreviewExposed | undefined>,
   showToast: (msg: string) => void,
-  xhsVisible: Ref<boolean>,
+  /** 打开「小红书图」面板（编辑区内嵌面板，开关由 EditorPage 管） */
+  openXhsBoard: () => void,
 ) {
   function handleCopyRichText() {
     previewRef.value?.copyRichText()
@@ -89,7 +90,9 @@ ${html}
    */
   function triggerPrint(showToast: (msg: string) => void) {
     const originalTitle = document.title
-    const safeName = (extractedTitle.value || 'R-Markdown 导出').replace(/[\\/:*?"<>|]/g, ' ').trim()
+    const safeName = (extractedTitle.value || 'R-Markdown 导出')
+      .replace(/[\\/:*?"<>|]/g, ' ')
+      .trim()
     document.title = safeName
     let restored = false
     const restoreTitle = () => {
@@ -107,7 +110,9 @@ ${html}
         result.catch((err: unknown) => {
           restoreTitle()
           const msg = err instanceof Error ? err.message : String(err)
-          showToast('打印失败：' + msg + '（需在客户端 capabilities 放行 core:webview:allow-print）')
+          showToast(
+            '打印失败：' + msg + '（需在客户端 capabilities 放行 core:webview:allow-print）',
+          )
         })
       }
     } catch (err: unknown) {
@@ -150,7 +155,7 @@ ${html}
     if (groupId === 'export') {
       if (action === 'saveImage') handleSaveImage()
       else if (action === 'export-pdf') void handleExportPDF()
-      else if (action === 'xhs') xhsVisible.value = true
+      else if (action === 'xhs') openXhsBoard()
       else if (action === 'export-html') handleExportHTML()
     }
   }

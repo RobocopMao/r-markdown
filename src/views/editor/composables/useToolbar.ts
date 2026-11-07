@@ -86,6 +86,8 @@ export const MAX_ROWS = 3
 
 export interface EditorExposed {
   insertAtCursor: (text: string) => void
+  /** 在光标处插入并保证内容独占一行（图片等块级标签用） */
+  insertOwnLine: (text: string, from?: number, to?: number) => void
   scrollToLineAndHighlight: (
     lineNo: number,
     opts?: { syncPreview?: boolean; moveCursor?: boolean },

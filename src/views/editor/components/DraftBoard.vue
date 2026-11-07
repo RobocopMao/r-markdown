@@ -11,6 +11,7 @@
 import { computed, ref } from 'vue'
 import { Pencil, Search, Trash2 } from 'lucide-vue-next'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import BoardHeader from './BoardHeader.vue'
 import type { Draft } from '@/services/draftStorage'
 
 const props = defineProps<{
@@ -118,40 +119,18 @@ function formatDate(ts: number): string {
 <template>
   <div class="h-full overflow-y-auto">
     <div class="px-4 py-4">
-      <!-- 顶部工具条：与统计面板同版式（标题 + 返回编辑 + 搜索） -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16px] font-semibold tracking-tight">草稿箱</h1>
-            <button
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">
-            共 {{ props.drafts.length }} 篇<span v-if="searchQuery.trim()"
-              >，匹配 {{ filteredDrafts.length }} 篇</span
-            >
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <label
-            class="flex h-7 items-center gap-1.5 rounded-lg border border-[var(--border-color)] px-2.5 text-[12px] text-[var(--text-secondary)] focus-within:border-[var(--accent)]"
-          >
-            <Search :size="13" class="shrink-0" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索草稿…"
-              class="w-[140px] border-0 bg-transparent text-[12px] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)]"
-            />
+      <BoardHeader
+        title="草稿箱"
+        :description="`共 ${props.drafts.length} 篇${searchQuery.trim() ? `，匹配 ${filteredDrafts.length} 篇` : ''}`"
+        @close="emit('close')"
+      >
+        <template #search>
+          <label class="board-search">
+            <Search :size="16" class="shrink-0" />
+            <input v-model="searchQuery" type="text" placeholder="搜索草稿…" />
           </label>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- 空状态 -->
       <div

@@ -1057,7 +1057,7 @@ defineExpose({
       style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
     >
       <div
-        class="flex items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 px-3"
+        class="flex items-center gap-1.5 bg-[var(--bg-hover)] rounded-lg border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 px-3"
       >
         <Search :size="12" style="color: var(--text-secondary)" />
         <input

@@ -1039,6 +1039,32 @@ function insertAtCursor(text: string) {
   })
 }
 
+/**
+ * 在光标处插入一段「独占一行」的内容（图片标签等）。
+ *
+ * 为什么需要单独一个方法：`markdownParser.ts` 里只有 `line.trim()` 以 `<img ` 开头时才把这一行
+ * 当作独立的图片块渲染（`Img_DA01`），否则图片会被当成行内内容塞进 `<p>`，
+ * 视觉上就黏在上一段文字或某个组件标签（`<badges>`、`<title>` 等）的前后。
+ * 这里看插入点前后「同一行还有没有别的字符」，缺哪边就补哪个换行，缩进不算内容。
+ */
+function insertOwnLine(text: string, from?: number, to?: number) {
+  if (!view) return
+  const doc = view.state.doc
+  const sel = view.state.selection.main
+  const start = from ?? sel.from
+  const end = to ?? sel.to
+  const startLine = doc.lineAt(start)
+  const endLine = doc.lineAt(end)
+  const before = doc.sliceString(startLine.from, start)
+  const after = doc.sliceString(end, endLine.to)
+  const prefix = before.trim() ? '\n' : ''
+  const suffix = after.trim() ? '\n' : ''
+  view.dispatch({
+    changes: { from: start, to: end, insert: prefix + text + suffix },
+    selection: { anchor: start + prefix.length + text.length },
+  })
+}
+
 function scrollToLineAndHighlight(
   lineNo: number,
   opts?: { syncPreview?: boolean; moveCursor?: boolean },
@@ -1079,6 +1105,7 @@ defineExpose({
   scrollTo,
   replaceRange,
   insertAtCursor,
+  insertOwnLine,
   isAtLineStart,
   hasInlineSelection,
   isInsideTag,

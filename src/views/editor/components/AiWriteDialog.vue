@@ -77,6 +77,12 @@ import { pickDocumentFile } from '../composables/useImport'
 import type { ChatMessage } from '@/services/aiFormat'
 
 const props = defineProps<{
+  /**
+   * 内嵌模式：由 AiBoard.vue 使用——不再作为抽屉弹出，而是铺在编辑区面板里。
+   * 这里只透传给 BaseDrawer；「打开时初始化」仍由 visible 驱动，
+   * AiBoard 用 v-show 控制显隐、用 visible 触发既有生命周期。
+   */
+  embedded?: boolean
   visible: boolean
   /** 编辑器当前内容（「用当前文档」把内容填进输入框，以及应用前比对用） */
   markdown: string
@@ -86,6 +92,8 @@ const emit = defineEmits<{
   close: []
   /** 用户确认应用稿件：替换编辑器内容 */
   apply: [text: string]
+  /** 应用稿件并留在 AI 面板里、切到「AI 排版」标签页 */
+  applyAndFormat: [text: string]
   /** 跳转设置（落到「AI 设置 → AI 文本」子页） */
   openSettings: []
 }>()
@@ -704,6 +712,13 @@ async function retrySelfCheck(msg: WriteMessage) {
  * 确认时按 id 回到当前 session 里重新取一次，取到哪一版就应用哪一版。
  */
 const pendingApplyId = ref('')
+/**
+ * 确认后要执行哪个动作。
+ *
+ * 「应用到编辑器」与「应用并去排版」共用同一个二次确认弹窗（都是「覆盖编辑器内容」），
+ * 所以要记下用户点的是哪个，确认时才能走到对应分支。
+ */
+const pendingApplyMode = ref<'apply' | 'applyAndFormat'>('apply')
 const confirmApplyVisible = ref(false)
 
 /** 按 id 取当前最新的那条稿件消息（找不到返回 null，避免用陈旧对象兜底） */
@@ -711,29 +726,31 @@ function currentDraft(id: string): WriteMessage | null {
   return session.value?.messages.find((m) => m.id === id) ?? null
 }
 
-function onApply(msg: WriteMessage) {
+function onApply(msg: WriteMessage, mode: 'apply' | 'applyAndFormat' = 'apply') {
   if (!msg.article) return
   // 编辑器被改过才需要确认；空编辑器直接覆盖（没什么可丢的）
   if (props.markdown.trim() && props.markdown.trim() !== editorSnapshot) {
     pendingApplyId.value = msg.id
+    pendingApplyMode.value = mode
     confirmApplyVisible.value = true
     return
   }
-  doApply(msg.id)
+  doApply(msg.id, mode)
 }
 
-function doApply(id: string) {
+function doApply(id: string, mode: 'apply' | 'applyAndFormat' = 'apply') {
   confirmApplyVisible.value = false
   pendingApplyId.value = ''
   // 以 id 为准回查：即使入参是旧对象，也只会应用当前 session 里这一条的最新正文
   const msg = currentDraft(id)
   if (!msg?.article) return
-  emit('apply', msg.article)
+  if (mode === 'applyAndFormat') emit('applyAndFormat', msg.article)
+  else emit('apply', msg.article)
 }
 
 function onConfirmApply() {
   const id = pendingApplyId.value
-  if (id) doApply(id)
+  if (id) doApply(id, pendingApplyMode.value)
   else confirmApplyVisible.value = false
 }
 
@@ -826,6 +843,8 @@ function toggleReport(id: string) {
 }
 
 // ── 生命周期 ──
+// immediate：AiBoard 里本组件是「面板一打开就挂载」，挂载那一刻 visible 已经是 true，
+// 没有 immediate 的话这一段初始化（读配置 / 恢复会话 / 起倒计时）永远不会执行。
 watch(
   () => props.visible,
   async (v) => {
@@ -853,6 +872,7 @@ watch(
     pinToBottom()
     if (configured.value) focusInput()
   },
+  { immediate: true },
 )
 
 onMounted(() => {
@@ -884,6 +904,7 @@ function onSkillChanged(e: Event) {
 <template>
   <BaseDrawer
     :visible="visible"
+    :embedded="props.embedded"
     title="AI 写作"
     width="min(95vw, 1000px)"
     :show-footer="configured"
@@ -1142,6 +1163,18 @@ function onSkillChanged(e: Event) {
                       @click="onApply(msg)"
                     >
                       应用到编辑器
+                    </button>
+                    <!--
+                      应用并去排版：应用后**不关面板**，直接切到「AI 排版」标签页，
+                      省掉「应用 → 关面板 → 再点 AI 排版」三步。
+                    -->
+                    <button
+                      class="cursor-pointer rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40"
+                      :style="{ borderColor: colors.accent, color: colors.accent }"
+                      :disabled="generating"
+                      @click="onApply(msg, 'applyAndFormat')"
+                    >
+                      应用并去排版
                     </button>
                   </div>
                 </div>

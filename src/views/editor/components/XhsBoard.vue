@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { toPng } from 'html-to-image'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import type { ThemeColors } from '@/composables/useTheme'
@@ -15,10 +15,9 @@ import {
   type XhsAspect,
 } from '@/utils/xhsCards'
 import PromptDialog from '@/components/PromptDialog.vue'
-import BaseDialog from '@/components/BaseDialog.vue'
-import BaseDrawer from '@/components/BaseDrawer.vue'
+import BoardHeader from './BoardHeader.vue'
 import { useDarkMode } from '@/composables/useDarkMode'
-import { Bolt } from 'lucide-vue-next'
+import { Bolt, Download } from 'lucide-vue-next'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
 const { isDark } = useDarkMode()
@@ -48,10 +47,8 @@ function isHeadingBlock(el: HTMLElement): boolean {
 }
 
 const props = defineProps<{
-  visible: boolean
   markdown: string
   colors: ThemeColors
-  isMobile?: boolean
 }>()
 
 const emit = defineEmits<{ close: []; toast: [msg: string] }>()
@@ -70,33 +67,9 @@ const building = ref(false)
 const busy = ref(false)
 const status = ref('')
 
-// 滑块动画
-const btn34 = ref<HTMLButtonElement | null>(null)
-const btn11 = ref<HTMLButtonElement | null>(null)
-const sliderStyle = ref<Record<string, string>>({})
-
-function updateSlider() {
-  const btn = aspect.value === '3:4' ? btn34.value : btn11.value
-  if (!btn) return
-  const parent = btn.parentElement
-  if (!parent) return
-  const parentRect = parent.getBoundingClientRect()
-  const btnRect = btn.getBoundingClientRect()
-  // 滑块比按钮小 4px，左边缩进 0px、右边缩进 4px
-  const gapLeft = 0
-  const gapRight = 4
-  sliderStyle.value = {
-    width: `${btnRect.width - gapLeft - gapRight}px`,
-    transform: `translateX(${btnRect.left - parentRect.left + gapLeft}px)`,
-  }
-}
-
-watch(aspect, () => nextTick(updateSlider))
-
-// 初始化滑块位置（等弹窗渲染完毕再测量）
+// 面板是 v-if 挂载的，每次打开都是新实例 —— 「打开即生成」等价于 onMounted
 onMounted(() => {
-  // 多帧延迟确保弹窗完全渲染并布局
-  requestAnimationFrame(() => requestAnimationFrame(updateSlider))
+  generate()
 })
 
 // 品牌名设置
@@ -116,7 +89,7 @@ function onBrandSave(val: string) {
     brand.value = DEFAULT_BRAND
     localStorage.removeItem(BRAND_KEY)
   }
-  if (props.visible) generate()
+  generate()
 }
 
 // 首图卡的外层 DOM（导出时读它第一个子元素，即卡片 section）
@@ -273,7 +246,12 @@ async function renderSlices(
   return slices
 }
 
+// 每次生成拿一个序号：生成是异步且耗时的（几十张图），期间可能又被触发一次
+// （切比例、切深浅色），旧的那次跑完不能把新结果盖掉。
+let genToken = 0
+
 async function generate() {
+  const token = ++genToken
   building.value = true
   status.value = ''
   try {
@@ -291,6 +269,7 @@ async function generate() {
       ? await renderSlices(contentHtml, meta.brand, props.colors)
       : []
 
+    if (token !== genToken) return // 已经有更新的一次生成在跑，丢掉这次结果
     cardEls = []
     cards.value = [
       cover,
@@ -303,11 +282,32 @@ async function generate() {
     ]
     await nextTick()
   } catch (e) {
-    status.value = '生成失败：' + errText(e)
+    if (token === genToken) status.value = '生成失败：' + errText(e)
   } finally {
-    building.value = false
+    if (token === genToken) building.value = false
   }
 }
+
+/**
+ * 深浅色切换后必须重新生成：
+ * 首图是 buildCover(...isDark) 拼出来的 HTML，内容图是已经烘焙好背景色（深色 #1a1a1a /
+ * 亮色 #ffffff）与文字色的 PNG dataURL —— 两者都把「生成那一刻」的主题固化在里面了，
+ * 只靠 CSS 变量切不过来，不重新生成就会一直停在旧主题，非得刷新页面才变。
+ * 加一点防抖：连点主题切换时不至于每次点击都起一轮生成。
+ */
+let regenTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleRegen() {
+  if (regenTimer) clearTimeout(regenTimer)
+  regenTimer = setTimeout(() => {
+    regenTimer = null
+    generate()
+  }, 150)
+}
+
+// 深浅色同样烘焙在卡片里（首图 HTML 的配色、内容图 PNG 的背景与文字色），必须重新生成。
+// 主题色（accent）也是一样的道理——徽章、波浪线、页码高亮都用它。
+watch(isDark, scheduleRegen)
+watch(() => props.colors.accent, scheduleRegen)
 
 async function cardDataUrl(idx: number): Promise<string> {
   const card = cards.value[idx]
@@ -434,107 +434,146 @@ async function downloadAll() {
 function setAspect(a: XhsAspect) {
   if (aspect.value === a) return
   aspect.value = a
-  if (props.visible) generate()
+  generate()
 }
 
-watch(
-  () => props.visible,
-  (v) => {
-    if (v) generate()
-    // 弹窗打开后重新计算滑块位置
-    if (v) nextTick(() => requestAnimationFrame(() => requestAnimationFrame(updateSlider)))
-  },
-)
+/**
+ * 首图是固定 360px 宽的 HTML（导出按 360×480 的逻辑尺寸渲染），
+ * 而卡片列宽会随窗口变化，所以这里按容器实际宽度等比缩放它——
+ * 缩放只加在外层容器上，导出读的是里面的第一个子元素，不受影响。
+ */
+const COVER_W = 360
+const coverBoxRef = ref<HTMLElement | null>(null)
+const coverScale = ref(1)
+let coverObserver: ResizeObserver | null = null
+
+function measureCover() {
+  const el = coverBoxRef.value
+  if (!el || !el.clientWidth) return
+  coverScale.value = el.clientWidth / COVER_W
+}
+
+/** 首图容器是 v-for 里的元素，用函数式 ref 拿到真实节点（模板 ref 在 v-for 里会变成数组） */
+function setCoverBox(el: Element | null) {
+  coverBoxRef.value = el as HTMLElement | null
+  if (!el) return
+  measureCover()
+  if (typeof ResizeObserver !== 'undefined') {
+    coverObserver?.disconnect()
+    coverObserver = new ResizeObserver(() => measureCover())
+    coverObserver.observe(el as HTMLElement)
+  }
+}
+
+onBeforeUnmount(() => {
+  coverObserver?.disconnect()
+  coverObserver = null
+  if (regenTimer) {
+    clearTimeout(regenTimer)
+    regenTimer = null
+  }
+  genToken += 1 // 让在途的生成结果作废，别再往已卸载的组件里写
+})
+
+/** 头部副标题：生成中显示进度，生成完显示张数，失败显示错误 */
+const subtitleText = computed(() => {
+  if (building.value) return '正在生成…'
+  if (status.value) return status.value
+  if (!cards.value.length) return '正文为空，没有可导出的内容'
+  return `共 ${cards.value.length} 张，点单张的「下载」单独保存`
+})
 </script>
 
 <template>
-  <component
-    :is="isMobile ? BaseDialog : BaseDrawer"
-    :visible="visible"
-    title="导出小红书图"
-    :show-footer="false"
-    :width="isMobile ? 'min(90vw, 960px)' : 'min(90vw, 790px)'"
-    @close="$emit('close')"
-  >
-    <template #header>
-      <!-- 比例选择 -->
-      <div
-        class="xhs-ratio-selector relative flex gap-0.5 rounded-full p-0.5 sm:gap-1 bg-[#f3f0ea] dark:bg-[#333]"
-      >
-        <div
-          class="absolute top-0.5 bottom-0.5 rounded-full bg-[var(--accent)] transition-all duration-300 ease-out"
-          :style="sliderStyle"
-        ></div>
-        <button
-          ref="btn34"
-          class="relative border-none px-2 py-1 rounded-full text-[11px] font-semibold cursor-pointer sm:px-3 sm:text-xs whitespace-nowrap z-10"
-          :class="aspect === '3:4' ? 'text-white' : 'text-[#8a8175] dark:text-[#999]'"
-          @click="setAspect('3:4')"
-        >
-          <span class="sm:hidden">3:4</span><span class="hidden sm:inline">3:4 竖版</span>
-        </button>
-        <button
-          ref="btn11"
-          class="relative border-none px-2 py-1 rounded-full text-[11px] font-semibold cursor-pointer sm:px-3 sm:text-xs whitespace-nowrap z-10"
-          :class="aspect === '1:1' ? 'text-white' : 'text-[#8a8175] dark:text-[#999]'"
-          @click="setAspect('1:1')"
-        >
-          <span class="sm:hidden">1:1</span><span class="hidden sm:inline">1:1 方版</span>
-        </button>
-      </div>
-
-      <!-- 设置按钮 -->
-      <button
-        class="border-none bg-transparent text-[#8a8175] cursor-pointer p-1.5 rounded-md flex items-center justify-center transition-colors hover:bg-[#f3f0ea] hover:text-[var(--accent)] dark:text-[#999] dark:hover:bg-[#333]"
-        title="设置品牌名"
-        @click="openBrandSettings"
-      >
-        <Bolt :size="16" />
-      </button>
-
-      <span v-if="isDark && !isMobile" class="text-xs text-[#a89a86] dark:text-[#888]"
-        >建议切换到亮色模式导出</span
-      >
-
-      <span class="hidden sm:inline flex-1 text-xs text-[#a89a86] dark:text-[#888] text-right">{{
-        status
-      }}</span>
-
-      <button
-        class="border border-[var(--accent)] bg-[var(--accent)] text-white rounded-lg px-2.5 py-1.5 text-[12px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed sm:px-3 sm:text-[13px] whitespace-nowrap"
-        :disabled="busy || building || !cards.length"
-        @click="downloadAll"
-      >
-        下载全部（{{ cards.length }}）
-      </button>
-    </template>
-
-    <!-- 内容区 -->
-    <p v-if="building" class="text-center text-[#999] dark:text-[#666] text-[13px] p-5">生成中…</p>
-    <div v-else class="flex flex-wrap gap-5 justify-center">
-      <div v-for="(c, idx) in cards" :key="c.id" class="flex flex-col gap-2">
-        <div
-          v-if="c.kind === 'html'"
-          :ref="(el) => setRef(el as Element | null, idx)"
-          class="w-[360px] rounded-[10px] overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.12)] dark:shadow-none leading-none"
-          v-html="c.html"
-        ></div>
-        <img
-          v-else
-          class="w-[360px] rounded-[10px] overflow-hidden shadow-[0_6px_20px_rgba(0,0,0,0.12)] dark:shadow-none leading-none block h-auto"
-          :src="c.src"
-          alt=""
-        />
-        <div class="flex items-center justify-between gap-3">
-          <span class="text-xs text-[#8a8175] dark:text-[#888] font-semibold">{{ c.label }}</span>
-          <button
-            class="border border-[var(--accent)] bg-white text-[var(--accent)] rounded-lg px-3 py-1.5 text-[13px] font-semibold cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[var(--accent)] hover:text-white transition-colors dark:bg-[#2a2a2a] dark:border-[#444]"
-            :disabled="busy"
-            @click="downloadOne(idx)"
-          >
-            下载
+  <div class="h-full overflow-y-auto">
+    <div class="px-4 py-4">
+      <BoardHeader title="小红书图" :description="subtitleText" @close="emit('close')">
+        <!-- 标签页：比例（与其余面板的标签页同一套 .board-tab 样式） -->
+        <template #tabs>
+          <button class="board-tab" :class="{ active: aspect === '3:4' }" @click="setAspect('3:4')">
+            3:4 竖版
           </button>
+          <button class="board-tab" :class="{ active: aspect === '1:1' }" @click="setAspect('1:1')">
+            1:1 方版
+          </button>
+        </template>
+
+        <template #actions>
+          <span v-if="isDark" class="text-[12px] text-[var(--text-secondary)]">
+            建议切换到亮色模式导出
+          </span>
+          <button
+            class="gallery-tool-btn"
+            title="设置品牌名"
+            aria-label="设置品牌名"
+            @click="openBrandSettings"
+          >
+            <Bolt :size="16" />
+          </button>
+          <button
+            class="inline-flex items-center gap-1.5 rounded-lg bg-[var(--accent)] px-3 py-1.5 text-[12px] font-semibold text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+            :disabled="busy || building || !cards.length"
+            @click="downloadAll"
+          >
+            <Download :size="14" />
+            下载全部（{{ cards.length }}）
+          </button>
+        </template>
+      </BoardHeader>
+
+      <!-- 内容区 -->
+      <!-- 只有第一次生成才占位；重新生成（切比例 / 切深浅色）时保留旧卡片，
+           否则整块会闪成「生成中…」，而重新渲染要几十秒 -->
+      <p
+        v-if="building && !cards.length"
+        class="px-4 py-16 text-center text-[13px] text-[var(--text-secondary)]"
+      >
+        生成中…
+      </p>
+      <!-- 卡片固定 360px：与原来弹窗里的预览宽度一致，首图正好按 1:1 显示，不缩放、不裁切 -->
+      <!-- 卡片沿用原弹窗里的样式：图本身带圆角和投影，标题与「下载」在图片下方 -->
+      <div v-else-if="cards.length" class="flex flex-wrap justify-center gap-5">
+        <div v-for="(c, idx) in cards" :key="c.id" class="flex w-[360px] max-w-full flex-col gap-2">
+          <div
+            v-if="c.kind === 'html'"
+            :ref="(el) => setCoverBox(el as Element | null)"
+            class="xhs-shot relative w-full overflow-hidden rounded-[10px] leading-none"
+            :style="{ aspectRatio: aspect === '3:4' ? '3 / 4' : '1 / 1' }"
+          >
+            <div
+              :ref="(el) => setRef(el as Element | null, idx)"
+              class="absolute left-0 top-0 origin-top-left leading-none"
+              :style="{
+                width: COVER_W + 'px',
+                height: (aspect === '3:4' ? 480 : 360) + 'px',
+                transform: `scale(${coverScale})`,
+              }"
+              v-html="c.html"
+            ></div>
+          </div>
+          <img
+            v-else
+            class="xhs-shot block h-auto w-full overflow-hidden rounded-[10px] leading-none"
+            :src="c.src"
+            alt=""
+          />
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-xs font-semibold text-[#8a8175] dark:text-[#888]">{{ c.label }}</span>
+            <button
+              class="cursor-pointer rounded-lg border border-[var(--accent)] bg-white px-3 py-1.5 text-[13px] font-semibold text-[var(--accent)] transition-colors hover:bg-[var(--accent)] hover:text-white disabled:cursor-not-allowed disabled:opacity-50 dark:border-[#444] dark:bg-[#2a2a2a]"
+              :disabled="busy || building"
+              @click="downloadOne(idx)"
+            >
+              下载
+            </button>
+          </div>
         </div>
+      </div>
+      <div
+        v-else
+        class="rounded-xl border border-[var(--border-color)] px-4 py-16 text-center text-[13px] text-[var(--text-secondary)]"
+      >
+        正文为空，没有可导出的内容
       </div>
     </div>
 
@@ -547,5 +586,44 @@ watch(
       placeholder="请输入品牌名"
       @save="onBrandSave"
     />
-  </component>
+  </div>
 </template>
+
+<style scoped>
+/* 卡片预览的投影。深色模式下卡片底（XHS.dark.bg #1F1A17）和面板底（#1a1a1a）
+   几乎同色，只靠投影根本压不出边界，所以换成「一圈浅色描边 + 更深的投影」把卡片框出来。
+   注意导出时 toPng 只截卡片内部节点，这些样式只影响屏幕预览，不会进图片。 */
+.xhs-shot {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
+
+[data-theme='dark'] .xhs-shot {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    0 8px 24px rgba(0, 0, 0, 0.55);
+}
+
+.gallery-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s;
+}
+
+.gallery-tool-btn:hover {
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+</style>

@@ -324,11 +324,14 @@ r-markdown/
 | `EditorSidebar.vue`                                             | 左侧竖排功能入口（文章 / 草稿 / 导入 / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助） |
 | `TreeSidebar.vue` `TreeNode.vue`                                | 文章树侧栏与节点                                                                 |
 | `OutlinePanel.vue`                                              | 文档大纲面板                                                                     |
-| `FindReplacePanel.vue`                                          | 查找替换面板                                                                     |
+| `BoardHeader.vue`                                               | 内嵌面板统一头部（返回图标 + 标题 + 描述 / 搜索 / 动作 / 标签页）                |
+| `FindReplacePanel.vue`                                          | 查找替换面板（仅编辑器页面）                                                     |
 | `CommandPalette.vue`                                            | 命令面板（⌘K）                                                                   |
 | `Minimap.vue`                                                   | 预览区缩略图（可开关）                                                           |
 | `BannedBoard.vue`                                               | 违禁词检测面板（内嵌编辑区）                                                     |
 | `SettingsBoard.vue`                                             | 设置面板（内嵌编辑区；基础 / 图片 / 文章存储 / 公众号 / AI / 关于）              |
+| `SettingsCard.vue` `SettingsSlider.vue`                         | 设置卡片外壳（图标 + 标题 + 右上动作）与统一滑杆                                 |
+| `MasonryFlow.vue`                                               | 瀑布流容器（flex 列 + JS 测高，避免 Safari 下 CSS 多列顶部错位）                 |
 | `ThemePicker.vue`                                               | 主题色选择                                                                       |
 | `ComponentPickerDialog.vue` `TagPropsForm.vue`                  | 组件插入与属性编辑                                                               |
 | `GalleryBoard.vue`                                              | 图库面板（选图插入 / 多选清理图片缓存）                                          |
@@ -336,7 +339,8 @@ r-markdown/
 | `PushToCloudDialog.vue` `PushToCloudTree.vue`                   | 推送到云端文章树                                                                 |
 | `PublishToWechatDialog.vue`                                     | 发布到公众号                                                                     |
 | `MaterialBoard.vue` `MaterialCard.vue` `SaveMaterialDialog.vue` | 我的素材面板（内嵌编辑区）与素材卡片                                             |
-| `XhsExporter.vue`                                               | 小红书图导出                                                                     |
+| `XhsBoard.vue`                                                  | 小红书图面板（内嵌编辑区；首图 + 正文卡片，桌面端打包 ZIP）                      |
+| `AiBoard.vue`                                                   | AI 面板（内嵌编辑区；AI 写作 / AI 排版 / AI 配图三个标签页）                     |
 | `FinalizeDialog.vue`                                            | 定稿（本地导出 Markdown）                                                        |
 | `Dropdown.vue`                                                  | 通用下拉                                                                         |
 | `mobile/MobileActionsMenu.vue`                                  | 移动端操作菜单                                                                   |

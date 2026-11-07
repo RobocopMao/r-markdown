@@ -20,6 +20,7 @@ import {
   BookLock,
   Info,
 } from 'lucide-vue-next'
+import BoardHeader from './BoardHeader.vue'
 import { getSetting, setSetting } from '@/config/settings'
 import { BANNED_CATEGORIES, scanBannedWords, type BannedMatch } from '@/utils/bannedWords'
 
@@ -147,37 +148,20 @@ function builtinWordCount(): number {
 <template>
   <div class="h-full overflow-y-auto">
     <div class="px-4 py-4">
-      <!-- 工具条：标题 + 返回编辑 / Tab 切换 -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16px] font-semibold tracking-tight">违禁词检测</h1>
-            <button
-              class="cursor-pointer rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">{{ subtitleText }}</p>
-        </div>
-
-        <div class="flex flex-wrap items-center gap-1.5">
+      <BoardHeader title="违禁词检测" :description="subtitleText" @close="emit('close')">
+        <!-- 标签页：检测结果 / 自定义词 / 白名单，统一放在标题下面一行靠左 -->
+        <template #tabs>
           <button
             v-for="tab in TABS"
             :key="tab.id"
-            class="cursor-pointer rounded-full border px-2.5 py-1 text-[12px] transition-colors"
-            :class="
-              activeTab === tab.id
-                ? 'border-[var(--accent)] bg-[var(--accent)] font-medium text-white'
-                : 'border-[var(--border-color)] text-[var(--text-secondary)] hover:text-[var(--accent)]'
-            "
+            class="board-tab"
+            :class="{ active: activeTab === tab.id }"
             @click="activeTab = tab.id"
           >
             {{ tab.label }}{{ tabCount(tab.id) ? `(${tabCount(tab.id)})` : '' }}
           </button>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- ═══ 检测结果 ═══ -->
       <div v-if="activeTab === 'result'">

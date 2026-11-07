@@ -14,6 +14,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import Toast from '@/components/Toast.vue'
+import BoardHeader from '@/views/editor/components/BoardHeader.vue'
 import { currentStorageMode } from '@/services/metricsCollector'
 import KpiRow from './components/KpiRow.vue'
 import ActivityHeatmap from './components/ActivityHeatmap.vue'
@@ -113,43 +114,25 @@ onMounted(() => {
 <template>
   <div :class="props.embedded ? 'h-full overflow-y-auto' : ''">
     <div :class="props.embedded ? 'px-4 py-4' : ''">
-      <!-- 顶部工具条 -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1
-              :class="props.embedded ? 'text-[16px]' : 'text-[22px]'"
-              class="font-semibold tracking-tight"
-            >
-              统计
-            </h1>
-            <button
-              v-if="props.embedded"
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">
-            {{ sourceLine }}
-            <span v-if="storageLabel" class="text-[var(--text-muted)]">· {{ storageLabel }}</span>
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
+      <BoardHeader
+        title="统计"
+        :description="`${sourceLine}${storageLabel ? ` · ${storageLabel}` : ''}`"
+        :show-back="props.embedded"
+        :title-class="props.embedded ? 'text-[18px]' : 'text-[22px]'"
+        @close="emit('close')"
+      >
+        <template #actions>
           <span class="text-[11px] text-[var(--text-muted)]">{{ RANGE_LABEL }}</span>
           <button
             type="button"
-            class="rounded-lg border border-[var(--border-color)] px-2.5 py-1.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-50"
+            class="rounded-lg border border-[var(--border-color)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-50"
             :disabled="loading || refreshing"
             @click="onRefresh"
           >
             {{ refreshing ? '刷新中…' : '刷新' }}
           </button>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- 加载中 -->
       <div v-if="loading && !data" class="flex flex-col items-center gap-2 py-24">

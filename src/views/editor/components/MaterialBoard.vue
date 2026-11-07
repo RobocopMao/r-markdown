@@ -13,11 +13,12 @@
  */
 import { ref, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { MasonryWall } from '@yeger/vue-masonry-wall'
-import { ListChecks, CheckCheck } from 'lucide-vue-next'
+import { ListChecks, CheckCheck, Search } from 'lucide-vue-next'
 import { MaterialStorage, DEFAULT_CATEGORIES, type MaterialItem } from '@/services/materialStorage'
 import { publishMaterial, generateMaterialId, validateImageUrls } from '@/services/materialPublish'
 import MaterialCard from './MaterialCard.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import BoardHeader from './BoardHeader.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getErrorMessage } from '@/utils/helpers'
 
@@ -293,33 +294,15 @@ onBeforeUnmount(() => {
 <template>
   <div class="h-full overflow-y-auto">
     <div class="px-4 py-4">
-      <!-- 顶部工具条：与草稿箱 / 图库 / 统计面板同版式 -->
-      <div class="mb-3 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16px] font-semibold tracking-tight">我的素材</h1>
-            <button
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">{{ subtitleText }}</p>
-        </div>
+      <BoardHeader title="我的素材" :description="subtitleText" @close="emit('close')">
+        <template #search>
+          <label class="board-search">
+            <Search :size="16" class="shrink-0" />
+            <input v-model="searchQuery" type="text" placeholder="搜索素材…" />
+          </label>
+        </template>
 
-        <div class="flex flex-wrap items-center gap-2">
-          <!-- 搜索 -->
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索素材…"
-              class="h-7 w-[150px] rounded-lg border border-[var(--border-color)] bg-[var(--bg-primary)] px-2.5 text-[12px] text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--accent)]"
-            />
-          </div>
-
+        <template #actions>
           <!-- 多选工具：全选 / 多选（图标与图库共用同一套口径） -->
           <BaseTooltip v-if="selectMode" :text="allSelected ? '取消全选' : '全选'">
             <button
@@ -364,25 +347,23 @@ onBeforeUnmount(() => {
           >
             删除选中（{{ selectedIds.size }}）
           </button>
-        </div>
-      </div>
+        </template>
 
-      <!-- 分类筛选 -->
-      <div v-if="myMaterials.length > 0" class="mb-3 flex flex-wrap gap-1.5">
-        <button
-          v-for="cat in myCategoryOptions"
-          :key="cat"
-          class="cursor-pointer whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-[11px] font-medium transition-colors"
-          :class="
-            myCategoryFilter === cat
-              ? 'bg-[var(--accent)] text-white'
-              : 'bg-[color-mix(in_srgb,var(--accent)_6%,transparent)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          "
-          @click="myCategoryFilter = cat"
-        >
-          {{ cat }}
-        </button>
-      </div>
+        <!-- 分类筛选：标签页统一放在标题下面一行靠左 -->
+        <template #tabs>
+          <template v-if="myMaterials.length > 0">
+            <button
+              v-for="cat in myCategoryOptions"
+              :key="cat"
+              class="board-tab"
+              :class="{ active: myCategoryFilter === cat }"
+              @click="myCategoryFilter = cat"
+            >
+              {{ cat }}
+            </button>
+          </template>
+        </template>
+      </BoardHeader>
 
       <!-- 列表 -->
       <div ref="wallWrapperRef" class="min-h-[200px]">

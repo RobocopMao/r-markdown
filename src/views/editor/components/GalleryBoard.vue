@@ -17,6 +17,7 @@ import { ref, computed, nextTick, onMounted, watch } from 'vue'
 import { ListChecks, CheckCheck, Pin, PinOff, Folder, Eye, Trash2 } from 'lucide-vue-next'
 import { invoke } from '@tauri-apps/api/core'
 import BaseTooltip from '@/components/BaseTooltip.vue'
+import BoardHeader from './BoardHeader.vue'
 import ImagePreview from '@/components/ImagePreview.vue'
 import { getAllImagePreviews, deleteImage } from '@/utils/imageDB'
 import { LocalImageDisk, type DiskImageEntry } from '@/services/localImageDisk'
@@ -267,24 +268,9 @@ defineExpose({ doCleanup })
 <template>
   <div class="h-full overflow-y-auto">
     <div class="px-4 py-4">
-      <!-- 顶部工具条：与草稿箱 / 统计面板同版式 -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-[16px] font-semibold tracking-tight">图库</h1>
-            <button
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">{{ subtitleText }}</p>
-        </div>
-
-        <div class="flex items-center gap-2">
-          <!-- 本地 / 磁盘切换（仅桌面端有磁盘目录） -->
+      <BoardHeader title="图库" :description="subtitleText" @close="emit('close')">
+        <!-- 标签页：本地 / 磁盘（仅桌面端有磁盘目录），统一放在标题下面一行靠左 -->
+        <template #tabs>
           <div
             v-if="isTauri"
             class="relative flex shrink-0 items-center gap-0.5 rounded-full bg-[var(--bg-hover)] p-0.5"
@@ -295,7 +281,7 @@ defineExpose({ doCleanup })
             ></div>
             <button
               ref="btnLocal"
-              class="relative z-10 cursor-pointer whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold transition-colors"
+              class="relative z-10 cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-1 text-[12px] font-semibold transition-colors"
               :class="activeTab === 'local' ? 'text-white' : 'text-[var(--text-secondary)]'"
               @click="activeTab = 'local'"
             >
@@ -303,14 +289,16 @@ defineExpose({ doCleanup })
             </button>
             <button
               ref="btnDisk"
-              class="relative z-10 cursor-pointer whitespace-nowrap rounded-full border-0 px-2.5 py-1 text-[11px] font-semibold transition-colors"
+              class="relative z-10 cursor-pointer whitespace-nowrap rounded-full border-0 px-3 py-1 text-[12px] font-semibold transition-colors"
               :class="activeTab === 'disk' ? 'text-white' : 'text-[var(--text-secondary)]'"
               @click="activeTab = 'disk'"
             >
               磁盘图片
             </button>
           </div>
+        </template>
 
+        <template #actions>
           <button
             v-if="activeTab === 'disk' && selectedDisk"
             class="cursor-pointer rounded-md border-0 bg-[var(--accent)] px-3 py-1 text-[12px] font-medium text-white transition-opacity hover:opacity-90"
@@ -354,8 +342,8 @@ defineExpose({ doCleanup })
               删除选中（{{ selectedTokens.size }}）
             </button>
           </template>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- 本地图片 -->
       <template v-if="activeTab === 'local'">

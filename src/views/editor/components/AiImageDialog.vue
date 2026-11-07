@@ -63,6 +63,12 @@ import { getSetting, setSetting } from '@/config/settings'
 import { resolveAiConfig, isAiConfigured } from '@/services/aiFormat'
 
 const props = defineProps<{
+  /**
+   * 内嵌模式：由 AiBoard.vue 使用——不再作为抽屉弹出，而是铺在编辑区面板里。
+   * 这里只透传给 BaseDrawer；「打开时初始化」仍由 visible 驱动，
+   * AiBoard 用 v-show 控制显隐、用 visible 触发既有生命周期。
+   */
+  embedded?: boolean
   visible: boolean
   /** 编辑器当前内容（仅用于「用文章当主题」这一条快捷填充） */
   markdown: string
@@ -121,6 +127,31 @@ function refreshConfig() {
 }
 
 const configured = computed(() => isImageProviderConfigured(cfg.value))
+
+/**
+ * 是否可「优化提示词」：取决于「AI 文本」接口是否配置齐全
+ * （地址 + Key + 模型名）。配了就借用那个对话模型扩写，没配则整个按钮不出现。
+ *
+ * 必须走响应式 ref：isAiConfigured() 只读 localStorage，直接放进 computed
+ * 会永久缓存，表现为「在设置里填完回来按钮还是不出现」。
+ *
+ * 位置要求：必须声明在下面 `watch(() => props.visible, …, { immediate: true })`
+ * **之前**。immediate 让 watcher 在 setup 阶段就同步执行，会调到 refreshAiReady()，
+ * 若 aiReady 还留在文件后面，就会撞上 const 的暂时性死区（TDZ），
+ * 报 `Cannot access 'aiReady' before initialization` 并让整个面板初始化中断。
+ */
+const aiReady = ref(isAiConfigured())
+function refreshAiReady() {
+  aiReady.value = isAiConfigured()
+}
+function onAiSettingChanged(e: Event) {
+  const key = (e as CustomEvent).detail?.key
+  // 监听 aiModels 而不只是旧字段 aiModel：模型清单才是现在的配置来源，
+  // 清单从空到有（或反过来）会直接翻转「有没有可用的文本模型」。
+  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
+    refreshAiReady()
+  }
+}
 
 function onSettingChanged(e: Event) {
   const key = (e as CustomEvent).detail?.key
@@ -438,6 +469,8 @@ watch(resultExpired, (expired) => {
   if (expired && history.value.length > 0) void doClearHistory()
 })
 
+// immediate：AiBoard 里本组件是「面板一打开就挂载」，挂载那一刻 visible 已经是 true，
+// 没有 immediate 的话这一段初始化（读配置 / 恢复上次结果）永远不会执行。
 watch(
   () => props.visible,
   async (v) => {
@@ -458,6 +491,7 @@ watch(
       startTicker(() => resultExpiresAt.value)
     }
   },
+  { immediate: true },
 )
 
 function isAbort(e: unknown): boolean {
@@ -715,26 +749,6 @@ function extOf(name: string): string {
   return dot > 0 ? name.slice(dot + 1).toLowerCase() : 'png'
 }
 
-/**
- * 是否可「优化提示词」：取决于「AI 文本」接口是否配置齐全
- * （地址 + Key + 模型名）。配了就借用那个对话模型扩写，没配则整个按钮不出现。
- *
- * 必须走响应式 ref：isAiConfigured() 只读 localStorage，直接放进 computed
- * 会永久缓存，表现为「在设置里填完回来按钮还是不出现」。
- */
-const aiReady = ref(isAiConfigured())
-function refreshAiReady() {
-  aiReady.value = isAiConfigured()
-}
-function onAiSettingChanged(e: Event) {
-  const key = (e as CustomEvent).detail?.key
-  // 监听 aiModels 而不只是旧字段 aiModel：模型清单才是现在的配置来源，
-  // 清单从空到有（或反过来）会直接翻转「有没有可用的文本模型」。
-  if (key === 'aiBaseUrl' || key === 'aiApiKey' || key === 'aiModels' || key === 'aiModel') {
-    refreshAiReady()
-  }
-}
-
 /** 优化中：流式累计的文本（用于实时回显） */
 const optimizing = ref(false)
 const optimizedPreview = ref('')
@@ -806,6 +820,7 @@ onBeforeUnmount(() => {
 <template>
   <BaseDrawer
     :visible="visible"
+    :embedded="props.embedded"
     title="AI 配图"
     width="min(95vw, 880px)"
     :show-footer="showFooter"
