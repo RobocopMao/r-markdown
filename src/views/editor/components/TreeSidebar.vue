@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
 import {
   Folder,

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 图库面板。
  *
@@ -48,7 +48,10 @@ const diskLoading = ref(false)
 const diskImages = ref<DiskImageItem[]>([])
 
 // ── 大图预览（公共组件，面板只负责喂图）──
-const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
+/** 大图预览暴露的方法（vapor 组件是函数式组件，取不到 InstanceType，直接写形状） */
+const imagePreviewRef = ref<{
+  open: (src?: string | null, caption?: string) => void
+} | null>(null)
 
 // 顶部「本地 / 磁盘」切换按钮的主题色滑块
 const btnLocal = ref<HTMLButtonElement | null>(null)

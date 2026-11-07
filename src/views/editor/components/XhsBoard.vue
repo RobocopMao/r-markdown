@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, nextTick, watch, onMounted, onBeforeUnmount } from 'vue'
 import { toPng } from 'html-to-image'
 import { parseMarkdownAsync } from '@/utils/markdownParser'

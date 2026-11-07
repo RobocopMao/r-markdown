@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Check, Pin } from 'lucide-vue-next'
 import BaseTooltip from '@/components/BaseTooltip.vue'

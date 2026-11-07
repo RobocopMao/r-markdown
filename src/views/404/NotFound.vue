@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { useRouter } from 'vue-router'
 import { Home } from 'lucide-vue-next'
 

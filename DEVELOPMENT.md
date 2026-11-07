@@ -344,7 +344,11 @@ onMounted(() => {
 - **Emits 用类型声明**：`defineEmits<{ ... }>()`
 - **组件引入后直接使用**，无需注册
 - **模板中使用 kebab-case 组件名**：`<dark-mode-toggle />`
-- **Vapor 编译模式**：多数展示型组件使用 `<script setup vapor lang="ts">`（如 `Editor.vue`、`Preview.vue`、`Minimap.vue`、各 Dialog），按需启用，不要无条件全开
+- **Vapor 编译模式**：绝大多数组件使用 `<script setup vapor lang="ts">`（75 个 `.vue` 里 73 个已开）。**只在 SFC 上写 `vapor` 属性逐文件开启，不要在 `vite.config.ts` 里全局开**——全局开会让报错一次性全冒出来，很难定位。开启前必须知道三条硬约束（都是运行时才报错，编译期完全干净）：
+  1. **不能用 `$router` / `$route` / `$refs` / `$el`**（`app.config.globalProperties` 在 Vapor 组件里不生效）。模板里改成 `useRouter()` 拿到的 `router.push(...)`。`$props` / `$emit` / `$attrs` / `$slots` 是支持的（在 `@vue/compiler-vapor` 的 `canPrefix()` 白名单里）。
+  2. **自定义指令必须是函数式** `(el, value, arg, modifiers) => cleanup`，对象式 `{ mounted() {} }` 会报 `Received a VDOM object directive ... in a Vapor template`。
+  3. **`InstanceType<typeof X>` 对 vapor 组件失效**（函数式组件没有构造签名，报 TS2344），改用暴露方法的形状：`ref<{ open: () => void } | null>(null)`。
+  两个例外文件**不要开 vapor**：`SettingsBoard.vue`（卡片是静态插槽内容，交给 `MasonryFlow` 这个 VDOM 组件分列；vapor 父组件传给 VDOM 子组件的插槽拿不到可用 vnode，瀑布流会退化成单列）、`MasonryFlow.vue`（普通 `<script>` + render 函数，vapor 要求 `<script setup>`）。
 
 ## TypeScript 规范
 

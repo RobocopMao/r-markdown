@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import {
   ref,
   onMounted,
@@ -127,11 +127,12 @@ import GalleryBoard from './components/GalleryBoard.vue'
 import SaveMaterialDialog from './components/SaveMaterialDialog.vue'
 import MaterialBoard from './components/MaterialBoard.vue'
 import PublishToWechatDialog from '@/views/editor/components/PublishToWechatDialog.vue'
-// 统计面板体积不小（含热力图/体检表等），只在用户点开「统计」时才加载
-const DashboardBoard = defineAsyncComponent(() => import('@/views/dashboard/DashboardBoard.vue'))
 import Toast from '@/components/Toast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import pkg from '../../../package.json'
+
+// 统计面板体积不小（含热力图/体检表等），只在用户点开「统计」时才加载
+const DashboardBoard = defineAsyncComponent(() => import('@/views/dashboard/DashboardBoard.vue'))
 
 const { accent, colors, setTheme, setCustomTheme, customColor, themes } = useTheme()
 const { isDark } = useDarkMode()
@@ -296,7 +297,8 @@ function onMaterialMenuAction(action: 'my' | 'library') {
 }
 
 /** 图库面板里发的删除请求（单张 / 批量），走全局确认弹窗，确认后调面板的 doCleanup */
-const galleryRef = ref<InstanceType<typeof GalleryBoard> | null>(null)
+/** 图库面板暴露的方法（vapor 组件是函数式组件，取不到 InstanceType，直接写形状） */
+const galleryRef = ref<{ doCleanup: (tokens: string[]) => Promise<void> } | null>(null)
 const galleryDeleteVisible = ref(false)
 const galleryDeleteMessage = ref('')
 const galleryDeleteTokens = ref<string[]>([])
@@ -656,7 +658,11 @@ function onOutlineJump(line: number) {
 
 // ── 查找替换 ──
 const findVisible = ref(false)
-const findPanelRef = ref<InstanceType<typeof FindReplacePanel> | null>(null)
+/** 查找面板暴露的方法（同上，vapor 组件不写 InstanceType） */
+const findPanelRef = ref<{
+  open: (withReplace?: boolean) => void | Promise<void>
+  seed: (text: string) => void
+} | null>(null)
 /** 面板回传的匹配数/当前序号相对编辑器真实状态略有延迟，但对展示足够 */
 const findTotal = ref(0)
 const findCurrent = ref(0)
@@ -1678,7 +1684,7 @@ function loadDemo() {
           @export-html="handleExportHTML"
           @save-image="handleSaveImage"
           @export-xhs="onOpenXhsBoard"
-          @go-components="$router.push('/components')"
+          @go-components="router.push('/components')"
           @open-gallery="onOpenGalleryBoard"
           @go-materials="onMaterialMenuAction('library')"
           @open-my-materials="onMaterialMenuAction('my')"
@@ -1775,7 +1781,7 @@ function loadDemo() {
             @open-banned-words="onOpenBannedBoard"
             @ai-action="onSidebarAiAction"
             @material-action="onMaterialMenuAction"
-            @open-components="$router.push('/components')"
+            @open-components="router.push('/components')"
             @open-drafts="onOpenDraftBoard"
             @example-action="onExampleAction"
             @open-import="onSidebarImport"

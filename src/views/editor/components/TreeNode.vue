@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { computed, inject } from 'vue'
 import { Folder, FileText, ChevronRight, ChevronDown, SquarePen } from 'lucide-vue-next'
 import BaseTooltip from '@/components/BaseTooltip.vue'

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { Sun, Moon, Monitor } from 'lucide-vue-next'
 import type { DarkMode } from '@/composables/useDarkMode'

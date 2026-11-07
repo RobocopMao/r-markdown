@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, watch, onBeforeUnmount, nextTick, useSlots } from 'vue'
 import { X } from 'lucide-vue-next'
 

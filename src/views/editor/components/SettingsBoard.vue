@@ -1,3 +1,8 @@
+<!--
+  本文件**不要**开 vapor：卡片是静态插槽内容，交给 MasonryFlow（VDOM 组件）按高度分列。
+  vapor 父组件传给 VDOM 子组件的插槽拿不到可用的 vnode，MasonryFlow 只能收集到 1 张卡，
+  瀑布流会退化成单列。实测：加了 vapor 后 7 张卡全挤在左列。
+-->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { invoke } from '@tauri-apps/api/core'

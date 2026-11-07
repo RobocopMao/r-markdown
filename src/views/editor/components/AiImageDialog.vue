@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * AI 配图面板。
  *
@@ -679,7 +679,10 @@ function onAddToDisk() {
 }
 
 /** 大图预览浮层（公共组件，与图库同一份实现） */
-const imagePreviewRef = ref<InstanceType<typeof ImagePreview> | null>(null)
+/** 大图预览暴露的方法（vapor 组件是函数式组件，取不到 InstanceType，直接写形状） */
+const imagePreviewRef = ref<{
+  open: (src?: string | null, caption?: string) => void
+} | null>(null)
 
 /** 点结果图右上角的预览图标：大图顶部那行说明与面板标题行同口径（尺寸 · 文件大小） */
 function openPreview() {

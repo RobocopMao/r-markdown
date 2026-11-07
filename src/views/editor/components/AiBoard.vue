@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * AI 面板：写作 / 排版 / 配图三合一。
  *

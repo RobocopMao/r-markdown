@@ -1,5 +1,6 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { useTheme } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
@@ -29,6 +30,7 @@ import {
   ArrowRight,
 } from 'lucide-vue-next'
 
+const router = useRouter()
 const { mode: darkMode, setMode: setDarkMode } = useDarkMode()
 const { colors } = useTheme()
 
@@ -504,7 +506,7 @@ const features = [
           @click="
             (key: string) => {
               if (key === 'features') scrollToFeatures()
-              else if (key === 'components') $router.push('/components')
+              else if (key === 'components') router.push('/components')
               else if (key === 'download') scrollToDownload()
             }
           "
@@ -515,7 +517,7 @@ const features = [
           @click="
             (key: string) => {
               if (key === 'features') scrollToFeatures()
-              else if (key === 'components') $router.push('/components')
+              else if (key === 'components') router.push('/components')
               else if (key === 'download') scrollToDownload()
             }
           "

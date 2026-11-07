@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'

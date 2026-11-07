@@ -9,7 +9,7 @@
   挂到 body 并用 fixed 定位，避免被编辑器容器的 overflow 裁剪。
   z-index 取 990：低于弹窗类（BaseDialog 999 / PromptDialog 1100），高于查找面板 900。
 -->
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { Search, FileText, FolderOpen, Package, CornerDownLeft, Clock, X } from 'lucide-vue-next'
 import {
