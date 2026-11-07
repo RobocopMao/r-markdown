@@ -276,19 +276,19 @@ export function parseMarkdown(
   let i = 0
 
   // 收集 p-title level1（用于 <reading-path> 标签）
+  // 同样要支持开标签跨行：属性写到下一行、`>` 单独成行时也算一条
   const pTitleLevel1List: { num: string; title: string; subtitle: string }[] = []
   for (let j = 0; j < lines.length; j++) {
-    // 匹配 <p-title ...> 标签
-    const ptMatch = lines[j].match(/^<p-title\b([^>]*)>([\s\S]*?)<\/p-title>/)
-    if (ptMatch) {
-      const attrs = parseAttrs(ptMatch[1])
-      const level = parseHeadingLevel(attrs.level)
-      if (level === 1) {
-        const num = attrs.num || ''
-        const title = attrs.title || ptMatch[2].trim()
-        const subtitle = attrs.subtitle || ''
-        pTitleLevel1List.push({ num, title, subtitle })
-      }
+    if (!/^<p-title\b/.test(lines[j])) continue
+    const span = parseTagSpan(j, 'p-title')
+    if (!span) continue
+    const attrs = parseAttrs(span.attrsStr)
+    const level = parseHeadingLevel(attrs.level)
+    if (level === 1) {
+      const num = attrs.num || ''
+      const title = attrs.title || span.bodyText
+      const subtitle = attrs.subtitle || ''
+      pTitleLevel1List.push({ num, title, subtitle })
     }
   }
 
@@ -339,6 +339,91 @@ export function parseMarkdown(
       j++
     }
     return { bodyText: body.trim(), next: j }
+  }
+
+  /**
+   * 解析「开标签可能跨行」的块级标签，返回属性串、body 文本与下一行下标。
+   *
+   * 支持三种写法：
+   *   1. 单行：`<title badge="x">标题</title>`
+   *   2. 开标签跨行：`<title` / `badge="x"` / `>标题</title>`
+   *   3. body 也跨行：`<title` / `badge="x"` / `>` / `标题` / `</title>`
+   *
+   * 老实现只用 `^<title\b([^>]*)>([\s\S]*?)</title>` 匹配单行，
+   * 一旦属性写到下一行、`>` 单独成行就整条匹配失败，组件被静默丢掉。
+   */
+  function parseTagSpan(
+    startIdx: number,
+    tagName: string,
+  ): { attrsStr: string; bodyText: string; next: number } | null {
+    const first = lines[startIdx]
+    if (!new RegExp(`^<${tagName}\\b`).test(first)) return null
+
+    // ① 找开标签的 `>`：逐字符扫描并跳过引号内的内容，
+    //    否则 subtitle="a>b" 这种属性值会把开标签截断在中间
+    let text = ''
+    let scanned = 0
+    let quote: string | null = null
+    let gt = -1
+    let j = startIdx
+    while (j < lines.length) {
+      text += (text ? '\n' : '') + lines[j]
+      for (let c = scanned; c < text.length; c++) {
+        const ch = text[c]
+        if (quote) {
+          if (ch === quote) quote = null
+          continue
+        }
+        if (ch === '"' || ch === "'") {
+          quote = ch
+          continue
+        }
+        if (ch === '>') {
+          gt = c
+          break
+        }
+      }
+      if (gt >= 0) break
+      scanned = text.length
+      j++
+    }
+    if (gt < 0) return null
+
+    const attrsStr = text.slice(first.indexOf('<') + 1 + tagName.length, gt)
+    const restAfterOpen = text.slice(gt + 1)
+    const closeTag = `</${tagName}>`
+    const openTagRe = new RegExp(`<${tagName}\\b`, 'g')
+
+    // ② 开标签同行就闭合：<tag ...>body</tag>
+    if (restAfterOpen.includes(closeTag)) {
+      const bodyText = restAfterOpen.slice(0, restAfterOpen.indexOf(closeTag)).trim()
+      return { attrsStr, bodyText, next: j + 1 }
+    }
+
+    // ③ 多行 body：按嵌套深度收集到闭合标签
+    const parts: string[] = []
+    if (restAfterOpen.trim()) parts.push(restAfterOpen)
+    let depth = 1
+    let k = j + 1
+    let closed = false
+    while (k < lines.length) {
+      const cur = lines[k]
+      const openCount = (cur.match(openTagRe) || []).length
+      const closeCount = cur.split(closeTag).length - 1
+      if (closeCount > 0 && depth + openCount - closeCount <= 0) {
+        // 闭合标签与内容同行：只取闭合标签之前的那部分
+        parts.push(cur.slice(0, cur.indexOf(closeTag)))
+        closed = true
+        k++
+        break
+      }
+      depth += openCount - closeCount
+      if (depth > 0) parts.push(cur)
+      k++
+    }
+    // 没有闭合标签：当作解析失败，让调用方退回普通段落，避免把后文整段吞掉
+    if (!closed) return null
+    return { attrsStr, bodyText: parts.join('\n').trim(), next: k }
   }
 
   /**
@@ -716,36 +801,41 @@ export function parseMarkdown(
       continue
     }
     // <title> 标签（通过 type 属性选择样式：DA01/DA02/...）
+    // 支持单行、开标签跨行、body 跨行三种写法（见 parseTagSpan）
     if (/^<title\b/.test(line)) {
-      const titleMatch = line.match(/^<title\b([^>]*)>([\s\S]*?)<\/title>/)
-      if (titleMatch) {
-        const attrs = parseAttrs(titleMatch[1])
-        const body = titleMatch[2].trim()
+      const span = parseTagSpan(i, 'title')
+      if (span) {
+        const attrs = parseAttrs(span.attrsStr)
+        const body = span.bodyText
         const type = (attrs.type || 'DA01').toUpperCase()
         if (type === 'DA02') {
           html += withSourceLine(i, Title_DA02.render(attrs, body, t, md))
         } else {
           html += withSourceLine(i, Title_DA01.render(attrs, body, t, md))
         }
+        i = span.next
+      } else {
+        i++
       }
-      i++
       continue
     }
 
-    // <p-title> 段落标题标签
+    // <p-title> 段落标题标签（同样支持开标签跨行）
     if (/^<p-title\b/.test(line)) {
-      const ptMatch = line.match(/^<p-title\b([^>]*)>([\s\S]*?)<\/p-title>/)
-      if (ptMatch) {
-        const attrs = parseAttrs(ptMatch[1])
-        const body = ptMatch[2].trim()
+      const span = parseTagSpan(i, 'p-title')
+      if (span) {
+        const attrs = parseAttrs(span.attrsStr)
+        const body = span.bodyText
         // 给根节点打个标记（不影响样式），分页时用它避免小节标题落在页底跟正文分家
         const pTitleRenderer = attrs.type === 'DA02' ? PTitle_DA02 : PTitle
         html += withSourceLine(
           i,
           pTitleRenderer.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'),
         )
+        i = span.next
+      } else {
+        i++
       }
-      i++
       continue
     }
 
