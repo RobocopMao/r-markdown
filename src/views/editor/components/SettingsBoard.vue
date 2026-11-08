@@ -1676,12 +1676,6 @@ async function manualCheckUpdate() {
             description="写作与排版共用的 OpenAI 兼容接口"
             :icon="KeyRound"
           >
-            <template #action>
-              <button class="settings-chip" :disabled="modelListLoading" @click="handleFetchModels">
-                {{ modelListLoading ? '查询中…' : '获取模型列表' }}
-              </button>
-            </template>
-
             <p class="settings-note">
               「AI 文本」是写作与排版的公共配置：填写任意 OpenAI 兼容接口即可使用编辑器内的「AI
               排版」（把文章转成 R-Markdown 排版稿）与「AI
@@ -1723,7 +1717,16 @@ async function manualCheckUpdate() {
             所以这里不再另设「默认模型」下拉——同一份清单选两次，纯属多余。
           -->
             <div class="mt-3 settings-subcard">
-              <span class="settings-subcard-label">模型名</span>
+              <div class="flex items-end justify-between gap-2">
+                <span class="settings-subcard-label">模型名</span>
+                <button
+                  class="settings-chip"
+                  :disabled="modelListLoading"
+                  @click="handleFetchModels"
+                >
+                  {{ modelListLoading ? '查询中…' : '获取模型列表' }}
+                </button>
+              </div>
               <div class="mt-2">
                 <ModelMultiSelect
                   :models="aiModels"
@@ -1739,7 +1742,7 @@ async function manualCheckUpdate() {
                 已获取 {{ modelList.length }} 个模型，勾选常用的几个即可；排在最前的一个就是默认。
               </p>
               <p v-else class="settings-note mt-1.5">
-                手填模型名后回车添加；也可以点右上角「获取模型列表」从接口拉取。
+                手填模型名后回车添加；也可以点上面的「获取模型列表」从接口拉取。
               </p>
             </div>
 
@@ -2009,45 +2012,38 @@ async function manualCheckUpdate() {
             description="填完地址、Key、模型名就能立刻测一次连通性"
             :icon="KeyRound"
           >
-            <template #action>
-              <button
-                v-if="canFetchImageModels"
-                class="settings-chip"
-                :disabled="imageModelLoading"
-                @click="handleFetchImageModels"
-              >
-                {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
-              </button>
-            </template>
-
-            <div class="settings-subcard">
-              <div class="flex items-end justify-between gap-2">
-                <span class="settings-subcard-label">接口地址</span>
-                <div class="flex flex-wrap justify-end gap-1.5">
-                  <button
-                    v-for="alt in imageDef.altBaseUrls"
-                    :key="alt.url"
-                    class="settings-chip"
-                    :disabled="imageConfig.baseUrl === alt.url"
-                    @click="saveImageBaseUrl(alt.url)"
-                  >
-                    {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
-                  </button>
+            <!--
+            版式：接口地址 + API Key 并排一行，模型名独占一行。
+            「获取模型列表」跟着模型名走——拉的是模型，不属于地址/密钥那一排。
+          -->
+            <div class="grid gap-3 sm:grid-cols-2">
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between gap-2">
+                  <span class="settings-subcard-label">接口地址</span>
+                  <div class="flex flex-wrap justify-end gap-1.5">
+                    <button
+                      v-for="alt in imageDef.altBaseUrls"
+                      :key="alt.url"
+                      class="settings-chip"
+                      :disabled="imageConfig.baseUrl === alt.url"
+                      @click="saveImageBaseUrl(alt.url)"
+                    >
+                      {{ imageConfig.baseUrl === alt.url ? '当前：' : '改用' }}{{ alt.label }}
+                    </button>
+                  </div>
                 </div>
+                <input
+                  :value="imageConfig.baseUrl"
+                  :placeholder="imageDef.baseUrl"
+                  class="settings-input mt-2 w-full"
+                  @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
+                />
+                <p class="settings-note mt-1.5">
+                  形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
+                  >；省略版本段时会自动补 /v1。
+                </p>
               </div>
-              <input
-                :value="imageConfig.baseUrl"
-                :placeholder="imageDef.baseUrl"
-                class="settings-input mt-2 w-full"
-                @input="saveImageBaseUrl(($event.target as HTMLInputElement).value)"
-              />
-              <p class="settings-note mt-1.5">
-                形如 <span class="font-mono">{{ imageDef.baseUrl }}</span
-                >；省略版本段时会自动补 /v1。
-              </p>
-            </div>
 
-            <div class="mt-3 grid gap-3 sm:grid-cols-2">
               <div class="settings-subcard">
                 <span class="settings-subcard-label">API Key</span>
                 <input
@@ -2058,21 +2054,31 @@ async function manualCheckUpdate() {
                   @input="saveImageApiKey(($event.target as HTMLInputElement).value)"
                 />
               </div>
+            </div>
 
-              <!--
-              勾选顺序有意义：**第一项就是默认模型**，配图面板没单独选过时用它。
-              手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
-            -->
-              <div class="settings-subcard">
+            <!--
+            勾选顺序有意义：**第一项就是默认模型**，配图面板没单独选过时用它。
+            手填入口常驻——中转站的 /models 经常漏项，也常把 id 加前缀。
+          -->
+            <div class="mt-3 settings-subcard">
+              <div class="flex items-end justify-between gap-2">
                 <span class="settings-subcard-label">模型名</span>
-                <div class="mt-2">
-                  <ModelMultiSelect
-                    :models="imageConfig.models"
-                    :options="imageModelList"
-                    :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
-                    @update:models="saveImageModels"
-                  />
-                </div>
+                <button
+                  v-if="canFetchImageModels"
+                  class="settings-chip"
+                  :disabled="imageModelLoading"
+                  @click="handleFetchImageModels"
+                >
+                  {{ imageModelLoading ? '查询中…' : '获取模型列表' }}
+                </button>
+              </div>
+              <div class="mt-2">
+                <ModelMultiSelect
+                  :models="imageConfig.models"
+                  :options="imageModelList"
+                  :placeholder="`手填模型名后回车添加，如 ${imageDef.defaultModel}`"
+                  @update:models="saveImageModels"
+                />
               </div>
             </div>
 

@@ -25,6 +25,12 @@ jobs:
       VITE_TAURI: 'true'
       VITE_R_MARKDOWN_SECRET: ${{ secrets.R_MARKDOWN_SECRET }}
       VITE_API_PROXY: https://r-markdown-worker.410503915.workers.dev
+      # GitHub 的 releases/download 资产链路偶发 504，导致 Tauri 打包器拉不到
+      # WiX（MSI 用）与 NSIS（exe 用）工具链而整批失败。这里给官方支持的镜像模板：
+      # 设了它就改为走镜像下载（不是「失败后重试」），下载后仍按内置 sha256 / sha1
+      # 校验，代理改包会直接哈希失败，不会把坏工具打进安装包。
+      # 恢复直连只需删掉下面这一行。
+      TAURI_BUNDLER_TOOLS_GITHUB_MIRROR_TEMPLATE: https://gh-proxy.com/https://github.com/<owner>/<repo>/releases/download/<version>/<asset>
 
     steps:
       - uses: actions/checkout@v4
