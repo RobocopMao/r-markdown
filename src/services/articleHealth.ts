@@ -13,6 +13,7 @@
  * - 违禁词：复用编辑器同一个扫描器，含用户自定义词库与白名单。
  */
 import { countChars } from '@/utils/charCount'
+import { matchFenceOpen, isFenceClose } from '@/utils/helpers'
 import { extractOutline } from '@/utils/outline'
 import { scanBannedWords } from '@/utils/bannedWords'
 
@@ -109,8 +110,7 @@ function splitParagraphs(content: string): string[] {
   const lines = stripFrontMatter(content).split(/\r?\n/)
   const paragraphs: string[] = []
   let buf: string[] = []
-  let inFence = false
-  let fenceChar = ''
+  let fence: { char: string; len: number } | null = null
 
   const flush = () => {
     const text = buf.join('\n').trim()
@@ -120,18 +120,16 @@ function splitParagraphs(content: string): string[] {
 
   for (const raw of lines) {
     const line = raw.trim()
-    const fence = line.match(/^(`{3,}|~{3,})/)
+    // 围栏按长度配对，否则示范「四反引号包三反引号」时内层 ``` 会被当成闭合
     if (fence) {
-      const ch = fence[1][0]
-      if (!inFence) {
-        inFence = true
-        fenceChar = ch
-      } else if (ch === fenceChar) {
-        inFence = false
-      }
+      if (isFenceClose(raw, fence.char, fence.len)) fence = null
       continue
     }
-    if (inFence) continue
+    const fenceOpen = matchFenceOpen(raw)
+    if (fenceOpen) {
+      fence = fenceOpen
+      continue
+    }
 
     if (!line) {
       flush()
