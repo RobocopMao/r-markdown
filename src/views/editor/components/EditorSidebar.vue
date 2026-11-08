@@ -1,5 +1,5 @@
-<script setup lang="ts">
-import { ref, nextTick, computed } from 'vue'
+<script setup vapor lang="ts">
+import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
 import {
@@ -23,31 +23,16 @@ import {
   ChartColumn,
 } from 'lucide-vue-next'
 
-const isTauri = import.meta.env.VITE_TAURI === 'true'
 const router = useRouter()
-const helpHref = computed(() => (isTauri ? 'https://r-markdown.pages.dev/#/help' : undefined))
-const aiDemoHref = computed(() =>
-  isTauri ? 'https://r-markdown.pages.dev/#/help/r-markdown-formatter' : undefined,
-)
 
+// 帮助文档与 AI 排版 skill 一律走应用内路由，桌面客户端也一样。
+// 客户端里站内跳转会离开编辑器视图，这是预期行为（用户就是要在应用内看文档）。
 function openHelp() {
-  if (isTauri) {
-    window.open('https://r-markdown.pages.dev/#/help', '_blank', 'noopener,noreferrer')
-  } else {
-    router.push('/help')
-  }
+  router.push('/help')
 }
 
 function openAiDemo() {
-  if (isTauri) {
-    window.open(
-      'https://r-markdown.pages.dev/#/help/r-markdown-formatter',
-      '_blank',
-      'noopener,noreferrer',
-    )
-  } else {
-    router.push('/help/r-markdown-formatter')
-  }
+  router.push('/help/r-markdown-formatter')
 }
 
 const props = defineProps<{
@@ -56,6 +41,16 @@ const props = defineProps<{
   treePanelVisible?: boolean
   /** 统计面板是否激活（激活时编辑区只剩面板） */
   statsActive?: boolean
+  /** 草稿箱面板是否激活（激活时编辑区只剩面板） */
+  draftBoardActive?: boolean
+  /** 图库面板是否激活（激活时编辑区只剩面板） */
+  galleryBoardActive?: boolean
+  /** 「我的素材」面板是否激活（激活时编辑区只剩面板） */
+  materialBoardActive?: boolean
+  /** 「违禁词检测」面板是否激活（激活时编辑区只剩面板） */
+  bannedBoardActive?: boolean
+  /** 「AI」面板是否激活（激活时编辑区只剩面板） */
+  aiBoardActive?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -249,9 +244,18 @@ function toggleCollapse() {
             <Folder :size="24" class="shrink-0" />
             <span class="text-[10px] leading-tight">文章</span>
           </button>
-          <!-- 草稿列表 button -->
+          <!-- 草稿箱 button：激活后编辑区只剩草稿箱面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.draftBoardActive }"
+            :style="
+              props.draftBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openDrafts')"
           >
             <SquareBottomDashedScissors :size="24" class="shrink-0" />
@@ -296,6 +300,15 @@ function toggleCollapse() {
             <button
               ref="aiBtnRef"
               class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+              :class="{ active: props.aiBoardActive }"
+              :style="
+                props.aiBoardActive
+                  ? {
+                      color: 'var(--accent)',
+                      background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                    }
+                  : undefined
+              "
             >
               <Bot :size="24" class="shrink-0" />
               <span class="text-[10px] leading-tight">AI</span>
@@ -345,9 +358,18 @@ function toggleCollapse() {
             <Puzzle :size="24" class="shrink-0" />
             <span class="text-[10px] leading-tight">组件</span>
           </button>
-          <!-- 图库 button -->
+          <!-- 图库 button：激活后编辑区只剩图库面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.galleryBoardActive }"
+            :style="
+              props.galleryBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openGallery')"
           >
             <Images :size="24" class="shrink-0" />
@@ -362,6 +384,15 @@ function toggleCollapse() {
             <button
               ref="materialBtnRef"
               class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+              :class="{ active: props.materialBoardActive }"
+              :style="
+                props.materialBoardActive
+                  ? {
+                      color: 'var(--accent)',
+                      background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                    }
+                  : undefined
+              "
             >
               <Package :size="24" class="shrink-0" />
               <span class="text-[10px] leading-tight">素材</span>
@@ -396,9 +427,18 @@ function toggleCollapse() {
               </button>
             </div>
           </div>
-          <!-- 违禁词检测 button -->
+          <!-- 违禁词检测 button：激活后编辑区只剩检测面板，再点一次还原 -->
           <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150"
+            :class="{ active: props.bannedBoardActive }"
+            :style="
+              props.bannedBoardActive
+                ? {
+                    color: 'var(--accent)',
+                    background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+                  }
+                : undefined
+            "
             @click="emit('openBannedWords')"
           >
             <ShieldAlert :size="24" class="shrink-0" />
@@ -438,27 +478,23 @@ function toggleCollapse() {
                 <FilePlus :size="14" class="shrink-0" />
                 加载示例
               </button>
-              <a
+              <button
                 class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5 no-underline"
-                :href="aiDemoHref"
-                :target="isTauri ? '_blank' : undefined"
-                @click.prevent="openAiDemo"
+                @click="openAiDemo"
               >
                 <Bot :size="14" class="shrink-0" />
                 AI排版skill
-              </a>
+              </button>
             </div>
           </div>
           <!-- 帮助 button -->
-          <a
-            :href="helpHref"
-            :target="isTauri ? '_blank' : undefined"
+          <button
             class="sidebar-top-btn flex flex-col items-center gap-0.5 w-full py-2 rounded-lg border-none cursor-pointer transition-colors duration-150 no-underline"
-            @click.prevent="openHelp"
+            @click="openHelp"
           >
             <HelpCircle :size="24" class="shrink-0" />
             <span class="text-[10px] leading-tight">帮助</span>
-          </a>
+          </button>
         </div>
       </div>
     </div>

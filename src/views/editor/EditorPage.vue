@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import {
   ref,
   onMounted,
@@ -83,6 +83,7 @@ import {
   ListTree,
   Search,
   Settings as SettingsIcon,
+  AlignLeft,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -98,8 +99,10 @@ import {
   type PaletteItem,
   type PaletteKind,
 } from '@/utils/commandPalette'
+import { formatMarkdown, describeFormatStats } from '@/utils/markdownFormatter'
+import { DEFAULT_FORMAT_SHORTCUT } from '@/config/defaults'
 import { DraftStorage } from '@/services/draftStorage'
-import { MaterialStorage } from '@/services/materialStorage'
+import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
 import CommandPalette from './components/CommandPalette.vue'
 
 import Preview from './components/Preview.vue'
@@ -108,32 +111,31 @@ import OutlinePanel from './components/OutlinePanel.vue'
 import FindReplacePanel, { type FindSpec } from './components/FindReplacePanel.vue'
 import ThemePicker from './components/ThemePicker.vue'
 import ThemeModeToggle from './components/ThemeModeToggle.vue'
-import SettingsDialog from './components/SettingsDialog.vue'
-import BannedWordsDialog from './components/BannedWordsDialog.vue'
+import SettingsBoard from './components/SettingsBoard.vue'
+import BannedBoard from './components/BannedBoard.vue'
 import Dropdown from './components/Dropdown.vue'
 import MobileActionsMenu from './components/mobile/MobileActionsMenu.vue'
 import MobileEditorToolbar from './components/mobile/MobileEditorToolbar.vue'
-import XhsExporter from './components/XhsExporter.vue'
+import XhsBoard from './components/XhsBoard.vue'
 import TagPropsForm from './components/TagPropsForm.vue'
 import ComponentPickerDialog from './components/ComponentPickerDialog.vue'
 import SaveDraftDialog from './components/SaveDraftDialog.vue'
-import DraftListDialog from './components/DraftListDialog.vue'
+import DraftBoard from './components/DraftBoard.vue'
 import FinalizeDialog from './components/FinalizeDialog.vue'
-import AiWriteDialog from './components/AiWriteDialog.vue'
-import AiFormatDialog from './components/AiFormatDialog.vue'
-import AiImageDialog from './components/AiImageDialog.vue'
+import AiBoard, { type AiTab } from './components/AiBoard.vue'
 import EditorSidebar from './components/EditorSidebar.vue'
 import TreeSidebar from './components/TreeSidebar.vue'
 import PushToCloudDialog from './components/PushToCloudDialog.vue'
-import ImageCacheDialog from './components/ImageCacheDialog.vue'
+import GalleryBoard from './components/GalleryBoard.vue'
 import SaveMaterialDialog from './components/SaveMaterialDialog.vue'
-import MaterialLibraryPanel from './components/MaterialLibraryPanel.vue'
+import MaterialBoard from './components/MaterialBoard.vue'
 import PublishToWechatDialog from '@/views/editor/components/PublishToWechatDialog.vue'
-// 统计面板体积不小（含热力图/体检表等），只在用户点开「统计」时才加载
-const DashboardBoard = defineAsyncComponent(() => import('@/views/dashboard/DashboardBoard.vue'))
 import Toast from '@/components/Toast.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import pkg from '../../../package.json'
+
+// 统计面板体积不小（含热力图/体检表等），只在用户点开「统计」时才加载
+const DashboardBoard = defineAsyncComponent(() => import('@/views/dashboard/DashboardBoard.vue'))
 
 const { accent, colors, setTheme, setCustomTheme, customColor, themes } = useTheme()
 const { isDark } = useDarkMode()
@@ -162,16 +164,193 @@ const pushingCloud = ref(false)
  */
 const statsActive = ref(false)
 
+/** 图库面板是否激活（与统计 / 草稿箱互斥，同样占满编辑区） */
+const galleryBoardActive = ref(false)
+
+/** 「我的素材」面板是否激活（同样占满编辑区，与其余面板互斥） */
+const materialBoardActive = ref(false)
+
+/** 「违禁词检测」面板是否激活（同样占满编辑区，与其余面板互斥） */
+const bannedBoardActive = ref(false)
+
+/** 「设置」面板是否激活（同样占满编辑区，与其余面板互斥） */
+const settingsBoardActive = ref(false)
+
+/** 「小红书图」面板是否激活（同样占满编辑区，与其余面板互斥） */
+const xhsBoardActive = ref(false)
+
+/**
+ * 「AI」面板是否激活（写作 / 排版 / 配图三合一，同样占满编辑区，与其余面板互斥）。
+ * 原来是三个独立抽屉，从右侧滑出盖住编辑器；改成面板后可以一边看正文一边用 AI。
+ */
+const aiBoardActive = ref(false)
+
+/**
+ * AI 面板是否已经挂载过。
+ *
+ * 三个子面板里有对话记录、生成结果、以及「输入框里还没发出去的字」，
+ * 关一次面板就卸载会把它们全丢掉（抽屉时代组件常驻，不会丢）。
+ * 所以首次打开时挂载，之后只用 v-show 藏起来。
+ */
+const aiBoardMounted = ref(false)
+watch(aiBoardActive, (v) => {
+  if (v) aiBoardMounted.value = true
+})
+
+/**
+ * 六个「占满编辑区」的面板互斥：激活任何一个之前，先把其余几个一起关掉。
+ * 逐个显式置 false，不用遍历数组——某些 ref（draftBoardVisible）来自 useDraft，
+ * 声明在后面，放进数组会在模块初始化时撞 TDZ。
+ */
+function closeAllBoards() {
+  statsActive.value = false
+  draftBoardVisible.value = false
+  galleryBoardActive.value = false
+  materialBoardActive.value = false
+  bannedBoardActive.value = false
+  settingsBoardActive.value = false
+  xhsBoardActive.value = false
+  aiBoardActive.value = false
+  // 查找面板与命令面板只属于「编辑器页面」，切到任何面板都一并收掉
+  closeEditorOverlays()
+}
+
+/** 是否有「占满编辑区」的面板正在显示（是则编辑器页面不在了） */
+function anyBoardActive(): boolean {
+  return (
+    statsActive.value ||
+    draftBoardVisible.value ||
+    galleryBoardActive.value ||
+    materialBoardActive.value ||
+    bannedBoardActive.value ||
+    settingsBoardActive.value ||
+    xhsBoardActive.value ||
+    aiBoardActive.value
+  )
+}
+
 function onToggleStats() {
-  statsActive.value = !statsActive.value
+  const next = !statsActive.value
+  closeAllBoards()
+  statsActive.value = next
+}
+
+/**
+ * 草稿箱面板：与统计面板同款呈现——激活后占满编辑区，不再用抽屉弹窗盖住编辑器。
+ * 开关状态放在 useDraft 的 draftBoardVisible 里统一管（加载完草稿后自动关闭也在那边）。
+ */
+function onOpenDraftBoard() {
+  const next = !draftBoardVisible.value
+  closeAllBoards()
+  draftBoardVisible.value = next
+}
+
+/**
+ * 图库面板：同样占满编辑区，与统计 / 草稿箱三者互斥。
+ * 原来「设置 → 清理图片缓存」的抽屉也并进来了：开多选即可批量删除本地缓存图。
+ */
+function onOpenGalleryBoard() {
+  const next = !galleryBoardActive.value
+  closeAllBoards()
+  galleryBoardActive.value = next
+}
+
+/**
+ * 「我的素材」面板：与统计 / 草稿箱 / 图库同款——占满编辑区，不再用抽屉盖住编辑器。
+ * 「素材库」（公共素材站）仍是独立路由，不在这里展开。
+ */
+function onOpenMaterialBoard() {
+  const next = !materialBoardActive.value
+  closeAllBoards()
+  materialBoardActive.value = next
+}
+
+/**
+ * 违禁词检测面板：与统计 / 草稿箱 / 图库 / 我的素材同款——占满编辑区，
+ * 不再用抽屉弹窗盖住编辑器（改完词库想对照正文看命中情况时尤其别扭）。
+ */
+function onOpenBannedBoard() {
+  const next = !bannedBoardActive.value
+  closeAllBoards()
+  bannedBoardActive.value = next
+}
+
+/**
+ * 设置面板：同样占满编辑区，与其余面板互斥。
+ * tab 参数支持 'basic' / 'github' / 'cloud' / 'wechat' / 'ai' / 'other'，
+ * 以及 'ai-write' / 'ai-format' / 'ai-image' 这类「AI tab + 指定子页」的入口约定。
+ */
+function onOpenSettingsBoard(tab = 'basic') {
+  const next = !(settingsBoardActive.value && settingsInitialTab.value === tab)
+  closeAllBoards()
+  settingsInitialTab.value = tab
+  settingsBoardActive.value = next
+}
+
+/** 素材面板里点了「插入」：插到光标位置，然后把面板关掉回编辑区看效果 */
+function onMaterialInsert(item: MaterialItem) {
+  materialBoardActive.value = false
+  handleInsertMaterial(item)
+}
+
+/** 侧栏 / 移动端菜单的「素材」入口：我的素材开面板，素材库走路由 */
+function onMaterialMenuAction(action: 'my' | 'library') {
+  if (action === 'my') onOpenMaterialBoard()
+  else router.push('/materials')
+}
+
+/** 图库面板里发的删除请求（单张 / 批量），走全局确认弹窗，确认后调面板的 doCleanup */
+/** 图库面板暴露的方法（vapor 组件是函数式组件，取不到 InstanceType，直接写形状） */
+const galleryRef = ref<{ doCleanup: (tokens: string[]) => Promise<void> } | null>(null)
+const galleryDeleteVisible = ref(false)
+const galleryDeleteMessage = ref('')
+const galleryDeleteTokens = ref<string[]>([])
+
+function onGalleryRequestDelete(payload: { message: string; tokens: string[] }) {
+  galleryDeleteMessage.value = payload.message
+  galleryDeleteTokens.value = payload.tokens
+  galleryDeleteVisible.value = true
+}
+
+async function onGalleryDeleteConfirm() {
+  galleryDeleteVisible.value = false
+  const tokens = galleryDeleteTokens.value
+  galleryDeleteTokens.value = []
+  await galleryRef.value?.doCleanup(tokens)
+  showToast(`已删除 ${tokens.length} 张图片缓存`)
+}
+
+/** 图库面板里点了一张图：插到编辑器光标位置，然后回到编辑区看效果 */
+function onGalleryInsert(payload: { kind: 'local' | 'disk'; value: string }) {
+  // 光标落在组件标签内部时不能插：insertOwnLine 会给标签补换行，把 `</badges>` 劈成两半。
+  // 与 processImageInsert / insertImageToDisk 的守卫保持一致，这里不关面板，方便用户挪完光标再插。
+  if (editorRef.value?.isInsideTag) {
+    showToast('不能在组件标签内插入图片')
+    return
+  }
+  galleryBoardActive.value = false
+  const src = payload.kind === 'disk' ? payload.value : `idb:${payload.value}`
+  // 这里是 <script>，写 &quot; 不会被解码，必须用真正的双引号（与 useImageInsert 一致）
+  // insertOwnLine：图片必须独占一行，否则会黏在相邻段落或组件标签前后
+  editorRef.value?.insertOwnLine(
+    `<img src="${src}" width="100%" height="auto" radius="8px" fit="cover" />`,
+  )
+  showToast('已插入到光标位置')
+}
+
+/** 小红书图面板：与其余面板同款，激活后占满编辑区 */
+function onOpenXhsBoard() {
+  const next = !xhsBoardActive.value
+  closeAllBoards()
+  xhsBoardActive.value = next
 }
 
 function onToggleTreePanel() {
-  // 统计模式下点「文章」= 退出统计并打开文章树，比让它静默无反应更符合直觉
-  if (statsActive.value) {
-    statsActive.value = false
-    treePanelVisible.value = true
-    setSetting('treeSidebarExpanded', true)
+  // 任一「占满编辑区」的面板开着时点「文章」= 退出面板，回到编辑区。
+  // 这里只「切回去」，不顺手把文章树点亮：文章本来没激活就保持没激活，
+  // 免得用户明明收起过文章树，却被这一下强行又拉开。
+  if (anyBoardActive()) {
+    closeAllBoards()
     return
   }
   treePanelVisible.value = !treePanelVisible.value
@@ -306,11 +485,6 @@ async function onPushToCloud(result: {
   }
 }
 
-function onSettingsOpen(tab: string) {
-  settingsInitialTab.value = tab
-  settingsVisible.value = true
-}
-
 // ── 云端文章编辑按钮加载（需确认） ──
 const articleLoadConfirmVisible = ref(false)
 const pendingArticleLoad = ref<{
@@ -383,6 +557,8 @@ const isMobile = ref(window.innerWidth < 768)
 const mobileTreeMounted = ref(false)
 watch(mobileTab, (tab) => {
   if (tab === 'articles') mobileTreeMounted.value = true
+  // 手机上「编辑器页面」就是编辑 Tab：切到文章 / 预览时，查找与命令面板都要收掉
+  if (tab !== 'editor') closeEditorOverlays()
 })
 
 /**
@@ -401,9 +577,9 @@ function onPreviewClickLine(lineNo: number) {
   editorRef.value?.scrollToLineAndHighlight(lineNo)
 }
 
-/** 违禁词命中跳转：关闭弹窗 → 移动端切回编辑 Tab → 滚动定位并高亮 */
+/** 违禁词命中跳转：退出检测面板 → 移动端切回编辑 Tab → 滚动定位并高亮 */
 function onBannedWordsJump(line: number) {
-  bannedWordsVisible.value = false
+  bannedBoardActive.value = false
   if (isMobile.value) mobileTab.value = 'editor'
   nextTick(() => editorRef.value?.scrollToLineAndHighlight(line))
 }
@@ -435,6 +611,8 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
   // 命令面板快捷键：window 级监听，编辑器/预览/侧栏聚焦时都能唤起
   window.addEventListener('keydown', onPaletteGlobalKeydown)
+  // 格式化快捷键：同理走 window 级，焦点不在编辑器时也能触发
+  window.addEventListener('keydown', onFormatGlobalKeydown)
   // 恢复页面缩放
   if (import.meta.env.VITE_TAURI === 'true') {
     const val = getSetting<number>('pageZoom')
@@ -446,6 +624,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   window.removeEventListener('keydown', onPaletteGlobalKeydown)
+  window.removeEventListener('keydown', onFormatGlobalKeydown)
 })
 
 // ── 拖动调整宽度 ──
@@ -485,7 +664,11 @@ function onOutlineJump(line: number) {
 
 // ── 查找替换 ──
 const findVisible = ref(false)
-const findPanelRef = ref<InstanceType<typeof FindReplacePanel> | null>(null)
+/** 查找面板暴露的方法（同上，vapor 组件不写 InstanceType） */
+const findPanelRef = ref<{
+  open: (withReplace?: boolean) => void | Promise<void>
+  seed: (text: string) => void
+} | null>(null)
 /** 面板回传的匹配数/当前序号相对编辑器真实状态略有延迟，但对展示足够 */
 const findTotal = ref(0)
 const findCurrent = ref(0)
@@ -556,6 +739,32 @@ function closeFind() {
 function toggleFind() {
   if (findVisible.value) closeFind()
   else openFind(false)
+}
+
+/**
+ * 关闭挂在编辑器页面上的浮层（查找替换、命令面板）。
+ *
+ * 这两个组件都 Teleport 到 body 并 fixed 定位，编辑区的 v-show 藏不住它们，
+ * 所以切到统计 / 草稿箱 / 图库 / 素材 / 检测 / 设置时必须主动关掉。
+ * 刻意不调 closeFind()——那会顺手把焦点还给编辑器，可用户此刻正要去别的面板。
+ */
+function closeEditorOverlays() {
+  // 只在真的开着时才动编辑器：applyFindSpec 会清掉 CodeMirror 里的查找高亮，
+  // 平时白调一遍会打断用户当前的编辑状态。
+  if (findVisible.value) {
+    findVisible.value = false
+    editorRef.value?.applyFindSpec?.({
+      search: '',
+      replace: '',
+      caseSensitive: false,
+      wholeWord: false,
+      regexp: false,
+    })
+    findTotal.value = 0
+    findCurrent.value = 0
+    findInvalid.value = false
+  }
+  paletteVisible.value = false
 }
 
 // ── 字数统计状态栏 ──
@@ -653,14 +862,12 @@ watch(
 )
 const previewRef = ref()
 const editorRef = ref<EditorExposed>()
-const xhsVisible = ref(false)
-const settingsVisible = ref(false)
-const settingsInitialTab = ref('')
-const showGallery = ref(false)
-const bannedWordsVisible = ref(false)
-const aiWriteVisible = ref(false)
-const aiFormatVisible = ref(false)
-const aiImageVisible = ref(false)
+const settingsInitialTab = ref('basic')
+/**
+ * AI 面板当前标签页：写作 / 排版 / 配图。
+ * 侧栏二级菜单点哪个就切到哪个（见 onSidebarAiAction）。
+ */
+const aiTab = ref<AiTab>('write')
 
 // ── 自动更新 ──
 const autoUpdateDialogVisible = ref(false)
@@ -738,7 +945,7 @@ const cloudConfigured = computed(() => cloudTreeConfigured.value)
 const extractedTitle = computed(() => extractTitle(markdown.value) || '')
 
 const {
-  draftListVisible,
+  draftBoardVisible,
   saveDraftVisible,
   finalizeVisible,
   finalizeDeleteConfirmVisible,
@@ -794,23 +1001,14 @@ const {
   wechatCoverMediaId,
   handlePublishToWechat,
   handleWechatSaved,
-} = useWechatPublish(
-  markdown,
-  extractedTitle,
-  currentDraftId,
-  showToast,
-  settingsVisible,
-  settingsInitialTab,
-)
+} = useWechatPublish(markdown, extractedTitle, currentDraftId, showToast, onOpenSettingsBoard)
 
 // ── 素材 ──
 const {
-  showMaterialPanel,
   saveMaterialVisible,
   confirmMaterialOverwriteVisible,
   pendingMaterial,
   pendingOverwriteMaterialName,
-  onMaterialAction,
   handleOpenSaveMaterial,
   handleSaveMaterial,
   handleMaterialOverwrite,
@@ -1000,9 +1198,9 @@ function onPaletteGlobalKeydown(e: KeyboardEvent) {
   e.preventDefault()
   // 已打开时再按一次关闭，与查找面板的切换手感一致
   if (paletteVisible.value) closePalette()
-  else openPalette()
+  // 命令面板只属于编辑器页面：正停在统计 / 图库等面板上时不响应快捷键
+  else if (!anyBoardActive()) openPalette()
 }
-
 // ── Toolbar（表格插入、布局插入、组件对话框、标签解析）──
 const {
   tableGridHovered,
@@ -1091,15 +1289,10 @@ function closeImageMenu() {
 /**
  * 移动端三点菜单的「帮助文档」。
  * 与左侧栏那个「帮助」入口（EditorSidebar.vue 的 openHelp）保持同一口径：
- * 桌面客户端是 Tauri 窗口，站内路由跳转会顶掉编辑器，所以另开浏览器窗口；
- * Web 端直接走前端路由，保留编辑器返回栈。
+ * 一律走应用内路由，桌面客户端也不再另开浏览器窗口。
  */
 function onOpenHelp() {
-  if (isTauri) {
-    window.open('https://r-markdown.pages.dev/#/help', '_blank', 'noopener,noreferrer')
-  } else {
-    router.push('/help')
-  }
+  router.push('/help')
 }
 
 // ── 导入 ──
@@ -1111,6 +1304,19 @@ const { onImportClick } = useImport(
   currentCloudArticleId,
   matchCloudArticle,
 )
+
+/**
+ * 侧栏「导入」：导入成功后如果当前占满编辑区的是草稿箱 / 统计面板，
+ * 就切回编辑区（即左侧菜单的「文章」那一栏），否则用户导入完看不到内容。
+ * 只切视图、不动文章树：原来展开的就展开，原来收起的就继续收起。
+ */
+async function onSidebarImport() {
+  const imported = await onImportClick()
+  if (!imported) return
+  if (anyBoardActive()) {
+    closeAllBoards()
+  }
+}
 
 /** TagPropsForm 关闭：重置弹窗可见性与编辑中的标签信息 */
 function onTagDialogClose() {
@@ -1133,9 +1339,9 @@ function onUnlinkCloudArticle() {
   showToast(articleStorageMode.value === 'local' ? '已取消本地文章关联' : '已取消仓库文章关联')
 }
 
-/** SettingsDialog 关闭：关闭弹窗并刷新树配置状态（含模式切换） */
+/** 设置面板关闭：关掉面板并刷新树配置状态（含模式切换） */
 function onSettingsClose() {
-  settingsVisible.value = false
+  settingsBoardActive.value = false
   // checkConfig 内部会同步 articleStorageMode 并按需重载树
   useGitHubTree().checkConfig()
 }
@@ -1145,7 +1351,7 @@ function onSettingsClose() {
 function onAiFormatApply(text: string) {
   markdown.value = text
   saveContent(text, true)
-  aiFormatVisible.value = false
+  aiBoardActive.value = false
   nextTick(() => editorRef.value?.focusEditor())
   // 移动端没有物理键盘与撤销按钮，不提示撤销快捷键
   showToast(
@@ -1162,7 +1368,7 @@ function onAiFormatApply(text: string) {
 function onAiWriteApply(text: string) {
   markdown.value = text
   saveContent(text, true)
-  aiWriteVisible.value = false
+  aiBoardActive.value = false
   nextTick(() => editorRef.value?.focusEditor())
   showToast(
     isMobileWeb.value ? '已应用写作稿件' : `已应用写作稿件，可用 ${undoShortcutLabel()} 撤销`,
@@ -1171,21 +1377,43 @@ function onAiWriteApply(text: string) {
 
 /** 从 AI 写作面板跳转设置：落到「AI 设置 → AI 文本」子页（写作与排版共用该子页） */
 function onAiWriteOpenSettings() {
-  aiWriteVisible.value = false
-  onSettingsOpen('ai-write')
+  aiBoardActive.value = false
+  onOpenSettingsBoard('ai-write')
 }
 
-/** 左侧栏「AI」二级菜单：分派到写作、排版或配图面板 */
+/**
+ * 「应用并去排版」：把稿件写进编辑器，但**不关面板**，直接切到「AI 排版」标签页。
+ *
+ * 与 onAiWriteApply 的唯一区别就是最后不置 aiBoardActive=false 而改切 aiTab。
+ * 排版面板的「当前文档」来源是 `props.markdown`（AiFormatDialog 的 sourceText），
+ * 所以这里先写 markdown.value，切过去时排版面板读到的已经是新稿件。
+ */
+function onAiWriteApplyAndFormat(text: string) {
+  markdown.value = text
+  saveContent(text, true)
+  aiTab.value = 'format'
+  showToast(
+    isMobileWeb.value ? '已应用写作稿件' : `已应用写作稿件，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/**
+ * 左侧栏「AI」二级菜单：点哪个就打开 AI 面板并切到对应标签页。
+ *
+ * 再点同一个菜单项 = 收起面板（与统计 / 图库那些入口的 toggle 行为一致）；
+ * 点另一个菜单项则只切标签页、面板保持展开。
+ */
 function onSidebarAiAction(action: 'write' | 'format' | 'image') {
-  if (action === 'write') aiWriteVisible.value = true
-  else if (action === 'format') aiFormatVisible.value = true
-  else aiImageVisible.value = true
+  const sameTab = aiBoardActive.value && aiTab.value === action
+  closeAllBoards()
+  aiTab.value = action
+  aiBoardActive.value = !sameTab
 }
 
 /** 从 AI 排版面板跳转设置：落到「AI 设置 → AI 文本」子页 */
 function onAiOpenSettings() {
-  aiFormatVisible.value = false
-  onSettingsOpen('ai')
+  aiBoardActive.value = false
+  onOpenSettingsBoard('ai')
 }
 
 // ── AI 配图 ──
@@ -1195,8 +1423,16 @@ function onAiOpenSettings() {
  * 本地 IndexedDB / 本地磁盘 / GitHub 图床 / 乐塔图床，与手动粘贴一张图片完全一致。
  */
 function onAiImageInsert(file: File) {
-  aiImageVisible.value = false
-  void processImageInsert(file)
+  // 先在面板还开着的时候挡一次：光标在组件标签内部时不能插，
+  // 否则 insertOwnLine 会把 `</badges>` 之类的闭合标签劈成两半。
+  // 这里提前返回、面板保持打开，用户挪完光标就能接着点。
+  if (editorRef.value?.isInsideTag) {
+    showToast('不能在组件标签内插入图片')
+    return
+  }
+  aiBoardActive.value = false
+  // 第三个参数 ownLine=true：图片必须独占一行，否则会黏在相邻段落或组件标签前后
+  void processImageInsert(file, null, true)
 }
 
 /**
@@ -1205,9 +1441,15 @@ function onAiImageInsert(file: File) {
  * 上传期间不关面板，让全局进度浮层可见；失败时保留面板，用户可重试或改用「插入编辑器」。
  */
 async function onAiImageUpload(file: File) {
+  // 同「插入编辑器」：标签内部不能插，提前挡掉并保持面板打开
+  if (editorRef.value?.isInsideTag) {
+    showToast('不能在组件标签内插入图片')
+    return
+  }
   try {
-    await uploadImageToHosting(file)
-    aiImageVisible.value = false
+    // ownLine=true：与「插入编辑器」一致，图床插入同样保证独占一行
+    await uploadImageToHosting(file, true)
+    aiBoardActive.value = false
   } catch {
     // uploadImageToHosting 内已 showToast 提示，面板保持打开
   }
@@ -1221,8 +1463,14 @@ async function onAiImageUpload(file: File) {
  * 仅桌面端会显示该按钮。
  */
 function onAiImageSaveDisk(file: File) {
-  aiImageVisible.value = false
-  void insertImageToDisk(file)
+  // 同「插入编辑器」：标签内部不能插，提前挡掉并保持面板打开
+  if (editorRef.value?.isInsideTag) {
+    showToast('不能在组件标签内插入图片')
+    return
+  }
+  aiBoardActive.value = false
+  // ownLine=true：存到磁盘后插入编辑器，同样要独占一行
+  void insertImageToDisk(file, null, true)
 }
 
 /**
@@ -1240,8 +1488,8 @@ function onAiImageAddDisk(file: File) {
 
 /** 从 AI 配图面板跳转设置：落到「AI 设置 → AI 图片」子页 */
 function onAiImageOpenSettings() {
-  aiImageVisible.value = false
-  onSettingsOpen('ai-image')
+  aiBoardActive.value = false
+  onOpenSettingsBoard('ai-image')
 }
 
 function onPasteText() {
@@ -1279,8 +1527,79 @@ const { handleCopyRichText, handleExportHTML, handleSaveImage, onDropdownSelect 
   extractedTitle,
   previewRef,
   showToast,
-  xhsVisible,
+  onOpenXhsBoard,
 )
+
+// ── 格式化文档 ──
+/**
+ * 一键整理当前文档：组件标签去缩进、块级组件前后补空行、收敛空白、
+ * 标题与列表规范化、补齐未闭合的代码围栏。具体规则见 utils/markdownFormatter.ts。
+ *
+ * 走 CodeMirror 的 change（editorRef.replaceAll），所以整次格式化只占一步撤销——
+ * 桌面端按 ⌘Z / Ctrl+Z 可以直接退回原样。
+ */
+function onFormatDocument() {
+  const src = markdown.value
+  if (!src.trim()) {
+    showToast('文档是空的')
+    return
+  }
+  const { text, stats, changed } = formatMarkdown(src)
+  if (!changed) {
+    showToast('文档已经是规范格式')
+    return
+  }
+  editorRef.value?.replaceAll(text)
+  // replaceAll 通过 v-model 回写 markdown，这里同步落盘，避免等自动保存计时器
+  markdown.value = text
+  saveContent(text, true)
+  const detail = describeFormatStats(stats)
+  showToast(
+    isMobileWeb.value
+      ? '已格式化' + (detail ? '：' + detail : '')
+      : `已格式化${detail ? '：' + detail : ''}，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/** 格式化快捷键，可在设置里改（与命令面板同一套录制/匹配逻辑） */
+const formatShortcut = useSetting<string>('formatShortcut')
+const formatShortcutText = computed(() =>
+  displayShortcutFor(formatShortcut.value, DEFAULT_FORMAT_SHORTCUT),
+)
+
+/** 解析配置里的快捷键串，失败时回退默认值（与命令面板同一套兜底） */
+function resolveShortcutSpec(raw: string, fallback: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(fallback)
+}
+
+function displayShortcutFor(raw: string, fallback: string): string {
+  const spec = resolveShortcutSpec(raw, fallback)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+/**
+ * 格式化快捷键的全局监听。
+ *
+ * 之所以不放进 CodeMirror 的 keymap：用户可能刚点了预览区或侧栏，
+ * 焦点不在编辑器里，这时也应该能触发。
+ */
+function onFormatGlobalKeydown(e: KeyboardEvent) {
+  // 面板打开时不抢键，避免与面板内的输入冲突
+  if (anyBoardActive() || paletteVisible.value || findVisible.value) return
+  const spec = resolveShortcutSpec(formatShortcut.value, DEFAULT_FORMAT_SHORTCUT)
+  if (!spec) return
+  if (!matchShortcut(spec, e, isMac())) return
+  e.preventDefault()
+  onFormatDocument()
+}
 
 function onExampleAction(action: string) {
   if (action === 'load') confirmLoadVisible.value = true
@@ -1311,6 +1630,12 @@ function loadDemo() {
   saveMode.value = '自动'
   saveHint.value = '自动保存于 ' + formatTime(timeStr)
   setTimeout(() => matchExistingDraft(), 300)
+  // 加载完示例要能立刻看到内容：如果当前占满编辑区的是草稿箱 / 统计 / 图库等面板，
+  // 就收掉它们回到编辑区。
+  // 只切视图、不动文章树：原来展开的就展开，原来收起的就继续收起。
+  // 手机上还要把底部 Tab 切回「编辑」，否则停在「文章」Tab 上一样看不到示例。
+  closeAllBoards()
+  switchToEditorOnMobile()
 }
 </script>
 
@@ -1441,19 +1766,20 @@ function loadDemo() {
           @load-demo="confirmLoadVisible = true"
           @export-html="handleExportHTML"
           @save-image="handleSaveImage"
-          @export-xhs="xhsVisible = true"
-          @go-components="$router.push('/components')"
-          @open-gallery="showGallery = true"
-          @go-materials="onMaterialAction('library')"
-          @open-my-materials="onMaterialAction('my')"
-          @open-banned-words="bannedWordsVisible = true"
+          @export-xhs="onOpenXhsBoard"
+          @go-components="router.push('/components')"
+          @open-gallery="onOpenGalleryBoard"
+          @go-materials="onMaterialMenuAction('library')"
+          @open-my-materials="onMaterialMenuAction('my')"
+          @open-banned-words="onOpenBannedBoard"
           @save-to-repo="pushCloudVisible = true"
           @upload-image="handleUploadToGitHub"
           @open-import="onImportClick"
-          @open-ai-write="aiWriteVisible = true"
-          @open-ai-format="aiFormatVisible = true"
-          @open-ai-image="aiImageVisible = true"
+          @open-ai-write="onSidebarAiAction('write')"
+          @open-ai-format="onSidebarAiAction('format')"
+          @open-ai-image="onSidebarAiAction('image')"
           @toggle-stats="onToggleStats"
+          @format-document="onFormatDocument"
           @open-help="onOpenHelp"
         />
         <ThemePicker
@@ -1465,7 +1791,7 @@ function loadDemo() {
         />
         <ThemeModeToggle />
         <!-- 设置：PC 与移动端都常驻顶栏右上角，不要再加 hidden sm:flex 把它在移动端藏掉 -->
-        <button class="toolbar-round-btn flex" title="设置" @click="settingsVisible = true">
+        <button class="toolbar-round-btn flex" title="设置" @click="onOpenSettingsBoard('basic')">
           <SettingsIcon :size="18" />
         </button>
       </div>
@@ -1479,7 +1805,16 @@ function loadDemo() {
       想调透明度必须改这里，改样式表的 fallback 是没有效果的。
     -->
     <div
-      v-if="!statsActive"
+      v-if="
+        !statsActive &&
+        !draftBoardVisible &&
+        !galleryBoardActive &&
+        !materialBoardActive &&
+        !bannedBoardActive &&
+        !settingsBoardActive &&
+        !xhsBoardActive &&
+        !aiBoardActive
+      "
       class="mobile-tab-bar md:hidden"
       :style="{
         '--accent': accent,
@@ -1520,15 +1855,20 @@ function loadDemo() {
             :draft-count="draftCount"
             :tree-panel-visible="treePanelVisible"
             :stats-active="statsActive"
+            :draft-board-active="draftBoardVisible"
+            :gallery-board-active="galleryBoardActive"
+            :material-board-active="materialBoardActive"
+            :banned-board-active="bannedBoardActive"
+            :ai-board-active="aiBoardActive"
             @select="onSidebarSelect"
-            @open-gallery="showGallery = true"
-            @open-banned-words="bannedWordsVisible = true"
+            @open-gallery="onOpenGalleryBoard"
+            @open-banned-words="onOpenBannedBoard"
             @ai-action="onSidebarAiAction"
-            @material-action="onMaterialAction"
-            @open-components="$router.push('/components')"
-            @open-drafts="draftListVisible = true"
+            @material-action="onMaterialMenuAction"
+            @open-components="router.push('/components')"
+            @open-drafts="onOpenDraftBoard"
             @example-action="onExampleAction"
-            @open-import="onImportClick"
+            @open-import="onSidebarImport"
             @toggle-tree-panel="onToggleTreePanel"
             @toggle-stats="onToggleStats"
           />
@@ -1537,7 +1877,19 @@ function loadDemo() {
           编辑区整块。统计模式激活时用 v-show 收起（不是 v-if）：
           编辑器与预览内部有撤销栈 / 滚动位置 / 已渲染的 iframe，卸载一次就全丢。
         -->
-        <div v-show="!statsActive" class="flex flex-1 min-w-0 overflow-hidden">
+        <div
+          v-show="
+            !statsActive &&
+            !draftBoardVisible &&
+            !galleryBoardActive &&
+            !materialBoardActive &&
+            !bannedBoardActive &&
+            !settingsBoardActive &&
+            !xhsBoardActive &&
+            !aiBoardActive
+          "
+          class="flex flex-1 min-w-0 overflow-hidden"
+        >
           <!-- Tree Panel -->
           <Transition name="tree-panel">
             <div
@@ -1546,7 +1898,7 @@ function loadDemo() {
               class="overflow-hidden"
             >
               <TreeSidebar
-                @open-settings="onSettingsOpen"
+                @open-settings="onOpenSettingsBoard"
                 @edit-article="onTreeEditArticle"
                 @toast="showToast"
                 @clear-editor="onClearEditor"
@@ -1592,7 +1944,7 @@ function loadDemo() {
           >
             <TreeSidebar
               compact
-              @open-settings="onSettingsOpen"
+              @open-settings="onOpenSettingsBoard"
               @edit-article="onMobileTreeEditArticle"
               @toast="showToast"
               @clear-editor="onClearEditor"
@@ -2094,6 +2446,15 @@ function loadDemo() {
                       <span>解析</span>
                     </button>
                   </BaseTooltip>
+                  <BaseTooltip :text="'格式化文档：' + formatShortcutText">
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                      @click="onFormatDocument"
+                    >
+                      <AlignLeft :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>格式化</span>
+                    </button>
+                  </BaseTooltip>
                   <!-- 行内样式按钮组 -->
                   <BaseTooltip
                     v-for="opt in inlineFormatOptions"
@@ -2422,6 +2783,122 @@ function loadDemo() {
           />
         </div>
 
+        <!-- 小红书图面板：与统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测 / 设置同款，激活时占满编辑区 -->
+        <div
+          v-if="xhsBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <XhsBoard
+            :markdown="resolvedMarkdown"
+            :colors="colors"
+            @close="xhsBoardActive = false"
+            @toast="showToast"
+          />
+        </div>
+
+        <!--
+          AI 面板：写作 / 排版 / 配图三合一，激活时占满编辑区。
+          与其余面板同款（BoardHeader + 占位），三个子面板用 tab 切换、共享一块空间。
+          首次打开才挂载，之后用 v-show 藏着——保住对话、结果与输入框里没发出去的字。
+        -->
+        <div
+          v-if="aiBoardMounted"
+          v-show="aiBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <AiBoard
+            v-model:tab="aiTab"
+            :active="aiBoardActive"
+            :markdown="markdown"
+            :uploading="githubUploading"
+            @close="aiBoardActive = false"
+            @apply-write="onAiWriteApply"
+            @apply-write-and-format="onAiWriteApplyAndFormat"
+            @apply-format="onAiFormatApply"
+            @insert="onAiImageInsert"
+            @upload="onAiImageUpload"
+            @save-disk="onAiImageSaveDisk"
+            @add-gallery="onAiImageAddGallery"
+            @add-disk="onAiImageAddDisk"
+            @open-settings-write="onAiWriteOpenSettings"
+            @open-settings-format="onAiOpenSettings"
+            @open-settings-image="onAiImageOpenSettings"
+          />
+        </div>
+
+        <!-- 设置面板：与统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测同款，激活时占满编辑区 -->
+        <div
+          v-if="settingsBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <SettingsBoard
+            :initial-tab="settingsInitialTab"
+            @close="onSettingsClose"
+            @toast="showToast"
+          />
+        </div>
+
+        <!-- 违禁词检测面板：与统计 / 草稿箱 / 图库 / 我的素材同款，激活时占满编辑区 -->
+        <div
+          v-if="bannedBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <!-- 喂原始 markdown：行号要和编辑器源码对得上，resolvedMarkdown 里的 idb/磁盘图引用是解析后的 -->
+          <BannedBoard
+            :markdown="markdown"
+            @close="bannedBoardActive = false"
+            @jump="onBannedWordsJump"
+          />
+        </div>
+
+        <!-- 我的素材面板：与统计 / 草稿箱 / 图库同款，激活时占满编辑区 -->
+        <div
+          v-if="materialBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <MaterialBoard @close="materialBoardActive = false" @insert="onMaterialInsert" />
+        </div>
+
+        <!-- 图库面板：与统计 / 草稿箱同款，激活时占满编辑区 -->
+        <div
+          v-if="galleryBoardActive"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <GalleryBoard
+            ref="galleryRef"
+            @close="galleryBoardActive = false"
+            @insert="onGalleryInsert"
+            @request-delete="onGalleryRequestDelete"
+          />
+        </div>
+
+        <!-- 草稿箱面板：与统计面板同款，激活时占满编辑区 -->
+        <div
+          v-if="draftBoardVisible"
+          class="flex flex-1 min-w-0 flex-col overflow-hidden"
+          :class="{ 'rounded-xl': !isMobile }"
+          style="background: var(--bg-primary)"
+        >
+          <DraftBoard
+            :drafts="drafts"
+            @close="draftBoardVisible = false"
+            @confirm-load="onDraftConfirmLoad"
+            @confirm-delete="onDraftConfirmDelete"
+          />
+        </div>
+
         <!-- 统计面板：激活时占满编辑区，文章树 / 编辑器 / 预览 / 缩略图全部不显示 -->
         <div
           v-if="statsActive"
@@ -2436,60 +2913,10 @@ function loadDemo() {
   </div>
 
   <Toast :visible="toastVisible" :message="toastMessage" />
-  <XhsExporter
-    :visible="xhsVisible"
-    :markdown="resolvedMarkdown"
-    :colors="colors"
-    :is-mobile="isMobile"
-    @close="xhsVisible = false"
-    @toast="showToast"
-  />
   <ComponentPickerDialog
     :visible="componentDialogVisible"
     @close="componentDialogVisible = false"
     @insert="(code: string) => editorRef?.insertAtCursor(code)"
-  />
-  <SettingsDialog
-    :visible="settingsVisible"
-    :initial-tab="settingsInitialTab"
-    @close="onSettingsClose"
-    @toast="showToast"
-  />
-  <!-- 违禁词检测弹窗 -->
-  <BannedWordsDialog
-    :visible="bannedWordsVisible"
-    :markdown="markdown"
-    @close="bannedWordsVisible = false"
-    @jump="onBannedWordsJump"
-  />
-  <!-- AI 写作面板（对话模式，输入框固定在抽屉底部） -->
-  <AiWriteDialog
-    :visible="aiWriteVisible"
-    :markdown="markdown"
-    @close="aiWriteVisible = false"
-    @apply="onAiWriteApply"
-    @open-settings="onAiWriteOpenSettings"
-  />
-  <!-- AI 排版面板 -->
-  <AiFormatDialog
-    :visible="aiFormatVisible"
-    :markdown="markdown"
-    @close="aiFormatVisible = false"
-    @apply="onAiFormatApply"
-    @open-settings="onAiOpenSettings"
-  />
-  <!-- AI 配图面板 -->
-  <AiImageDialog
-    :visible="aiImageVisible"
-    :markdown="markdown"
-    :uploading="githubUploading"
-    @close="aiImageVisible = false"
-    @insert="onAiImageInsert"
-    @upload="onAiImageUpload"
-    @save-disk="onAiImageSaveDisk"
-    @add-gallery="onAiImageAddGallery"
-    @add-disk="onAiImageAddDisk"
-    @open-settings="onAiImageOpenSettings"
   />
   <PushToCloudDialog
     :visible="pushCloudVisible"
@@ -2508,26 +2935,6 @@ function loadDemo() {
     @close="wechatPublishVisible = false"
     @saved="handleWechatSaved"
   />
-  <ImageCacheDialog
-    :visible="showGallery"
-    mode="gallery"
-    @close="showGallery = false"
-    @insert="
-      (payload: { kind: 'local' | 'disk'; value: string }) => {
-        showGallery = false
-        const src = payload.kind === 'disk' ? payload.value : `idb:${payload.value}`
-        editorRef?.insertAtCursor(
-          `<img src=&quot;${src}&quot; width=&quot;100%&quot; height=&quot;auto&quot; radius=&quot;8px&quot; fit=&quot;cover&quot; />`,
-        )
-      }
-    "
-  />
-  <!-- 素材库面板 -->
-  <MaterialLibraryPanel
-    :visible="showMaterialPanel"
-    @close="showMaterialPanel = false"
-    @insert="handleInsertMaterial"
-  />
   <!-- 保存素材弹窗 -->
   <SaveMaterialDialog
     :visible="saveMaterialVisible"
@@ -2541,6 +2948,16 @@ function loadDemo() {
     confirm-text="加载"
     @confirm="loadDemo"
     @update:visible="confirmLoadVisible = $event"
+  />
+  <!-- 图库：删除图片缓存的确认弹窗（单张 / 批量共用） -->
+  <ConfirmDialog
+    :visible="galleryDeleteVisible"
+    title="删除图片缓存"
+    :message="galleryDeleteMessage"
+    confirm-text="删除"
+    confirm-type="danger"
+    @confirm="onGalleryDeleteConfirm"
+    @update:visible="galleryDeleteVisible = $event"
   />
   <!-- 自动更新确认弹窗 -->
   <ConfirmDialog
@@ -2592,15 +3009,6 @@ function loadDemo() {
     confirm-type="danger"
     @confirm="handlePushCloudDeleteConfirm"
     @update:visible="pushToCloudDeleteConfirmVisible = $event"
-  />
-
-  <!-- 草稿列表弹窗 -->
-  <DraftListDialog
-    :visible="draftListVisible"
-    :drafts="drafts"
-    @close="draftListVisible = false"
-    @confirm-load="onDraftConfirmLoad"
-    @confirm-delete="onDraftConfirmDelete"
   />
 
   <!-- 命令面板（⌘K）：统一检索草稿 / 云文章 / 本地文章 / 素材 -->

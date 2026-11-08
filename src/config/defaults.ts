@@ -5,6 +5,14 @@
  */
 import { DEFAULT_PALETTE_SHORTCUT } from '@/utils/commandPalette'
 
+/**
+ * 「格式化文档」默认快捷键。
+ *
+ * 放在这里而不是 commandPalette.ts：那个文件只管命令面板，
+ * 格式化快捷键以后可能被设置页单独引用，独立常量更好找。
+ */
+export const DEFAULT_FORMAT_SHORTCUT = 'Mod+Shift+F'
+
 export interface SettingDef {
   default: unknown
   /** 适用平台，不传表示全平台 */
@@ -82,6 +90,11 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
    * Mod 表示平台主修饰键（macOS 的 Cmd、其余平台的 Ctrl），与 CodeMirror 语义一致。
    */
   commandPaletteShortcut: { default: DEFAULT_PALETTE_SHORTCUT },
+  /**
+   * 「格式化文档」快捷键。
+   * 默认 Mod+Shift+F，与命令面板的 Mod+K 同属「整理类」操作，不易误触。
+   */
+  formatShortcut: { default: DEFAULT_FORMAT_SHORTCUT },
   /** 云端文章 GitHub 仓库，格式 owner/repo */
   cloudArticleRepo: { default: '' },
   /** 云端文章 GitHub 仓库分支 */

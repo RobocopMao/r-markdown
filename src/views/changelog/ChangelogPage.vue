@@ -20,7 +20,9 @@ import SiteFooter from '@/components/SiteFooter.vue'
 const REPO = 'RobocopMao/r-markdown'
 const RELEASES_API = `https://api.github.com/repos/${REPO}/releases?per_page=100`
 const RELEASES_PAGE = `https://github.com/${REPO}/releases`
-const DOWNLOAD_URL = 'https://pan.baidu.com/s/5XsUYe0ktlPMaNtqcfGunWg'
+/** 下载走 GitHub Releases（latest 直接跳到最新一版），国内打不开时用下面那个镜像 */
+const DOWNLOAD_URL = `https://github.com/${REPO}/releases/latest`
+const MIRROR_URL = 'https://pan.baidu.com/s/5XsUYe0ktlPMaNtqcfGunWg'
 
 const CACHE_KEY = 'r-markdown-changelog'
 const CACHE_TTL = 6 * 60 * 60 * 1000
@@ -407,8 +409,16 @@ const latestDate = computed(() => entries.value[0]?.date ?? '')
             target="_blank"
             rel="noopener"
           >
-            去百度网盘下载
+            去 GitHub 下载
             <ArrowUpRight :size="13" aria-hidden="true" />
+          </a>
+          <a
+            class="inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-2 text-[14px] font-semibold whitespace-nowrap text-[var(--ink)] no-underline [transition:border-color_.3s_var(--ease),background_.3s_var(--ease)] hover:border-[var(--ink-3)] hover:bg-[var(--page)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"
+            :href="MIRROR_URL"
+            target="_blank"
+            rel="noopener"
+          >
+            去百度网盘下载
           </a>
           <router-link
             class="inline-flex items-center gap-2 rounded-full border border-[var(--line)] px-4 py-2 text-[14px] font-semibold whitespace-nowrap text-[var(--ink)] no-underline [transition:border-color_.3s_var(--ease),background_.3s_var(--ease)] hover:border-[var(--ink-3)] hover:bg-[var(--page)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--accent)]"

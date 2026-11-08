@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import {
   Loader2,
@@ -46,6 +46,12 @@ import { expiresAtFrom, isExpiredAt } from '@/utils/aiSession'
 import { clearRecord, loadRecord, saveRecord } from '@/services/aiSessionStore'
 
 const props = defineProps<{
+  /**
+   * 内嵌模式：由 AiBoard.vue 使用——不再作为抽屉弹出，而是铺在编辑区面板里。
+   * 这里只透传给 BaseDrawer；「打开时初始化」仍由 visible 驱动，
+   * AiBoard 用 v-show 控制显隐、用 visible 触发既有生命周期。
+   */
+  embedded?: boolean
   visible: boolean
   /** 编辑器当前内容 */
   markdown: string
@@ -338,6 +344,8 @@ function resetAll() {
   fileLabel.value = ''
 }
 
+// immediate：AiBoard 里本组件是「面板一打开就挂载」，挂载那一刻 visible 已经是 true，
+// 没有 immediate 的话这一段初始化（读配置 / 预热规范 / 恢复上次结果）永远不会执行。
 watch(
   () => props.visible,
   async (v) => {
@@ -367,6 +375,7 @@ watch(
       startTicker(() => resultExpiresAt.value)
     }
   },
+  { immediate: true },
 )
 
 watch(preset, (v) => {
@@ -683,6 +692,7 @@ onBeforeUnmount(() => {
 <template>
   <BaseDrawer
     :visible="visible"
+    :embedded="props.embedded"
     title="AI 排版"
     width="min(95vw, 1000px)"
     :show-footer="configured"

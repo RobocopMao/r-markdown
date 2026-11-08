@@ -164,6 +164,7 @@ function encodeCanvas(
 
 interface EditorExposed {
   insertAtCursor: (text: string) => void
+  insertOwnLine?: (text: string, from?: number, to?: number) => void
   replaceRange: (from: number, to: number, text: string) => void
   isInsideTag: boolean
 }
@@ -185,6 +186,35 @@ export function useImageInsert(
   function resolvePasteDropMode(): string {
     if (isMobile?.value) return 'github'
     return getSetting<string>('pasteDropMode') || 'local'
+  }
+
+  /**
+   * 把 `<img>` 标签插进编辑器。
+   *
+   * `ownLine` 为真时保证图片独占一行：`markdownParser.ts` 只把「整行就是 `<img …>`」的行
+   * 渲染成独立图片块，否则会当行内内容塞进 `<p>`，视觉上黏在上下文字或组件标签
+   * （`<badges>`、`<title>` 等）旁边。这时走编辑器的 `insertOwnLine`——它会看插入点
+   * 前后同一行有没有别的字符，缺哪边补哪个换行。
+   * 为假时保持原来的纯插入行为（粘贴、拖拽、图库等入口不变）。
+   *
+   * `insertAt !== null` 是拖拽落点，语义是「从该位置起替换为空再插入」。
+   */
+  function insertImageTag(tag: string, insertAt: number | null = null, ownLine = false) {
+    const editor = editorRef.value
+    if (!editor) return
+    if (ownLine && editor.insertOwnLine) {
+      if (insertAt !== null) {
+        editor.insertOwnLine(tag, insertAt, insertAt)
+      } else {
+        editor.insertOwnLine(tag)
+      }
+      return
+    }
+    if (insertAt !== null) {
+      editor.replaceRange(insertAt, insertAt, tag)
+    } else {
+      editor.insertAtCursor(tag)
+    }
   }
 
   const imageInputRef = ref<HTMLInputElement>()
@@ -233,7 +263,7 @@ export function useImageInsert(
     reader.onload = () => {
       const dataUrl = reader.result as string
       const compacted = compactBase64(dataUrl)
-      editorRef.value?.insertAtCursor(
+      insertImageTag(
         `<img src="${compacted}" width="100%" height="auto" radius="8px" fit="cover" />`,
       )
       const cleanup = window.requestIdleCallback || ((fn) => setTimeout(fn, 200))
@@ -280,7 +310,7 @@ export function useImageInsert(
 
     try {
       const token = await putImage(finalFile)
-      editorRef.value?.insertAtCursor(
+      insertImageTag(
         `<img src="idb:${token}" width="100%" height="auto" radius="8px" fit="cover" />`,
       )
       await nextTick()
@@ -383,7 +413,7 @@ export function useImageInsert(
    * AI 配图的「保存磁盘并插入」。压缩参数、大小上限、插入的 img 标签格式必须完全一致，
    * 各写一份迟早会漂移。
    */
-  async function insertImageToDisk(file: File, insertAt: number | null = null) {
+  async function insertImageToDisk(file: File, insertAt: number | null = null, ownLine = false) {
     if (editorRef.value?.isInsideTag) {
       showToast('不能在组件标签内插入图片')
       return
@@ -395,11 +425,7 @@ export function useImageInsert(
     try {
       const relPath = await LocalImageDisk.saveImage(finalFile)
       const tag = `<img src="${relPath}" width="100%" height="auto" radius="8px" fit="cover" />`
-      if (insertAt !== null) {
-        editorRef.value?.replaceRange(insertAt, insertAt, tag)
-      } else {
-        editorRef.value?.insertAtCursor(tag)
-      }
+      insertImageTag(tag, insertAt, ownLine)
       showToast('已保存到本地磁盘')
       await nextTick()
     } catch (e: unknown) {
@@ -407,7 +433,7 @@ export function useImageInsert(
     }
   }
 
-  async function processImageInsert(file: File, insertAt: number | null = null) {
+  async function processImageInsert(file: File, insertAt: number | null = null, ownLine = false) {
     if (editorRef.value?.isInsideTag) {
       showToast('不能在组件标签内插入图片')
       return
@@ -451,11 +477,7 @@ export function useImageInsert(
       )
         .then((result) => {
           const tag = `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`
-          if (insertAt !== null) {
-            editorRef.value?.replaceRange(insertAt, insertAt, tag)
-          } else {
-            editorRef.value?.insertAtCursor(tag)
-          }
+          insertImageTag(tag, insertAt, ownLine)
           showToast('上传成功')
         })
         .catch((e: any) => {
@@ -495,11 +517,7 @@ export function useImageInsert(
       })
         .then((result) => {
           const tag = `<img src="${result.url}" width="100%" height="auto" radius="8px" fit="cover" />`
-          if (insertAt !== null) {
-            editorRef.value?.replaceRange(insertAt, insertAt, tag)
-          } else {
-            editorRef.value?.insertAtCursor(tag)
-          }
+          insertImageTag(tag, insertAt, ownLine)
           showToast('上传成功')
         })
         .catch((e: any) => {
@@ -514,7 +532,7 @@ export function useImageInsert(
 
     if (mode === 'disk') {
       // 本地磁盘存储模式（仅桌面端）
-      await insertImageToDisk(file, insertAt)
+      await insertImageToDisk(file, insertAt, ownLine)
       return
     }
 
@@ -524,11 +542,7 @@ export function useImageInsert(
     try {
       const token = await putImage(finalFile)
       const tag = `<img src="idb:${token}" width="100%" height="auto" radius="8px" fit="cover" />`
-      if (insertAt !== null) {
-        editorRef.value?.replaceRange(insertAt, insertAt, tag)
-      } else {
-        editorRef.value?.insertAtCursor(tag)
-      }
+      insertImageTag(tag, insertAt, ownLine)
       await nextTick()
     } catch {
       showToast('存储图片失败')
@@ -613,11 +627,19 @@ export function useImageInsert(
   }
 
   /** 上传图床专用入口（供 AI 配图等已有 File 的场景调用） */
-  async function uploadImageToHosting(file: File): Promise<void> {
+  async function uploadImageToHosting(file: File, ownLine = false): Promise<void> {
+    // 与其他插入入口同一守卫：光标在组件标签内部时插入会把标签劈成两半
+    if (editorRef.value?.isInsideTag) {
+      showToast('不能在组件标签内插入图片')
+      return
+    }
+
     try {
       const url = await uploadFileToHosting(file)
-      editorRef.value?.insertAtCursor(
+      insertImageTag(
         `<img src="${url}" width="100%" height="auto" radius="8px" fit="cover" />`,
+        null,
+        ownLine,
       )
       showToast('上传成功')
     } catch (e: unknown) {

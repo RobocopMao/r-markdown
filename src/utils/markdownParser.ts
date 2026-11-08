@@ -1,6 +1,14 @@
 import type { ThemeColors } from '@/composables/useTheme'
 import hljs from 'highlight.js/lib/common'
-import { leaf, esc, parseAttrs, parseAlignment, type Alignment } from './helpers'
+import {
+  leaf,
+  esc,
+  parseAttrs,
+  parseAlignment,
+  matchFenceOpen,
+  isFenceClose,
+  type Alignment,
+} from './helpers'
 import {
   HEADING_LEVEL_MAX,
   HEADING_LEVEL_MIN,
@@ -88,14 +96,55 @@ function highlightLine(rest: string, lang: string): string {
 }
 
 /**
+ * 本文件只把反引号围栏当代码块（波浪线围栏保持原样透传），
+ * 所以统一在这里过滤掉 `~` 开头的围栏，避免行为变化。
+ */
+function fenceOpenAt(line: string, allowIndent: boolean): { char: string; len: number } | null {
+  const f = matchFenceOpen(line, allowIndent)
+  return f && f.char === '`' ? f : null
+}
+
+/**
+ * 删除围栏代码块（按围栏长度配对）。
+ *
+ * 为什么不能只写 /^```[\s\S]*?\n```/gm：示范「怎么写围栏」时外层要用更多反引号，
+ * 比如
+ * ````
+ * `````markdown
+ * ```js
+ * const a = 1
+ * ```
+ * `````
+ * 而 `^``` ` 也匹配到 `^`````，于是从外层开标签起只吃到内层那行就闭合，把内层
+ * 三行原文漏进结果；残留的反引号数目失衡后，后面的行内代码正则还能跨行把它吞掉。
+ */
+export function stripFencedCodeBlocks(md: string): string {
+  const out: string[] = []
+  let open: { char: string; len: number } | null = null
+  for (const line of md.split('\n')) {
+    if (open) {
+      if (isFenceClose(line, open.char, open.len)) open = null
+      continue
+    }
+    const f = fenceOpenAt(line, true)
+    if (f) {
+      open = f
+      continue
+    }
+    out.push(line)
+  }
+  return out.join('\n')
+}
+
+/**
  * 收集 md 中所有公式（去重），按 inline/block 分类返回，用于预渲染。
  */
 export function collectFormulas(md: string): Array<{ formula: string; display: boolean }> {
   const seen = new Set<string>()
   const result: Array<{ formula: string; display: boolean }> = []
 
-  // 先删围栏代码块（行首锚定），再删行内代码（支持多重反引号嵌套）
-  const cleaned = md.replace(/^```[\s\S]*?\n```/gm, '').replace(/(`+)(.*?)\1/gs, '')
+  // 先删围栏代码块（长度感知），再删行内代码（支持多重反引号嵌套，但不跨行）
+  const cleaned = stripFencedCodeBlocks(md).replace(/(`+)([^\n]*?)\1/g, '')
 
   // 行内公式 $...$
   const inlineRe = /(?<!\$)(?<!\d)\$([^\$]+?)\$(?!\$|[\w])/g
@@ -155,6 +204,109 @@ export interface ParagraphStyle {
   fontWeight: string
   margin: number
   indent: string
+}
+
+/**
+ * 参与「行首锚定」判断的组件标签名。
+ *
+ * 解析器主循环和各组件收 body 的循环大量使用列 0 锚定正则（`/^<steps\b/`、
+ * `/^<\/steps>/`），这些标签名必须和那些正则一一对应，漏一个就等于没修。
+ */
+const COMPONENT_TAGS = [
+  'container',
+  'row',
+  'column',
+  'text',
+  'html',
+  'stack',
+  'positioned',
+  'steps',
+  'statement',
+  'badges',
+  'lead',
+  'breaking',
+  'cta',
+  'compare',
+  'left',
+  'right',
+  'reading-path',
+  'title',
+  'p-title',
+  'case-flow',
+  'timeline',
+  'slider',
+  'slide',
+  'item',
+  'engage',
+  'mermaid',
+  'table',
+  'chart',
+  'svg',
+]
+
+/** 行首（允许前导空白）就是一个组件开/闭标签 */
+const COMPONENT_TAG_LINE_RE = new RegExp(`^[ \\t]+(?:<\\/?)(?:${COMPONENT_TAGS.join('|')})\\b`)
+
+/**
+ * 去掉「组件标签行」的前导空白，其余行原样保留。
+ *
+ * 为什么需要：编辑器 / AI 写出来的稿子为了可读性常把标签缩进，
+ * 比如
+ * ```
+ * <compare ...>
+ *   <left>
+ *   ...
+ *   </left>
+ * </compare>
+ * ```
+ * 而 `parseCompare()` 用 `/^<left>/` 判态、`<steps>` / `<compare>` / `<timeline>` /
+ * `<case-flow>` / `<slider>` 等收 body 用 `while (!/^<\/tag>/)`，标签一旦带前导空白
+ * 就匹配不到 —— 轻则组件退化成普通段落、源码原样漏进正文（`<left>` 缩进时整侧图片
+ * 直接消失），重则闭标签永远等不到、循环吃到文末，**后文整段静默消失且没有任何提示**。
+ *
+ * 只在「整行第一个非空白内容就是组件标签」时才去掉该行前导空白，因此：
+ * - 普通文字行不动
+ * - 列表项不动（缩进是嵌套列表的语义，动了会丢层级）
+ * - 代码围栏内不动（缩进是代码内容）
+ * - `<html>` 原始块内不动（原样透传是它的契约）
+ */
+export function deindentComponentTags(md: string): string {
+  const out: string[] = []
+  let fenceOpen: { char: string; len: number } | null = null
+  let inHtmlBlock = false
+  for (const line of md.split('\n')) {
+    // 围栏按长度配对，否则示范四反引号围栏时内层 ``` 会被当成闭合
+    if (fenceOpen) {
+      if (isFenceClose(line, fenceOpen.char, fenceOpen.len)) fenceOpen = null
+      out.push(line)
+      continue
+    }
+    const fence = fenceOpenAt(line, true)
+    if (fence) {
+      fenceOpen = fence
+      out.push(line)
+      continue
+    }
+    // <html> 原始块：开标签本身可以去缩进，块内内容一律原样保留
+    if (/^[ \t]*<html\b/.test(line)) {
+      const stripped = line.replace(/^[ \t]+/, '')
+      out.push(stripped)
+      // 单行写法 <html>…</html> 不能把后续所有行都当块内
+      inHtmlBlock = !/<\/html>\s*$/.test(stripped)
+      continue
+    }
+    if (inHtmlBlock) {
+      out.push(line)
+      if (/<\/html>\s*$/.test(line)) inHtmlBlock = false
+      continue
+    }
+    if (COMPONENT_TAG_LINE_RE.test(line) || /^[ \t]+<\s*!\[/.test(line)) {
+      out.push(line.replace(/^[ \t]+/, ''))
+      continue
+    }
+    out.push(line)
+  }
+  return out.join('\n')
 }
 
 /**
@@ -271,24 +423,24 @@ export function parseMarkdown(
     return `__FN_${num - 1}__|${label}|`
   })
 
-  const lines = processedMd.split('\n')
+  const lines = deindentComponentTags(processedMd).split('\n')
   let html = ''
   let i = 0
 
   // 收集 p-title level1（用于 <reading-path> 标签）
+  // 同样要支持开标签跨行：属性写到下一行、`>` 单独成行时也算一条
   const pTitleLevel1List: { num: string; title: string; subtitle: string }[] = []
   for (let j = 0; j < lines.length; j++) {
-    // 匹配 <p-title ...> 标签
-    const ptMatch = lines[j].match(/^<p-title\b([^>]*)>([\s\S]*?)<\/p-title>/)
-    if (ptMatch) {
-      const attrs = parseAttrs(ptMatch[1])
-      const level = parseHeadingLevel(attrs.level)
-      if (level === 1) {
-        const num = attrs.num || ''
-        const title = attrs.title || ptMatch[2].trim()
-        const subtitle = attrs.subtitle || ''
-        pTitleLevel1List.push({ num, title, subtitle })
-      }
+    if (!/^<p-title\b/.test(lines[j])) continue
+    const span = parseTagSpan(j, 'p-title')
+    if (!span) continue
+    const attrs = parseAttrs(span.attrsStr)
+    const level = parseHeadingLevel(attrs.level)
+    if (level === 1) {
+      const num = attrs.num || ''
+      const title = attrs.title || span.bodyText
+      const subtitle = attrs.subtitle || ''
+      pTitleLevel1List.push({ num, title, subtitle })
     }
   }
 
@@ -339,6 +491,91 @@ export function parseMarkdown(
       j++
     }
     return { bodyText: body.trim(), next: j }
+  }
+
+  /**
+   * 解析「开标签可能跨行」的块级标签，返回属性串、body 文本与下一行下标。
+   *
+   * 支持三种写法：
+   *   1. 单行：`<title badge="x">标题</title>`
+   *   2. 开标签跨行：`<title` / `badge="x"` / `>标题</title>`
+   *   3. body 也跨行：`<title` / `badge="x"` / `>` / `标题` / `</title>`
+   *
+   * 老实现只用 `^<title\b([^>]*)>([\s\S]*?)</title>` 匹配单行，
+   * 一旦属性写到下一行、`>` 单独成行就整条匹配失败，组件被静默丢掉。
+   */
+  function parseTagSpan(
+    startIdx: number,
+    tagName: string,
+  ): { attrsStr: string; bodyText: string; next: number } | null {
+    const first = lines[startIdx]
+    if (!new RegExp(`^<${tagName}\\b`).test(first)) return null
+
+    // ① 找开标签的 `>`：逐字符扫描并跳过引号内的内容，
+    //    否则 subtitle="a>b" 这种属性值会把开标签截断在中间
+    let text = ''
+    let scanned = 0
+    let quote: string | null = null
+    let gt = -1
+    let j = startIdx
+    while (j < lines.length) {
+      text += (text ? '\n' : '') + lines[j]
+      for (let c = scanned; c < text.length; c++) {
+        const ch = text[c]
+        if (quote) {
+          if (ch === quote) quote = null
+          continue
+        }
+        if (ch === '"' || ch === "'") {
+          quote = ch
+          continue
+        }
+        if (ch === '>') {
+          gt = c
+          break
+        }
+      }
+      if (gt >= 0) break
+      scanned = text.length
+      j++
+    }
+    if (gt < 0) return null
+
+    const attrsStr = text.slice(first.indexOf('<') + 1 + tagName.length, gt)
+    const restAfterOpen = text.slice(gt + 1)
+    const closeTag = `</${tagName}>`
+    const openTagRe = new RegExp(`<${tagName}\\b`, 'g')
+
+    // ② 开标签同行就闭合：<tag ...>body</tag>
+    if (restAfterOpen.includes(closeTag)) {
+      const bodyText = restAfterOpen.slice(0, restAfterOpen.indexOf(closeTag)).trim()
+      return { attrsStr, bodyText, next: j + 1 }
+    }
+
+    // ③ 多行 body：按嵌套深度收集到闭合标签
+    const parts: string[] = []
+    if (restAfterOpen.trim()) parts.push(restAfterOpen)
+    let depth = 1
+    let k = j + 1
+    let closed = false
+    while (k < lines.length) {
+      const cur = lines[k]
+      const openCount = (cur.match(openTagRe) || []).length
+      const closeCount = cur.split(closeTag).length - 1
+      if (closeCount > 0 && depth + openCount - closeCount <= 0) {
+        // 闭合标签与内容同行：只取闭合标签之前的那部分
+        parts.push(cur.slice(0, cur.indexOf(closeTag)))
+        closed = true
+        k++
+        break
+      }
+      depth += openCount - closeCount
+      if (depth > 0) parts.push(cur)
+      k++
+    }
+    // 没有闭合标签：当作解析失败，让调用方退回普通段落，避免把后文整段吞掉
+    if (!closed) return null
+    return { attrsStr, bodyText: parts.join('\n').trim(), next: k }
   }
 
   /**
@@ -716,36 +953,41 @@ export function parseMarkdown(
       continue
     }
     // <title> 标签（通过 type 属性选择样式：DA01/DA02/...）
+    // 支持单行、开标签跨行、body 跨行三种写法（见 parseTagSpan）
     if (/^<title\b/.test(line)) {
-      const titleMatch = line.match(/^<title\b([^>]*)>([\s\S]*?)<\/title>/)
-      if (titleMatch) {
-        const attrs = parseAttrs(titleMatch[1])
-        const body = titleMatch[2].trim()
+      const span = parseTagSpan(i, 'title')
+      if (span) {
+        const attrs = parseAttrs(span.attrsStr)
+        const body = span.bodyText
         const type = (attrs.type || 'DA01').toUpperCase()
         if (type === 'DA02') {
           html += withSourceLine(i, Title_DA02.render(attrs, body, t, md))
         } else {
           html += withSourceLine(i, Title_DA01.render(attrs, body, t, md))
         }
+        i = span.next
+      } else {
+        i++
       }
-      i++
       continue
     }
 
-    // <p-title> 段落标题标签
+    // <p-title> 段落标题标签（同样支持开标签跨行）
     if (/^<p-title\b/.test(line)) {
-      const ptMatch = line.match(/^<p-title\b([^>]*)>([\s\S]*?)<\/p-title>/)
-      if (ptMatch) {
-        const attrs = parseAttrs(ptMatch[1])
-        const body = ptMatch[2].trim()
+      const span = parseTagSpan(i, 'p-title')
+      if (span) {
+        const attrs = parseAttrs(span.attrsStr)
+        const body = span.bodyText
         // 给根节点打个标记（不影响样式），分页时用它避免小节标题落在页底跟正文分家
         const pTitleRenderer = attrs.type === 'DA02' ? PTitle_DA02 : PTitle
         html += withSourceLine(
           i,
           pTitleRenderer.render(attrs, body, t).replace('<section', '<section data-block="ptitle"'),
         )
+        i = span.next
+      } else {
+        i++
       }
-      i++
       continue
     }
 
@@ -955,14 +1197,16 @@ export function parseMarkdown(
       continue
     }
 
-    if (/^```/.test(line)) {
+    // 围栏按长度配对，否则示范「四反引号包三反引号」时内层 ``` 会被当成闭合
+    const fenceOpen = fenceOpenAt(line, false)
+    if (fenceOpen) {
       const rawLang = line.replace(/^`+/, '').trim()
       const hasLang = rawLang !== ''
       const lang = rawLang || 'text'
       const codeStartLine = i
       i++
       const codeLines: string[] = []
-      while (i < lines.length && !/^```/.test(lines[i])) {
+      while (i < lines.length && !isFenceClose(lines[i], fenceOpen.char, fenceOpen.len, false)) {
         codeLines.push(lines[i])
         i++
       }

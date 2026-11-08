@@ -58,6 +58,12 @@
   --dropdown-bg: #ffffff;
   --dropdown-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
   --dropdown-hover: rgba(0, 0, 0, 0.05);
+
+  /* ── 设置面板卡片 ── */
+  --settings-card-border: #ededed;
+  --settings-subcard-bg: #f6f7f9;
+  --settings-track: #e0e0e0;
+  --settings-hover-border: rgba(39, 174, 96, 0.35);
 }
 
 [data-theme='dark'] {
@@ -89,6 +95,12 @@
   --dropdown-bg: #2a2a2a;
   --dropdown-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   --dropdown-hover: rgba(255, 255, 255, 0.08);
+
+  /* ── 设置面板卡片 ── */
+  --settings-card-border: #2f2f2f;
+  --settings-subcard-bg: #232323;
+  --settings-track: #3a3a3a;
+  --settings-hover-border: rgba(39, 174, 96, 0.45);
 }
 
 /* ── Base Reset ── */
@@ -211,4 +223,88 @@ body {
 
 .toolbar-round-btn:hover {
   transform: scale(1.1);
+}
+
+/*
+  编辑区内嵌面板（统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测 / 设置）共用的搜索框。
+
+  这些面板的搜索框外表必须完全一致，但各自是 scoped style，互相看不到，
+  所以统一收到全局：高 34px、右侧带图标、聚焦时描边变主题色。
+
+  本文件是未分层的普通 CSS，优先级高于 Tailwind utilities 层，因此这里**不要写**
+  width/max-width 之外的定位类属性，需要改宽窄一律用使用方的 classList 或内联宽度。
+*/
+.board-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 34px;
+  width: 260px;
+  max-width: 100%;
+  padding: 0 11px;
+  border: 1px solid var(--border-color);
+  border-radius: 9px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  transition:
+    border-color 0.2s,
+    color 0.2s;
+}
+
+.board-search:focus-within {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.board-search > input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+}
+
+.board-search > input::placeholder {
+  color: var(--text-muted);
+}
+
+/* 窄屏：搜索框占满整行（面板头部会把它折到第二行） */
+@media (max-width: 767px) {
+  .board-search {
+    width: 100%;
+  }
+}
+
+/**
+ * 面板头部的标签页按钮（检测 / 我的素材 / 设置 共用）。
+ *
+ * 视觉沿用「扩展组件」页面那排分类按钮（.cat-btn）：描边胶囊、未选中透明底、
+ * 选中填主题色白字；只有字号和内边距按面板内嵌场景收小（尺寸保持不变）。
+ * style.css 是未分层的普通 CSS，优先级高于 Tailwind 工具类，模板里不用再拼一堆 class。
+ */
+.board-tab {
+  padding: 4px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.board-tab:hover {
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.board-tab.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
 }

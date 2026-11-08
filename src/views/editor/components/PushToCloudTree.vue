@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { Folder, FileText, ChevronRight, ChevronDown } from 'lucide-vue-next'
 import type { TreeNode } from '@/services/githubTreeService'
 

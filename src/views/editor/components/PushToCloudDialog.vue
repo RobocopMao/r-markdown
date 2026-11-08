@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch } from 'vue'
 import { Folder } from 'lucide-vue-next'
 import { useGitHubTree } from '../composables/useGitHubTree'

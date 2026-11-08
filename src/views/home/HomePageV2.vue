@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 公开降级版首页入口（V2 版本名占位）。
  *

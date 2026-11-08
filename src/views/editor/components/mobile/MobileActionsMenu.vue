@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
 import {
@@ -19,6 +19,7 @@ import {
   ShieldAlert,
   ChartColumn,
   HelpCircle,
+  AlignLeft,
 } from 'lucide-vue-next'
 
 defineProps<{
@@ -50,6 +51,8 @@ const emit = defineEmits<{
   'open-help': []
   /** 切换到统计面板（与桌面端左侧栏的「统计」同一入口） */
   'toggle-stats': []
+  /** 格式化文档（与桌面端工具栏的「格式化」同一入口） */
+  'format-document': []
 }>()
 
 const { toggle: groupToggle, isVisible } = useDropdownGroup('actions')
@@ -122,6 +125,13 @@ onBeforeUnmount(() => {
         >
           <ImagePlus :size="14" />
           AI 配图
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('format-document'))"
+        >
+          <AlignLeft :size="14" />
+          格式化文档
         </button>
         <button
           class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"

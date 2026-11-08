@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { computed, ref, onMounted, onBeforeUnmount } from 'vue'
 import { useDarkMode, type DarkMode } from '@/composables/useDarkMode'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'

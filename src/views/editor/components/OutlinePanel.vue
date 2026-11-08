@@ -1,4 +1,4 @@
-<script setup lang="ts" vapor>
+<script setup vapor lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import type { OutlineItem } from '@/utils/outline'
 import { useTheme } from '@/composables/useTheme'

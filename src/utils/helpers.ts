@@ -190,3 +190,40 @@ export function parseAttrs(s: string): Record<string, string> {
   )
   return attrs
 }
+
+/**
+ * 围栏代码块的开启判定：行首（可带前导空白）>=3 个反引号或波浪线，返回围栏字符与长度。
+ *
+ * 必须记住长度，因为「示范怎么写围栏」时外层要用更多反引号：
+ * ````
+ * `````markdown
+ * ```js
+ * const a = 1
+ * ```
+ * `````
+ * 只按 `^``` ` 判开合的话，外层开标签会被内层的 ` ```js ` 提前闭合，
+ * 中间内容漏出围栏（公式收集、大纲、字数统计都会跟着错）。
+ *
+ * 反引号围栏的语言标注里不允许再出现反引号（CommonMark），出现则不视为围栏。
+ */
+export function matchFenceOpen(
+  line: string,
+  allowIndent = true,
+): { char: string; len: number } | null {
+  const m = line.match(allowIndent ? /^[ \t]*(`{3,}|~{3,})(.*)$/ : /^(`{3,}|~{3,})(.*)$/)
+  if (!m) return null
+  const char = m[1][0]
+  if (char === '`' && m[2].includes('`')) return null
+  return { char, len: m[1].length }
+}
+
+/** 围栏闭合判定：整行只有同类围栏字符（长度 >= 开启长度）和空白 */
+export function isFenceClose(
+  line: string,
+  char: string,
+  openLen: number,
+  allowIndent = true,
+): boolean {
+  const m = line.match(allowIndent ? /^[ \t]*(`+|~+)[ \t]*$/ : /^(`+|~+)[ \t]*$/)
+  return !!m && m[1][0] === char && m[1].length >= openLen
+}

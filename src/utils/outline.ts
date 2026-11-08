@@ -4,6 +4,7 @@ import {
   parseHeadingLevel,
   type HeadingLevel,
 } from './headingLevels'
+import { matchFenceOpen, isFenceClose } from './helpers'
 
 /**
  * 从 Markdown 原文提取文档大纲：H1–H4 标题、<title> 主标题、<p-title> 段落标题。
@@ -39,25 +40,22 @@ function cleanInlineText(s: string): string {
 export function extractOutline(markdown: string): OutlineItem[] {
   const items: OutlineItem[] = []
   const lines = markdown.split('\n')
-  let inFence = false
-  let fenceChar = ''
+  let fence: { char: string; len: number } | null = null
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim()
 
-    // 代码围栏开关（``` 或 ~~~），围栏内内容不参与大纲
-    const fenceMatch = trimmed.match(/^(`{3,}|~{3,})/)
-    if (fenceMatch) {
-      const ch = fenceMatch[1][0]
-      if (!inFence) {
-        inFence = true
-        fenceChar = ch
-      } else if (ch === fenceChar) {
-        inFence = false
-      }
+    // 代码围栏开关（``` 或 ~~~），围栏内内容不参与大纲。
+    // 按围栏长度配对：示范「四反引号包三反引号」时，内层 ``` 不能当作闭合。
+    if (fence) {
+      if (isFenceClose(lines[i], fence.char, fence.len)) fence = null
       continue
     }
-    if (inFence) continue
+    const fenceOpen = matchFenceOpen(lines[i])
+    if (fenceOpen) {
+      fence = fenceOpen
+      continue
+    }
 
     // <title> 主标题组件，正文可能跨行
     if (/^<title\b/.test(trimmed)) {

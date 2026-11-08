@@ -9,7 +9,7 @@
   挂到 body 并用 fixed 定位，避免被编辑器容器的 overflow 裁剪。
   z-index 取 990：低于弹窗类（BaseDialog 999 / PromptDialog 1100），高于查找面板 900。
 -->
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, nextTick } from 'vue'
 import { Search, FileText, FolderOpen, Package, CornerDownLeft, Clock, X } from 'lucide-vue-next'
 import {
@@ -213,10 +213,10 @@ function onActivate(item: PaletteItem) {
         }"
         @keydown="onKeydown"
       >
-        <!-- 输入行：圆角搜索框（无背景；聚焦时边框变主题色） -->
+        <!-- 输入行：圆角矩形搜索框（无背景；聚焦时边框变主题色） -->
         <div class="p-3 pb-2">
           <div
-            class="flex items-center gap-2 px-3.5 h-10 rounded-full border bg-transparent border-[var(--border-color)] transition-colors focus-within:border-[var(--accent)]"
+            class="flex items-center gap-2 px-3.5 h-10 rounded-lg border bg-transparent border-[var(--border-color)] transition-colors focus-within:border-[var(--accent)]"
           >
             <Search :size="15" class="shrink-0" style="color: var(--text-muted)" />
             <input

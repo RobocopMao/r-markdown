@@ -4,7 +4,8 @@
  * 数据获取只做一次（进页面 / 主动刷新），派生指标全部用 computed 从快照算出来，
  * 这样切换时间范围、排序方式都不再触发 IO。
  *
- * 缓存策略：sessionStorage 存 10 分钟快照，防止来回切路由反复拉 GitHub。
+ * 缓存策略：sessionStorage 存快照，防止来回切路由反复拉 GitHub。
+ * 有效期分两档：快照里真的用到了 GitHub（打了多个请求）留 1 小时，纯本地/草稿箱留 5 分钟。
  * 只缓存「聚合后的快照」，不缓存原始正文，避免把整篇文章塞进 sessionStorage（配额通常 5MB）。
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
@@ -23,17 +24,35 @@ import { getSetting, setSetting } from '@/config/settings'
 const CACHE_KEY = 'r-markdown-dashboard-cache'
 
 /**
- * 快照有效期（10 分钟）。
+ * 快照有效期：拉了 GitHub 数据时 1 小时，其余情况 5 分钟。
+ *
+ * 为什么分开：GitHub 那一路要打好几个请求（目录树 + 提交历史 + 逐篇正文），
+ * 换来的是几分钟内不会变的内容，缓存久一点更划算；
+ * 而纯本地磁盘 / 草稿箱是毫秒级读取、随时可能被改动，缓存短一点更贴近现场。
  *
  * 注意：这里**没有定时器**，面板开着不动不会自己更新。
  * 这个时长只决定「下次读快照时还能不能用」——
  * 过期后必须重新进入面板或点「刷新」才会重新采集。
- * 页脚文案也用这个常量，改一处就同步。
  */
-export const CACHE_TTL = 10 * 60 * 1000
+export const CACHE_TTL_WITH_GITHUB = 60 * 60 * 1000
 
-/** 页脚文案用的分钟数 */
-export const CACHE_TTL_MINUTES = Math.round(CACHE_TTL / 60000)
+/** 没有拉 GitHub 数据时的快照有效期 */
+export const CACHE_TTL_LOCAL = 5 * 60 * 1000
+
+/**
+ * 这份快照该用哪个有效期。
+ *
+ * 判断依据是「这次采集有没有真的用到 GitHub」——`mode === 'github'` 只说明选的是仓库，
+ * 没配仓库 / 网络失败时 `sources.github` 为 false，那种快照不该按 1 小时留。
+ */
+export function cacheTtlFor(data: DashboardData): number {
+  return data.mode === 'github' && data.sources?.github ? CACHE_TTL_WITH_GITHUB : CACHE_TTL_LOCAL
+}
+
+/** 页脚文案用的分钟数（随快照内容变化） */
+export function cacheTtlMinutesFor(data: DashboardData): number {
+  return Math.round(cacheTtlFor(data) / 60000)
+}
 
 /**
  * 统计窗口固定为近一年。
@@ -73,8 +92,10 @@ function readCache(): DashboardData | null {
     const raw = sessionStorage.getItem(CACHE_KEY)
     if (!raw) return null
     const parsed = JSON.parse(raw) as CachePayload
-    if (!parsed?.at || Date.now() - parsed.at > CACHE_TTL) return null
-    if (!parsed.data || !Array.isArray(parsed.data.drafts)) return null
+    if (!parsed?.at || !parsed.data) return null
+    if (!Array.isArray(parsed.data.drafts)) return null
+    // 有效期看这份快照自己有没有用到 GitHub（1 小时 / 5 分钟）
+    if (Date.now() - parsed.at > cacheTtlFor(parsed.data)) return null
     // 换了工作区（本地 ↔ 仓库）旧快照就作废，否则会拿上一处的数据当当前数据
     if (parsed.data.mode !== currentStorageMode()) return null
     return parsed.data
@@ -553,10 +574,11 @@ export function useDashboard() {
     }
 
     if (problemCount.value > 0) {
-      const worst = healthRows.value[0]
+      // 只在未被忽略的行里挑最差的一篇，避免推荐已经点过“忽略”的文章
+      const worst = visibleHealthRows.value.find((r) => r.score < 85)
       list.push({
         tone: 'warn',
-        text: `${problemCount.value} 篇有可改的体检问题，最需要处理的是《${worst.title}》（${worst.score} 分，${worst.issues[0]?.text ?? '待检查'}）。`,
+        text: `${problemCount.value} 篇有可改的体检问题，最需要处理的是《${worst?.title ?? '—'}》（${worst?.score ?? 0} 分，${worst?.issues[0]?.text ?? '待检查'}）。`,
       })
     }
 

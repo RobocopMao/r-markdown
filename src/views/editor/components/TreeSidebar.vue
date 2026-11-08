@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { ref, computed, watch, onMounted, onBeforeUnmount, provide, nextTick } from 'vue'
 import {
   Folder,
@@ -909,7 +909,7 @@ onBeforeUnmount(() => {
   window.removeEventListener('setting-changed', onSettingChanged)
 })
 
-/** SettingsDialog 保存云端配置、切换存储模式或更改本地目录后自动同步 */
+/** SettingsBoard 保存云端配置、切换存储模式或更改本地目录后自动同步 */
 function onSettingChanged(e: Event) {
   const { key } = (e as CustomEvent).detail || {}
   if (key === 'cloudArticleToken' || key === 'cloudArticleRepo' || key === 'articleStorageMode') {
@@ -1057,7 +1057,7 @@ defineExpose({
       style="border-bottom: 1px solid var(--border-color, #e5e5e5)"
     >
       <div
-        class="flex items-center gap-1.5 bg-[var(--bg-hover)] rounded-full border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 px-3"
+        class="flex items-center gap-1.5 bg-[var(--bg-hover)] rounded-lg border border-[var(--border-color,#e5e5e5)] focus-within:border-[var(--accent)] py-1 px-3"
       >
         <Search :size="12" style="color: var(--text-secondary)" />
         <input

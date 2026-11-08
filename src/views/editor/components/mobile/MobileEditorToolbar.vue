@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 移动端编辑 Tab 顶部的快捷工具栏。
  *

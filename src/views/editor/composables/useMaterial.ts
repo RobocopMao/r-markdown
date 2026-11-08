@@ -1,5 +1,4 @@
 import { ref, type Ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
 
 interface EditorExposed {
@@ -11,9 +10,6 @@ export function useMaterial(
   showToast: (msg: string) => void,
   editorRef: Ref<EditorExposed | undefined>,
 ) {
-  const router = useRouter()
-
-  const showMaterialPanel = ref(false)
   const saveMaterialVisible = ref(false)
 
   // 素材重复内容确认弹窗状态
@@ -28,15 +24,6 @@ export function useMaterial(
   const pendingMaterialContent = ref('')
   const pendingOverwriteMaterialId = ref<string | null>(null)
   const pendingOverwriteMaterialName = ref('')
-
-  // ── 素材入口 ──
-  function onMaterialAction(action: 'my' | 'library') {
-    if (action === 'my') {
-      showMaterialPanel.value = true
-    } else if (action === 'library') {
-      router.push('/materials')
-    }
-  }
 
   function handleOpenSaveMaterial() {
     saveMaterialVisible.value = true
@@ -136,22 +123,20 @@ export function useMaterial(
     pendingOverwriteMaterialId.value = null
   }
 
+  /** 插入素材正文；面板的开关由 EditorPage 管（素材面板现在是编辑区内嵌面板） */
   function handleInsertMaterial(item: MaterialItem) {
     if (!editorRef.value) return
     editorRef.value.insertAtCursor('\n' + item.content)
-    showMaterialPanel.value = false
     showToast('素材已插入')
   }
 
   return {
-    showMaterialPanel,
     saveMaterialVisible,
     confirmMaterialOverwriteVisible,
     pendingMaterial,
     pendingMaterialContent,
     pendingOverwriteMaterialId,
     pendingOverwriteMaterialName,
-    onMaterialAction,
     handleOpenSaveMaterial,
     handleSaveMaterial,
     handleMaterialOverwrite,

@@ -86,6 +86,8 @@ export const MAX_ROWS = 3
 
 export interface EditorExposed {
   insertAtCursor: (text: string) => void
+  /** 在光标处插入并保证内容独占一行（图片等块级标签用） */
+  insertOwnLine: (text: string, from?: number, to?: number) => void
   scrollToLineAndHighlight: (
     lineNo: number,
     opts?: { syncPreview?: boolean; moveCursor?: boolean },
@@ -95,6 +97,8 @@ export interface EditorExposed {
   isInsideTag: boolean
   applyInlineFormat: (syntax: string, wrapType?: 'delim' | 'tag') => void
   replaceRange: (from: number, to: number, text: string) => void
+  /** 整体替换文档内容（格式化用），进 CodeMirror 撤销栈，可一步撤销 */
+  replaceAll: (text: string) => void
   /** 光标所在行号（1-based） */
   cursorLine: number
   /** 光标所在列号（1-based） */

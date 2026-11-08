@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 统计面板主体。
  *
@@ -14,6 +14,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import Toast from '@/components/Toast.vue'
+import BoardHeader from '@/views/editor/components/BoardHeader.vue'
 import { currentStorageMode } from '@/services/metricsCollector'
 import KpiRow from './components/KpiRow.vue'
 import ActivityHeatmap from './components/ActivityHeatmap.vue'
@@ -21,7 +22,7 @@ import HealthTable from './components/HealthTable.vue'
 import DistributionBar from './components/DistributionBar.vue'
 import ConsistencyPanel from './components/ConsistencyPanel.vue'
 import InsightList from './components/InsightList.vue'
-import { CACHE_TTL_MINUTES, RANGE_LABEL, useDashboard } from '@/composables/useDashboard'
+import { cacheTtlMinutesFor, RANGE_LABEL, useDashboard } from '@/composables/useDashboard'
 
 const props = defineProps<{
   /** 嵌在编辑器里：去掉外层的最大宽度与页脚留白，自己滚动 */
@@ -113,43 +114,25 @@ onMounted(() => {
 <template>
   <div :class="props.embedded ? 'h-full overflow-y-auto' : ''">
     <div :class="props.embedded ? 'px-4 py-4' : ''">
-      <!-- 顶部工具条 -->
-      <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
-        <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1
-              :class="props.embedded ? 'text-[16px]' : 'text-[22px]'"
-              class="font-semibold tracking-tight"
-            >
-              统计
-            </h1>
-            <button
-              v-if="props.embedded"
-              type="button"
-              class="rounded-md border border-[var(--border-color)] px-2 py-0.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--accent)]"
-              @click="emit('close')"
-            >
-              返回编辑
-            </button>
-          </div>
-          <p class="mt-1 text-[12px] text-[var(--text-secondary)]">
-            {{ sourceLine }}
-            <span v-if="storageLabel" class="text-[var(--text-muted)]">· {{ storageLabel }}</span>
-          </p>
-        </div>
-
-        <div class="flex items-center gap-2">
+      <BoardHeader
+        title="统计"
+        :description="`${sourceLine}${storageLabel ? ` · ${storageLabel}` : ''}`"
+        :show-back="props.embedded"
+        :title-class="props.embedded ? 'text-[18px]' : 'text-[22px]'"
+        @close="emit('close')"
+      >
+        <template #actions>
           <span class="text-[11px] text-[var(--text-muted)]">{{ RANGE_LABEL }}</span>
           <button
             type="button"
-            class="rounded-lg border border-[var(--border-color)] px-2.5 py-1.5 text-[11px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-50"
+            class="rounded-lg border border-[var(--border-color)] px-3 py-1.5 text-[12px] text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] disabled:opacity-50"
             :disabled="loading || refreshing"
             @click="onRefresh"
           >
             {{ refreshing ? '刷新中…' : '刷新' }}
           </button>
-        </div>
-      </div>
+        </template>
+      </BoardHeader>
 
       <!-- 加载中 -->
       <div v-if="loading && !data" class="flex flex-col items-center gap-2 py-24">
@@ -230,7 +213,7 @@ onMounted(() => {
               </div>
               <p class="mb-2 text-[11px] text-[var(--text-muted)]">
                 按结构分从低到高排，点一行展开细节；满分 100
-                的不列出，不想看的可以「忽略」，之后在底部恢复
+                的不列出，不想看的可以「忽略」，之后在底部恢复。结果仅供参考。
               </p>
               <HealthTable
                 :rows="visibleHealthRows"
@@ -347,10 +330,11 @@ onMounted(() => {
         </div>
 
         <!-- 页脚信息：说清「数据有多旧」和「什么时候才会重新采集」。
-             这里没有定时器，面板开着不动不会自己刷新，别写成「自动失效」。 -->
+             这里没有定时器，面板开着不动不会自己刷新，别写成「自动失效」。
+             有效期随快照内容变化：拉了 GitHub 数据 1 小时，纯本地 5 分钟。 -->
         <p class="mt-5 text-center text-[11px] text-[var(--text-muted)]">
           汇总于 {{ fmtDateTime(data.loadedAt) }} · 快照缓存在本页会话内，有效期
-          {{ CACHE_TTL_MINUTES }} 分钟；过期后重新进入面板或点「刷新」才会重新采集
+          {{ cacheTtlMinutesFor(data) }} 分钟；过期后重新进入面板或点「刷新」才会重新采集
         </p>
       </template>
     </div>

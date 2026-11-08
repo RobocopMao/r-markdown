@@ -323,7 +323,7 @@ function onWindowResize() {
 <style scoped>
 .showcase-page {
   min-height: 100vh;
-  background: var(--bg-secondary);
+  background: var(--bg-primary);
   transition: opacity 0.3s ease;
 }
 

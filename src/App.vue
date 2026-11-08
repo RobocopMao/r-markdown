@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 import { useAutoUpdater } from './composables/useAutoUpdater'
 import { startupState, handleRestore } from './services/startupCheck'
 import ConfirmDialog from './components/ConfirmDialog.vue'

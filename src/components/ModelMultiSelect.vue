@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 模型多选：把「接口查回来的模型列表」与「自己手填的模型名」合成一份可勾选的清单。
  *

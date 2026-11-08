@@ -1,4 +1,4 @@
-<script setup lang="ts">
+<script setup vapor lang="ts">
 /**
  * 数据源状态 + 一致性检查（P1）。
  *
