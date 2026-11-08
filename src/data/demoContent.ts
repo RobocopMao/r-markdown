@@ -1,4 +1,4 @@
-export const DEMO_CONTENT = `<title type="DA02" badge="GUIDE" subtitle="这是一份包含所有可用 Markdown 指令及扩展标签的完整演示稿。" chips="图片并排|窗口滚动|渐变文字">功能全集：排版组件指南</title>
+export const DEMO_CONTENT = `<title type="DA02" badge="GUIDE" style="banner" subtitle="这是一份包含所有可用 Markdown 指令及扩展标签的完整演示稿。" chips="图片并排|窗口滚动|渐变文字">功能全集：排版组件指南</title>
 
 <p-title num="01" title="图片增强特性" subtitle="IMAGES · 窗口化与并排" level="1"></p-title>
 
@@ -61,7 +61,7 @@ export const DEMO_CONTENT = `<title type="DA02" badge="GUIDE" subtitle="这是�
 <p-title num="02" title="提示与建议 (Callout)" level="2"></p-title>
 
 > [TIP] 操作小贴士
-> 使用 [TIP] 或 [NOTE] 可以快速生成带背景的提示框。
+> 使用 [TIP]、[NOTE]、[WARNING]、[CAUTION]、[IMPORTANT] 可以快速生成带背景的提示框。
 
 <p-title num="03" title="横向步骤流 (Horizontal Steps)" level="2"></p-title>
 
