@@ -1040,6 +1040,28 @@ function insertAtCursor(text: string) {
 }
 
 /**
+ * 整体替换文档内容（格式化用）。
+ *
+ * 走 `view.dispatch` 而不是改 `markdown.value`：只有经过 CodeMirror 的一次 change
+ * 才会进入它自己的撤销栈，用户按 ⌘Z 能一步撤回整次格式化。
+ * 同时把光标位置按比例保留，避免长文档格式化后视线跳到别处。
+ */
+function replaceAll(text: string) {
+  if (!view) return
+  const doc = view.state.doc
+  const current = doc.toString()
+  if (current === text) return
+  const sel = view.state.selection.main
+  const ratio = doc.length > 0 ? sel.head / doc.length : 0
+  const head = Math.min(Math.round(ratio * text.length), text.length)
+  view.dispatch({
+    changes: { from: 0, to: doc.length, insert: text },
+    selection: { anchor: head },
+    scrollIntoView: true,
+  })
+}
+
+/**
  * 在光标处插入一段「独占一行」的内容（图片标签等）。
  *
  * 为什么需要单独一个方法：`markdownParser.ts` 里只有 `line.trim()` 以 `<img ` 开头时才把这一行
@@ -1104,6 +1126,7 @@ function scrollToLineAndHighlight(
 defineExpose({
   scrollTo,
   replaceRange,
+  replaceAll,
   insertAtCursor,
   insertOwnLine,
   isAtLineStart,

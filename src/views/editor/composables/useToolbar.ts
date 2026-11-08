@@ -97,6 +97,8 @@ export interface EditorExposed {
   isInsideTag: boolean
   applyInlineFormat: (syntax: string, wrapType?: 'delim' | 'tag') => void
   replaceRange: (from: number, to: number, text: string) => void
+  /** 整体替换文档内容（格式化用），进 CodeMirror 撤销栈，可一步撤销 */
+  replaceAll: (text: string) => void
   /** 光标所在行号（1-based） */
   cursorLine: number
   /** 光标所在列号（1-based） */

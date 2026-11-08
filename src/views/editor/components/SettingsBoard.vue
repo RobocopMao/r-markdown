@@ -9,6 +9,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { open } from '@tauri-apps/plugin-shell'
 import pkg from '../../../../package.json'
 import {
+  AlignLeft,
   BarChart3,
   Check,
   Cloud,
@@ -74,6 +75,7 @@ import { useTheme } from '@/composables/useTheme'
 import { useIsMobileWeb } from '@/composables/useIsMobile'
 import { testConnection as testLetaConnection } from '@/services/letaUploader'
 import { getErrorMessage } from '@/utils/helpers'
+import { DEFAULT_FORMAT_SHORTCUT } from '@/config/defaults'
 import {
   isMac,
   modKeyLabel,
@@ -335,6 +337,62 @@ function onShortcutKeydown(e: KeyboardEvent) {
   const text = formatShortcutSpec(spec)
   commandPaletteShortcut.value = text
   setSetting('commandPaletteShortcut', text)
+}
+
+// ── 格式化文档快捷键 ──
+/**
+ * 与命令面板同一套录制/展示逻辑，只是独立一份状态。
+ * 抽公共 composable 会更短，但两边文案与回退值都不同，这里保持显式更易读。
+ */
+const formatShortcut = ref(getSetting<string>('formatShortcut'))
+const formatShortcutRecording = ref(false)
+const formatShortcutButtonRef = ref<HTMLButtonElement | null>(null)
+
+const formatShortcutText = computed(() => displayFormatShortcut(formatShortcut.value))
+
+/** 解析失败（如旧版存的组合字符）时回退到默认值 */
+function resolveFormatShortcut(raw: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(DEFAULT_FORMAT_SHORTCUT)
+}
+
+function displayFormatShortcut(raw: string): string {
+  const spec = resolveFormatShortcut(raw)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+function startFormatShortcutRecording() {
+  formatShortcutRecording.value = true
+  // keydown 需要焦点，点击后主动聚焦按钮本身
+  nextTick(() => formatShortcutButtonRef.value?.focus())
+}
+
+/** 录制格式化快捷键：Esc 恢复默认，合法组合即保存 */
+function onFormatShortcutKeydown(e: KeyboardEvent) {
+  if (!formatShortcutRecording.value) return
+  e.preventDefault()
+  e.stopPropagation()
+
+  if (e.key === 'Escape') {
+    formatShortcutRecording.value = false
+    formatShortcut.value = DEFAULT_FORMAT_SHORTCUT
+    setSetting('formatShortcut', DEFAULT_FORMAT_SHORTCUT)
+    return
+  }
+
+  const spec = specFromEvent(e, isMac())
+  if (!spec) return // 仅按修饰键，继续等待
+  formatShortcutRecording.value = false
+  const text = formatShortcutSpec(spec)
+  formatShortcut.value = text
+  setSetting('formatShortcut', text)
 }
 
 // ── 编辑器主题 ──
@@ -1506,6 +1564,25 @@ async function manualCheckUpdate() {
             </template>
             <p class="settings-note">
               用于快速搜索草稿、云文章、本地文章与素材。点击后按下新的组合键即可修改，需包含
+              {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
+            </p>
+          </SettingsCard>
+
+          <SettingsCard v-if="!isMobile" title="格式化文档" description="快捷键" :icon="AlignLeft">
+            <template #action>
+              <button
+                ref="formatShortcutButtonRef"
+                class="settings-shortcut"
+                :class="{ recording: formatShortcutRecording }"
+                @click="startFormatShortcutRecording"
+                @keydown="onFormatShortcutKeydown"
+              >
+                {{ formatShortcutRecording ? '请按下快捷键…' : formatShortcutText }}
+              </button>
+            </template>
+            <p class="settings-note">
+              一键整理当前文档：组件标签去缩进、块级组件前后补空行、清理行尾空白与连续空行、统一列表与标题层级。执行后可用
+              ⌘Z 撤销。点击后按下新的组合键即可修改，需包含
               {{ modifierKeyList() }} 之一；恢复默认请按 <span class="font-medium">Esc</span>。
             </p>
           </SettingsCard>

@@ -83,6 +83,7 @@ import {
   ListTree,
   Search,
   Settings as SettingsIcon,
+  AlignLeft,
 } from 'lucide-vue-next'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
@@ -98,6 +99,8 @@ import {
   type PaletteItem,
   type PaletteKind,
 } from '@/utils/commandPalette'
+import { formatMarkdown, describeFormatStats } from '@/utils/markdownFormatter'
+import { DEFAULT_FORMAT_SHORTCUT } from '@/config/defaults'
 import { DraftStorage } from '@/services/draftStorage'
 import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
 import CommandPalette from './components/CommandPalette.vue'
@@ -608,6 +611,8 @@ onMounted(() => {
   window.addEventListener('resize', onResize)
   // 命令面板快捷键：window 级监听，编辑器/预览/侧栏聚焦时都能唤起
   window.addEventListener('keydown', onPaletteGlobalKeydown)
+  // 格式化快捷键：同理走 window 级，焦点不在编辑器时也能触发
+  window.addEventListener('keydown', onFormatGlobalKeydown)
   // 恢复页面缩放
   if (import.meta.env.VITE_TAURI === 'true') {
     const val = getSetting<number>('pageZoom')
@@ -619,6 +624,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('resize', onResize)
   window.removeEventListener('keydown', onPaletteGlobalKeydown)
+  window.removeEventListener('keydown', onFormatGlobalKeydown)
 })
 
 // ── 拖动调整宽度 ──
@@ -1524,6 +1530,77 @@ const { handleCopyRichText, handleExportHTML, handleSaveImage, onDropdownSelect 
   onOpenXhsBoard,
 )
 
+// ── 格式化文档 ──
+/**
+ * 一键整理当前文档：组件标签去缩进、块级组件前后补空行、收敛空白、
+ * 标题与列表规范化、补齐未闭合的代码围栏。具体规则见 utils/markdownFormatter.ts。
+ *
+ * 走 CodeMirror 的 change（editorRef.replaceAll），所以整次格式化只占一步撤销——
+ * 桌面端按 ⌘Z / Ctrl+Z 可以直接退回原样。
+ */
+function onFormatDocument() {
+  const src = markdown.value
+  if (!src.trim()) {
+    showToast('文档是空的')
+    return
+  }
+  const { text, stats, changed } = formatMarkdown(src)
+  if (!changed) {
+    showToast('文档已经是规范格式')
+    return
+  }
+  editorRef.value?.replaceAll(text)
+  // replaceAll 通过 v-model 回写 markdown，这里同步落盘，避免等自动保存计时器
+  markdown.value = text
+  saveContent(text, true)
+  const detail = describeFormatStats(stats)
+  showToast(
+    isMobileWeb.value
+      ? '已格式化' + (detail ? '：' + detail : '')
+      : `已格式化${detail ? '：' + detail : ''}，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/** 格式化快捷键，可在设置里改（与命令面板同一套录制/匹配逻辑） */
+const formatShortcut = useSetting<string>('formatShortcut')
+const formatShortcutText = computed(() =>
+  displayShortcutFor(formatShortcut.value, DEFAULT_FORMAT_SHORTCUT),
+)
+
+/** 解析配置里的快捷键串，失败时回退默认值（与命令面板同一套兜底） */
+function resolveShortcutSpec(raw: string, fallback: string): ShortcutSpec | null {
+  return parseShortcut(raw) ?? parseShortcut(fallback)
+}
+
+function displayShortcutFor(raw: string, fallback: string): string {
+  const spec = resolveShortcutSpec(raw, fallback)
+  if (!spec) return raw
+  return shortcutDisplay(
+    spec,
+    isMac(),
+    modKeyLabel(),
+    ctrlKeyLabel(),
+    altKeyLabel(),
+    shiftKeyLabel(),
+  )
+}
+
+/**
+ * 格式化快捷键的全局监听。
+ *
+ * 之所以不放进 CodeMirror 的 keymap：用户可能刚点了预览区或侧栏，
+ * 焦点不在编辑器里，这时也应该能触发。
+ */
+function onFormatGlobalKeydown(e: KeyboardEvent) {
+  // 面板打开时不抢键，避免与面板内的输入冲突
+  if (anyBoardActive() || paletteVisible.value || findVisible.value) return
+  const spec = resolveShortcutSpec(formatShortcut.value, DEFAULT_FORMAT_SHORTCUT)
+  if (!spec) return
+  if (!matchShortcut(spec, e, isMac())) return
+  e.preventDefault()
+  onFormatDocument()
+}
+
 function onExampleAction(action: string) {
   if (action === 'load') confirmLoadVisible.value = true
 }
@@ -1696,6 +1773,7 @@ function loadDemo() {
           @open-ai-format="onSidebarAiAction('format')"
           @open-ai-image="onSidebarAiAction('image')"
           @toggle-stats="onToggleStats"
+          @format-document="onFormatDocument"
           @open-help="onOpenHelp"
         />
         <ThemePicker
@@ -2360,6 +2438,15 @@ function loadDemo() {
                     >
                       <Braces :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
                       <span>解析</span>
+                    </button>
+                  </BaseTooltip>
+                  <BaseTooltip :text="'格式化文档：' + formatShortcutText">
+                    <button
+                      class="inline-flex items-center gap-1 h-7 px-1 rounded-[5px] border-none bg-transparent transition-all duration-150 panel-action-btn text-[11px] font-medium cursor-pointer whitespace-nowrap"
+                      @click="onFormatDocument"
+                    >
+                      <AlignLeft :size="14" class="w-3.5 h-3.5" :style="{ color: colors.accent }" />
+                      <span>格式化</span>
                     </button>
                   </BaseTooltip>
                   <!-- 行内样式按钮组 -->
