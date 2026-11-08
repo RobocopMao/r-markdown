@@ -375,7 +375,7 @@ defineExpose({ doCleanup })
           >
             <img :src="img.dataUrl" class="block h-full w-full object-cover" />
 
-            <!-- 右上角：查看大图 / 置顶 / 删除（悬停出现；触屏常显） -->
+            <!-- 右上角：查看大图 / 删除 / 置顶（悬停出现；触屏常显）。置顶放最右，固定不变 -->
             <div class="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
               <BaseTooltip class="card-action-hint" text="查看大图" placement="top">
                 <button
@@ -383,6 +383,14 @@ defineExpose({ doCleanup })
                   @click.stop="openPreview(img.dataUrl, localPreviewCaption(img))"
                 >
                   <Eye :size="12" />
+                </button>
+              </BaseTooltip>
+              <BaseTooltip class="card-action-hint" text="删除" placement="top">
+                <button
+                  class="card-delete-btn flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[#e53935]"
+                  @click.stop="requestDeleteOne(img.token)"
+                >
+                  <Trash2 :size="12" />
                 </button>
               </BaseTooltip>
               <BaseTooltip
@@ -397,14 +405,6 @@ defineExpose({ doCleanup })
                 >
                   <PinOff v-if="pinnedTokens.has(img.token)" :size="12" />
                   <Pin v-else :size="12" />
-                </button>
-              </BaseTooltip>
-              <BaseTooltip class="card-action-hint" text="删除" placement="top">
-                <button
-                  class="card-delete-btn flex size-[22px] cursor-pointer items-center justify-center rounded border-0 bg-black/55 text-white transition-colors hover:bg-[#e53935]"
-                  @click.stop="requestDeleteOne(img.token)"
-                >
-                  <Trash2 :size="12" />
                 </button>
               </BaseTooltip>
             </div>
