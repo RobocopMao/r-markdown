@@ -1630,6 +1630,12 @@ function loadDemo() {
   saveMode.value = '自动'
   saveHint.value = '自动保存于 ' + formatTime(timeStr)
   setTimeout(() => matchExistingDraft(), 300)
+  // 加载完示例要能立刻看到内容：如果当前占满编辑区的是草稿箱 / 统计 / 图库等面板，
+  // 就收掉它们回到编辑区。
+  // 只切视图、不动文章树：原来展开的就展开，原来收起的就继续收起。
+  // 手机上还要把底部 Tab 切回「编辑」，否则停在「文章」Tab 上一样看不到示例。
+  closeAllBoards()
+  switchToEditorOnMobile()
 }
 </script>
 
