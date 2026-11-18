@@ -28,10 +28,12 @@ import {
   buildMaterialUserMessage,
   buildMaterialFollowUpMessage,
   buildMaterialRetryMessage,
+  checkColorIntent,
   checkMaterialOutput,
   checkMaterialIntent,
   cleanMaterialOutput,
   findClassStyledTags,
+  findComponentsInHtml,
   findForbiddenHtmlTags,
   findIllegalAttrs,
   findShapeProblems,
@@ -444,8 +446,12 @@ let repairNotes: string[] = []
  * 带理由重试两次模型还是会犯（「图表 + 数据行」在它的训练语料里几乎都是表格形状）。
  * 但这类错误可逆——正文结构固定，解析出来塞进属性即可，不必再消耗一次往返。
  * 修不了的（比如纯 JSX）才落到下面的重试逻辑。
+ *
+ * `fresh` 用于重试轮：把上一版废稿的修复记录清掉，否则面板会显示一条
+ * 「已自动补上 `<html>` 包裹」——而那一版早被丢弃了，用户看到的是最后这一版 `<badges>`。
  */
-function prepareMaterial(raw: string): string {
+function prepareMaterial(raw: string, fresh = false): string {
+  if (fresh) repairNotes = []
   const cleaned = cleanMaterialOutput(raw)
   const { text, notes } = repairMaterialOutput(cleaned)
   for (const note of notes) {
@@ -693,13 +699,18 @@ async function runTurn() {
     // 用了组件但属性名瞎编、子内容形状不对。提示词层面写死了也没用（实测），
     // 所以这里统一质检，不合格就带着「上一版错在哪」再要一次。
     // 最多重试 2 次：第 1 次通常能救回来，第 2 次兜住偶发；再不合格就把结果交用户 + warning，不无限循环。
-    // 两类质检缺一不可：语法（checkMaterialOutput）+ 选型（checkMaterialIntent）。
-    // 只查语法会漏掉「要小节标题却写成了 steps」——那是完全合法的 steps，语法挑不出错。
+    // 三类质检缺一不可：语法（checkMaterialOutput）+ 选型（checkMaterialIntent）+
+    // 属性（checkColorIntent）。只查语法会漏掉「要小节标题却写成了 steps」——那是完全合法的 steps；
+    // 只查选型会漏掉「终于用了 <badges> 但一个配色属性都没写」——语法和选型都挑不出错。
     // 判据取「最后一条用户消息」而不是第一句：改稿轮里用户说的才是这一轮的要求。
     const lastUser = [...session.value!.messages].reverse().find((m) => m.role === 'user')
     const requirement = lastUser?.content ?? ''
     const judge = (t: string) =>
-      looksLikeQuestion(t) ? null : (checkMaterialOutput(t) ?? checkMaterialIntent(requirement, t))
+      looksLikeQuestion(t)
+        ? null
+        : (checkMaterialOutput(t) ??
+          checkMaterialIntent(requirement, t) ??
+          checkColorIntent(requirement, t))
     let cleaned = prepareMaterial(text)
     for (let attempt = 0; attempt < MAX_RETRY && judge(cleaned); attempt += 1) {
       streamingText.value = ''
@@ -720,7 +731,7 @@ async function runTurn() {
       )
       text = retry.text
       finishReason = retry.finishReason
-      cleaned = prepareMaterial(text)
+      cleaned = prepareMaterial(text, true)
     }
 
     await commitAssistantTurn(text, finishReason)
@@ -798,6 +809,15 @@ function collectWarnings(text: string, finishReason: string): string[] {
   if (classed.length > 0) {
     w.push(
       `<html> 块里用了 class（${classed.map((x) => `<${x}>`).join('、')}），微信编辑器会丢掉 class，样式要写成行内 style`,
+    )
+  }
+  // `<html>` 块里混进了 R-Markdown 组件：块内按原生 HTML 原样输出，组件不会渲染，
+  // 读者看到的是 `<steps title="…">` 这行源码。这条同时会在重试里被拦，这里留一份是
+  // 给最后一版兜底——重试两轮用完仍未改对时，用户至少知道问题出在哪。
+  const inHtml = findComponentsInHtml(text)
+  if (inHtml.length > 0) {
+    w.push(
+      `<html> 块里放了组件（${inHtml.map((x) => `<${x}>`).join('、')}），块内按原生 HTML 输出、组件不会渲染，读者看到的是源码；把组件移到 <html> 外面`,
     )
   }
   // `<html>` 块里塞了脚本/外链媒体：微信不支持，粘过去会被过滤

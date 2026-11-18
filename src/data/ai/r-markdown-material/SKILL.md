@@ -141,7 +141,7 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 | 数据图表、趋势、占比、排名 | `<chart>` |
 | 文末行动号召、引导关注、领资料 | `<cta label="…" title="…" button="按钮文字">说明写正文</cta>`（没有 subtitle，按钮文字必须是 button） |
 | 文末互动引导、点赞转发（无按钮，纯感谢文案） | `<engage>`（只有 title / subtitle / label，**没有按钮**；要按钮就用 `<cta>`） |
-| 技术标签、关键词罗列成小标签（不跟卡片走） | `<badges>`；属于 `<title>` / `<breaking>` 卡片内的关键词要用它们的 `chips` 属性 |
+| 技术标签、关键词罗列成小标签（不跟卡片走）：用户只说「标签 / 一排关键词 / 彩色标签 / 渐变标签」都算这一条 | `<badges>`（**要彩色底或渐变底就写 `bg` 属性，多个颜色分隔即横向渐变**，见「标签组」）；属于 `<title>` / `<breaking>` 卡片内的关键词要用它们的 `chips` 属性。**这一条不许绕过去手写 `<html>` 画圆角 `<span>`**——`<badges>` 天生支持彩色底和渐变底 |
 | 多图轮播 | `<slider>` |
 | 单张配图 | `<img>` |
 | 流程图、时序图、关系图 | `<mermaid>` |
@@ -214,6 +214,10 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 ## 组件写法手册
 
 下面每个组件给出**完整可用的写法**。注意「子内容形状」——这是第二个高频错误来源：`<steps>` 的每一步必须写成一行 `- 名称 | 说明`，不能写成 `<step>` 子标签，也不能把 `|` 单独放一行。
+
+> **这里只展开常用的那几个属性，不等于只有这些。** 要自定义颜色、渐变底、圆角、字号、
+> 内外边距、边框，先到 prompt 末尾的「组件属性参考」附录里查这个标签的完整属性清单，
+> 有对应的就直接写——别因为这一节没举例，就改去手写 `<html>` 画一遍，或者干脆说做不到。
 
 ### 标题卡 `<title>`
 
@@ -297,6 +301,9 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 <lead>很多人以为排版是审美问题，其实它首先是个信息节奏问题。</lead>
 ```
 
+想换配色 / 加底色 / 改圆角时：`color`（文字色）、`text-color`（正文色）、`bg`（底色）、
+`round`（圆角）、`margin`（外边距）。例：`<lead bg="#f6f8fa" round="12px">…</lead>`。
+
 ### 金句 `<statement>`
 
 居中强调，适合放在段落之间单独一句。
@@ -304,6 +311,8 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 ```text
 <statement>读者不是不愿意读完，是你没给他继续读下去的理由。</statement>
 ```
+
+强调色用 `color`，上下留白用 `margin`。
 
 ### 核心信息卡 `<breaking>`
 
@@ -337,6 +346,7 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 
 - `active` 是高亮第几步，从 1 开始，只能写单个数字。
 - 三到五步最好看；超过六步考虑拆成两段或改用 `<case-flow>`。
+- 主色用 `color`（写颜色值），`direction="vertical"` 等价于 `type="DA02"`。
 
 ### 案例列表 `<case-flow>`
 
@@ -351,6 +361,8 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 </case-flow>
 ```
 
+主色用 `color`，上下留白用 `margin`。
+
 ### 时间线 `<timeline>`
 
 **子内容形状：每行 `- 时间 | 标题 | 描述`**，可选的第四段放图片。
@@ -363,6 +375,8 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 - 2024 年 5 月 | 开源 | 核心解析器以 MIT 协议开放
 </timeline>
 ```
+
+主色用 `color`，上下留白用 `margin`。
 
 ### 左右对比 `<compare>`
 
@@ -429,6 +443,9 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 ```
 
 - `type` 可选 `bar` / `line` / `pie`；数值只写数字，单位放进 `title` 或 `unit`。
+- 改主色用 `color`；多色用 `colors="#2e9e5b,#e07a5f,#457b9d"`（逗号分隔，按顺序分配给系列）。
+- 其余可写：`width` / `height`（如 `100%` / `320px`）、`smooth="true"`（折线平滑）、
+  `legends="true"`（显示图例）、`unit="亿"`、`margin`。
 - **标签内必须留空**。`labels` / `values` / `type` 三个属性缺一不可，写了正文会被整段丢弃。
 
 ### 行动号召 `<cta>`
@@ -497,11 +514,26 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 ✅ <badges>拆解|类比|说人话</badges>
 ```
 
+完整属性只有四个：`tone` `color` `bg` `margin`。
+
+| 想写的内容 | 写到哪 | 说明 |
+| --- | --- | --- |
+| 预设配色 | `tone="accent"` | `accent` 主题色 / `green` 绿 / `yellow` 黄 / `dark` 深色，四个预设 |
+| 自定义文字色 | `color="#ffffff"` | 十六进制或颜色名，**优先于 `tone`** |
+| 自定义底色 | `bg="#e74c3c"` | 十六进制或颜色名，**优先于 `tone`** |
+| **渐变底色** | `bg="#ff6b6b\|#6c5ce7"` | **两个以上颜色用 `\|` 分隔就是横向渐变**，自动不加边框 |
+| 上下留白 | `margin="18px 0px"` | CSS margin（上 右 下 左），留空默认 `14px 0px` |
+
 ```text
-<badges tone="accent">Vue|TypeScript|Vite|Tailwind</badges>
+✅ <badges tone="accent">Vue|TypeScript|Vite|Tailwind</badges>
+✅ <badges tone="dark">拆解|类比|说人话</badges>
+✅ <badges color="#ffffff" bg="#e74c3c">重点|推荐|限时</badges>        ← 纯色底 + 白字
+✅ <badges bg="#ff6b6b|#6c5ce7" color="#ffffff">渐变底|白字|三色</badges>  ← 渐变底：bg 里两个颜色用 | 分隔
 ```
 
-`tone` 可选 `accent` / `green` / `yellow` / `dark`。
+**用户说「要渐变背景 / 要彩色底」时就这么写**：`bg` 写两到三个颜色、用 `|` 分隔，渲染成 90° 横向渐变；
+同时把 `color` 设成浅色（渐变底多半偏深，白字最稳）。别再另起 `<html>` 去手写 CSS 画标签——
+`<badges>` 天生支持渐变，写对属性就够了。
 
 **`<badges>` 是独立的一块标签组**，用在正文中间罗列标签，不跟着哪张卡走。
 如果关键词属于某张 `<title>` / `<breaking>` 卡片（出现在卡片标题下方那排小标签），写那两张卡的 `chips` 属性，别另起 `<badges>`——它渲染在卡片外面，位置和味道都不对。
@@ -512,6 +544,8 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 <slider images="图片地址1,图片地址2,图片地址3" interval="3" width="600" height="200" type="1"></slider>
 ```
 
+`interval` 是自动轮播秒数，`type` 是切换动画（1–4），另有 `margin`。
+
 **没有真实图片地址时，不要用 `<slider>`**——改用纯文字版式（见下面铁律第 3 条）。
 
 ### 单图 `<img>`
@@ -521,6 +555,9 @@ R-Markdown 的组件语法长得很像 HTML，但有三个硬性约束。这三�
 ```
 
 `<img>` 是全篇唯一允许自闭合的标签。
+
+除了 `src` / `alt` / `width` / `height` / `radius` / `fit`，还能写：`desc`（图注）、
+`align`（对齐）、`left` / `top`（切图偏移）、`shadow`（阴影）、`overflow`（裁切方式）、`margin`。
 
 ### 流程图 `<mermaid>`
 
@@ -535,6 +572,8 @@ flowchart LR
 </mermaid>
 ```
 
+另有 `render-width`（渲染宽）、`height`、`theme`、`margin`。
+
 ### 宽表格 `<table>`
 
 正文是标准 Markdown 表格，外层用 `<table>` 包住以获得横向滚动。
@@ -547,6 +586,12 @@ flowchart LR
 | 分节 | `<p-title>` | 建立阅读节奏 |
 </table>
 ```
+
+样式全靠属性，常用的：`striped`（斑马纹）、`compact`（紧凑）、`border`（边框）、
+`radius`、`padding`、`header-bg` / `header-color`、`bg` / `cell-color`、
+`striped-bg` / `striped-color`、`border-color`、`font-size`、`nowrap`、
+`scroll-x` / `scroll-y` / `width` / `height` / `margin`。
+例：`<table striped border header-bg="#2e9e5b" header-color="#fff" radius="10px">…</table>`。
 
 ### 左右分栏 `<row>` + `<column>`
 
@@ -561,6 +606,10 @@ flowchart LR
 </row>
 ```
 
+`<row>` 还能写：`align`（垂直对齐）、`justify`（横向分布）、`wrap`（换行）、`flex`、
+`width`、`padding`、`bg`、`margin`、`extra-style`（任意 CSS）。
+`<column>` 同理，另有 `gap` 控制内部间距。
+
 ### 层叠定位 `<stack>` + `<positioned>`
 
 用 `ratio` 撑出画布，`<positioned>` 用百分比定位。
@@ -573,11 +622,19 @@ flowchart LR
 </stack>
 ```
 
+`<stack>` 可写 `width` / `ratio` / `height` / `bg` / `radius` / `overflow` / `margin`；
+`<positioned>` 可写 `top` / `bottom` / `left` / `right` / `width` / `height` / `z-index`。
+
 ### 单段着色 `<text>`
 
 ```text
 <text color="#e53e3e" weight="bold" size="18px">重点文字</text>
 ```
+
+`<text>` 的完整属性：`color` / `size` / `weight` / `style` / `height`（行高）/ `align` /
+`decoration`（下划线等）/ `spacing`（字距）/ `transform`（大小写）/ `bg` / `margin` /
+`padding` / `extra-style`（任意 CSS）。
+需要给一句话加底色或渐变时，就用 `bg` 配 `padding`——别为此另写一整块 `<html>`。
 
 ### 原生 HTML 兜底 `<html>`
 
@@ -587,6 +644,26 @@ flowchart LR
 （`<pre>` 只适合放代码——它不换行，拿来包正文在手机上会被横向截断。）
 
 **写完必须包在 `<html>` 里**——不包的话解析器会把整段塞进 `<p>` 里，列表和表格的版式直接散掉。
+
+**块里只能出现原生 HTML 标签、`<img>` 和 `<svg>`，不许放 R-Markdown 组件。**
+
+`<html>` 是原样透传的：里面的内容直接按 HTML 交给微信，**不会再走一遍组件解析**。
+所以把 `<steps>` `<title>` `<badges>` 这些塞进去，读者看到的不是渲染好的卡片，而是
+`<steps title="三步导出 PDF">` 这行源码本身——整块变成代码。
+
+要「原生 HTML 版式 + 一张成品卡片」混着来，把卡片写在 `<html>` 块的**外面**：
+
+```text
+<steps title="三步导出 PDF">
+- 复制链接 | 打开目标文章，点右上角「···」
+- 浏览器打开 | 把链接粘到地址栏
+</steps>
+<html>
+<section style="padding:16px;border-radius:12px;background:#f7f7f9">
+<p style="margin:0;color:#666;font-size:13px">导出后建议在电脑上确认一次分页。</p>
+</section>
+</html>
+```
 
 **只用 `<section>`，不要用 `<div>`。**
 
@@ -662,6 +739,18 @@ flowchart LR
 <html>
 <section style="position:relative;--gap:12px;background:url(https://example.com/bg.png)">
 <section style="position:absolute;top:0;left:0;padding:var(--gap)">标题</section>
+</section>
+</html>
+```
+
+❌ 反例四（把组件塞进了 `<html>` 里，组件不渲染，读者看到的是源码）：
+
+```text
+<html>
+<section style="padding:16px;background:#f7f7f9">
+<steps title="三步导出 PDF">
+- 复制链接 | 打开目标文章
+</steps>
 </section>
 </html>
 ```
@@ -844,10 +933,19 @@ flowchart LR
    `<html>` 里可以直接写微信编辑器支持的原生 HTML（`<h2>` `<p>` `<ul>` `<li>` `<table>` `<blockquote>` 等），
    `<svg>` 里可以写完整的 SVG 标签与属性（`<rect>` `<circle>` `<path>` `<g>` `<text>` `<animate>` 等），
    两者都是透传的，不受本文件的白名单约束。块外写原生标签会被当成自造组件驳回。
+   **但反过来的边界同样不能越：`<html>` 块里不许再出现本文件的组件**（`<img>` 除外，它本来就是原生标签）——
+   块内按原生 HTML 原样输出，`<steps>` `<title>` `<badges>` 放进去不会渲染，读者看到的是源码本身。
    属性值遵守 `<属性>：<取值>` 的约定，枚举不要写规范外的值。
-   属性名也一样——写之前对照上面「组件写法手册」里该组件列出的属性，凭感觉加的会被忽略。
+   属性名也一样——写之前先查 prompt 末尾「组件属性参考」附录里该组件的**完整属性清单**
+   （本文件「组件写法手册」只展开常用的那几个，不代表只有这些）；两边都没有的就是不存在，
+   凭感觉加的会被忽略。
    例如 `<steps>` 只认 `label` / `title` / `hint` / `active` / `color` / `type` / `direction`，
    写 `description="……"` 不会报错，但也不会显示，等于白写。
+   **反过来，用户要的颜色 / 渐变底 / 圆角 / 字号 / 边距，先查附录里有没有对应属性**——
+   有就写属性，别因为手册没举例就改成手写 `<html>`，或者干脆不做。
+   **用户点名了视觉诉求，就必须落到属性上**：说「渐变底 / 彩色标签」就写
+   `<badges color="#ffffff" bg="#ff6b6b|#6c5ce7">增长|复利|长期主义</badges>`，
+   只写 `<badges>增长|复利|长期主义</badges>` 渲染出来是默认灰底，等于把用户最在意的那件事丢了。
 6. **子内容形状不能错**。`<steps>` 每行 `- 名称 | 说明`；`<timeline>` 每行 `- 时间 | 标题 | 描述`；
    `<case-flow>` 每行 `- [标签] 标题`；`<badges>` 一行 `|` 分隔；`<compare>` 内部只放 `<left>` `<right>`。
    **`<html>` 块里的样式一律写成行内 `style="…"`，块内只用 `<section>` 不用 `<div>`**——

@@ -267,6 +267,47 @@ export function findWechatHtmlIssues(md: string): WechatHtmlIssue[] {
   return out
 }
 
+/** `<html>` 块里可以直接出现的组件标签（原生 `<img>` 也算） */
+const HTML_INLINE_OK = new Set(['img'])
+
+/**
+ * 扫块内组件时一律跳过这些 tag：
+ *
+ * - `html`：包裹块自己的外层壳，`splitHtmlBlocks()` 取出的块首尾就是它；
+ * - `table`：既是我们的组件又是标准 HTML，块里写 `<tr><td>` 是正常用法，
+ *   报它会把每一张原生表格都误伤成「混进了组件」。
+ */
+const HTML_NATIVE_OVERLAP = new Set(['html', 'table'])
+
+/**
+ * `<html>` 块里混进来的 R-Markdown 组件。
+ *
+ * 用户口径（2026-11-18）：「html 组件内部不要出现自定义组件，除了 img 和 svg 标签，
+ * 因为 html 里面的内容直接按 html 解析」。
+ *
+ * `<html>` 组件的 `render()` 就是 `return body`，块内不会再走一遍组件解析——
+ * 塞进去的 `<steps>` / `<title>` 不会被渲染，读者看到的是 `<steps title="三步">` 这行源码本身。
+ * 实测模型很爱「在 HTML 版式里顺手加一张成品卡片」，结果整块变成代码。
+ */
+export function findComponentsInHtml(md: string): string[] {
+  const { blocks } = splitHtmlBlocks(md)
+  if (blocks.length === 0) return []
+  const componentTags = new Set(components.map((c) => c.tag))
+  const found: string[] = []
+  for (const block of blocks) {
+    // `<svg>` 整块是透传的矢量图，里面的 `<text>` 是 SVG 自己的标签（我们的 `<text>` 组件
+    // 与它同名），不能算「混进了组件」，所以先整块剥掉再扫。
+    const content = block.replace(SVG_BLOCK_RE, '')
+    for (const m of content.matchAll(/<([a-z][\w-]*)\b(?=[\s/>])/gi)) {
+      const tag = m[1].toLowerCase()
+      if (!componentTags.has(tag)) continue
+      if (HTML_INLINE_OK.has(tag) || HTML_NATIVE_OVERLAP.has(tag)) continue
+      if (!found.includes(tag)) found.push(tag)
+    }
+  }
+  return found
+}
+
 /** 块级原生 HTML 标签：绝不是 R-Markdown 组件，写在 `<html>` 外会被解析器塞进 `<p>` 里 */
 const NATIVE_HTML_BLOCK_RE =
   /^[\t ]*<(h[1-6]|ul|ol|dl|dt|dd|blockquote|pre|figure|figcaption|details|summary|address|hr|div|section|p|table)\b/im
@@ -1275,6 +1316,9 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
       '**`<html>` 里的所有样式必须写成行内 `style="…"`**：不许用 `class`、不许写 `<style>` 标签、' +
       '不许引用任何外部样式表——微信编辑器会丢掉 class，只认元素上的行内样式。' +
       '**`<svg>` 里同理**：图形属性写元素上，不要 `<style>` 标签、不要 `class`。' +
+      '**`<html>` 块内部按原生 HTML 直接输出，组件不会被解析**——块里只能出现原生 HTML 标签、' +
+      '`<img>` 与 `<svg>`，不许把 `<steps>` `<title>` `<badges>` 这类组件塞进去（读者会看到源码本身）；' +
+      '要放组件就放到 `<html>` 外面。' +
       '**要做「点一下就动」只能用 `<svg>` + SMIL**（`<animate>` / `<set>`，`begin="click"` 或' +
       ' `begin="触发区id.click"`）：`<details>` `<summary>` `<button>` 在公众号里会被拆开、' +
       '只剩平铺的文字，做不出折叠或切换的效果。',
@@ -1301,7 +1345,11 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
   if (spec) {
     parts.push(
       '',
-      '# 附录：组件属性参考（技能没展开的属性取值查这里，与技能冲突时以技能为准）',
+      '# 附录：组件属性参考（**每个标签的完整属性清单以这里为准**）',
+      '',
+      '技能正文按用途挑常用属性展开，**没在技能里提到的属性不代表不能写**——',
+      '要自定义颜色、渐变底色、内外边距、圆角、字号这类，先到这里查有没有对应属性，',
+      '有就照附录写，别因为技能没举例就改去手写 `<html>` 或干脆不做。',
       '',
       spec,
     )
@@ -1909,7 +1957,19 @@ export function findUnknownTags(md: string): Array<{ tag: string; suggestion?: s
  *
  * 词表只放**用户真会说的说法**，且只在需求明确点了名时才触发，避免误伤。
  */
-const INTENT_EXPECTATIONS: Array<{ words: string[]; tag: string; label: string }> = [
+const INTENT_EXPECTATIONS: Array<{
+  words: string[]
+  tag: string
+  label: string
+  /** 命中这条就跳过不报：需求提到「标签」但本来就是在做卡片内的 `chips` */
+  unless?: RegExp
+  /** 连「手写 `<html>`」也不放行——标签组是唯一一条，见下面 `strict` 的用法 */
+  strict?: boolean
+  /** 驳回时附带的正确写法，比只说「应该用 X」更容易一次改对 */
+  hint?: string
+  /** 需求里出现这些词说明标签只是配角（做卡片顺带几个关键词），不按这条约束 */
+  avoid?: string[]
+}> = [
   {
     words: ['小节标题', '章节标题', '段落标题', '分节标题', '编号标题', '小标题'],
     tag: 'p-title',
@@ -1920,7 +1980,39 @@ const INTENT_EXPECTATIONS: Array<{ words: string[]; tag: string; label: string }
   { words: ['时间线', '发展历程', '里程碑'], tag: 'timeline', label: '时间线' },
   { words: ['图表', '柱状图', '折线图'], tag: 'chart', label: '图表' },
   { words: ['案例'], tag: 'case-flow', label: '案例列表' },
-  { words: ['标签组', '徽章', '徽标'], tag: 'badges', label: '标签组' },
+  {
+    // 「标签」这个词必须收：实测用户说「做一排关键词标签，要渐变底」时，
+    // 模型从没主动想到 `<badges>`，一律用 `<html>` 手画一堆圆角 `<span>`。
+    // 那时术语表里只有「标签组 / 徽章」，而用户根本不说这两个词——词表漏了就等于没这条规则。
+    // 「关键词」也要收（用户常说「做一排关键词，渐变底」），但光收词会误伤——
+    // 「封面标题卡，关键词是 A、B」「三步流程，每步配个关键词」里标签只是配角，
+    // 靠下面的 `avoid` 把这类需求排除掉。
+    words: ['标签', '徽章', '徽标', '关键词'],
+    tag: 'badges',
+    label: '标签组',
+    // 需求里同时点名了别的成品卡片，说明标签只是顺带提的一句
+    avoid: [
+      '卡片',
+      '卡',
+      '标题',
+      '导语',
+      '引言',
+      '流程',
+      '步骤',
+      '对比',
+      '时间线',
+      '图表',
+      '案例',
+      '按钮',
+    ],
+    // `<title>` / `<breaking>` 卡片自己的 `chips` 也是标签，那是正解，不算选错
+    unless: /<(?:title|breaking)\b[^>]*\bchips\s*=/i,
+    strict: true,
+    hint:
+      '`<badges color="#ffffff" bg="#ff6b6b|#6c5ce7">增长|复利|长期主义</badges>`——' +
+      '标签用 `|` 分隔写一行，`bg` 里放两个以上颜色就是横向渐变，' +
+      '不要用 `<html>` 手画一排带 `border-radius` 的 `<span>`',
+  },
   { words: ['导语', '引言'], tag: 'lead', label: '导语' },
   { words: ['行动号召', '行动按钮'], tag: 'cta', label: '行动号召' },
 ]
@@ -1944,9 +2036,16 @@ const HAND_BUILT_TAGS = ['row', 'column', 'text', 'stack', 'positioned', 'html',
 export function checkMaterialIntent(requirement: string, text: string): string | null {
   const body = text.replace(/\{\{RMIMG_\d+\}\}/g, '')
   // 手工排版：不强制套成品组件
-  if (HAND_BUILT_TAGS.some((tag) => new RegExp(`<${tag}\\b`, 'i').test(body))) return null
+  const handBuilt = HAND_BUILT_TAGS.some((tag) => new RegExp(`<${tag}\\b`, 'i').test(body))
   for (const rule of INTENT_EXPECTATIONS) {
     if (!rule.words.some((w) => requirement.includes(w))) continue
+    if (rule.unless && rule.unless.test(body)) continue
+    if (rule.avoid?.some((w) => requirement.includes(w))) continue
+    // 手工排版放行，但 `strict` 的规则除外：`<badges>` 的渐变底 / 彩色底
+    // 是组件原生能力（`bg` 写多个颜色即是横向渐变），用 `<html>` 手画一排 `<span>`
+    // 得到的是一模一样的画面，却把「以后改文案要改三个地方」留给了用户。
+    // 实测这类需求模型 100% 走 `<html>`，不在这里拦住它永远不会选 `<badges>`。
+    if (handBuilt && !rule.strict) continue
     if (new RegExp(`<${rule.tag}\\b`, 'i').test(body)) continue
     const used = [...body.matchAll(/<([a-z][\w-]*)[\s/>]/gi)]
       .map((m) => m[1])
@@ -1955,7 +2054,37 @@ export function checkMaterialIntent(requirement: string, text: string): string |
       used.length > 0
         ? `（你用的是 ${[...new Set(used)].map((t) => `\`<${t}>\``).join('、')}）`
         : ''
-    return `需求要的是${rule.label}，应该用 \`<${rule.tag}>\`，但输出里没有${usedText}`
+    const hint = rule.hint ? `。正确写法：${rule.hint}` : ''
+    return `需求要的是${rule.label}，应该用 \`<${rule.tag}>\`，但输出里没有${usedText}${hint}`
+  }
+  return null
+}
+
+/**
+ * 需求里要了「渐变 / 彩色」，输出却把颜色丢了。
+ *
+ * 实测（用户 2026-11-18）：用户说「三个词，每个都要渐变背景」，模型终于改用
+ * `<badges>增长|复利|长期主义</badges>` 之后，**属性一个都没写**——画面从渐变变成了灰底小标签，
+ * 等于把用户最在意的那件事丢了。语法完全合法、选型也对，只有「说了颜色却没有颜色属性」能发现。
+ *
+ * 只查 `<badges>` / `<title>` / `<breaking>` 这三个带配色属性的容器：
+ * 颜色诉求挂在这些组件上时，正解是 `bg` / `color` / `chips`，不是另起 `<html>`。
+ */
+const COLOR_WORDS = ['渐变', '彩色', '配色', '颜色', '底色', '色底']
+
+export function checkColorIntent(requirement: string, text: string): string | null {
+  if (!COLOR_WORDS.some((w) => requirement.includes(w))) return null
+  const body = text.replace(/\{\{RMIMG_\d+\}\}/g, '')
+  // `<html>` 手写版式里颜色是直接写 `style` 的，不在这条规则的射程内
+  if (/<html\b/i.test(body) || /<svg\b/i.test(body)) return null
+
+  const badges = /<badges\b([^>]*)>/i.exec(body)
+  if (badges && !/\b(?:bg|color)\s*=/i.test(badges[1])) {
+    return (
+      '需求里要了颜色 / 渐变，但 `<badges>` 没写配色属性，渲染出来是默认的灰底标签。' +
+      '正确写法：`<badges color="#ffffff" bg="#ff6b6b|#6c5ce7">增长|复利|长期主义</badges>`' +
+      '——`bg` 放两个以上颜色用 `|` 分隔就是横向渐变，`color` 配浅色文字'
+    )
   }
   return null
 }
@@ -1992,6 +2121,12 @@ export function checkMaterialOutput(text: string): string | null {
   const forbidden = findForbiddenHtmlTags(body)
   if (forbidden.length > 0) {
     return `\`<html>\` 块里不能用这些标签：${forbidden.map((x) => `\`<${x}>\``).join('、')}（微信编辑器不支持，会被过滤或整段失效）`
+  }
+
+  // `<html>` 块内是原样透传，组件不会被解析——塞进去就是一段字面源码（用户口径：只允许 img / svg）。
+  const inHtml = findComponentsInHtml(body)
+  if (inHtml.length > 0) {
+    return `\`<html>\` 块里混进了 R-Markdown 组件：${inHtml.map((x) => `\`<${x}>\``).join('、')}——\`<html>\` 里的内容按原生 HTML 直接输出，组件不会渲染，读者看到的是源码本身。块内只能用原生 HTML 标签、\`<img>\` 和 \`<svg>\`；要放组件请把它们移到 \`<html>\` 外面`
   }
 
   // 微信不认 class 也不加载任何样式表，`<div class="card">` 粘过去就是裸 div。
@@ -2159,6 +2294,9 @@ export function buildMaterialRetryMessage(badOutput: string, reason = ''): strin
     '  真要自己写原生 HTML，**必须整段包在 `<html>` 里**，包外的原生标签会被当成自造组件；',
     '- **在 `<html>` 里用 `class` 挂样式**：微信编辑器会丢掉 class，写 `class="card"` 等于没写样式。',
     '  样式一律写成元素上的行内 `style="…"`；',
+    '- **把 R-Markdown 组件塞进了 `<html>` 里**（`<steps>` `<title>` `<badges>` 这些）：`<html>` 内部',
+    '  按原生 HTML 原样输出，组件根本不会渲染，读者看到的是 `<steps title="三步">` 这行源码。',
+    '  块内只能用原生 HTML 标签、`<img>` 和 `<svg>`；要放组件就移到 `<html>` 外面；',
     '- **在 `<html>` 里用 `<div>`**：改成 `<section>`。微信编辑器自己产出的就是 section，',
     '  div 保存时更容易被合并层级；',
     '- **在 `<html>` 里用微信用不了的 CSS**：`position`（连带 top/left 全失效）、`filter`、',
@@ -2170,6 +2308,9 @@ export function buildMaterialRetryMessage(badOutput: string, reason = ''): strin
     '- 或者属性名/取值不在技能范围内（例如给 `<steps>` 写 `direction`，正确是 `type="DA02"`）；',
     '- 或者根本不是 Markdown，写成 YAML / JSON / 伪代码（`CompareCard:` `layout: split` 这种）；',
     '- 或者子内容形状不对：`<compare>` 没写 `<left>` `<right>`、`<steps>` 缺 `|` 分隔、`<badges>` 逐行写；',
+    '- **或者要了颜色却没写配色属性**：用户说「渐变底 / 彩色标签」时，正解是给 `<badges>` 写',
+    '  `bg="#ff6b6b|#6c5ce7"`（多个颜色用 `|` 分隔即横向渐变）+ `color="#ffffff"`，',
+    '  不是另起 `<html>` 手画一排带 `border-radius` 的 `<span>`；',
     '- 或者把数据写进了标签内部：`<chart>` / `<slider>` / `<engage>` 的标签内正文**会被整段丢弃**，',
     '  数据只能写在属性上（`<chart type="bar" labels="2020,2021" values="6.4,7.2" title="…"></chart>`）；',
     '- 或者开头先写了一段「需求 → 组件：……」的选型说明；',
