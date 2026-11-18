@@ -128,17 +128,19 @@ function parseCellSpan(raw: string): { text: string; colspan: number; rowspan: n
   // 支持 {col:2} {row:3} {col:2,row:3} {col:2}{row:3}（顺序任意）
   const spanRe = /\{\s*[^{}]*\}/g
   const kvRe = /(col|row)\s*:\s*(\d+)/g
-  const text = raw.replace(spanRe, (block) => {
-    const inner = block.slice(1, -1)
-    let m: RegExpExecArray | null
-    while ((m = kvRe.exec(inner)) !== null) {
-      const n = parseInt(m[2], 10)
-      if (m[1] === 'col') colspan = Math.max(colspan, n)
-      else rowspan = Math.max(rowspan, n)
-    }
-    const rest = inner.replace(kvRe, '').replace(/[\s,]/g, '')
-    return rest ? block : ''
-  }).trim()
+  const text = raw
+    .replace(spanRe, (block) => {
+      const inner = block.slice(1, -1)
+      let m: RegExpExecArray | null
+      while ((m = kvRe.exec(inner)) !== null) {
+        const n = parseInt(m[2], 10)
+        if (m[1] === 'col') colspan = Math.max(colspan, n)
+        else rowspan = Math.max(rowspan, n)
+      }
+      const rest = inner.replace(kvRe, '').replace(/[\s,]/g, '')
+      return rest ? block : ''
+    })
+    .trim()
   return { text, colspan, rowspan }
 }
 
@@ -174,6 +176,19 @@ export function parseMarkdownTable(body: string): {
   }
 
   return { headers, rows, alignments }
+}
+
+/**
+ * 全角竖线归一化成半角竖线。
+ *
+ * 中文输入法下 `|` 很容易被敲成 `｜`（U+FF5C），两者视觉上几乎一样。
+ * 组件里所有 `- 名称 | 说明`、`- 时间 | 标题 | 描述`、`a|b|c` 这类解析
+ * 都只认半角竖线，混进一个全角就会出现「整块预览空白、控制台也不报错」
+ * 的情况——`<timeline>` / `<steps>` 一行都解析不出来时会直接返回空字符串。
+ * 所以解析前统一过一遍这个函数，别让用户去分辨两种竖线。
+ */
+export function normalizePipe(s: string): string {
+  return String(s).replace(/[｜丨︱]/g, '|')
 }
 
 export function parseAttrs(s: string): Record<string, string> {
