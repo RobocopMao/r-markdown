@@ -284,6 +284,8 @@ const slashStart = ref(0)
 const slashCaret = ref(0)
 const slashIndex = ref(0)
 const slashCommands = computed(() => filterMaterialCommands(slashQuery.value))
+/** 浮层本体，供方向键选中时把条目滚进可视区 */
+const slashMenuRef = ref<HTMLElement | null>(null)
 
 /** 输入 / 光标移动后重算：光标前是不是还在「/ 查询词」里 */
 function refreshSlashMenu() {
@@ -309,6 +311,51 @@ function refreshSlashMenu() {
   slashOpen.value = true
   if (slashIndex.value >= list.length) slashIndex.value = 0
 }
+
+/**
+ * 把第 i 项滚进浮层的可视范围。
+ *
+ * 清单有 28 项、浮层最高 220px，一屏只看得到六七项：只换高亮不跟着滚的话，
+ * 连按几次 ↓ 选中项就跑到框外了，等于不知道自己在选哪个（用户反馈的原话）。
+ *
+ * 用 scrollTop 手算而不是 `scrollIntoView()`：后者会连带把外层滚动容器
+ * （对话流、整个面板）一起滚，输入框会突然跳走。
+ */
+function scrollSlashIntoView(i: number) {
+  const box = slashMenuRef.value
+  if (!box) return
+  const item = box.querySelector<HTMLElement>(`[data-slash-index="${i}"]`)
+  if (!item) return
+  // 第一项要连上面那行「↑↓ 选择」的说明一起露出来，否则滚到 29px 会把它盖掉
+  if (i === 0) {
+    box.scrollTop = 0
+    return
+  }
+  // 浮层是 absolute，按钮的 offsetParent 就是它，offsetTop 即内容内偏移
+  const top = item.offsetTop
+  const bottom = top + item.offsetHeight
+  if (top < box.scrollTop) {
+    box.scrollTop = top
+  } else if (bottom > box.scrollTop + box.clientHeight) {
+    box.scrollTop = bottom - box.clientHeight
+  }
+}
+
+// 选中项变了、过滤后清单换了一批，都要重新跟一次。
+// 查询词变了意味着清单重排，先把滚动位置归零（否则会停在上一批的偏移上，
+// 看着像「清单断了」，连那句操作提示都被盖住），再把选中项露出来。
+let lastSlashQuery = ''
+watch([slashOpen, slashIndex, slashQuery, () => slashCommands.value.length], () => {
+  if (!slashOpen.value) return
+  const queryChanged = slashQuery.value !== lastSlashQuery
+  lastSlashQuery = slashQuery.value
+  void nextTick(() => {
+    const box = slashMenuRef.value
+    if (!box) return
+    if (queryChanged) box.scrollTop = 0
+    scrollSlashIntoView(slashIndex.value)
+  })
+})
 
 /** 选中第 i 项（键盘回车与鼠标点击共用一个入口） */
 function chooseCommand(cmd: MaterialCommand) {
@@ -1261,6 +1308,7 @@ onBeforeUnmount(() => {
           -->
           <div
             v-if="slashOpen"
+            ref="slashMenuRef"
             class="absolute bottom-full left-0 z-20 mb-1 max-h-[220px] w-full max-w-[420px] overflow-y-auto rounded-lg border border-[#e5e5e5] bg-white py-1 shadow-[0_6px_20px_rgba(0,0,0,0.10)] scrollbar-thin dark:border-[#444] dark:bg-[#2a2a2a]"
           >
             <div class="px-3 py-1 text-[11px] text-[#bbb] dark:text-[#555]">
@@ -1269,6 +1317,7 @@ onBeforeUnmount(() => {
             <button
               v-for="(cmd, i) in slashCommands"
               :key="cmd.tag"
+              :data-slash-index="i"
               class="flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 text-left transition-colors"
               :class="
                 i === slashIndex
