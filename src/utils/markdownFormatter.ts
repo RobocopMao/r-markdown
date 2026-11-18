@@ -29,6 +29,7 @@
 import { BLOCK_COMPONENT_TAGS, COMPONENT_TAGS, VERBATIM_TAGS } from './componentTags'
 import { isFenceClose, matchFenceOpen } from './helpers'
 import { HEADING_LEVEL_MAX } from './headingLevels'
+import { isMaterialEndLine, isMaterialStartLine } from './materialBoundary'
 
 const TAG_ALT = COMPONENT_TAGS.join('|')
 const BLOCK_ALT = BLOCK_COMPONENT_TAGS.join('|')
@@ -116,6 +117,8 @@ export interface FormatStats {
   quoteGaps: number
   /** 自动补上的围栏闭合行数 */
   fencesClosed: number
+  /** 为贴合素材边界注释而增删的空行数 */
+  materialTightened: number
 }
 
 export interface FormatResult {
@@ -138,6 +141,7 @@ function emptyStats(): FormatStats {
     imageGaps: 0,
     quoteGaps: 0,
     fencesClosed: 0,
+    materialTightened: 0,
   }
 }
 
@@ -247,9 +251,14 @@ export function formatMarkdown(md: string): FormatResult {
   /** 末尾是否是空行 */
   const lastIsBlank = () => out.length > 0 && out[out.length - 1] === ''
 
+  /** 末尾是「素材开始」注释 */
+  const lastIsMaterialStart = () => out.length > 0 && isMaterialStartLine(out[out.length - 1])
+
   const ensureBlankBefore = () => {
     if (out.length === 0) return
     if (lastIsBlank()) return
+    // 素材开始注释后面紧跟的就是素材代码，中间不留空行
+    if (lastIsMaterialStart()) return
     out.push('')
     stats.blankInserted++
   }
@@ -325,6 +334,12 @@ export function formatMarkdown(md: string): FormatResult {
 
     // ── 空行 ──
     if (trimmed === '') {
+      // 「素材开始」后面的空行直接丢掉：注释要贴紧素材代码。
+      // 用末尾实际内容判断，连续几个空行会被逐个丢掉。
+      if (lastIsMaterialStart()) {
+        stats.materialTightened++
+        continue
+      }
       if (blockDepth > 0) {
         // 组件内部空白原样保留，不做收敛
         out.push('')
@@ -338,6 +353,34 @@ export function formatMarkdown(md: string): FormatResult {
       lastWasImage = false
       lastWasQuote = false
       out.push('')
+      continue
+    }
+
+    // ── 素材边界注释 ──
+    // 「开始」贴在素材代码上方、「结束」贴在素材代码下方，中间都不许有空行；
+    // 「结束」下面要留一个空行，和下文的正文/组件隔开。
+    // 这两条要在 settlePendingBlank() 之前判：上一个块级组件刚闭合时它会给这里补空行，
+    // 结束注释又要立刻把这空行删掉，来回抵消会平白多记一次计数。
+    if (isMaterialStartLine(line)) {
+      // 注释自己也要和上文分开，否则会粘在上一段的末尾
+      if (out.length > 0 && !lastIsBlank()) ensureBlankBefore()
+      pendingBlank = false
+      lastWasImage = false
+      lastWasQuote = false
+      out.push(line)
+      continue
+    }
+    if (isMaterialEndLine(line)) {
+      // 结束注释前不许留空行：把已经攒下的空行撤掉
+      while (out.length > 0 && out[out.length - 1] === '') {
+        out.pop()
+        stats.materialTightened++
+      }
+      lastWasImage = false
+      lastWasQuote = false
+      out.push(line)
+      // 结束后要留一个空行，由下一个非空行来落
+      pendingBlank = true
       continue
     }
 
@@ -452,5 +495,6 @@ export function describeFormatStats(stats: FormatStats): string {
   if (stats.imageGaps) parts.push(`图片后空行 ${stats.imageGaps}`)
   if (stats.quoteGaps) parts.push(`引用前空行 ${stats.quoteGaps}`)
   if (stats.fencesClosed) parts.push(`补围栏闭合 ${stats.fencesClosed}`)
+  if (stats.materialTightened) parts.push(`收紧素材注释 ${stats.materialTightened}`)
   return parts.join(' · ')
 }

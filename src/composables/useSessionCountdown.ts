@@ -1,9 +1,10 @@
 /**
  * AI 面板的「保留倒计时」。
  *
- * 三个面板（写作 / 排版 / 配图）头部都显示同一个东西：结果还能留多久。
+ * 四个面板（写作 / 排版 / 配图 / 素材）头部都显示同一个东西：结果还能留多久。
  * 口径都是「从最后一次请求算起」（滑动续期），只是**保留时长各用各的设置项**
- * （写作 aiWriteSessionHours / 排版 aiFormatSessionHours / 配图 aiImageSessionHours）。
+ * （写作 aiWriteSessionHours / 排版 aiFormatSessionHours / 配图 aiImageSessionHours /
+ * 素材 aiMaterialSessionHours）。
  *
  * 这个 composable 只管两件事：
  * 1. 读该面板自己的保留时长（normalizeHours）；
@@ -19,7 +20,11 @@ import { getSetting } from '@/config/settings'
 import { formatRemaining, normalizeHours, remainingMs } from '@/utils/aiSession'
 
 /** 各面板的保留时长设置项 key */
-export type SessionHoursKey = 'aiWriteSessionHours' | 'aiFormatSessionHours' | 'aiImageSessionHours'
+export type SessionHoursKey =
+  | 'aiWriteSessionHours'
+  | 'aiFormatSessionHours'
+  | 'aiImageSessionHours'
+  | 'aiMaterialSessionHours'
 
 export function useSessionCountdown(hoursKey: SessionHoursKey) {
   /** 用于过期判定与倒计时展示的「当前时间」 */

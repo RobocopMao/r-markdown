@@ -7,3 +7,8 @@ src/data/ai/r-markdown-formatter/**
 # 同样必须与源文件逐字节一致（aiWritePrompt.loadSkillText / loadReferenceText 会剥离顶部注释），
 # 且技能文档里的表格与空行一旦被 prettier 重排就会与源文件漂移。
 src/data/ai/khazix/**
+
+# AI 素材用的玩法技能：技能文档里的表格对齐与 frontmatter 缩进一旦被 prettier 重排，
+# 与上面两份 skill 的处理方式就不一致了；而且正文会原样进 prompt，
+# 保持手工排版便于对照「组件写法手册」逐行校对。
+src/data/ai/r-markdown-material/**

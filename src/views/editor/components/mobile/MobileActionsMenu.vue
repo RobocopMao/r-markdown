@@ -1,6 +1,7 @@
 <script setup vapor lang="ts">
 import { onMounted, onBeforeUnmount } from 'vue'
 import { useDropdownGroup } from '@/composables/useDropdownGroup'
+import BetaBadge from '@/components/BetaBadge.vue'
 import {
   Braces,
   EllipsisVertical,
@@ -20,6 +21,7 @@ import {
   ChartColumn,
   HelpCircle,
   AlignLeft,
+  Layers,
 } from 'lucide-vue-next'
 
 defineProps<{
@@ -48,6 +50,7 @@ const emit = defineEmits<{
   'open-ai-write': []
   'open-ai-format': []
   'open-ai-image': []
+  'open-ai-material': []
   'open-help': []
   /** 切换到统计面板（与桌面端左侧栏的「统计」同一入口） */
   'toggle-stats': []
@@ -92,70 +95,82 @@ onBeforeUnmount(() => {
     >
       <EllipsisVertical :size="15" />
     </button>
+    <!--
+      w-32（128px）是原来只放「AI 素材」四个字时的宽度；AI 素材后面挂上 Beta 角标后
+      一行放不下，会把「素材」折成两行。放宽到 w-36 并让选项不换行。
+    -->
     <div
-      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-32"
+      class="mobile-actions-dropdown absolute top-full right-0 mt-2 p-1.5 bg-white rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50 w-36"
       :class="{ show: isVisible }"
     >
       <!-- 编辑模式：AI 写作/排版/配图 → 上传图片 → 保存到仓库 → 扩展组件 → 加载示例 -->
       <template v-if="mode === 'editor'">
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('toggle-stats'))"
         >
           <ChartColumn :size="14" />
           统计面板
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-write'))"
         >
           <Feather :size="14" />
           AI 写作
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-format'))"
         >
           <Bot :size="14" />
           AI 排版
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-ai-image'))"
         >
           <ImagePlus :size="14" />
           AI 配图
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          @click="handleAction(() => emit('open-ai-material'))"
+        >
+          <Layers :size="14" />
+          AI 素材
+          <BetaBadge />
+        </button>
+        <button
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('format-document'))"
         >
           <AlignLeft :size="14" />
           格式化文档
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('upload-image'))"
         >
           <ImageUp :size="14" />
           上传图片
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-import'))"
         >
           <Import :size="14" />
           导入
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('save-to-repo'))"
         >
           <Cloud :size="14" />
           保存到仓库
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('go-components'))"
         >
           <LayoutGrid :size="14" />
@@ -163,42 +178,42 @@ onBeforeUnmount(() => {
         </button>
         <!-- 素材/图库/检测：与桌面端左侧栏同源功能，避免移动端只能从别处绕进去 -->
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-gallery'))"
         >
           <Images :size="14" />
           图库
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('go-materials'))"
         >
           <Library :size="14" />
           素材库
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-my-materials'))"
         >
           <BookMarked :size="14" />
           我的素材
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-banned-words'))"
         >
           <ShieldAlert :size="14" />
           违禁词检测
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('load-demo'))"
         >
           <FileText :size="14" />
           加载示例
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('open-help'))"
         >
           <HelpCircle :size="14" />
@@ -208,21 +223,21 @@ onBeforeUnmount(() => {
       <!-- 预览模式：显示其他三个 -->
       <template v-else-if="mode === 'preview'">
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('export-html'))"
         >
           <Braces :size="14" />
           HTML
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('save-image'))"
         >
           <Image :size="14" />
           保存图片
         </button>
         <button
-          class="mobile-action-option w-full flex items-center gap-2 px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
+          class="mobile-action-option w-full flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg border-none bg-transparent cursor-pointer text-[13px] text-black/80 transition-colors duration-150 hover:bg-black/5"
           @click="handleAction(() => emit('export-xhs'))"
         >
           <FileText :size="14" />

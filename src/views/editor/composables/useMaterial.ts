@@ -1,5 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
+import { wrapMaterialBoundary } from '@/utils/materialBoundary'
 
 interface EditorExposed {
   insertAtCursor: (text: string) => void
@@ -126,7 +127,8 @@ export function useMaterial(
   /** 插入素材正文；面板的开关由 EditorPage 管（素材面板现在是编辑区内嵌面板） */
   function handleInsertMaterial(item: MaterialItem) {
     if (!editorRef.value) return
-    editorRef.value.insertAtCursor('\n' + item.content)
+    // 拼出来的素材（不是单个成品组件）补一对边界注释，见 materialBoundary.ts
+    editorRef.value.insertAtCursor('\n' + wrapMaterialBoundary(item.content))
     showToast('素材已插入')
   }
 

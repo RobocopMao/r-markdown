@@ -23,6 +23,9 @@ import {
   FolderOpen,
   Sparkles,
   RefreshCw,
+  Plus,
+  ArrowUp,
+  Square,
 } from 'lucide-vue-next'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 import BaseCheckbox from '@/components/BaseCheckbox.vue'
@@ -920,8 +923,8 @@ function onSkillChanged(e: Event) {
         **空会话**占位，此时它里面什么都没有，倒计时却显示「会话剩余 23 小时 59 分」，
         模型名也早早挂在那里——看着像有个东西正在倒计时，实际无内容可保。
         这两样都是「会话已经在跑」的旁证，发出第一条消息后再显示才名副其实。
-      - 「新建会话」不跟着 hasMessages：空会话时它仍有意义（万一恢复出的会话有内容
-        想重来），且它本身不暗示任何「进行中」的状态。
+      - 「新建会话」跟着 hasMessages：空会话时它无事可做（点它也只是重置一个本来就空的会话），
+        显示出来只会让人以为「这里已经有一份稿子」。有内容后才出现，与 AI 素材面板一致。
     -->
     <template #header>
       <div v-if="configured" class="flex min-w-0 flex-1 items-center gap-2">
@@ -937,9 +940,11 @@ function onSkillChanged(e: Event) {
           {{ expired ? '会话已过期' : `会话保留 ${remainingText}` }}
         </span>
         <button
-          class="ml-auto shrink-0 cursor-pointer whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
+          v-if="hasMessages"
+          class="ml-auto flex shrink-0 cursor-pointer items-center gap-1 whitespace-nowrap rounded-lg border border-[#e5e5e5] bg-white px-2.5 py-1 text-[11px] text-[#666] transition-colors hover:border-[var(--accent)] hover:text-[var(--accent)] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999]"
           @click="onNewSession"
         >
+          <Plus :size="12" />
           新建会话
         </button>
       </div>
@@ -1277,38 +1282,43 @@ function onSkillChanged(e: Event) {
 
         <!-- 输入行 -->
         <div class="flex items-end gap-2">
-          <textarea
-            ref="inputRef"
-            v-model="input"
-            rows="1"
-            :disabled="generating || expired || !configured"
-            :placeholder="
-              expired
-                ? '会话已过期，请点「新建会话」继续'
-                : hasMessages
-                  ? '接着说，比如：第二段换成我自己的例子 / 整体再短一点 / 开头重写'
-                  : '第一条消息就是素材，直接粘贴或写下你的想法…（Enter 发送，Shift+Enter 换行）'
-            "
-            class="min-w-0 flex-1 resize-none rounded-lg border border-[#e5e5e5] bg-white px-3 py-2 text-[13px] leading-[22px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:bg-[#fafafa] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555] dark:disabled:bg-[#222]"
-            @input="autoGrow"
-            @keydown="onInputKeydown"
-          />
-          <button
-            v-if="generating"
-            class="shrink-0 cursor-pointer rounded-lg border border-[#e5e5e5] bg-white px-4 py-2 text-[13px] text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#333]"
-            @click="abort"
-          >
-            停止
-          </button>
-          <button
-            v-else
-            class="shrink-0 cursor-pointer rounded-lg border-0 px-4 py-2 text-[13px] font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
-            :style="{ backgroundColor: colors.accent }"
-            :disabled="!configured || !input.trim() || expired"
-            @click="onSend"
-          >
-            发送
-          </button>
+          <div class="relative min-w-0 flex-1">
+            <textarea
+              ref="inputRef"
+              v-model="input"
+              rows="1"
+              :disabled="generating || expired || !configured"
+              :placeholder="
+                expired
+                  ? '会话已过期，请点「新建会话」继续'
+                  : hasMessages
+                    ? '接着说，比如：第二段换成我自己的例子 / 整体再短一点 / 开头重写'
+                    : '第一条消息就是素材，直接粘贴或写下你的想法…（Enter 发送，Shift+Enter 换行）'
+              "
+              class="block w-full resize-none rounded-lg border border-[#e5e5e5] bg-white py-2 pl-3 pr-11 text-[13px] leading-[22px] text-[#1a1a1a] outline-none transition-colors placeholder:text-[#ccc] focus:border-[var(--accent)] disabled:cursor-not-allowed disabled:bg-[#fafafa] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#e5e5e5] dark:placeholder:text-[#555] dark:disabled:bg-[#222]"
+              @input="autoGrow"
+              @keydown="onInputKeydown"
+            />
+            <!-- 发送 / 停止按钮贴在输入框右下角，用图标不用文字，与 AI 素材面板一致 -->
+            <button
+              v-if="generating"
+              class="absolute right-1.5 bottom-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-[#e5e5e5] bg-white text-[#666] transition-colors hover:bg-[#f5f5f5] dark:border-[#444] dark:bg-[#2a2a2a] dark:text-[#999] dark:hover:bg-[#333]"
+              title="停止生成"
+              @click="abort"
+            >
+              <Square :size="11" fill="currentColor" />
+            </button>
+            <button
+              v-else
+              class="absolute right-1.5 bottom-1.5 flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border-0 text-white transition-opacity disabled:cursor-not-allowed disabled:opacity-30"
+              :style="{ backgroundColor: colors.accent }"
+              :disabled="!configured || !input.trim() || expired"
+              title="发送（Enter）"
+              @click="onSend"
+            >
+              <ArrowUp :size="15" :stroke-width="2.5" />
+            </button>
+          </div>
         </div>
       </div>
     </template>

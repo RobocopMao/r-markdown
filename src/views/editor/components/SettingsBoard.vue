@@ -22,6 +22,7 @@ import {
   Images,
   Info,
   KeyRound,
+  Layers,
   MessageCircle,
   Palette,
   PenLine,
@@ -39,6 +40,7 @@ import SettingsCard from './SettingsCard.vue'
 import SettingsSlider from './SettingsSlider.vue'
 import MasonryFlow from './MasonryFlow.vue'
 import ModelMultiSelect from '@/components/ModelMultiSelect.vue'
+import BetaBadge from '@/components/BetaBadge.vue'
 import BaseTooltip from '@/components/BaseTooltip.vue'
 import ConfirmDialog from '@/components/ConfirmDialog.vue'
 import { getSetting, setSetting } from '@/config/settings'
@@ -425,23 +427,29 @@ const aiMaxTokens = ref(getSetting<number>('aiMaxTokens'))
 const aiStream = ref(getSetting<boolean>('aiStream'))
 
 /**
- * 结果保留时长（小时）——**三个面板各自独立**。
+ * 结果保留时长（小时）——**四个面板各自独立**。
  * 口径都是「从最后一次请求算起」的滑动续期：一直在用就一直留得住。
  *
- * 分开是因为使用节奏不同：写作一次常聊几十分钟，排版/配图多是「生成一次就用掉」。
+ * 分开是因为使用节奏不同：写作一次常聊几十分钟，排版/配图/素材多是「生成一次就用掉」。
  */
 const aiWriteSessionHours = ref(getSetting<number>('aiWriteSessionHours'))
 const aiFormatSessionHours = ref(getSetting<number>('aiFormatSessionHours'))
 const aiImageSessionHours = ref(getSetting<number>('aiImageSessionHours'))
+const aiMaterialSessionHours = ref(getSetting<number>('aiMaterialSessionHours'))
 
-type SessionHoursSettingKey = 'aiWriteSessionHours' | 'aiFormatSessionHours' | 'aiImageSessionHours'
+type SessionHoursSettingKey =
+  | 'aiWriteSessionHours'
+  | 'aiFormatSessionHours'
+  | 'aiImageSessionHours'
+  | 'aiMaterialSessionHours'
 
-/** 三个面板共用一个写回实现，避免三段重复代码；收敛逻辑与面板侧一致 */
+/** 各面板共用一个写回实现，避免四段重复代码；收敛逻辑与面板侧一致 */
 function saveSessionHours(key: SessionHoursSettingKey, val: number) {
   const n = normalizeHours(val)
   if (key === 'aiWriteSessionHours') aiWriteSessionHours.value = n
   else if (key === 'aiFormatSessionHours') aiFormatSessionHours.value = n
-  else aiImageSessionHours.value = n
+  else if (key === 'aiImageSessionHours') aiImageSessionHours.value = n
+  else aiMaterialSessionHours.value = n
   setSetting(key, n)
 }
 
@@ -1944,6 +1952,43 @@ async function manualCheckUpdate() {
                   每次写作都会拼进 system prompt，用来固化个人偏好，不用每篇都重复说。
                 </p>
               </div>
+            </div>
+          </SettingsCard>
+
+          <SettingsCard
+            title="AI 素材"
+            description="说出你要的素材，按 R-Markdown 语法生成组件片段，直接插进编辑器"
+            :icon="Layers"
+          >
+            <template #action><BetaBadge /></template>
+            <div class="space-y-3">
+              <!-- 保留时长（每个面板各设各的）：口径是「从最后一次请求算起」 -->
+              <div class="settings-subcard">
+                <div class="flex items-end justify-between">
+                  <span class="settings-subcard-label">结果保留时长</span>
+                  <span class="settings-subcard-value">{{ aiMaterialSessionHours }}h</span>
+                </div>
+                <SettingsSlider
+                  class="mt-2.5"
+                  :model-value="aiMaterialSessionHours"
+                  :min="MIN_SESSION_HOURS"
+                  :max="MAX_SESSION_HOURS"
+                  :step="1"
+                  @update:model-value="(v: number) => saveSessionHours('aiMaterialSessionHours', v)"
+                />
+                <div class="settings-subcard-range">
+                  <span>{{ MIN_SESSION_HOURS }}h</span>
+                  <span>{{ MAX_SESSION_HOURS }}h</span>
+                </div>
+                <p class="settings-note mt-1.5">
+                  生成结果的面板保留时长，从最后一次请求算起；到期后打开面板不再恢复上一次的素材。
+                </p>
+              </div>
+
+              <p class="settings-note">
+                接口地址、API Key 与模型走上面的「AI 文本」配置；素材常常是改几个词再生成一版，
+                所以需求描述会单独留底，不受这里的结果保留时长约束。
+              </p>
             </div>
           </SettingsCard>
         </MasonryFlow>

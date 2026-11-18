@@ -100,6 +100,7 @@ import {
   type PaletteKind,
 } from '@/utils/commandPalette'
 import { formatMarkdown, describeFormatStats } from '@/utils/markdownFormatter'
+import { wrapMaterialBoundary } from '@/utils/materialBoundary'
 import { DEFAULT_FORMAT_SHORTCUT } from '@/config/defaults'
 import { DraftStorage } from '@/services/draftStorage'
 import { MaterialStorage, type MaterialItem } from '@/services/materialStorage'
@@ -1403,7 +1404,7 @@ function onAiWriteApplyAndFormat(text: string) {
  * 再点同一个菜单项 = 收起面板（与统计 / 图库那些入口的 toggle 行为一致）；
  * 点另一个菜单项则只切标签页、面板保持展开。
  */
-function onSidebarAiAction(action: 'write' | 'format' | 'image') {
+function onSidebarAiAction(action: 'write' | 'format' | 'image' | 'material') {
   const sameTab = aiBoardActive.value && aiTab.value === action
   closeAllBoards()
   aiTab.value = action
@@ -1490,6 +1491,57 @@ function onAiImageAddDisk(file: File) {
 function onAiImageOpenSettings() {
   aiBoardActive.value = false
   onOpenSettingsBoard('ai-image')
+}
+
+// ── AI 素材 ──
+/**
+ * 插入 AI 生成的素材：插在光标处，不覆盖已有内容。
+ *
+ * 走 insertOwnLine 而不是 insertAtCursor：素材是一整块多行组件标签，
+ * 直接插会把相邻段落黏在一起，insertOwnLine 会按上下文自动补空行，
+ * 与「插入组件」「插入图片」的落地效果一致，也一并进入撤销栈。
+ */
+function onAiMaterialInsert(text: string) {
+  const payload = text.trim()
+  if (!payload) return
+  // 组件标签内部不能插：整段素材是多行块级标签，插进 <steps> 里会把闭合标签劈成两半
+  if (editorRef.value?.isInsideTag) {
+    showToast('不能在组件标签内插入素材')
+    return
+  }
+  aiBoardActive.value = false
+  // 不是单个成品组件的（自由拼版、纯 `<html>`），插入时补一对边界注释，见 materialBoundary.ts
+  editorRef.value?.insertOwnLine(wrapMaterialBoundary(payload))
+  nextTick(() => editorRef.value?.focusEditor())
+  showToast('已插入到光标位置')
+}
+
+/**
+ * 清空编辑器再插入：整篇替换成这段素材。
+ *
+ * 与「格式化文档」同一条路子（replaceAll 进撤销栈 + markdown 同步 + 立即落盘），
+ * 所以草稿/文章关联不变，桌面端仍可一键撤销回原文。
+ * 覆盖确认由面板负责（那里才知道结果有没有内容），这里只管执行。
+ */
+function onAiMaterialReplace(text: string) {
+  const payload = text.trim()
+  if (!payload) return
+  aiBoardActive.value = false
+  // 与「插入到编辑器」同一套口径：拼出来的素材带边界注释，单个组件不带
+  const material = wrapMaterialBoundary(payload)
+  editorRef.value?.replaceAll(material)
+  markdown.value = material
+  saveContent(material, true)
+  nextTick(() => editorRef.value?.focusEditor())
+  showToast(
+    isMobileWeb.value ? '已清空并插入素材' : `已清空并插入素材，可用 ${undoShortcutLabel()} 撤销`,
+  )
+}
+
+/** 从 AI 素材面板跳转设置：素材与写作/排版共用「AI 设置 → AI 文本」子页 */
+function onAiMaterialOpenSettings() {
+  aiBoardActive.value = false
+  onOpenSettingsBoard('ai')
 }
 
 function onPasteText() {
@@ -1778,6 +1830,7 @@ function loadDemo() {
           @open-ai-write="onSidebarAiAction('write')"
           @open-ai-format="onSidebarAiAction('format')"
           @open-ai-image="onSidebarAiAction('image')"
+          @open-ai-material="onSidebarAiAction('material')"
           @toggle-stats="onToggleStats"
           @format-document="onFormatDocument"
           @open-help="onOpenHelp"
@@ -2827,6 +2880,9 @@ function loadDemo() {
             @open-settings-write="onAiWriteOpenSettings"
             @open-settings-format="onAiOpenSettings"
             @open-settings-image="onAiImageOpenSettings"
+            @insert-material="onAiMaterialInsert"
+            @replace-material="onAiMaterialReplace"
+            @open-settings-material="onAiMaterialOpenSettings"
           />
         </div>
 

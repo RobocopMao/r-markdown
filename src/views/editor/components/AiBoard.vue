@@ -1,32 +1,34 @@
 <script setup vapor lang="ts">
 /**
- * AI 面板：写作 / 排版 / 配图三合一。
+ * AI 面板：写作 / 排版 / 配图 / 素材四合一。
  *
  * 原来这是三个独立的抽屉（AiWriteDialog / AiFormatDialog / AiImageDialog），
  * 点侧栏「AI」的二级菜单会从右边滑出整屏高的抽屉盖住编辑器——和统计、草稿箱、
  * 图库那些已经改成「占满编辑区」的面板风格不一致，也没法一边看正文一边用 AI。
  *
- * 这里沿用同一套面板范式（BoardHeader + 编辑区占位），三个子组件**原样复用**，
- * 只给 BaseDrawer 传 embedded：去掉传送门、遮罩、抽屉外框与滑入动效，
+ * 这里沿用同一套面板范式（BoardHeader + 编辑区占位），各子组件**原样复用**，
+ * 都给 BaseDrawer 传 embedded：去掉传送门、遮罩、抽屉外框与滑入动效，
  * 把「头部插槽 / 内容 / 页脚」三段直接铺在面板里。三千行界面不用复制一遍。
  *
  * 显隐策略：
  * - 面板本身由父级 v-show 控制（保留各 AI 的会话、结果、输入框内容，切走再回来还在）。
- * - 三个子组件的 visible 都跟着 active 走，**不跟着 tab 走**：
+ * - 各子组件的 visible 都跟着 active 走，**不跟着 tab 走**：
  *   否则从「写作」切到「配图」会把在途请求 abort 掉，回来还得重发。
- *   代价是打开面板时三者一起初始化（读配置 + 恢复上次结果），都是本地读，可以接受。
+ *   代价是打开面板时全部一起初始化（读配置 + 恢复上次结果），都是本地读，可以接受。
  */
 import { computed } from 'vue'
 import BoardHeader from './BoardHeader.vue'
+import BetaBadge from '@/components/BetaBadge.vue'
 import AiWriteDialog from './AiWriteDialog.vue'
 import AiFormatDialog from './AiFormatDialog.vue'
 import AiImageDialog from './AiImageDialog.vue'
+import AiMaterialDialog from './AiMaterialDialog.vue'
 
-/** 三个标签页的键 */
-export type AiTab = 'write' | 'format' | 'image'
+/** 四个标签页的键 */
+export type AiTab = 'write' | 'format' | 'image' | 'material'
 
 const props = defineProps<{
-  /** 面板是否显示（父级 v-show 用，同时驱动三个子组件的「打开时初始化」） */
+  /** 面板是否显示（父级 v-show 用，同时驱动各子组件的「打开时初始化」） */
   active: boolean
   /** 当前标签页 */
   tab: AiTab
@@ -56,16 +58,23 @@ const emit = defineEmits<{
   addGallery: [file: File]
   /** 配图：只加入本地磁盘 */
   addDisk: [file: File]
-  /** 跳转设置：写作 / 排版落到「AI 文本」子页，配图落到「AI 图片」子页 */
+  /** 素材：插入到光标位置 */
+  insertMaterial: [text: string]
+  /** 素材：清空编辑器全文后插入 */
+  replaceMaterial: [text: string]
+  /** 跳转设置：写作 / 排版 / 素材落到「AI 文本」子页，配图落到「AI 图片」子页 */
   openSettingsWrite: []
   openSettingsFormat: []
   openSettingsImage: []
+  openSettingsMaterial: []
 }>()
 
-const TABS: { key: AiTab; label: string }[] = [
+/** 标签页；`beta` 为真的会在文字后面挂一个小小的 Beta 角标 */
+const TABS: { key: AiTab; label: string; beta?: boolean }[] = [
   { key: 'write', label: 'AI 写作' },
   { key: 'format', label: 'AI 排版' },
   { key: 'image', label: 'AI 配图' },
+  { key: 'material', label: 'AI 素材', beta: true },
 ]
 
 /** 副标题跟着标签页走，一句话说清这一页在干什么 */
@@ -73,6 +82,7 @@ const DESCRIPTION: Record<AiTab, string> = {
   write: '和 AI 一起写稿，满意后一键替换编辑器内容',
   format: '按 R-Markdown 规范重排全文，应用前可对比差异',
   image: '生成配图，插入编辑器或存进图库 / 磁盘',
+  material: '多轮聊出你要的素材，每版都能单独插入编辑器',
 }
 
 const description = computed(() => DESCRIPTION[props.tab])
@@ -96,6 +106,7 @@ const description = computed(() => DESCRIPTION[props.tab])
             @click="emit('update:tab', t.key)"
           >
             {{ t.label }}
+            <BetaBadge v-if="t.beta" class="ml-1" />
           </button>
         </template>
       </BoardHeader>
@@ -136,6 +147,17 @@ const description = computed(() => DESCRIPTION[props.tab])
           @add-gallery="emit('addGallery', $event)"
           @add-disk="emit('addDisk', $event)"
           @open-settings="emit('openSettingsImage')"
+        />
+      </div>
+      <div v-show="props.tab === 'material'" class="h-full">
+        <AiMaterialDialog
+          embedded
+          :visible="props.active"
+          :markdown="props.markdown"
+          @close="emit('close')"
+          @insert="emit('insertMaterial', $event)"
+          @replace="emit('replaceMaterial', $event)"
+          @open-settings="emit('openSettingsMaterial')"
         />
       </div>
     </div>

@@ -29,9 +29,11 @@ import {
   estimateTokens,
   loadFormatSpec,
   maskImageTokens,
+  maskMaterialBlocks,
   newPresetId,
   normalizePresets,
   unmaskImageTokens,
+  unmaskMaterialBlocks,
   validateFormat,
   AI_STYLE_PRESETS,
   LONG_ARTICLE_CHARS,
@@ -431,7 +433,12 @@ async function onGenerate() {
   baseText.value = article
   // 本地图片（内置 base64 / IndexedDB / 磁盘相对路径）替换为占位符，
   // 避免把超长 base64 发给模型，也防止模型改写图片链接
-  const masked = maskImageTokens(article)
+  // 素材整段先遮起来：素材是别的 AI 排好的成品，排版这步一旦动它就毁了原貌。
+  // 顺序要紧——先遮素材，素材内部的本地图片就跟着一起被藏住，
+  // 不会被后面的图片遮罩拆出来单独替换（那样还原时会改变素材内部结构）。
+  const maskedMaterial = maskMaterialBlocks(article)
+  lastMaterialTokens = maskedMaterial.tokens
+  const masked = maskImageTokens(maskedMaterial.text)
   lastTokens = masked.tokens
   const articleForModel = masked.text
   generating.value = true
@@ -477,7 +484,9 @@ async function onGenerate() {
 /** 生成结束后的清洗、占位符还原与校验 */
 function finalize(raw: string, finishReason: string) {
   const cleaned = cleanModelOutput(raw)
-  const { text, missing, dropped } = unmaskImageTokens(cleaned, lastTokens)
+  // 先还原素材（原样贴回原段落），再还原图片占位符
+  const material = unmaskMaterialBlocks(cleaned, lastMaterialTokens)
+  const { text, missing, dropped } = unmaskImageTokens(material.text, lastTokens)
   resultText.value = text
 
   const w: string[] = []
@@ -492,6 +501,16 @@ function finalize(raw: string, finishReason: string) {
   }
   if (dropped > 0) {
     w.push(`已清除 ${dropped} 处模型生成的无效图片占位符（原文中并无对应图片）`)
+  }
+  if (material.missing.length > 0) {
+    w.push(
+      `有 ${material.missing.length} 段素材未能保留（模型直接丢掉了占位符 ${material.missing
+        .map((n) => `{{RMMAT_${n}}}`)
+        .join('、')}），排版结果里缺这部分内容，需要手动贴回`,
+    )
+  }
+  if (material.dropped > 0) {
+    w.push(`已清除 ${material.dropped} 处模型生成的无效素材占位符`)
   }
   if (finishReason === 'length') {
     w.push('输出达到最大长度上限，结果可能不完整；可在设置中调大「最大输出」后重试')
@@ -574,6 +593,8 @@ const clearConfirmVisible = ref(false)
 
 /** 本次生成使用的图片占位符表（原文中被替换掉的部分） */
 let lastTokens: string[] = []
+/** 本次生成使用的素材占位符表（`<!-- 素材开始 -->…<!-- 素材结束 -->` 整段原文） */
+let lastMaterialTokens: string[] = []
 
 function isAbort(e: unknown): boolean {
   if (e instanceof DOMException) return e.name === 'AbortError'
@@ -1152,7 +1173,7 @@ onBeforeUnmount(() => {
           v-else
           class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#e5e5e5] bg-white px-6 text-center dark:border-[#444] dark:bg-[#1e1e1e]"
         >
-          <Sparkles :size="22" class="text-[#ccc]" />
+          <Sparkles :size="26" class="text-[var(--accent)]" />
           <p class="text-[12px] text-[#999] dark:text-[#666]">
             选择来源后点击「开始排版」，结果会以左右对比的形式展示，确认后再应用到编辑器。
           </p>

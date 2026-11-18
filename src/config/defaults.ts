@@ -175,6 +175,8 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   aiWriteModel: { default: '' },
   /** AI 排版面板当前使用的模型；空串表示跟随清单首项 */
   aiFormatModel: { default: '' },
+  /** AI 素材面板当前使用的模型；空串表示跟随清单首项 */
+  aiMaterialModel: { default: '' },
   /** AI 排版：采样温度，排版任务取较低值以稳定输出 */
   aiTemperature: { default: 0.3 },
   /** AI 排版：单次输出 token 上限，长文被截断时可调大 */
@@ -236,6 +238,15 @@ export const DEFAULT_SETTINGS: Record<string, SettingDef> = {
   aiFormatSessionHours: { default: 24 },
   /** AI 配图：结果保留时长（小时） */
   aiImageSessionHours: { default: 24 },
+  /** AI 素材：结果保留时长（小时） */
+  aiMaterialSessionHours: { default: 24 },
+  /**
+   * AI 素材：上一次的需求描述，重开面板/重启应用都还在。
+   *
+   * 与 aiImagePrompt 同理：素材常常是「改几个词再生成一版」的迭代，
+   * 面板上有「清空」按钮可手动清掉。属于草稿，不受结果保留时长约束。
+   */
+  aiMaterialPrompt: { default: '' },
   /**
    * AI 配图：上一次用的提示词，重开面板/重启应用都还在。
    *

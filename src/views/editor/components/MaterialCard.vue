@@ -201,7 +201,8 @@ function categoryColor(cat: string): string {
 </template>
 
 <style scoped>
-.material-preview :deep(span) {
+/* 行高给容器（组件内部用 inline 行高做「大号数字 + 负 margin 顶回」的排版，不能覆盖 span） */
+.material-preview {
   line-height: 1.8;
 }
 </style>
