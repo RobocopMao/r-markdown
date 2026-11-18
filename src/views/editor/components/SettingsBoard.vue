@@ -1986,8 +1986,8 @@ async function manualCheckUpdate() {
               </div>
 
               <p class="settings-note">
-                接口地址、API Key 与模型走上面的「AI 文本」配置；素材常常是改几个词再生成一版，
-                所以需求描述会单独留底，不受这里的结果保留时长约束。
+                接口地址、API Key 与模型走上面的「AI 文本」配置；本期没有单独的采样温度与最大输出，跟着
+                AI 排版那组取值走。
               </p>
             </div>
           </SettingsCard>
