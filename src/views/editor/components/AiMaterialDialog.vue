@@ -21,7 +21,7 @@ import { getErrorMessage } from '@/utils/helpers'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
-import { useMermaid } from '@/composables/useMermaid'
+import { renderMermaidInHtml } from '@/composables/useMermaid'
 import { loadFormatSpec, validateFormat } from '@/utils/aiFormatPrompt'
 import {
   buildMaterialSystemPrompt,
@@ -91,7 +91,6 @@ const emit = defineEmits<{
 }>()
 
 const { colors } = useTheme()
-const { renderAll } = useMermaid()
 
 /** 规范原文按需加载并缓存：单独成 chunk，不撑大主包；面板多次打开只读一次 */
 let specPromise: Promise<string> | null = null
@@ -499,17 +498,8 @@ async function renderDraft(msg: MaterialMessage) {
     let md = await resolveIdbImages(src)
     if (import.meta.env.VITE_TAURI === 'true') md = await resolveDiskImages(md)
     let html = await parseMarkdownAsync(md, colors.value)
-    if (html.includes('class="mermaid"')) {
-      const tmp = document.createElement('div')
-      tmp.style.position = 'absolute'
-      tmp.style.visibility = 'hidden'
-      tmp.style.pointerEvents = 'none'
-      tmp.innerHTML = html
-      document.body.appendChild(tmp)
-      await renderAll(tmp)
-      html = tmp.innerHTML
-      document.body.removeChild(tmp)
-    }
+    // mermaid 是 JS 画的，光靠 parseMarkdownAsync 只会得到一个空占位块。
+    html = await renderMermaidInHtml(html)
     renderedHtml.value = { ...renderedHtml.value, [msg.id]: html }
   } catch {
     renderedHtml.value = { ...renderedHtml.value, [msg.id]: '' }

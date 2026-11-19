@@ -996,6 +996,19 @@ AI 素材的 `/` 菜单里有「交互 SVG」，模型会产出整块 `<svg>`（
 
 ---
 
+### mermaid 预览：统一走 `renderMermaidInHtml()`，别再各写一遍判断
+
+`parseMarkdownAsync()` 只把 `<mermaid>` 渲染成一个**空占位块**（`.mermaid-block` > `.mermaid-svg-container`），真正的图是 `useMermaid().renderAll()` 用 JS 画成 `<img>`（base64 PNG）塞进去的——因为 mermaid 要量真实尺寸，必须挂到 document 上才能画。
+
+四个地方都要「先渲染成 HTML 再显示」：AI 素材面板的素材卡、素材库卡片（`MaterialCard.vue`）、素材库页面（`MaterialLibraryPage.vue`）、组件选择器（`ComponentPickerDialog.vue`）。它们原先各自复制了一段「判断 + 临时容器 + renderAll + 取回 innerHTML」，而**判断条件写的是 `html.includes('class="mermaid"')`——那是更早版本的类名**。`Mermaid_DA01.render()` 现在产出的是 `class="mermaid-block"`，条件永远不成立，`renderAll()` 从没被调用过，于是这几处预览里 mermaid 一直是空白。编辑器右侧的 `Preview.vue` 是无条件调 `renderAll()` 的，所以「插入编辑器后就能预览」——这个对比正是用户报的现象。
+
+现在的口径：
+
+- 判断和挂载逻辑收进 `src/composables/useMermaid.ts` 的两个导出：`hasMermaidBlock(html)` 和 `renderMermaidInHtml(html)`。调用点只需 `html = await renderMermaidInHtml(html)`，无需 `if`、无需自己建临时容器。
+- **类名只写在这一个文件里**。组件改名时不会又漂掉一批调用点；要改判断逻辑也只改一处。
+- `renderMermaidInHtml()` 内部用 `position:absolute; visibility:hidden` 挂到 body，`finally` 里 `removeChild`（即使渲染抛错也不留垃圾节点）。
+- 没有 mermaid 块时直接原样返回，不挂 DOM。`Preview.vue` 走的是另一条路（增量渲染 + 已渲染块缓存，避免闪烁），保持原样别动它。
+
 ### Beta 角标：只有一个组件，四处共用
 
 「AI 素材」后面那个 `Beta` 角标是 `src/components/BetaBadge.vue`，在四个地方各挂一次：`AiBoard.vue` 的标签页（`TABS` 里 `beta: true`）、`EditorSidebar.vue` 的 AI 子菜单、`mobile/MobileActionsMenu.vue` 的移动端更多菜单、`SettingsBoard.vue` 的「AI 素材」设置卡（走 `SettingsCard` 的 `#action` 插槽）。
