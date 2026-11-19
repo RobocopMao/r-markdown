@@ -31,6 +31,8 @@ import {
   checkColorIntent,
   checkMaterialOutput,
   checkMaterialIntent,
+  checkNamedComponents,
+  checkNamedOnly,
   cleanMaterialOutput,
   findClassStyledTags,
   findComponentsInHtml,
@@ -689,9 +691,11 @@ async function runTurn() {
     // 用了组件但属性名瞎编、子内容形状不对。提示词层面写死了也没用（实测），
     // 所以这里统一质检，不合格就带着「上一版错在哪」再要一次。
     // 最多重试 2 次：第 1 次通常能救回来，第 2 次兜住偶发；再不合格就把结果交用户 + warning，不无限循环。
-    // 三类质检缺一不可：语法（checkMaterialOutput）+ 选型（checkMaterialIntent）+
-    // 属性（checkColorIntent）。只查语法会漏掉「要小节标题却写成了 steps」——那是完全合法的 steps；
-    // 只查选型会漏掉「终于用了 <badges> 但一个配色属性都没写」——语法和选型都挑不出错。
+    // 五类质检缺一不可：语法（checkMaterialOutput）+ 点名（checkNamedComponents）+
+    // 点名范围（checkNamedOnly）+ 选型（checkMaterialIntent）+ 属性（checkColorIntent）。
+    // 只查语法会漏掉「要小节标题却写成了 steps」——那是完全合法的 steps；
+    // 只查选型会漏掉「终于用了 <badges> 但一个配色属性都没写」——语法和选型都挑不出错；
+    // 点名要排在最前：用户白纸黑字写了 `<steps>` 却被换成别的组件，是硬错，别的检查都会放过它。
     // 判据取「最后一条用户消息」而不是第一句：改稿轮里用户说的才是这一轮的要求。
     const lastUser = [...session.value!.messages].reverse().find((m) => m.role === 'user')
     const requirement = lastUser?.content ?? ''
@@ -699,6 +703,8 @@ async function runTurn() {
       looksLikeQuestion(t)
         ? null
         : (checkMaterialOutput(t) ??
+          checkNamedComponents(requirement, t) ??
+          checkNamedOnly(requirement, t) ??
           checkMaterialIntent(requirement, t) ??
           checkColorIntent(requirement, t))
     let cleaned = prepareMaterial(text)

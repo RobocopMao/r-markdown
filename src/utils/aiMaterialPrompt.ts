@@ -97,6 +97,192 @@ export function componentAttrReference(): string {
 }
 
 /**
+ * 用户点名的组件标签。
+ *
+ * 需求原话（用户 2026-11-19）：「如果用户指定了使用哪个组件，明确优先告诉AI使用指定组件，
+ * 并明确组件的属性语法， 不要乱用」。
+ *
+ * 用户既然点了名，就没有「换个组件也能达到同样效果」的余地——他要的就是那一个。
+ * 但只要需求里没点名，模型就会自由发挥，所以认「点名」要认得准：宁可漏判（退回自由选型），
+ * 不能误判（把「做成三步流程」里的「步骤」当成点名了 `<steps>`，反而锁死了版式）。
+ *
+ * 认三种明确写法：
+ * - 标签原文：`<steps>`、`</steps>`
+ * - `/` 快捷插入：输入框打 `/steps` 插进去的就是 `<steps>`，但也允许用户说「/steps 那种」
+ * - 动词 + 标签名：「用 steps 组件」「换成 badges」「用 mermaid 画」——
+ *   **必须带动词或「组件」二字**，裸出现一个英文单词不算（"steps" 太容易是别的意思）。
+ */
+export function findNamedComponents(requirement: string): string[] {
+  const known = new Set(components.map((c) => c.tag))
+  // `svg` 不在组件注册表里（它是解析器整段透传的原生标签），但用户说「做个可点击的 svg」
+  // 就是在点名，漏了它这条素材会退化成 `<details>` 折叠块——公众号里根本不生效。
+  known.add('svg')
+  const found: string[] = []
+
+  /**
+   * 否定语境里提到的标签不算点名。
+   *
+   * 最常见的真实说法是「用 badges 组件，不要用 html」——后半句里也出现了 `用 html`，
+   * 直接按动词认会把它当成「点名了 `<html>`」，正好和用户的意思相反。
+   * 中文否定几乎都落在「不 / 别 / 勿 / 禁」上，往匹配位置前面看两个字就够，
+   * 窗口再放大容易把「不需要花哨，用 steps」误伤成否定。
+   */
+  const negated = (index: number) =>
+    /[不别勿禁]/.test(requirement.slice(Math.max(0, index - 4), index))
+
+  const push = (raw: string, index: number) => {
+    const tag = raw.toLowerCase()
+    if (!known.has(tag)) return
+    if (negated(index)) return
+    if (!found.includes(tag)) found.push(tag)
+  }
+
+  // `<steps>` / `</steps>` / `<steps/>`
+  for (const m of requirement.matchAll(/<\/?([a-z][\w-]*)\s*\/?>/gi)) push(m[1], m.index ?? 0)
+  // `/steps`（`/` 前面不能是字母数字，免得把 "and/or" 这类切出个 "or"）
+  for (const m of requirement.matchAll(/(?:^|[^\w/])\/([a-z][a-z-]*)/gi)) {
+    push(m[1], (m.index ?? 0) + m[0].length - m[1].length)
+  }
+  // 「用 steps 组件」「换成 badges」「用 mermaid 画」
+  const verbs = '使用|改用|换成|要用|采用|调用|指定|走|用'
+  for (const m of requirement.matchAll(new RegExp(`(?:${verbs})\\s*([a-z][a-z-]*)\\b`, 'gi'))) {
+    push(m[1], (m.index ?? 0) + m[0].length - m[1].length)
+  }
+  // 「steps 组件」「mermaid 组件」
+  for (const m of requirement.matchAll(/([a-z][a-z-]*)\s*组件/gi)) push(m[1], m.index ?? 0)
+  // `svg` 单独放宽：它没有中文名，用户从不说「svg 组件」或「用 svg 组件」，
+  // 常见说法是「做一个点击揭晓的 svg」「做成 svg 动画」——裸出现就是点名的意思。
+  // 判据窄到只此一个标签，别把这条放宽到别的英文单词上。
+  for (const m of requirement.matchAll(/\bsvg\b/gi)) push('svg', m.index ?? 0)
+
+  return found
+}
+
+/**
+ * 点名组件的写法说明：逐字示例 + 这个标签能写的每个属性（含可选值与含义）。
+ *
+ * 为什么要连示例一起给：属性表只说「有 `bg` 这个键」，模型照样会写成
+ * `background="…"`；给一行能直接照抄的完整标签，属性名、引号、body 分隔形状
+ * 全都对上了，才谈得上「明确组件的属性语法」。
+ */
+export function componentDeepReference(tag: string): string | null {
+  const defs = components.filter((c) => c.tag === tag)
+  if (defs.length === 0) {
+    if (tag === 'svg') {
+      return (
+        '`<svg>`：手写矢量图（交互素材）。根标签写 `width="100%"` 加 `viewBox`，' +
+        '图形属性全写在元素上，交互只能用 SMIL（`<animate>` / `<set>`）；' +
+        '完整写法见技能里「交互 SVG」那一节。'
+      )
+    }
+    return null
+  }
+
+  const names = [...new Set(defs.map((d) => d.name))].join(' / ')
+  const attrs = allowedAttrsByTag()[tag] ?? []
+  const detail: string[] = [`\`<${tag}>\`（${names}）能写的属性：`]
+
+  for (const key of attrs) {
+    // 同一 tag 有多个变体（`title` 有 DA01/DA02），属性取并集，说明取第一个非空的
+    const meta = defs
+      .flatMap((d) => d.attrs ?? [])
+      .find((a) => a.key === key && (a.description || a.options?.length))
+    const bits: string[] = [`\`${key}\``]
+    const options = meta?.options?.filter(Boolean) ?? []
+    if (options.length > 0) bits.push(`取值 ${options.map((o) => `\`${o}\``).join(' / ')}`)
+    if (meta?.default) bits.push(`默认 \`${meta.default}\``)
+    const desc = meta?.description?.replace(/\s+/g, ' ').trim()
+    if (desc) bits.push(desc)
+    detail.push(`  - ${bits.join('｜')}`)
+  }
+  if (attrs.length === 0) detail.push('  - （没有属性，只写正文）')
+
+  const example = defs.find((d) => d.example)?.example
+  if (example) {
+    detail.push(`照这个形状写（示例逐字可抄）：`, '```text', example, '```')
+  }
+  return detail.join('\n')
+}
+
+/** 把点名的组件拼成 prompt 里的一段；没点名返回空串 */
+export function renderNamedComponents(requirement: string): string {
+  const tags = findNamedComponents(requirement)
+  if (tags.length === 0) return ''
+  const blocks = tags.map((tag) => componentDeepReference(tag)).filter((x): x is string => !!x)
+  if (blocks.length === 0) return ''
+  return [
+    '用户点名了下面的组件，**这一版必须用它们，不要换成别的标签，也不要绕成手写 `<html>`**。',
+    '属性名、取值、正文分隔形状按下面这份写（这是从组件定义里取出来的，不是举例）：',
+    '',
+    blocks.join('\n\n'),
+  ].join('\n')
+}
+
+/**
+ * 点名质检：用户点名了组件，输出里却没有。
+ *
+ * 与 `checkMaterialIntent()` 的区别是**判据来源不同**：那个靠内置词表猜用户想要什么，
+ * 这个只认用户白纸黑字写下的标签名，所以命中就是硬错，不看 `HAND_BUILT_TAGS` 放行。
+ */
+export function checkNamedComponents(requirement: string, text: string): string | null {
+  const tags = findNamedComponents(requirement)
+  if (tags.length === 0) return null
+  const body = text.replace(/\{\{RMIMG_\d+\}\}/g, '')
+  const missing = tags.filter((tag) => {
+    if (tag === 'svg') return !/<svg\b/i.test(body)
+    return !new RegExp(`<${tag}\\b`, 'i').test(body)
+  })
+  if (missing.length === 0) return null
+  const list = missing.map((t) => `\`<${t}>\``).join('、')
+  const hint = missing
+    .map((t) => componentDeepReference(t))
+    .filter((x): x is string => !!x)
+    .join('\n\n')
+  return `用户点名要用 ${list}，但输出里没有这个标签。点了名就必须用，不要换成别的组件或手写 \`<html>\`。写法：\n${hint}`
+}
+
+/**
+ * 需求里出现这些词，说明用户希望点名组件之外**再**有点别的
+ * （「用 badges 做标签，下面再配一段 steps 流程」）。
+ *
+ * 只用于豁免 `checkNamedOnly()`，所以放宽是安全方向：宁可少拦一次，
+ * 也不要把「我就是要两块」的需求驳回成一块。
+ */
+const ADDITIVE_HINTS = ['再', '加', '配', '附带', '同时', '顺便', '以及', '还有', '接着', '跟着']
+
+/**
+ * 点名质检（范围）：点了名就**只输出点名的那一块**，别自作主张多配一个组件、别再套容器。
+ *
+ * 实测（用户 2026-11-19）：需求「使用 `<mermaid>` 组件 画一个 A 到 B，B 到 C 的流程图」，
+ * 模型交回来的是 `<container display="block">` 里塞着 `<mermaid>` **加**一段 `<steps>`
+ * 把同样的流程又用文字讲了一遍，外面还多一层容器。用户的原话是「要限定非常小才可以」——
+ * 点名组件就等于把范围说到最小了，多出来的每一步都是噪音：占版面、抢注意力、还要用户手动删。
+ *
+ * 豁免：需求里有 `ADDITIVE_HINTS` 的词（明确要「再配一段」），就不拦。
+ */
+export function checkNamedOnly(requirement: string, text: string): string | null {
+  const named = findNamedComponents(requirement)
+  if (named.length === 0) return null
+  if (ADDITIVE_HINTS.some((w) => requirement.includes(w))) return null
+
+  const body = text.replace(/\{\{RMIMG_\d+\}\}/g, '')
+  const known = new Set(components.map((c) => c.tag))
+  known.add('svg')
+  const used = [...body.matchAll(/<([a-z][\w-]*)\b(?=[\s/>])/gi)].map((m) => m[1].toLowerCase())
+  const extras = [...new Set(used)].filter((t) => known.has(t) && !named.includes(t))
+  if (extras.length === 0) return null
+
+  const namedText = named.map((t) => `\`<${t}>\``).join('、')
+  const extraText = extras.map((t) => `\`<${t}>\``).join('、')
+  return (
+    `用户点名只要 ${namedText}，输出里却多了 ${extraText}。点了名就把范围说到了最小：` +
+    `这一版只输出 ${namedText} 本身，不要另配组件把同样的内容再讲一遍，` +
+    '也不要外套 `<container>`（单个组件自己就有完整版式）。' +
+    '确实想加第二个组件时，等用户自己说「再配一个……」'
+  )
+}
+
+/**
  * 正文会被整个丢弃的组件：数据全在属性上，标签内写了什么都渲染不出来。
  *
  * 实测清单（`render(attrs, _body, …)` 签名里 body 是下划线参数，说明实现根本不读它）：
@@ -1309,7 +1495,11 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
     '5. **必须有版式**。普通 Markdown 的 `##` 标题加 `-` 列表不算完成——' +
       '要么用现成的卡片组件（`<title>` `<steps>` `<compare>` 等），要么用布局组件' +
       '（`<container>` `<row>` `<column>` `<text>` `<stack>` `<positioned>`）像写 HTML 一样自己搭，' +
-      '要么把整段写成 `<html>` 包裹的原生 HTML。**不强制套成品卡片组件**，怎么好看怎么来。',
+      '要么把整段写成 `<html>` 包裹的原生 HTML。**不强制套成品卡片组件**，怎么好看怎么来。' +
+      '**没点名组件时，默认优先自己搭**：需求能对上技能映射表里的专有组件才用那个组件；' +
+      '对不上的版式一律优先用布局组件（`<container>` `<row>` `<column>` `<text>`）拼，' +
+      '或者整段交给 `<html>`——**不要为了「用上组件」把内容硬塞进不相干的卡片**' +
+      '（一段普通说明塞进 `<steps>`、一句总结塞进 `<case-flow>`，都是版式与内容对不上，比手搭更差）。',
     '6. **只用技能里列出的标签与属性**；在 `<html>` 块里可以直接写微信编辑器支持的原生 HTML' +
       '（`<h2>` `<p>` `<ul>` `<li>` `<table>` 等），在 `<svg>` 块里可以写完整的 SVG 标签与属性' +
       '（`<rect>` `<circle>` `<path>` `<text>` 等），块外不许自造组件、不许编造图片地址与外链。' +
@@ -1335,6 +1525,17 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
       '抠版式只能靠 `display` / `flex` / `gap` / `margin` / `padding` / `transform` 这些，' +
       '叠放用 flex 排位，不要绝对定位。**图片一律不写 `url()`**（外链和 `data:` 会让整个元素被删）——' +
       '需要配图时留空 `src` 交给用户自己上传。',
+    '10. **用户点名了组件，就必须用点名的那一个**。需求里出现 `<steps>`、`/steps`、' +
+      '「用 steps 组件」「换成 badges」「用 mermaid 画」这类写法时，就是点名的意思：' +
+      '不许换成性质相近的别的组件（点名 `<steps>` 却给 `<case-flow>`），也不许绕成手写 `<html>` ' +
+      '画一个「效果差不多」的版式。点名组件的**完整属性清单与逐字示例**会随这一轮的需求一起给你，' +
+      '照那份写：属性名不许换近义词（`bg` 不写成 `background`）、取值不许超范围、' +
+      '正文分隔形状按示例来（`<badges>` 用 `|` 分隔写一行、`<steps>` 每行 `- 名称 | 说明`）。' +
+      '**点名就等于把范围说到了最小：只输出点名的那一块，不要另配一个组件把同样的内容再讲一遍，' +
+      '也不要外套 `<container>`**。需求是「用 mermaid 画一个 A 到 B 的流程图」，就只给一张图；' +
+      '再补一段 `<steps>` 把同样的流程用文字重述一遍，是画蛇添足——占版面、抢注意力，用户还得手动删。' +
+      '只有用户自己说「再配一个……」「顺便加上……」时，才可以多给一块。' +
+      '需求里没点名任何组件时，才按第 5 条自由选型。',
   ]
 
   if (skill) {
@@ -2211,16 +2412,25 @@ export function checkMaterialOutput(text: string): string | null {
   return null
 }
 
-/** 构造 user message：需求 + 可选补充要求 */
+/**
+ * 构造 user message：需求 + 可选补充要求。
+ *
+ * 用户点名了组件就把「用哪个 + 怎么写」直接推进这一轮（`renderNamedComponents`）——
+ * 写进 user message 而不是 system prompt，是因为它是**这一轮**的约束：
+ * 上一轮可能点名了 `<steps>`，这一轮改口要 `<compare>`，只有按轮次投递才跟得上。
+ */
 export function buildMaterialUserMessage(requirement: string, extra = ''): string {
-  const parts = [
-    '请生成下面这段素材（按技能里的「第一步：先判断用哪个组件」，用组件表达；' +
-      '也可以用布局组件自己搭版式，或者写成 `<html>` 包裹的原生 HTML）：',
-    '',
-    '<需求>',
-    requirement.trim(),
-    '</需求>',
-  ]
+  const named = renderNamedComponents(requirement)
+  const lead = named
+    ? '请生成下面这段素材。**用户已经点名了组件，就按点名的那几个写**：'
+    : '请生成下面这段素材（按技能里的「第一步：先判断用哪个组件」选型：' +
+      '能对上映射表里的专有组件就用它；对不上的版式**默认优先**用布局组件' +
+      '（`<container>` `<row>` `<column>` `<text>`）自己搭，或者整段写成 `<html>` 包裹的原生 HTML，' +
+      '不要硬塞进不相干的成品卡片）：'
+  const parts = [lead, '', '<需求>', requirement.trim(), '</需求>']
+  if (named) {
+    parts.push('', '<点名组件与写法>', named, '</点名组件与写法>')
+  }
   const trimmedExtra = extra.trim()
   if (trimmedExtra) {
     parts.push('', '<额外要求>', trimmedExtra, '</额外要求>')
@@ -2243,15 +2453,21 @@ export function buildMaterialUserMessage(requirement: string, extra = ''): strin
  * 但必须强调**输出完整源码**——只给 diff 用户没法直接插入。
  */
 export function buildMaterialFollowUpMessage(instruction: string): string {
-  return [
-    '在上一条素材的基础上改（这是同一段素材的下一版，不是另做一段）：',
+  const named = renderNamedComponents(instruction)
+  const parts = [
+    named
+      ? '在上一条素材的基础上改（这是同一段素材的下一版，不是另做一段）。**这一轮点名了组件，改用点名的**：'
+      : '在上一条素材的基础上改（这是同一段素材的下一版，不是另做一段）：',
     '',
     '<改动要求>',
     instruction.trim(),
     '</改动要求>',
-    '',
-    '输出改好之后的**完整素材源码**，不要只写改动的部分、不要解释改了什么。',
-  ].join('\n')
+  ]
+  if (named) {
+    parts.push('', '<点名组件与写法>', named, '</点名组件与写法>')
+  }
+  parts.push('', '输出改好之后的**完整素材源码**，不要只写改动的部分、不要解释改了什么。')
+  return parts.join('\n')
 }
 
 /**
@@ -2314,6 +2530,11 @@ export function buildMaterialRetryMessage(badOutput: string, reason = ''): strin
     '- 或者把数据写进了标签内部：`<chart>` / `<slider>` / `<engage>` 的标签内正文**会被整段丢弃**，',
     '  数据只能写在属性上（`<chart type="bar" labels="2020,2021" values="6.4,7.2" title="…"></chart>`）；',
     '- 或者开头先写了一段「需求 → 组件：……」的选型说明；',
+    '- **或者点名之外多给了东西**：点名 `<mermaid>` 就只要那一张图，别额外配一段 `<steps>` ',
+    '  把同样的流程用文字再讲一遍，也别在外面套 `<container>`——单个组件自己就有完整版式；',
+    '- **或者无视了用户点名的组件**：需求里写明了 `<steps>` / `/steps` / 「用 badges 组件」这类点名，',
+    '  就必须用那一个标签，不能换成性质相近的别的组件，也不能绕成手写 `<html>` 画个差不多的版式；',
+    '  点名组件的完整属性清单与逐字示例在需求的「点名组件与写法」里，照那份写；',
     '- 或者退回了普通 Markdown（`##` 标题 + `-` 列表），一个组件都没用。',
     '',
     '请严格照技能里「✅ 正例」的形状重写一版：标签全小写、属性全用双引号、',

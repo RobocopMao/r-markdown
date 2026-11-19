@@ -1009,6 +1009,44 @@ AI 素材的 `/` 菜单里有「交互 SVG」，模型会产出整块 `<svg>`（
 - `renderMermaidInHtml()` 内部用 `position:absolute; visibility:hidden` 挂到 body，`finally` 里 `removeChild`（即使渲染抛错也不留垃圾节点）。
 - 没有 mermaid 块时直接原样返回，不挂 DOM。`Preview.vue` 走的是另一条路（增量渲染 + 已渲染块缓存，避免闪烁），保持原样别动它。
 
+### 用户点名了组件就照办，没点名就手搭（2026-11 新增）
+
+需求原话（用户）：
+
+> 如果用户指定了使用哪个组件，明确优先告诉AI使用指定组件，并明确组件的属性语法， 不要乱用
+>
+> 如果没有告知，优先使用html 或 容器组件（container、text等）
+
+两条方向相反的规则，所以先要能**判断出用户到底有没有点名**，再决定走哪条。判断不准的代价是双向的：把「做成三步流程」误判成点名 `<steps>`，会锁死版式；漏判「用 badges 组件」，模型就会去手写 `<html>` 画一排圆角 `<span>`（实测每次都是）。
+
+**`findNamedComponents(requirement)`（`src/utils/aiMaterialPrompt.ts`）** 认四种写法，只认 `@/extension` 注册表里的 tag（外加 `svg`，它是解析器整段透传的原生标签，不在注册表）：
+
+| 写法 | 例子 |
+|---|---|
+| 标签原文 | `<steps>`、`</steps>`、`<steps/>` |
+| `/` 快捷插入 | `/steps`（`/` 前不能是字母数字，免得把 `and/or` 切出个 `or`） |
+| 动词 + 标签名 | 「用 steps 组件」「换成 badges」「用 mermaid 画」——**必须带动词或「组件」二字** |
+| 裸 `svg` | 「做一个点击揭晓的 svg」「做成 svg 动画」——它没有中文名，用户从不说「svg 组件」，所以只对它单独放宽 |
+
+**否定语境不算点名**：`negated(index)` 往匹配位置前面看 4 个字符，命中 `不 / 别 / 勿 / 禁` 就跳过。真实说法「用 badges 组件，不要用 html」后半句也含 `用 html`，不拦就会把 `<html>` 也当成点名，和用户意思正好相反。窗口只开 4 字符是刻意的——放大到整句会把「不需要花哨，用 steps」误伤成否定。
+
+**点名时要给的不是「用 `<steps>`」这句话，是能照抄的写法**：`componentDeepReference(tag)` 从组件定义里现取（不是硬编码清单）该 tag 全部变体的中文名、`allowedAttrsByTag()[tag]`、每个属性的 `options` / `default` / `description`，再附上组件自己的 `example` 逐字示例。属性表只说「有 `bg` 这个键」，模型照样会写成 `background="…"`；给一行完整标签，属性名、引号、body 分隔形状全都对上了，才算「明确属性语法」。`svg` 单独返回手写矢量图的三条要点。
+
+**投放位置是 user message，不是 system prompt**：`renderNamedComponents(requirement)` 的结果由 `buildMaterialUserMessage()` / `buildMaterialFollowUpMessage()` 拼成 `<点名组件与写法>` 段。原因是它属于**这一轮**的约束——上一轮点名 `<steps>`，这一轮改口要 `<compare>`，只有按轮次投递才跟得上。system prompt 里放的是两条通则（契约第 5 条「没点名时默认优先自己搭」、第 10 条「点名了就必须用点名的那一个」）。
+
+**点名还等于把范围压到最小**：`checkNamedOnly(requirement, text)` 拦「点名了 `<mermaid>`，却额外配了一段 `<steps>` 把同样的流程又用文字讲一遍，外面还套一层 `<container>`」。实测就是用户 2026-11-19 报的那一版——他要的是「A 到 B、B 到 C 的流程图」，交回来一张图 + 一段同义文字 + 一层容器。用户的原话是「要限定非常小才可以」。
+
+判据是「输出里出现了**点名标签之外**的组件 tag」（`container` 也算，单个组件不该套容器）。豁免靠 `ADDITIVE_HINTS = ['再','加','配','附带','同时','顺便','以及','还有','接着','跟着']`——需求里出现这些词说明用户明确想多要一块，从宽放行（误放一次只是多给内容，误拦一次是把「我要两块」驳回成一块）。
+
+**质检**：`checkNamedComponents(requirement, text)` 排在 `AiMaterialDialog.vue` 的 `judge` 链最前面（`checkMaterialOutput` 之后、`checkMaterialIntent` 之前）。它**不看 `HAND_BUILT_TAGS` 放行**——判据来自用户白纸黑字，命中就是硬错；而 `checkMaterialIntent` 那套词表猜出来的期望，才需要给手写版式留口子。
+
+**默认口径的表述改了三个地方**（都要一起改，少一处模型就会两头看）：
+
+- 输出契约第 5 条：没点名时「能对上映射表里的专有组件才用，对不上的版式优先用 `<container>` `<row>` `<column>` `<text>` 拼，或者整段交给 `<html>`——不要为了用上组件把内容硬塞进不相干的卡片」。
+- 输出契约第 10 条（新增）：点名了就必须用点名的那一个，不许换性质相近的组件、不许绕成 `<html>`。
+- `SKILL.md`「第一步：先判断用哪个组件」开头改成「先看用户有没有点名」+ `>` 引用块写「默认口径是够用就手搭」；铁律第 1 条结尾、新增第 11 条同步。
+- `buildMaterialRetryMessage()` 加一条「无视了用户点名的组件」。
+
 ### Beta 角标：只有一个组件，四处共用
 
 「AI 素材」后面那个 `Beta` 角标是 `src/components/BetaBadge.vue`，在四个地方各挂一次：`AiBoard.vue` 的标签页（`TABS` 里 `beta: true`）、`EditorSidebar.vue` 的 AI 子菜单、`mobile/MobileActionsMenu.vue` 的移动端更多菜单、`SettingsBoard.vue` 的「AI 素材」设置卡（走 `SettingsCard` 的 `#action` 插槽）。
