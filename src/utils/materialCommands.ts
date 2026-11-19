@@ -21,7 +21,12 @@ export interface MaterialCommand {
 }
 
 /**
- * 菜单顺序：先布局组件（自由拼版那套），再成品卡片，最后是子块与图类。
+ * 菜单顺序：先布局组件（自由拼版那套），再成品卡片，最后是图类与表格。
+ *
+ * 没有 `<reading-path>`：它不吃内容、只按文内 H2 自动生成章节导航，用户说不清楚
+ * 「我要一条阅读路线」，往输入框里插一个空壳反而误导模型去凑标题。
+ * 没有 `<left>` / `<right>`：它们是 `<compare>` 的内部子块，脱离 compare 就是两个
+ * 裸标签、什么也渲染不出来，插进需求里只会让模型以为要单独做一栏。
  *
  * 不直接从 `@/extension` 的 components 生成：那份注册表同一 tag 有多个变体
  * （`Title_DA01` / `Title_DA02` 都是 `title`），直接展开会有重复项；
@@ -50,10 +55,6 @@ export const MATERIAL_COMMANDS: MaterialCommand[] = [
   { tag: 'cta', name: '行动号召', hint: '带按钮的卡片' },
   { tag: 'engage', name: '底部引导', hint: '文末谢谢读者' },
   { tag: 'badges', name: '标签组', hint: '关键词小标签' },
-  { tag: 'reading-path', name: '阅读路线', hint: '章节导航' },
-  // 子块
-  { tag: 'left', name: '对比左栏', hint: 'compare 内部' },
-  { tag: 'right', name: '对比右栏', hint: 'compare 内部' },
   // 媒体与数据
   { tag: 'img', name: '图片', hint: '带宽高圆角' },
   { tag: 'slider', name: '轮播图', hint: '多张横滑' },
