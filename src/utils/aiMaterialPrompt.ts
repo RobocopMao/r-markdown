@@ -19,7 +19,7 @@ import { components } from '@/extension'
 import { stripFrontMatter, stripSourceComment } from '@/utils/aiWritePrompt'
 import { normalizePipe } from '@/utils/helpers'
 import { isSingleComponent, hasTopLevelHtmlBlock } from '@/utils/materialBoundary'
-import { convertDivToSection, scanHtmlBlock } from '@/utils/wechatHtmlRules'
+import { convertDivToSection, scanHtmlBlock, scanSvgDefinitions } from '@/utils/wechatHtmlRules'
 import type { WechatHtmlIssue } from '@/utils/wechatHtmlRules'
 
 /** 技能文件路径（改技能内容改这个文件即可，不改代码） */
@@ -433,23 +433,28 @@ export function findClassStyledTags(md: string): string[] {
 }
 
 /**
- * `<html>` 块里那些「粘进公众号就没了」的写法（`position` / `filter` / CSS 变量 / 外链图…）。
+ * 输出里那些「粘进公众号就没了」的写法（`position` / `filter` / CSS 变量 / 外链图 / `defs` 引用…）。
+ *
+ * 两处都要扫：
+ * - `<html>` 块——原生 HTML 的样式与属性全归这里管；
+ * - 独立的 `<svg>` 块——手写矢量图不在 `<html>` 里，但「微信删 `id`、`defs` 定义引用全断」
+ *   这条同样适用，而它的失败是**静默**的（形状还在、只是没颜色），必须报出来。
  *
  * 分开返回两档：`blocking` 的会让版式直接散掉，质检驳回重写；其余只在面板提示一句。
  * 规则来源见 `src/utils/wechatHtmlRules.ts` 顶部注释。
  */
 export function findWechatHtmlIssues(md: string): WechatHtmlIssue[] {
-  const { blocks } = splitHtmlBlocks(md)
-  if (blocks.length === 0) return []
+  const { html, svg } = splitVerbatimBlocks(md)
+  if (html.length === 0 && svg.length === 0) return []
   const out: WechatHtmlIssue[] = []
   const seen = new Set<string>()
-  for (const block of blocks) {
-    for (const issue of scanHtmlBlock(block)) {
-      if (seen.has(issue.text)) continue
-      seen.add(issue.text)
-      out.push(issue)
-    }
+  const add = (issue: WechatHtmlIssue) => {
+    if (seen.has(issue.text)) return
+    seen.add(issue.text)
+    out.push(issue)
   }
+  for (const block of html) scanHtmlBlock(block).forEach(add)
+  for (const block of svg) scanSvgDefinitions(block).forEach(add)
   return out
 }
 
@@ -1509,9 +1514,11 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
       '**`<html>` 块内部按原生 HTML 直接输出，组件不会被解析**——块里只能出现原生 HTML 标签、' +
       '`<img>` 与 `<svg>`，不许把 `<steps>` `<title>` `<badges>` 这类组件塞进去（读者会看到源码本身）；' +
       '要放组件就放到 `<html>` 外面。' +
-      '**要做「点一下就动」只能用 `<svg>` + SMIL**（`<animate>` / `<set>`，`begin="click"` 或' +
-      ' `begin="触发区id.click"`）：`<details>` `<summary>` `<button>` 在公众号里会被拆开、' +
-      '只剩平铺的文字，做不出折叠或切换的效果。',
+      '**要做「点一下就动」只能用 `<svg>` + SMIL**（`<animate>` / `<set>`，`begin="click"`）：' +
+      '`<details>` `<summary>` `<button>` 在公众号里会被拆开、只剩平铺的文字，做不出折叠或切换的效果。' +
+      '**SVG 里不要用 `<defs>` 定义东西、也不要用 `url(#x)` 引用别处**：微信会删掉 `id`，' +
+      '定义还留着但引用全断——渐变变没颜色、裁剪和遮罩失效、`<use>` 变空标签。' +
+      '渐变改写成一个纯色 `fill`，需要几段颜色就叠几个不同 `fill` 的形状；裁剪/遮罩直接画成最终形状。',
     '7. **要不要包 `<container>` 看内容**：① 单个成品组件（`<steps>` `<cta>` `<title>` `<compare>` `<img>` 这类）' +
       '**直接输出组件本身，不要外套 `<container>`**；② 写成 `<html>` 块的原生 HTML、或整块 `<svg>` 矢量图' +
       '**都不要包**，它们自己就带完整版式；③ 只有「多个块拼在一起」「用 `<row>` `<column>` `<text>` 自由拼版」' +
@@ -2341,14 +2348,15 @@ export function checkMaterialOutput(text: string): string | null {
   // 文字和内容——折叠关系没了，`<summary>` 的三角也没了，读者看到的是「标题 + 正文全部摊开」。
   // 这属于「用户明确要交互、结果交互不存在」，必须驳回让它改用 SVG + SMIL，只在面板提示没用。
   if (/<details\b/i.test(body) || /<summary\b/i.test(body)) {
-    return '`<details>` / `<summary>` 在公众号里会被拆开、内容全部平铺，「点开看」的效果做不出来。要做点击揭晓这类交互只能用 `<svg>` + SMIL：`<animate>` / `<set>` 配 `begin="click"` 或 `begin="触发区id.click"`'
+    return '`<details>` / `<summary>` 在公众号里会被拆开、内容全部平铺，「点开看」的效果做不出来。要做点击揭晓这类交互只能用 `<svg>` + SMIL：`<animate>` / `<set>` 配 `begin="click"`，动画放在被点的那个元素内部'
   }
 
   // 微信服务器保存时会直接删掉的 CSS / 属性（position、filter、CSS 变量、外链图…）。
   // 这类写法在编辑器里看着完全正常，粘进公众号才散版，所以必须驳回重写。
   const wechat = findWechatHtmlIssues(body).filter((x) => x.blocking)
   if (wechat.length > 0) {
-    return `\`<html>\` 块里有微信不支持的写法：${wechat.map((x) => x.text).join('；')}`
+    // 文案不再说「`<html>` 块里」：手写 `<svg>` 素材不在 `<html>` 里，也要走这条。
+    return `有微信不支持的写法：${wechat.map((x) => x.text).join('；')}`
   }
 
   // 中文标签名（`<并列小节标题>`）：ASCII 正则一个都扫不到，不单独报就会掉进
@@ -2536,6 +2544,9 @@ export function buildMaterialRetryMessage(badOutput: string, reason = ''): strin
     '  就必须用那一个标签，不能换成性质相近的别的组件，也不能绕成手写 `<html>` 画个差不多的版式；',
     '  点名组件的完整属性清单与逐字示例在需求的「点名组件与写法」里，照那份写；',
     '- 或者退回了普通 Markdown（`##` 标题 + `-` 列表），一个组件都没用。',
+    '- **或者在 SVG 里用 `<defs>` / `url(#x)` 定义、引用东西**：微信会把 `id` 删掉，定义留着',
+    '  但引用全断——渐变变没颜色、裁剪和遮罩失效、`<use>` 变空标签。渐变改写成纯色 `fill`，',
+    '  裁剪/遮罩直接画成最终形状；交互只能靠 `begin="click"` 让被点的元素自己动。',
     '',
     '请严格照技能里「✅ 正例」的形状重写一版：标签全小写、属性全用双引号、',
     '子内容按技能指定的分隔形状写，只输出源码，第一行就是标签或正文。',

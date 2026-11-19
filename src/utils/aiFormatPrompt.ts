@@ -401,7 +401,11 @@ export function cleanModelOutput(raw: string): string {
 export function validateFormat(md: string): { unknownTags: string[]; warnings: string[] } {
   // `<html>` 块内是原生 HTML（`<h3>` / `<ul>` / `<table>`…），由 `Html_DA01.render()`
   // 原样透出，不受组件白名单约束。先抽出来，避免把标准 HTML 标签当成规范外标签报警。
-  const withoutHtmlBlocks = md.replace(/<html\b[^>]*>[\s\S]*?<\/html\s*>/gi, '')
+  // `<svg>` 块同理：里面的 `<rect>` `<circle>` `<animate>` 是 SVG 自己的标签，
+  // `markdownParser` 也整段透传，漏掉这一步会把手写矢量图报成「出现规范外的标签」。
+  const withoutHtmlBlocks = md
+    .replace(/<html\b[^>]*>[\s\S]*?<\/html\s*>/gi, '')
+    .replace(/<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi, '')
   // 代码块与行内代码里的标签不算
   const withoutCode = withoutHtmlBlocks
     .replace(/^[\t ]*(```|~~~)[\s\S]*?^[\t ]*\1[\t ]*$/gm, '')

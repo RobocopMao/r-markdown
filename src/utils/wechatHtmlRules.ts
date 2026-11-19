@@ -42,6 +42,26 @@ const WEAKENED_TAGS: Array<{ tag: string; why: string }> = [
 ]
 
 /**
+ * `<defs>` 里「定义了也得靠 `id` 才用得上」的那些元素。
+ *
+ * 微信不会删这些元素本身，删的是 **`id` 属性**。而 `<defs>` 的全部意义就是
+ * 「在这里定义、在别处用 `url(#x)` 或 `href="#x"` 引用」——`id` 一删，
+ * 定义还在、没人指得到，视觉上就是「渐变没颜色、裁剪没效果、遮罩全露」。
+ * 名字大小写敏感（SVG 里是驼峰），所以单独列一份，不用小写匹配。
+ */
+const DEFS_DEFINITION_TAGS = [
+  'linearGradient',
+  'radialGradient',
+  'clipPath',
+  'mask',
+  'filter',
+  'pattern',
+  'marker',
+  'symbol',
+  'use',
+]
+
+/**
  * 扫一个 `<html>` 块里所有微信不支持或会降级的写法。
  *
  * 只扫 `<html>` 块：块外是我们自己的组件，样式由扩展生成，不归这里管。
@@ -105,6 +125,21 @@ export function scanHtmlBlock(block: string): WechatHtmlIssue[] {
   if (/url\(\s*#[\w:.-]+\s*\)/i.test(block)) {
     push(
       'SVG 里用 `url(#x)` 引用渐变 / 裁剪会被微信删掉 `id`，引用指不到、效果失效——渐变改写成纯色填充，裁剪改用固定尺寸',
+      true,
+    )
+  }
+
+  // `<defs>` 里的定义（渐变、裁剪、遮罩…）：微信不删元素，删 `id`——定义留着、引用断了。
+  // 单独报这一条，是因为模型很爱写「先 defs 定义渐变、再 url(#g) 填色」这套标准 SVG 写法，
+  // 而它在公众号里的失败表现是**静默的**：形状还在，只是没颜色 / 没裁剪，很难从预览看出问题。
+  const defsFound = DEFS_DEFINITION_TAGS.filter((t) => new RegExp(`<${t}\\b`, 'i').test(block))
+  if (defsFound.length > 0) {
+    push(
+      `SVG 在 \`<defs>\` 里定义东西在公众号里等于没定义（${defsFound
+        .map((t) => `\`<${t}>\``)
+        .join(
+          '、',
+        )}）：微信会删掉 \`id\`，定义本身留着但引用全断——渐变变没颜色、裁剪和遮罩失效、\`<use>\` 变空标签。渐变改写成纯色填充，裁剪/遮罩改用固定尺寸或直接画成最终形状`,
       true,
     )
   }
@@ -225,6 +260,37 @@ function scanDeclaration(
       )
     }
   }
+}
+
+/**
+ * 单独扫一段**纯 `<svg>` 素材**里会失效的写法。
+ *
+ * `scanHtmlBlock()` 只负责 `<html>` 块（块外是组件，样式由扩展生成）。但手写 SVG 素材
+ * 是一等公民，它不在 `<html>` 里，`<defs>` / `url(#x)` 这两条同样适用，所以单独给一条通道。
+ *
+ * 只查「微信会删 `id` 导致引用断」这一类，不把 `<html>` 那套（`div`、`<pre>`、表格宽度…）
+ * 搬过来——SVG 里不会出现这些东西，搬过来只会产生无意义的误报。
+ */
+export function scanSvgDefinitions(svg: string): WechatHtmlIssue[] {
+  const issues: WechatHtmlIssue[] = []
+  const defsFound = DEFS_DEFINITION_TAGS.filter((t) => new RegExp(`<${t}\\b`, 'i').test(svg))
+  if (defsFound.length > 0) {
+    issues.push({
+      text: `SVG 在 \`<defs>\` 里定义东西在公众号里等于没定义（${defsFound
+        .map((t) => `\`<${t}>\``)
+        .join(
+          '、',
+        )}）：微信会删掉 \`id\`，定义本身留着但引用全断——渐变变没颜色、裁剪和遮罩失效、\`<use>\` 变空标签。渐变改写成纯色填充，裁剪/遮罩改用固定尺寸或直接画成最终形状`,
+      blocking: true,
+    })
+  }
+  if (/url\(\s*#[\w:.-]+\s*\)/i.test(svg) && defsFound.length === 0) {
+    issues.push({
+      text: 'SVG 里用 `url(#x)` 引用别的元素会被微信删掉 `id`，引用指不到、效果失效——渐变改写成纯色填充，裁剪改用固定尺寸',
+      blocking: true,
+    })
+  }
+  return issues
 }
 
 /**

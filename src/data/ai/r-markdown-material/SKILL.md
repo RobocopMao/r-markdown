@@ -702,7 +702,8 @@ flowchart LR
 | `!important` | 会让平台公共样式失效，深色模式也覆盖不了 | 靠选择器顺序不可控，就直接把值写对 |
 | `font-family` | 公众号有自带字体栈，自定义会让 iOS 上字号字距不一致 | 不写，跟随默认 |
 | `text-align: start` / `end` | 各端表现不一致 | 写 `left` / `right` / `center` |
-| `id` | 属性被删，定位和 `url(#x)` 引用全部指不到 | 不用 id，SVG 内部也别互相引用 |
+| `id` | 属性被删，定位和 `url(#x)` 引用全部指不到 | 不用 id；交互只写裸 `click`，别靠 `别的id.click` |
+| SVG `<defs>` 里的定义 | 元素保留但 `id` 被删，渐变 / 裁剪 / 遮罩 / `<use>` 全部引用不到 | 渐变写纯色 `fill`、裁剪遮罩画成最终形状 |
 | `on*` 事件属性 | 被删（正文不允许脚本） | 要交互只能用 SVG 的 `animate` |
 | `<pre>` 包正文 | `white-space:pre` 不换行，手机上横向被截断 | 用 `<section>` 或 `<p>` |
 | 图片写 `url()` | 只认公众号图床（`mmbiz.qpic.cn` 等 4 个域名），外链和 `data:` 会让**整个元素被删** | 留空 `src` 交给用户自己上传 |
@@ -776,18 +777,24 @@ flowchart LR
 
 ```text
 <svg width="100%" viewBox="0 0 400 176" xmlns="http://www.w3.org/2000/svg" style="display:block;height:auto;overflow:hidden;background:#fffef9">
+<g>
 <rect x="18" y="18" width="364" height="140" rx="14" fill="#f1f5ee" stroke="#dfe4d9"/>
 <text x="200" y="72" text-anchor="middle" font-size="16" fill="#272b28">公众号的读者，会点开第二条吗？</text>
-<g id="wci01" style="cursor:pointer">
+<text x="200" y="120" text-anchor="middle" font-size="15" fill="#b8492e">会——但要前 3 行就给出结论</text>
+</g>
+<g style="cursor:pointer" opacity="1">
+<rect x="18" y="18" width="364" height="140" rx="14" fill="#f1f5ee" stroke="#dfe4d9"/>
+<text x="200" y="72" text-anchor="middle" font-size="16" fill="#272b28">公众号的读者，会点开第二条吗？</text>
 <rect x="150" y="96" width="100" height="32" rx="16" fill="#195f47"/>
 <text x="200" y="117" text-anchor="middle" font-size="14" fill="#ffffff">点我看答案</text>
-</g>
-<g opacity="0" visibility="hidden">
-<text x="200" y="120" text-anchor="middle" font-size="15" fill="#b8492e">会——但要前 3 行就给出结论</text>
-<set attributeName="visibility" to="visible" begin="wci01.click" fill="freeze"/>
+<set attributeName="opacity" to="0" begin="click" fill="freeze"/>
 </g>
 </svg>
 ```
+
+上面这版的思路要记住：**下面一层放答案、上面一层放问题并把答案完全盖住**，
+上层被点时自己淡出（动画就放在上层 `<g>` 里、`begin="click"`），答案自然露出来。
+全程只有「被点的元素自己动」，一个 `id` 都不需要。
 
 **尺寸与安全边**
 
@@ -797,25 +804,31 @@ flowchart LR
 - 只用 `x` / `y` 绝对定位；不用 `<foreignObject>`、不用 CSS `<style>`、不用 `<image>`（会被清掉）。
 - 一个 `<svg>` 就是一个完整素材，**不要在外面再套 `<container>`**。
 
-**SMIL 三条铁律（写错就是死的，而且不报错）**
+**SMIL 四条铁律（写错就是死的，而且不报错）**
 
 1. **动画只能改「它自己父元素」的属性。** `<animate>` / `<set>` 的宿主是它的直接父元素；
    父元素没有那个属性就静默失效。`<g>` 上只能动画 `opacity` `visibility` `display` `transform`
    `fill` `stroke`；`width` `height` `x` `y` `r` `cx` `cy` `d` `stroke-dashoffset` 必须写进图形元素内部。
-2. **裸 `click` 只认宿主自己被点，靠事件冒泡。** 想让被点的元素自己动 → 动画放它内部、`begin="click"`；
-   想让它的后代动 → 动画放在那个后代内部、`begin="父级id.click"`；要延迟 →
-   `begin="父级id.click+0.3s"`（**`begin-delay` 属性不存在**）。延迟不会自动传给兄弟节点。
-3. **后画的压在上面，会抢走点击。** SVG 没有 `z-index`，可点的提示块要**最后画**；
-   如果它视觉上得在中间，先把内容画成 `opacity="0"`，点后再显示。
+2. **只用裸 `click`，动画放在被点的那个元素内部。** 公众号里唯一各端都稳的触发值是不带前缀的
+   `click`——`begin="click"` 表示「我自己被点了」。`begin="别的元素id.click"` 这种跨元素引用
+   **不要写**：`id` 会被微信删掉，引用指不到，而且 iOS / Android 上本来就不触发。
+   所以交互只有一个姿势：**点谁，就把 `<set>` / `<animate>` 写进谁里面**。
+   想让别的东西跟着变，就把它做成同一个父元素的兄弟，用「盖住 / 露出」来表达（见上面的例子）。
+3. **后画的压在上面，会抢走点击。** SVG 没有 `z-index`，能点的提示块要**最后画**；
+   想先看到问题、点开看答案，就让「问题层」压在最上面、点完淡出，露出底下的答案层。
+4. **不要用 `id` 做任何事。** 微信会删掉 `id`：`url(#x)` 引用（渐变、裁剪、遮罩）全部失效，
+   `<use>` 变成空标签，跨元素 `id.click` 也指不到。需要几段颜色就用几个不同 `fill` 的形状叠，
+   需要「只露一块」就把别处画成同色盖住——**别走 `<defs>` 那条路**。
 
 **其它必守**
 
 - 隐藏用 `visibility="hidden"`，不要用 `opacity="0"`——后者仍然吃点击。
+  （反过来，「点完自己淡出」用 `opacity` 正好：淡出了也不该再响应点击。）
 - 想让内容真变高只能动画 `viewBox`（从 `0 0 400 142` 到 `0 0 400 290`），
   `<animate attributeName="height">` 会被 CSS 覆盖、无效。
-- `id` 一律带前缀（同篇多份素材用 `wci01`、`wci02`… 递增）。
-- **`<text>` 上不要写 `id`**：微信会删 `id`，`url(#x)` 和 `其他id.click` 就都指不到了。
-  触发要用的 `id` 只写在 `<g>` 这类作为触发区的元素上，且只用于 `begin` 引用，不做定位。
+- 一份素材里每个可点区域各管各的：谁被点、谁里面的动画跑，互不影响，也就不会有「点了没反应」。
+- **不要在 SVG 里写 `<defs>`。** 定义本身不会报错、也不会被删，但里面定义的东西一律用不上
+  （渐变没颜色、裁剪没效果、遮罩全露）——这是最容易「本地预览好好的、发出去就没颜色」的坑。
 - 配色沿用下面这套克制色板，一份素材只用**一个**主色。
 
 ```text
