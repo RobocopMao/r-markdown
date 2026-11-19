@@ -558,7 +558,43 @@ export function repairMaterialOutput(text: string): { text: string; notes: strin
   // 容器包裹放最后：前面那些修复都按组件的 body 认形状，先包一层不影响，但排在最后
   // 可以保证不管前面怎么改，最终产出的最外层一定是容器。`<html>` / `<svg>` 块不包。
   const restored = restoreVerbatimBlocks(repaired, sections, svg)
-  return { text: wrapInContainer(restored, notes), notes }
+  // 空行清理放最后：`wrapInContainer()` 会新加 `<container>` 开闭标签，
+  // 先清的话它和第一个子标签之间那条空行清不掉。
+  return { text: tightenTagGaps(wrapInContainer(restored, notes)), notes }
+}
+
+/**
+ * 去掉「两个标签行之间」的空行（素材内部不留空行）。
+ *
+ * 为什么只清标签↔标签这一种：素材插进文章后是一个整体 HTML 块，
+ * 中间只要出现空行，`@lezer/markdown` 就会把注释和标签切成好几个 HTMLBlock 节点，
+ * 编辑器里只折得动第一块 —— 用户说的「素材代码有空行没法全部折叠」就是这个。
+ *
+ * 但不能把素材里的空行一律删掉：`<container>` 里两段正文之间、正文与标签之间
+ * 那些空行是 Markdown 的段落边界，删了会把两段并成一段，或者让 `<title>` 被
+ * 上一段的段落收集吃掉。所以只在**前后两个非空行都是标签行**时才删。
+ * `<html>` / `<svg>` 块里的标签之间也顺手一起删：原生 HTML、SVG 的空白不参与渲染。
+ */
+function tightenTagGaps(text: string): string {
+  const lines = text.split('\n')
+  const kept: string[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (line.trim() === '') {
+      const prev = [...kept].reverse().find((l) => l.trim() !== '')
+      let next = ''
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() !== '') {
+          next = lines[j]
+          break
+        }
+      }
+      // 用 trim：SVG / 原生 HTML 的标签常带缩进（`  <rect />`），看首字符会漏掉
+      if (prev && next && prev.trim().startsWith('<') && next.trim().startsWith('<')) continue
+    }
+    kept.push(line)
+  }
+  return kept.join('\n')
 }
 
 /** 修复链本体：只处理 R-Markdown 组件语法，`<html>` 块已被换成占位符 */
@@ -1543,6 +1579,12 @@ export function buildMaterialSystemPrompt(opts: MaterialSystemOptions): string {
       '再补一段 `<steps>` 把同样的流程用文字重述一遍，是画蛇添足——占版面、抢注意力，用户还得手动删。' +
       '只有用户自己说「再配一个……」「顺便加上……」时，才可以多给一块。' +
       '需求里没点名任何组件时，才按第 5 条自由选型。',
+    '11. **标签之间不留空行**。相邻两行都是标签（以 `<` 开头）时，中间不要插空行；' +
+      '`<container>` 开头紧接第一个子标签、子标签紧接 `</container>`、`<svg>` 里各个图形元素之间，' +
+      '都顶格挨着写。理由：这段素材插进文章后是一个整体 HTML 块，中间有空行就会被切成好几个块，' +
+      '编辑器里只折得动第一块，用户没法整段收起。' +
+      '**但标签与正文之间、两段正文之间的空行要留着**——那是 Markdown 的段落边界，' +
+      '删掉会把两段并成一段，或者让紧跟在正文后面的标签被前一段吞掉。',
   ]
 
   if (skill) {
@@ -2546,7 +2588,10 @@ export function buildMaterialRetryMessage(badOutput: string, reason = ''): strin
     '- 或者退回了普通 Markdown（`##` 标题 + `-` 列表），一个组件都没用。',
     '- **或者在 SVG 里用 `<defs>` / `url(#x)` 定义、引用东西**：微信会把 `id` 删掉，定义留着',
     '  但引用全断——渐变变没颜色、裁剪和遮罩失效、`<use>` 变空标签。渐变改写成纯色 `fill`，',
-    '  裁剪/遮罩直接画成最终形状；交互只能靠 `begin="click"` 让被点的元素自己动。',
+    '  裁剪/遮罩直接画成最终形状；交互只能靠 `begin="click"` 让被点的元素自己动；',
+    '- **或者标签之间夹了空行**：相邻两行都是标签时中间不要空行（`<container>` 紧贴第一个子标签、',
+    '  子标签紧贴 `</container>`）。素材是一个 HTML 块，夹空行会被切成好几块，编辑器只折得动第一块。',
+    '  注意标签与正文之间、两段正文之间的空行要留着，那是段落边界。',
     '',
     '请严格照技能里「✅ 正例」的形状重写一版：标签全小写、属性全用双引号、',
     '子内容按技能指定的分隔形状写，只输出源码，第一行就是标签或正文。',

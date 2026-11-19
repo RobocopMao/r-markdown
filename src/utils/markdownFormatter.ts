@@ -227,6 +227,61 @@ function closesOnSameLine(line: string): boolean {
 }
 
 /**
+ * 素材内部「两个标签之间」的空行去掉。
+ *
+ * 为什么必须清：素材插进文章后是一个整体 HTML 块（`<!-- 素材开始 -->` 也会被
+ * `@lezer/markdown` 认成 HTMLBlock）。中间只要夹一个空行，它就被切成好几个 HTMLBlock
+ * 节点，编辑器里只折得动第一块——用户没法把整段素材收起来。
+ *
+ * 为什么不能一律删：`<container>` 里两段正文之间、正文与标签之间的空行是 Markdown 的
+ * 段落边界，删了会把两段并成一段，或者让紧跟正文的 `<title>` 被上一段的段落收集吃掉。
+ * 所以判据窄到「前后两个非空行（去掉缩进后）都以 `<` 开头」——那才是纯标签之间的缝。
+ * 一定要 trim 再判断：手写 SVG 和原生 HTML 的标签几乎都带缩进，只看首字符会全部漏掉。
+ */
+function tightenMaterialInternals(lines: string[]): { lines: string[]; removed: number } {
+  const kept: string[] = []
+  let inMaterial = false
+  let removed = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (isMaterialStartLine(line)) {
+      inMaterial = true
+      kept.push(line)
+      continue
+    }
+    if (isMaterialEndLine(line)) {
+      inMaterial = false
+      kept.push(line)
+      continue
+    }
+    if (inMaterial && line.trim() === '') {
+      let prev = ''
+      for (let j = kept.length - 1; j >= 0; j--) {
+        if (kept[j].trim() !== '') {
+          prev = kept[j]
+          break
+        }
+      }
+      let next = ''
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() !== '') {
+          next = lines[j]
+          break
+        }
+      }
+      // 用 trim 后的结果判断：SVG / 原生 HTML 里的标签常常带缩进（`  <rect />`），
+      // 直接看首字符会把它们漏掉——那正是「svg 里的空行没删掉」的原因。
+      if (prev.trim().startsWith('<') && next.trim().startsWith('<')) {
+        removed++
+        continue
+      }
+    }
+    kept.push(line)
+  }
+  return { lines: kept, removed }
+}
+
+/**
  * 格式化 Markdown 全文。
  *
  * 幂等：对已经规范的内容再跑一次返回 `changed: false`。
@@ -283,7 +338,11 @@ export function formatMarkdown(md: string): FormatResult {
     stats.blankInserted++
   }
 
-  for (const rawLine of md.split(/\r?\n/)) {
+  // 素材内部的标签缝先收掉，后面的逐行循环才看不到那些空行
+  const pre = tightenMaterialInternals(md.split(/\r?\n/))
+  stats.materialTightened += pre.removed
+
+  for (const rawLine of pre.lines) {
     // ── 围栏内部：原样保留（缩进、行尾空白都是代码内容） ──
     if (fence) {
       if (isFenceClose(rawLine, fence.char, fence.len)) fence = null
