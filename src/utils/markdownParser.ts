@@ -1115,7 +1115,7 @@ export function parseMarkdown(
       if (hs) {
         html += withSourceLine(
           i,
-          `<h${lv} style="margin:${hs.margin};font-size:${hs.fontSize};font-weight:700;color:var(--text-primary);line-height:1.4">${inlineFormat(hMatch[2], t, formulaMap)}</h${lv}>`,
+          `<h${lv} style="margin:${hs.margin};font-size:${hs.fontSize};font-weight:700;color:var(--text-primary, #0d0d0d);line-height:1.4">${inlineFormat(hMatch[2], t, formulaMap)}</h${lv}>`,
         )
         i++
         continue
@@ -1129,7 +1129,7 @@ export function parseMarkdown(
         const svg = formulaMap?.get(`b:${f}`)
         if (svg) return svg
         // 降级：显示公式原文，方便排查 formulaMap 缺失的情况
-        return `<code style="display:inline-block;background:var(--hl-code-bg);padding:6px 12px;border-radius:6px;font-size:14px;font-family:SF Mono,Consolas,monospace;color:var(--hl-str);max-width:100%;overflow-x:auto;white-space:nowrap">$${esc(f)}$$</code>`
+        return `<code style="display:inline-block;background:var(--hl-code-bg, rgba(0,0,0,0.04));padding:6px 12px;border-radius:6px;font-size:14px;font-family:SF Mono,Consolas,monospace;color:var(--hl-str, #dd5b00);max-width:100%;overflow-x:auto;white-space:nowrap">$${esc(f)}$$</code>`
       }
       // 单行模式：$$formula$$
       const singleMatch = line.match(/^\$\$(.+?)\$\$/)
@@ -1137,7 +1137,7 @@ export function parseMarkdown(
         const formula = singleMatch[1].trim()
         html += withSourceLine(
           i,
-          `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
+          `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary, #0d0d0d)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
         )
         i++
         continue
@@ -1154,7 +1154,7 @@ export function parseMarkdown(
       const formula = formulaLines.join('\n').trim()
       html += withSourceLine(
         formulaStartLine,
-        `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
+        `<section style="overflow-x:auto;margin:24px 0;color:var(--text-primary, #0d0d0d)"><section style="display:inline-block;white-space:nowrap;text-align:center;max-width:none!important">${resolveSvg(formula)}</section></section>`,
       )
       continue
     }
@@ -1383,7 +1383,7 @@ export function parseMarkdown(
     }
     html += withSourceLine(
       i,
-      `<section style="margin:0px 0px ${ps.margin}px"><p style="margin:0px;font-size:${ps.fontSize}px;color:var(--text-primary);line-height:${ps.lineHeight};font-weight:${ps.fontWeight};text-align:justify;overflow-wrap:break-word;word-break:break-all;text-indent:${ps.indent || '0'}">${inlineFormat(line, t, formulaMap)}</p></section>`,
+      `<section style="margin:0px 0px ${ps.margin}px"><p style="margin:0px;font-size:${ps.fontSize}px;color:var(--text-primary, #0d0d0d);line-height:${ps.lineHeight};font-weight:${ps.fontWeight};text-align:justify;overflow-wrap:break-word;word-break:break-all;text-indent:${ps.indent || '0'}">${inlineFormat(line, t, formulaMap)}</p></section>`,
     )
     i++
   }
@@ -1391,8 +1391,8 @@ export function parseMarkdown(
   // 添加脚注参考资料
   if (footnotes.length > 0) {
     html += `<section style="margin:32px 0px 0px;padding-top:20px;border-top:1px solid ${t.border}">`
-    html += `<h2 style="margin:0px 0px 16px;font-size:18px;font-weight:700;color:var(--text-primary);line-height:1.4">参考资料</h2>`
-    html += `<section style="font-size:14px;color:var(--text-secondary);line-height:1.8">`
+    html += `<h2 style="margin:0px 0px 16px;font-size:18px;font-weight:700;color:var(--text-primary, #0d0d0d);line-height:1.4">参考资料</h2>`
+    html += `<section style="font-size:14px;color:var(--text-secondary, #615d59);line-height:1.8">`
     footnotes.forEach((fn, idx) => {
       html += `<p style="margin:6px 0px"><span style="color:${t.accent};font-weight:600">[${idx + 1}]</span> ${leaf(fn.desc)}：<a href="${esc(fn.url)}" style="color:${t.accent};word-break:break-all">${esc(fn.url)}</a></p>`
     })

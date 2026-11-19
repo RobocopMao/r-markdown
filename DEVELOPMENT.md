@@ -1010,6 +1010,35 @@ AI 素材的 `/` 菜单里有「交互 SVG」，模型会产出整块 `<svg>`（
 - `renderMermaidInHtml()` 内部用 `position:absolute; visibility:hidden` 挂到 body，`finally` 里 `removeChild`（即使渲染抛错也不留垃圾节点）。
 - 没有 mermaid 块时直接原样返回，不挂 DOM。`Preview.vue` 走的是另一条路（增量渲染 + 已渲染块缓存，避免闪烁），保持原样别动它。
 
+### 组件里写 `var(--x)` 必须带兜底色，否则复制到公众号就掉色（2026-11 新增）
+
+用户原话（2026-11-19）：「检查一下chart组件的不坐标轴在微信编辑器中现在渲染不出来了」。
+
+**根因不是 chart 的坐标轴画错了，而是颜色写了裸 CSS 变量**。`src/extension/Chart_DA01.ts` 的 `<svg>` 里有 19 处 `var(--border-color)` / `var(--text-primary)` / `var(--text-secondary)` / `var(--bg-primary)`，这些变量只在编辑器自己的样式表（`src/styles/style.css` 的 `:root` 与 `[data-theme='dark']`）里定义。复制到公众号时那段样式表不会跟着走，于是：
+
+- `stroke="var(--border-color)"` → 计算值 **`none`** → **轴线、网格线整条消失**（用户看到的就是这个，图还在但没有坐标轴）；
+- `fill="var(--text-primary)"` / `fill="var(--text-secondary)"` → 退回浏览器默认的 `rgb(0,0,0)`，深色主题下的灰字全变纯黑；
+- `background:var(--bg-primary)` → 变透明。
+
+**修法是给每个 `var()` 补第二参数**：`stroke="var(--border-color, #e5e7eb)"`。带兜底的 `var()` 在微信里能正常回落（实测 `var(--border-color, #e5e7eb)` → `rgb(229, 231, 235)`，不带兜底的同一个变量 → `none`），而编辑器里有变量定义时仍然取变量值，深色模式不受影响。**不要改成硬编码色值**：那样编辑器深色模式下 SVG 里会出现一堆黑字。
+
+**已改的四处（2026-11-19）**
+
+| 文件 | 处数 | 兜底值 |
+| --- | --- | --- |
+| `src/extension/Chart_DA01.ts` | 19 | `--border-color → #e5e7eb`、`--text-primary → #111827`、`--text-secondary → #6b7280`、`--bg-primary → #ffffff` |
+| `src/extension/ReadingPath_DA01.ts` | 7 | 同上（`--text-primary → #111827` 等） |
+| `src/extension/PTitle_DA01.ts` | 1 | `--text-primary → #111827` |
+| `src/utils/markdownParser.ts` + `src/utils/inlineFormat.ts` | 8 + 2 | `--text-primary → #0d0d0d`、`--text-secondary → #615d59`、`--hl-code-bg → rgba(0,0,0,0.04)`、`--hl-str → #dd5b00` |
+
+兜底值取自被 `498e729 style: Timeline/CaseFlow 颜色微调`（2026-06-27）换掉之前那一版硬编码色，保证公众号里跟旧版观感一致。`markdownParser.ts` 与 `inlineFormat.ts` 里那几处是**正文默认色**（段落、h1–h6、脚注区、行内公式与行内代码降级），同样会随复制一起进公众号，一并补了。
+
+**验证口径**：`parseMarkdownAsync()` 出 HTML → 塞进**没有样式表的 iframe**（模拟公众号）→ 量 `getComputedStyle`。bar / line / pie / scatter 四类图表 `svg line` 的 `stroke` 全是 `rgb(229, 231, 235)`、`stroke === 'none'` 的线条数为 0；`svg text` 的 `fill` 是 `rgb(17,24,39)` / `rgb(107,114,128)`；同一段 HTML 放进编辑器（有样式表）时仍取到 `rgba(0,0,0,0.1)` / `rgba(0,0,0,0.95)`，说明变量优先级没被破坏。整个编辑器演示稿渲染后 `.preview-scroll` 里 `var(--…)` 无兜底的出现次数为 **0**。
+
+**以后新增组件时**：凡是会进公众号的 HTML（`src/extension/*.ts` 的 `render()`、`markdownParser.ts` 的模板块、`inlineFormat.ts` 的行内片段），`var(--…)` **一律写第二个兜底参数**。只有确实不需要跨环境（纯编辑器 UI 的 `.vue` / `.css`）才允许写裸变量。
+
+---
+
 ### 用户点名了组件就照办，没点名就手搭（2026-11 新增）
 
 需求原话（用户）：
