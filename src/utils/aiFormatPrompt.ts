@@ -124,8 +124,11 @@ function presetInstruction(preset: AiStylePreset): string {
   }
 }
 
-/** 由组件注册表生成可用标签速查（随组件库变化自动保持同步） */
-function componentCheatsheet(): string {
+/**
+ * 由组件注册表生成可用标签速查（随组件库变化自动保持同步）。
+ * AI 素材的 prompt 也复用它，避免两份清单各自漂移。
+ */
+export function componentCheatsheet(): string {
   const seen = new Set<string>()
   const rows: string[] = []
   for (const c of components) {
@@ -164,6 +167,9 @@ export function buildSystemPrompt(spec: string, preset: AiStylePreset = 'standar
     '5. **保留原有链接与图片**：原文中已有的链接、图片、公式、代码块必须原样保留在语义合理的位置。',
     '6. **图片占位符必须原样保留**：正文中形如 `{{RMIMG_1}}`、`{{RMIMG_2}}` 的占位符代表一张本地图片，',
     '   必须原样照抄、单独占一行、保持在原本的位置附近；不要改写、不要删除、不要移动、不要用 `![](…)` 包裹它们。',
+    '7. **素材块必须原封不动**：形如 `{{RMMAT_1}}`、`{{RMMAT_2}}` 的占位符代表一段已经排好版的素材',
+    '   （原文里由 `<!-- 素材开始 -->` 与 `<!-- 素材结束 -->` 包住），必须原样照抄、单独占一行、留在原位置；',
+    '   不要展开它、不要改写、不要拆分、不要重排、不要给它套额外组件。素材是成品，你只负责它前后的正文。',
     '',
     '# 输出格式要求（严格遵守）',
     '',
@@ -299,6 +305,71 @@ export function unmaskImageTokens(
 }
 
 /**
+ * 素材整体遮罩：`<!-- 素材开始 -->…<!-- 素材结束 -->` 整段替换成 `{{RMMAT_n}}`。
+ *
+ * 为什么不用 prompt 叮嘱了事：素材是别的 AI 按编辑器语法拼出来的成品（自由拼版的
+ * `container`/`row`/`column` 或整段 `<html>` 原生 HTML），排版这步只要动它一下——
+ * 补个空行、换个组件、把 `<text>` 里的字拆成段落——渲染出来就不是原来那版了，
+ * 而且这种破坏肉眼很难发现。整段遮起来，模型只能看见一个占位符，想动也动不了。
+ *
+ * 与图片占位符同一套机制（`{{RMIMG_n}}`），前缀不同是为了让提示文案分得开。
+ */
+export function maskMaterialBlocks(md: string): { text: string; tokens: string[] } {
+  const tokens: string[] = []
+  const text = md.replace(
+    /^[ \t]*<!--\s*素材开始\s*-->[\s\S]*?<!--\s*素材结束\s*-->[ \t]*$/gm,
+    (block) => {
+      tokens.push(block)
+      return `{{RMMAT_${tokens.length}}}`
+    },
+  )
+  return { text, tokens }
+}
+
+/**
+ * 还原素材块，并清掉模型臆造 / 重复的素材占位符。
+ *
+ * 与 `unmaskImageTokens` 一样报缺失：`missing` 是模型整段丢掉占位符的素材序号，
+ * 这种情况没法补救（内容已经不在模型输出里了），但必须让用户知道少了哪一块，
+ * 否则排版结果会静悄悄少一段。
+ */
+export function unmaskMaterialBlocks(
+  text: string,
+  tokens: string[],
+): { text: string; restored: number; missing: number[]; dropped: number } {
+  let out = text
+  let restored = 0
+  const missing: number[] = []
+
+  for (let i = 0; i < tokens.length; i++) {
+    const token = `{{RMMAT_${i + 1}}}`
+    if (!out.includes(token)) {
+      missing.push(i + 1)
+      continue
+    }
+    out = out.split(token).join(tokens[i])
+    restored++
+  }
+
+  const leftovers = out.match(/\{\{RMMAT_\d+\}\}/g) || []
+  if (leftovers.length > 0) {
+    out = out.replace(/^[ \t]*\{\{RMMAT_\d+\}\}[ \t]*$/gm, '')
+    out = out.replace(/\{\{RMMAT_\d+\}\}/g, '')
+    out = out.replace(/\n{3,}/g, '\n\n')
+  }
+
+  // 模型常把占位符当普通文字，单独包一层 `<p>…</p>`。素材里是块级组件
+  // （`<container>` / `<steps>` / `<html>`），塞进段落里会渲染错乱，
+  // 所以只包着素材、没别的内容的 `<p>` 壳要拆掉。
+  out = out.replace(
+    /<(p|div|section)(?:\s[^>]*)?>\s*(<!--\s*素材开始\s*-->[\s\S]*?<!--\s*素材结束\s*-->)\s*<\/\1>/g,
+    '$2',
+  )
+
+  return { text: out, restored, missing, dropped: leftovers.length }
+}
+
+/**
  * 清洗模型输出：剥掉整篇 ``` 围栏、首尾空白、结尾的客套话。
  */
 export function cleanModelOutput(raw: string): string {
@@ -328,8 +399,15 @@ export function cleanModelOutput(raw: string): string {
 
 /** 供错误提示使用的标签合法性校验：只警告，不阻断 */
 export function validateFormat(md: string): { unknownTags: string[]; warnings: string[] } {
+  // `<html>` 块内是原生 HTML（`<h3>` / `<ul>` / `<table>`…），由 `Html_DA01.render()`
+  // 原样透出，不受组件白名单约束。先抽出来，避免把标准 HTML 标签当成规范外标签报警。
+  // `<svg>` 块同理：里面的 `<rect>` `<circle>` `<animate>` 是 SVG 自己的标签，
+  // `markdownParser` 也整段透传，漏掉这一步会把手写矢量图报成「出现规范外的标签」。
+  const withoutHtmlBlocks = md
+    .replace(/<html\b[^>]*>[\s\S]*?<\/html\s*>/gi, '')
+    .replace(/<svg\b[^>]*>[\s\S]*?<\/svg\s*>/gi, '')
   // 代码块与行内代码里的标签不算
-  const withoutCode = md
+  const withoutCode = withoutHtmlBlocks
     .replace(/^[\t ]*(```|~~~)[\s\S]*?^[\t ]*\1[\t ]*$/gm, '')
     .replace(/`[^`\n]*`/g, '')
 

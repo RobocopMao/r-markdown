@@ -13,6 +13,7 @@ import {
   paraIndent,
 } from '@/composables/useParagraphSettings'
 import { useMermaid } from '@/composables/useMermaid'
+import { resolveExportColors } from '@/utils/exportColors'
 import Toast from '@/components/Toast.vue'
 
 const isTauri = import.meta.env.VITE_TAURI === 'true'
@@ -154,7 +155,9 @@ watch([paraFontSize, paraLineHeight, paraFontWeight, paraMargin], () => updateCo
 function copyRichText() {
   const el = previewRef.value
   if (!el) return
-  const html = `<section style="background-color:#fff;color:#333;padding:0">${el.innerHTML}</section>`
+  // 导出前把 var(--x) 落成字面量：公众号没有编辑器的样式表，留着变量在微信深色模式下
+  // 会掉到近黑兜底值，正文变成黑底黑字。详见 @/utils/exportColors。
+  const html = `<section style="background-color:#fff;color:#333;padding:0">${resolveExportColors(el.innerHTML)}</section>`
   const blob = new Blob([html], { type: 'text/html' })
   const item = new ClipboardItem({
     'text/html': blob,
@@ -186,14 +189,15 @@ function copyRichText() {
 function copyHTML() {
   const el = previewRef.value
   if (!el) return
+  const html = resolveExportColors(el.innerHTML)
   navigator.clipboard
-    .writeText(el.innerHTML)
+    .writeText(html)
     .then(() => {
       showToast('已复制 HTML 源码（全部内联样式）')
     })
     .catch(() => {
       const ta = document.createElement('textarea')
-      ta.value = el.innerHTML
+      ta.value = html
       document.body.appendChild(ta)
       ta.select()
       document.execCommand('copy')
@@ -289,6 +293,10 @@ async function saveAsImage() {
   }
 }
 
+/**
+ * 预览区的原始 HTML（还没把 `var(--x)` 落成字面量）。
+ * 导出 HTML / PDF 时由调用方过一遍 `resolveExportColors()`，见 `useExport.ts`。
+ */
 function getHTML(): string {
   return previewRef.value?.innerHTML || ''
 }

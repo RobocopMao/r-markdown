@@ -1,6 +1,7 @@
 import { FileDown, FileText, Braces, Image } from 'lucide-vue-next'
 import { type ComputedRef, type Ref } from 'vue'
 import { buildPdfPages, type PdfPrintDoc } from '@/utils/paginate'
+import { resolveExportColors } from '@/utils/exportColors'
 
 export const exportItems = [
   { label: '保存图片', icon: Image, action: 'saveImage' },
@@ -32,7 +33,9 @@ export function useExport(
   }
 
   async function handleExportHTML() {
-    const html = previewRef.value?.getHTML() || ''
+    // 导出前把 var(--x) 落成字面量：公众号/本地浏览器没有编辑器的样式表，
+    // 留着变量在微信深色模式下会掉到近黑兜底值，正文变成黑底黑字。
+    const html = resolveExportColors(previewRef.value?.getHTML() || '')
     const fullDoc = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -127,7 +130,7 @@ ${html}
    * window.print() 在 Tauri 桌面端全平台可用；Web 端走浏览器打印。
    */
   async function handleExportPDF() {
-    const html = previewRef.value?.getHTML() || ''
+    const html = resolveExportColors(previewRef.value?.getHTML() || '')
     if (!html.trim()) {
       showToast('内容为空，无法导出')
       return

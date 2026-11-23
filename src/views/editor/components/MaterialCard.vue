@@ -6,7 +6,7 @@ import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { resolveIdbImages } from '@/utils/imageDB'
 import { resolveDiskImages } from '@/services/localImageDisk'
 import { useTheme } from '@/composables/useTheme'
-import { useMermaid } from '@/composables/useMermaid'
+import { renderMermaidInHtml } from '@/composables/useMermaid'
 
 const props = defineProps<{
   name: string
@@ -31,7 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const { colors } = useTheme()
-const { renderAll } = useMermaid()
 
 const renderedContent = ref('')
 const contentRef = ref<HTMLElement | null>(null)
@@ -47,18 +46,8 @@ async function refreshRendered() {
       resolvedContent = await resolveDiskImages(resolvedContent)
     }
     let html = await parseMarkdownAsync(resolvedContent, colors.value)
-    // 处理 mermaid
-    if (html.includes('class="mermaid"')) {
-      const tmp = document.createElement('div')
-      tmp.style.position = 'absolute'
-      tmp.style.visibility = 'hidden'
-      tmp.style.pointerEvents = 'none'
-      tmp.innerHTML = html
-      document.body.appendChild(tmp)
-      await renderAll(tmp)
-      html = tmp.innerHTML
-      document.body.removeChild(tmp)
-    }
+    // mermaid 是 JS 画的，光靠 parseMarkdownAsync 只会得到一个空占位块。
+    html = await renderMermaidInHtml(html)
     renderedContent.value = html
   } catch (e) {
     console.error('MaterialCard render failed:', e)
@@ -201,7 +190,8 @@ function categoryColor(cat: string): string {
 </template>
 
 <style scoped>
-.material-preview :deep(span) {
+/* 行高给容器（组件内部用 inline 行高做「大号数字 + 负 margin 顶回」的排版，不能覆盖 span） */
+.material-preview {
   line-height: 1.8;
 }
 </style>

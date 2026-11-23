@@ -55,10 +55,10 @@ export function inlineFormat(
   text = text.replace(/(?<!\$)(?<!\d)\$([^\$]+?)\$(?!\$|[\w])/g, (_m, formula: string) => {
     if (formulaMap) {
       const svg = formulaMap.get(`i:${formula}`)
-      if (svg) return `<span style="color:var(--text-primary)">${svg}</span>`
+      if (svg) return `<span style="color:var(--text-primary, #0d0d0d)">${svg}</span>`
     }
     // 降级：显示公式原文
-    return `<code style="font-style:italic;background:var(--hl-code-bg);padding:1px 4px;border-radius:3px">${esc(formula)}</code>`
+    return `<code style="font-style:italic;background:var(--hl-code-bg, rgba(0,0,0,0.04));padding:1px 4px;border-radius:3px">${esc(formula)}</code>`
   })
   // ==渐变背景==
   text = text.replace(

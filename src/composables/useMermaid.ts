@@ -64,6 +64,43 @@ async function svgToPng(svg: string, width?: number): Promise<string> {
   })
 }
 
+/**
+ * 这段 HTML 里有待渲染的 mermaid 块吗？
+ *
+ * 判断依据是 `Mermaid_DA01.render()` 真实产出的 `.mermaid-block`。
+ *
+ * 别把这个判断写回调用点——预览面板、素材卡、素材库原先各自写了一句
+ * `html.includes('class="mermaid"')`，那是更早版本的类名，条件永远不成立，
+ * 于是 `renderAll()` 从没被调用过，前端预览里 mermaid 一直是空白；而编辑器
+ * 右侧的 `Preview.vue` 是无条件调 `renderAll()` 的，所以「插进编辑器就好了」。
+ * 类名只留在这一个文件里，以后组件改名时不会又漂掉。
+ */
+export function hasMermaidBlock(html: string): boolean {
+  return html.includes('mermaid-block')
+}
+
+/**
+ * 把一段已经 `parseMarkdownAsync()` 过的 HTML 里的 mermaid 块渲染好再还回来。
+ *
+ * mermaid 要量真实尺寸，必须挂到 document 上才能画；挂载期间用
+ * `position:absolute; visibility:hidden` 让它不参与布局也不闪一下。
+ */
+export async function renderMermaidInHtml(html: string): Promise<string> {
+  if (!hasMermaidBlock(html)) return html
+  const tmp = document.createElement('div')
+  tmp.style.position = 'absolute'
+  tmp.style.visibility = 'hidden'
+  tmp.style.pointerEvents = 'none'
+  tmp.innerHTML = html
+  document.body.appendChild(tmp)
+  try {
+    await useMermaid().renderAll(tmp)
+    return tmp.innerHTML
+  } finally {
+    document.body.removeChild(tmp)
+  }
+}
+
 export function useMermaid() {
   async function renderBlock(el: HTMLElement): Promise<boolean> {
     const svgContainer = el.querySelector('.mermaid-svg-container') as HTMLElement | null

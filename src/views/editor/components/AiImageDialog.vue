@@ -1253,7 +1253,7 @@ onBeforeUnmount(() => {
           v-else
           class="flex min-h-0 flex-1 flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-[#e5e5e5] bg-white px-6 text-center dark:border-[#444] dark:bg-[#1e1e1e]"
         >
-          <Sparkles :size="22" class="text-[#ccc]" />
+          <Sparkles :size="26" class="text-[var(--accent)]" />
           <p class="text-[12px] text-[#999] dark:text-[#666]">
             填好提示词后点「开始生成」，出图后可预览、下载，确认满意再插入编辑器。
           </p>

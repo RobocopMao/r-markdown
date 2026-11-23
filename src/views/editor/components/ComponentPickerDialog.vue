@@ -3,7 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { components } from '@/extension'
 import { parseMarkdownAsync } from '@/utils/markdownParser'
 import { useTheme } from '@/composables/useTheme'
-import { useMermaid } from '@/composables/useMermaid'
+import { renderMermaidInHtml } from '@/composables/useMermaid'
 import BaseDrawer from '@/components/BaseDrawer.vue'
 
 const props = defineProps<{
@@ -16,7 +16,6 @@ const emit = defineEmits<{
 }>()
 
 const { colors } = useTheme()
-const { renderAll } = useMermaid()
 
 const contentRef = ref<HTMLElement | null>(null)
 
@@ -90,18 +89,8 @@ async function refreshRendered() {
       .filter((comp) => comp.id !== 'ReadingPath_DA01' && comp.example)
       .map(async (comp) => {
         let rendered = comp.example ? await parseMarkdownAsync(comp.example, c) : ''
-        // 对 mermaid 组件，用临时容器触发 JS 渲染，再取回渲染后的 HTML
-        if (comp.id === 'Mermaid_DA01' && rendered) {
-          const tmp = document.createElement('div')
-          tmp.style.position = 'absolute'
-          tmp.style.visibility = 'hidden'
-          tmp.style.pointerEvents = 'none'
-          tmp.innerHTML = rendered
-          document.body.appendChild(tmp)
-          await renderAll(tmp)
-          rendered = tmp.innerHTML
-          document.body.removeChild(tmp)
-        }
+        // mermaid 是 JS 画的，光靠 parseMarkdownAsync 只会得到一个空占位块。
+        rendered = await renderMermaidInHtml(rendered)
         return {
           id: comp.id,
           name: comp.name,

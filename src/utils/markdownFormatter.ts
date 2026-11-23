@@ -29,6 +29,7 @@
 import { BLOCK_COMPONENT_TAGS, COMPONENT_TAGS, VERBATIM_TAGS } from './componentTags'
 import { isFenceClose, matchFenceOpen } from './helpers'
 import { HEADING_LEVEL_MAX } from './headingLevels'
+import { isMaterialEndLine, isMaterialStartLine } from './materialBoundary'
 
 const TAG_ALT = COMPONENT_TAGS.join('|')
 const BLOCK_ALT = BLOCK_COMPONENT_TAGS.join('|')
@@ -116,6 +117,8 @@ export interface FormatStats {
   quoteGaps: number
   /** 自动补上的围栏闭合行数 */
   fencesClosed: number
+  /** 为贴合素材边界注释而增删的空行数 */
+  materialTightened: number
 }
 
 export interface FormatResult {
@@ -138,6 +141,7 @@ function emptyStats(): FormatStats {
     imageGaps: 0,
     quoteGaps: 0,
     fencesClosed: 0,
+    materialTightened: 0,
   }
 }
 
@@ -223,6 +227,61 @@ function closesOnSameLine(line: string): boolean {
 }
 
 /**
+ * 素材内部「两个标签之间」的空行去掉。
+ *
+ * 为什么必须清：素材插进文章后是一个整体 HTML 块（`<!-- 素材开始 -->` 也会被
+ * `@lezer/markdown` 认成 HTMLBlock）。中间只要夹一个空行，它就被切成好几个 HTMLBlock
+ * 节点，编辑器里只折得动第一块——用户没法把整段素材收起来。
+ *
+ * 为什么不能一律删：`<container>` 里两段正文之间、正文与标签之间的空行是 Markdown 的
+ * 段落边界，删了会把两段并成一段，或者让紧跟正文的 `<title>` 被上一段的段落收集吃掉。
+ * 所以判据窄到「前后两个非空行（去掉缩进后）都以 `<` 开头」——那才是纯标签之间的缝。
+ * 一定要 trim 再判断：手写 SVG 和原生 HTML 的标签几乎都带缩进，只看首字符会全部漏掉。
+ */
+function tightenMaterialInternals(lines: string[]): { lines: string[]; removed: number } {
+  const kept: string[] = []
+  let inMaterial = false
+  let removed = 0
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (isMaterialStartLine(line)) {
+      inMaterial = true
+      kept.push(line)
+      continue
+    }
+    if (isMaterialEndLine(line)) {
+      inMaterial = false
+      kept.push(line)
+      continue
+    }
+    if (inMaterial && line.trim() === '') {
+      let prev = ''
+      for (let j = kept.length - 1; j >= 0; j--) {
+        if (kept[j].trim() !== '') {
+          prev = kept[j]
+          break
+        }
+      }
+      let next = ''
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() !== '') {
+          next = lines[j]
+          break
+        }
+      }
+      // 用 trim 后的结果判断：SVG / 原生 HTML 里的标签常常带缩进（`  <rect />`），
+      // 直接看首字符会把它们漏掉——那正是「svg 里的空行没删掉」的原因。
+      if (prev.trim().startsWith('<') && next.trim().startsWith('<')) {
+        removed++
+        continue
+      }
+    }
+    kept.push(line)
+  }
+  return { lines: kept, removed }
+}
+
+/**
  * 格式化 Markdown 全文。
  *
  * 幂等：对已经规范的内容再跑一次返回 `changed: false`。
@@ -247,9 +306,14 @@ export function formatMarkdown(md: string): FormatResult {
   /** 末尾是否是空行 */
   const lastIsBlank = () => out.length > 0 && out[out.length - 1] === ''
 
+  /** 末尾是「素材开始」注释 */
+  const lastIsMaterialStart = () => out.length > 0 && isMaterialStartLine(out[out.length - 1])
+
   const ensureBlankBefore = () => {
     if (out.length === 0) return
     if (lastIsBlank()) return
+    // 素材开始注释后面紧跟的就是素材代码，中间不留空行
+    if (lastIsMaterialStart()) return
     out.push('')
     stats.blankInserted++
   }
@@ -274,7 +338,11 @@ export function formatMarkdown(md: string): FormatResult {
     stats.blankInserted++
   }
 
-  for (const rawLine of md.split(/\r?\n/)) {
+  // 素材内部的标签缝先收掉，后面的逐行循环才看不到那些空行
+  const pre = tightenMaterialInternals(md.split(/\r?\n/))
+  stats.materialTightened += pre.removed
+
+  for (const rawLine of pre.lines) {
     // ── 围栏内部：原样保留（缩进、行尾空白都是代码内容） ──
     if (fence) {
       if (isFenceClose(rawLine, fence.char, fence.len)) fence = null
@@ -325,6 +393,12 @@ export function formatMarkdown(md: string): FormatResult {
 
     // ── 空行 ──
     if (trimmed === '') {
+      // 「素材开始」后面的空行直接丢掉：注释要贴紧素材代码。
+      // 用末尾实际内容判断，连续几个空行会被逐个丢掉。
+      if (lastIsMaterialStart()) {
+        stats.materialTightened++
+        continue
+      }
       if (blockDepth > 0) {
         // 组件内部空白原样保留，不做收敛
         out.push('')
@@ -338,6 +412,34 @@ export function formatMarkdown(md: string): FormatResult {
       lastWasImage = false
       lastWasQuote = false
       out.push('')
+      continue
+    }
+
+    // ── 素材边界注释 ──
+    // 「开始」贴在素材代码上方、「结束」贴在素材代码下方，中间都不许有空行；
+    // 「结束」下面要留一个空行，和下文的正文/组件隔开。
+    // 这两条要在 settlePendingBlank() 之前判：上一个块级组件刚闭合时它会给这里补空行，
+    // 结束注释又要立刻把这空行删掉，来回抵消会平白多记一次计数。
+    if (isMaterialStartLine(line)) {
+      // 注释自己也要和上文分开，否则会粘在上一段的末尾
+      if (out.length > 0 && !lastIsBlank()) ensureBlankBefore()
+      pendingBlank = false
+      lastWasImage = false
+      lastWasQuote = false
+      out.push(line)
+      continue
+    }
+    if (isMaterialEndLine(line)) {
+      // 结束注释前不许留空行：把已经攒下的空行撤掉
+      while (out.length > 0 && out[out.length - 1] === '') {
+        out.pop()
+        stats.materialTightened++
+      }
+      lastWasImage = false
+      lastWasQuote = false
+      out.push(line)
+      // 结束后要留一个空行，由下一个非空行来落
+      pendingBlank = true
       continue
     }
 
@@ -452,5 +554,6 @@ export function describeFormatStats(stats: FormatStats): string {
   if (stats.imageGaps) parts.push(`图片后空行 ${stats.imageGaps}`)
   if (stats.quoteGaps) parts.push(`引用前空行 ${stats.quoteGaps}`)
   if (stats.fencesClosed) parts.push(`补围栏闭合 ${stats.fencesClosed}`)
+  if (stats.materialTightened) parts.push(`收紧素材注释 ${stats.materialTightened}`)
   return parts.join(' · ')
 }

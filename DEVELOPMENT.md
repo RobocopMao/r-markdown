@@ -34,6 +34,7 @@ src/
 │   ├── BaseDrawer.vue       # 通用抽屉
 │   ├── BaseCheckbox.vue     # 通用勾选框（自绘样式，项目内不要用原生 checkbox）
 │   ├── BaseTooltip.vue      # 通用 tooltip
+│   ├── BetaBadge.vue        # 「Beta」角标（AI 素材四处入口共用，颜色跟随所在元素）
 │   ├── ImagePreview.vue     # 大图预览浮层（命令式 open(src, caption)，Teleport 到 body）
 │   ├── ConfirmDialog.vue    # 确认弹窗
 │   ├── DarkModeToggle.vue   # 深色模式切换
@@ -61,6 +62,7 @@ src/
 │   ├── demoContent.ts       # 编辑器示例内容
 │   └── ai/                  # AI 能力用的技能 / 规范文本（与对应 skill 同源，手动同步）
 │       ├── r-markdown-formatter/ # AI 排版用的组件规范（format-spec.md，与 r-markdown-formatter skill 同源）
+│       ├── r-markdown-material/  # AI 素材用的玩法技能（SKILL.md：什么需求用哪个组件、子内容形状、正反例）
 │       └── khazix/              # AI 写作用的内置技能（khazix-writer skill：SKILL.md + references/）
 ├── extension/           # 排版组件库（git 子模块，闭源；缺失时自动复制 stubs）
 ├── extension-stubs/     # 排版组件空桩（extension 不可用时的 fallback）
@@ -96,9 +98,14 @@ src/
 │   └── style.css
 ├── utils/               # 工具函数
 │   ├── articleNaming.ts     # 文章文件命名（文章名净化 / 短哈希 / 唯一基名解析）
-│   ├── aiFormatPrompt.ts    # AI 排版：prompt 组装、图片占位符遮罩/还原、输出清洗与标签校验（纯逻辑）
+│   ├── aiFormatPrompt.ts    # AI 排版：prompt 组装、图片/素材占位符遮罩·还原、输出清洗与标签校验（纯逻辑）
+│   ├── aiMaterialPrompt.ts  # AI 素材：技能加载、prompt 组装、输出清洗与质检（纯逻辑）
+│   ├── materialBoundary.ts  # 素材边界注释：判定「是不是单个成品组件」，不是就首尾包 <!-- 素材开始/结束 -->（纯逻辑）
+│   ├── materialCommands.ts  # 素材输入框的 / 快捷命令：识别斜杠查询、过滤组件清单、替换进正文（纯逻辑）
+│   ├── wechatHtmlRules.ts   # `<html>` 块的公众号兼容扫描：按微信规范挑出会被服务器删掉的 CSS / 属性，分「会散版」和「只提示」两档
 │   ├── aiWritePrompt.ts     # AI 写作：prompt 组装、输出分类（出稿/追问）、自检报告提取（纯逻辑）
 │   ├── aiSession.ts         # AI 各面板共用的保留时长逻辑（滑动续期、收敛、剩余文案，纯逻辑）
+│   ├── aiMaterialSession.ts # AI 素材：会话模型、消息归一化与历史裁剪（纯逻辑，与 aiWriteSession 同构）
 │   ├── aiWriteSession.ts    # AI 写作：会话模型、消息归一化与历史裁剪（纯逻辑）
 │   ├── bannedWords.ts       # 违禁词词库与扫描（含代码块/URL 遮罩）
 │   ├── charCount.ts         # 字数统计与预估阅读时长
@@ -153,7 +160,7 @@ scripts/
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Editor.vue`                                                           | CodeMirror 编辑器封装（主题、快捷键、滚动、定位）                                                                                                                    |
 | `Preview.vue`                                                          | 预览区渲染与复制                                                                                                                                                     |
-| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图）；底部只留「展开 / 收起」按钮（深色模式与设置已移到顶栏右上角） |
+| `EditorSidebar.vue`                                                    | 左侧竖排入口：文章 / 草稿 / 导入 / **AI** / 组件 / 图库 / 素材 / 检测 / 示例 / 帮助；「AI」与「素材」「示例」一样是悬停展开的二级菜单（AI 写作 / AI 排版 / AI 配图 / AI 素材）；底部只留「展开 / 收起」按钮（深色模式与设置已移到顶栏右上角） |
 | `TreeSidebar.vue` `TreeNode.vue`                                       | 文章树侧栏与节点（拖拽、右键菜单；标题栏那排操作桌面/手机共用，手机上横向可滚动，**移动端「文章」Tab 直接用它，不再塞进三点菜单**）                                   |
 | `OutlinePanel.vue`                                                     | 文档大纲面板                                                                                                                                                         |
 | `FindReplacePanel.vue`                                                 | 查找替换面板                                                                                                                                                         |
@@ -172,10 +179,11 @@ scripts/
 | `MaterialBoard.vue` `MaterialCard.vue` `SaveMaterialDialog.vue`        | 我的素材面板（内嵌编辑区；瀑布流按容器宽自适应 1–4 列，分类 pill + 搜索；点素材只做选中，选中后工具条出现「插入」，多选下勾 1 个也能插入、勾 2 个只给「删除选中」；发布与删除确认沿用原流程——原抽屉弹窗 MaterialLibraryPanel 已改为内嵌面板） |
 | `XhsBoard.vue`                                                         | 小红书图面板（内嵌编辑区，与统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测 / 设置同款；3:4 竖版 / 1:1 方版两个比例标签页，首图 + 正文卡片，点单张「下载」或右上「下载全部」〔桌面端打包 ZIP〕——原抽屉弹窗 XhsExporter 已改为内嵌面板） |
 | `FinalizeDialog.vue`                                                   | 定稿（本地导出 Markdown）                                                                                                                                            |
-| `AiBoard.vue`                                                          | AI 面板（内嵌编辑区，与统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测 / 设置同款；`BoardHeader` + 三个 `.board-tab` 切换 AI 写作 / AI 排版 / AI 配图，三个子组件都用 `BaseDrawer` 的 `embedded` 模式，`visible` 跟着面板 `active` 走、不跟 tab 走，避免切 tab 时 abort 在途请求） |
+| `AiBoard.vue`                                                          | AI 面板（内嵌编辑区，与统计 / 草稿箱 / 图库 / 我的素材 / 违禁词检测 / 设置同款；`BoardHeader` + 四个 `.board-tab` 切换 AI 写作 / AI 排版 / AI 配图 / AI 素材，四个子组件都用 `BaseDrawer` 的 `embedded` 模式，`visible` 跟着面板 `active` 走、不跟 tab 走，避免切 tab 时 abort 在途请求） |
 | `AiWriteDialog.vue`                                                    | AI 写作（对话模式；对话流在 body、**输入框走 `BaseDrawer` 的 `#footer` 插槽固定底部**；稿件卡 / 四层自检报告 / 应用到编辑器）                                        |
 | `AiFormatDialog.vue`                                                   | AI 排版（来源选择 / 流式生成 / 差异对比，桌面双栏·移动单栏 / 应用结果 / 结果保留倒计时 + 清空）                                                                      |
 | `AiImageDialog.vue`                                                    | AI 配图（提示词 / 比例 · 分辨率或自定义宽高 · 质量 · 背景 / 出图预览与下载 · 添加到图库 · 添加到磁盘〔仅桌面端〕 / 插入编辑器 · 上传图床 · 保存磁盘并插入〔仅桌面端〕 / 结果保留倒计时 + 清空）      |
+| `AiMaterialDialog.vue`                                                 | AI 素材（**多轮对话**：与 AI 写作同构的会话流，每轮出的素材是一条左对齐全宽卡片，预览/源码双视图 + 字数统计 + 提醒都挂在那一版上，「插入到编辑器」〔`insertOwnLine`，不覆盖已有内容〕与「清空编辑器再插入」〔`replaceAll`，走 ConfirmDialog 确认〕放在**该版卡片底部**，页脚另有一个「插入最新一版」快捷动作；顶部「新建会话」清空重开、`aiMaterialSessionHours` 倒计时；生成仍按编辑器语法产出组件片段（容器按需包、拼版自动加边界注释，见第 33 条）；**不做「保存到我的素材」**） |
 | `Dropdown.vue`                                                         | 通用下拉                                                                                                                                                             |
 | `mobile/MobileActionsMenu.vue`                                         | 移动端操作菜单（**只有编辑 / 预览两种模式**；文章 Tab 用文章树自带的标题栏工具栏，不再有这个菜单。宽度 `w-32`，与 `MobileNavMenu` 的 `w-32` 一致。设置常驻顶栏右上角、不在此菜单内） |
 | `mobile/MobileEditorToolbar.vue`                                       | 移动端编辑 Tab 快捷工具栏（PC 标题栏那排按钮在触屏没有 hover 二级菜单，故独立做一条可横向滚动的图标条：基础 / 容器 / 图片 / 组件 / 解析 + 13 个行内样式；前四类点开是底部 `Teleport` 面板。右端固定「撤销」按钮不参与横滚，走 CodeMirror 的 `undo` 命令，与 Cmd/Ctrl+Z 同一条历史栈） |
@@ -744,10 +752,434 @@ pnpm preview
     - **设置页的卡片化版式（`SettingsCard.vue` / `SettingsSlider.vue`）**：每个设置项是一张卡（左 44px 圆角图标块 + 标题 / 副标题 + 右上 `#action` 开关或下拉 + 正文控件区 + 底部灰说明），多张卡放在 `<MasonryFlow>`（`src/views/editor/components/MasonryFlow.vue`）里：flex 列 + JS 测高的瀑布流，桌面 2 列、`max-width: 767px` 收成 1 列，卡片按自身高度往下排。**不要改回 `grid`**（行高由整行最高的卡决定，矮卡下面必然空一截），**也不要改回 CSS 多列 `column-count`**——Safari 会把「上一列最后一项的 margin-bottom」挪到「下一列第一项上方」，右列第一张卡因此比左列低一截、两列顶部对不齐（Chrome 下正常，很难发现）。`MasonryFlow` 之所以不像「我的素材」那样直接用 `@yeger/vue-masonry-wall`：那个库是数据驱动（`items` 数组 + `keyMapper`），而设置页的卡片是静态模板，塞不进数组；`MasonryFlow` 用插槽 + `cloneVNode` 平摊 `Fragment` 后自行分列，原理与之一致（贪心塞进当前最矮的列）。两个配套细节：卡片内有输入框获得焦点时跳过重排（否则重排会把节点挪列、焦点当场丢），失焦后靠 `focusout` 补排一次；每张卡都挂 `ResizeObserver`，内容变高变矮会自动重排；「普通段落」卡内再套 `.settings-subcard`（淡灰底、无边框、12px 圆角）做 3 列参数卡。滑杆统一 `SettingsSlider`（`linear-gradient` 画双色轨道，原生 `accent-color` 只能整条同色）；**只要卡片里有滑杆，数值就一定写成 `.settings-subcard` 里的 `.settings-subcard-label` + `.settings-subcard-value`（label 与数值一行、滑杆在下、两端极值在最下），不要塞进卡片右上角的 `#action`**——`#action` 只放开关、下拉、按钮（例如「恢复默认」）；输入框 / 下拉 / 胶囊 / 开关统一用 `SettingsBoard.vue` 的 `.settings-input` / `.settings-select` / `.settings-chip` / `.settings-toggle`（+`.settings-toggle-knob`）这些 scoped class，别再往模板里粘长串 Tailwind 颜色。「恢复默认」各自管各自的：「普通段落」卡的 `#action` 里一个按钮调 `onResetPara()`（只还原字号 / 行高 / 字重 / 间距 / 缩进），「编辑区字号」卡的 `#action` 里一个按钮调 `onResetEditorFontSize()`（只还原编辑区字号）；不要合并成一个头部按钮，两套值互不相干。其余 Tab（图片 / 文章仓库 / 公众号 / AI / 关于）也全部改用同一套卡片：一个设置分组一张 `SettingsCard`，组内多个字段再套 `.settings-subcard`（两列用 `grid gap-3 sm:grid-cols-2`）；工作区这类「列表项」也用 `.settings-subcard`，当前选中项加 `.is-active`（`box-shadow: inset 0 0 0 1px var(--accent)`），「当前」徽标用 `.settings-badge`。子 Tab（AI 文本 / AI 图片、上传设置 / GitHub 图床 / 乐塔图床）仍是 `.board-tab`。新增的 CSS 变量 `--settings-card-border` / `--settings-subcard-bg` / `--settings-track` / `--settings-hover-border` 在 `src/styles/style.css` 的 `:root` 与 `[data-theme='dark']` 各有一份。
     - **侧栏按钮的 active 态统一**：`color: var(--accent)` + `color-mix(in srgb, var(--accent) 10%, transparent)` 背景，各按钮同一套（`EditorSidebar` 各收一个 `xxxActive` prop）；设置没有侧栏入口（顶栏齿轮按钮常驻），所以 `settingsBoardActive` 只做互斥、不点亮侧栏。
     - **查找替换与命令面板只属于「编辑器页面」**：`FindReplacePanel` 与 `CommandPalette` 都 `Teleport to="body"` + `fixed`，父容器的 `v-show` 藏不住，所以 `closeAllBoards()` 末尾调 `closeEditorOverlays()`（只在 `findVisible` 真为真时才清，避免白调 `applyFindSpec` 打断编辑状态），⌘K 走 `anyBoardActive()` 判断、面板开着不响应；移动端切「文章 / 预览」Tab 也收掉。
-    - **`BaseDrawer` 支持 `embedded` 模式**：给「本来是抽屉、现在要塞进面板」的组件用（目前是 AI 三个子面板）。`embedded` 时不开传送门、没有遮罩/外框/动效，只保留「头部插槽 / 内容 / 页脚」三段铺满父容器；子组件的 `watch(() => props.visible)` 生命周期照旧，由面板的 `active` 驱动。注意 `visible` 要跟着「面板是否打开」而不是「当前 tab」——否则切 tab 会把在途请求 abort 掉。
+    - **`BaseDrawer` 支持 `embedded` 模式**：给「本来是抽屉、现在要塞进面板」的组件用（目前是 AI 四个子面板）。`embedded` 时不开传送门、没有遮罩/外框/动效，只保留「头部插槽 / 内容 / 页脚」三段铺满父容器；子组件的 `watch(() => props.visible)` 生命周期照旧，由面板的 `active` 驱动。注意 `visible` 要跟着「面板是否打开」而不是「当前 tab」——否则切 tab 会把在途请求 abort 掉。
     - **`embedded` 子组件的 `watch(…, { immediate: true })` 必须能安全跑在 `setup()` 阶段**：面板是 `v-if`，子组件挂载那一刻 `visible` 已经是 `true`，没有 `immediate` 的话「打开时初始化」整段不执行（症状是 AI 写作输入框提示「会话已过期」、发送按钮禁用）。但加了 `immediate` 之后，watcher 在 `setup` 里同步执行，**它调到的每个 `const` / `ref` 都必须已经声明在 watcher 之前**，否则撞暂时性死区（TDZ），表现为 `Uncaught (in promise) Cannot access 'xxx' before initialization`，整个面板初始化中断。踩过的具体例子：`AiImageDialog` 的 `aiReady`（`refreshAiReady()` 读它）原本写在文件后半段，加 `immediate` 后直接报错；已把它连同 `refreshAiReady` / `onAiSettingChanged` 一起挪到 `configured` 之后、watcher 之前，并在原处留了注释。另外父级不要用 `v-if` 直接绑 `active`，要「首次打开挂载、之后 `v-show`」（`EditorPage` 的 `aiBoardMounted`），否则关一次面板就卸载，对话记录、生成结果、**输入框里没发出去的字**全丢。
     - **面板自己管数据加载，父级只管开关与结果**：`DraftBoard` 收 `drafts` prop；`GalleryBoard` / `MaterialBoard` 自己 `onMounted` 拉数据（面板是 `v-if`，每次打开都是新的实例，天然拿到最新数据）。删除确认留在父级（`ConfirmDialog`），面板通过 `request-delete` / `defineExpose({ doCleanup })` 交回父级执行，避免两处各存一份确认状态。
     - **没有 props.visible 的面板用 `onMounted` 顶替「打开时初始化」**：面板是 `v-if`，每次打开都是新实例，所以原来写在 `watch(() => props.visible, …)` 里的初始化（按 `initialTab` 落 tab、刷新配置回显）直接搬进 `onMounted`；父级也不再传 `visible`，只传 `initial-tab`。
     - **把配色烘焙进图片/HTML 的面板，切深浅色必须重新生成**：小红书图的首图是 `buildCover(..., isDark)` 拼出来的 HTML、内容图是已经烘焙好背景色（深色 `#1a1a1a` / 亮色 `#ffffff`）与文字色的 PNG dataURL——两者都把「生成那一刻」的主题固化进去了，只靠 CSS 变量切不过来，症状就是切深浅色后卡片不变、非得刷新页面。所以 `XhsBoard` 里 `watch(isDark, …)` 要防抖 150ms 后重跑 `generate()`；同理任何「生成图 / 生成 HTML 快照」的面板都要挂这条 watcher。配套两点：① `generate()` 用 `genToken` 自增序号丢弃过期结果（重新生成要几十秒，期间可能又切了一次主题/比例，旧的那次不能把新结果盖掉）；② 生成中的占位改成 `v-if="building && !cards.length"`，重新生成时保留旧卡片，否则整块闪成「生成中…」；单张「下载」按钮在 `building` 时禁用（卡片是旧的，导出的也是旧主题）。
 
     - **插入类动作由父级收尾**：面板只 `emit('insert', payload)`，父级关面板、往光标处写内容、弹 toast。写正文的字符串里有引号时注意这是 `<script>` 上下文，直接写 `"`，写成 `&quot;` 不会被解码（曾因此把 `src="..."` 写成一堆 `&quot;`）。
+33. **AI 素材只做「造片段 + 落地」，不复用素材库的保存链路**：`AiMaterialDialog.vue` 的产出是一段**按编辑器语法写的组件片段**，落地动作只有两个——「插入到编辑器」（`editorRef.insertOwnLine()`，插在光标处、不覆盖已有内容，与「插入组件」「插入图片」一致，块级标签必须独占行否则会和相邻段落黏在一起）与「清空编辑器再插入」（面板内 `ConfirmDialog` 确认 → 父级 `editorRef.replaceAll()` + `markdown.value` + `saveContent(text, true)`，与「格式化文档」同一条路子，因此进撤销栈、草稿/文章关联保留）。**不要接 `SaveMaterialDialog` / `MaterialStorage`**：那是「保存当前编辑器全文」的语义（`useMaterial.handleSaveMaterial` 固定取 `markdown.value`），与「保存 AI 生成的一小段」不是一回事，硬接会让用户存进去整篇文章。素材铁律与排版铁律冲突（排版禁止增删内容，素材是按需求凭空造），所以玩法单独写成技能文件 `data/ai/r-markdown-material/SKILL.md`（与 `khazix/SKILL.md`、`r-markdown-formatter/format-spec.md` 同构，`utils/aiMaterialPrompt.ts` 的 `loadMaterialSkill()` 用 `import('…?raw')` 动态加载并剥注释与 frontmatter，框架段由 `buildMaterialSystemPrompt({ skill, spec })` 拼），只共用 `loadFormatSpec()` 的规范正文与 `componentCheatsheet()` 的标签清单，**不要给 `buildSystemPrompt` 加参数把两套铁律混在一起**。**以后要调素材玩法只改 SKILL.md，别往 `aiMaterialPrompt.ts` 里加规则**——两处各说一套时模型会挑好写的那个遵守。
+
+**拼出来的素材要带边界注释**（`utils/materialBoundary.ts`）。落地的两条路径（`EditorPage.onAiMaterialInsert` / `onAiMaterialReplace`）与素材库插入（`useMaterial.handleInsertMaterial`）都过 `wrapMaterialBoundary()`：内容**不是单个成品组件**时（自由拼版、纯 `<html>`、多块拼一起），首尾包一对 `<!-- 素材开始 -->` / `<!-- 素材结束 -->`，单个组件（`<steps>`、`<cta>`、`<img>`、`<chart>`、以及只包了一层 `<container>` 的单卡）原样输出。判据是「顶层元素是否恰好一个、且该元素自带完整外观」——`LAYOUT_TAGS`（`container`/`row`/`column`/`text`/`stack`/`positioned`/`html`/`svg`）与子标签（`left`/`right`/`slide`/`item`）不算成品，外面只剩一层 `<container>` 时会剥掉它再看内部。**这样做的理由**：拼版素材在编辑器里是一堆散落的标签，用户很难看出它是「一个整体」，复制/删除/整体移动时容易拆坏；注释给了它一个人能认的边界，而解析器会整段跳过 `<!--` 开头的行（`markdownParser.ts` 主循环），`countChars()` 的 `<[^>]+>` 也会剥掉它，所以**不影响渲染、不污染字数、格式化也保留**（`materialBoundary.ts` 里 `hasMaterialBoundary()` 保证幂等，重复插入不会套两层）。`<svg>` 归入 `LAYOUT_TAGS` 是因为 `interactive-materials/gen.py:473` 生成的片段自己就带这对注释，不重复加。
+
+**素材生成必须过代码侧质检**（实测结论：光在 prompt 里写「禁止 JSX / 必须用组件」拦不住模型，它会在 JSX、YAML 伪代码、普通 Markdown 之间摇摆）。`utils/aiMaterialPrompt.ts` 提供 `checkMaterialOutput()`（无组件 / JSX 外形 / 非法属性 / 子内容形状）、`findIllegalAttrs()`（比对 `@/extension` 注册表的 `attrs`，另含 `<left>` `<right>` 这类只在别的组件内部出现、带属性就匹配不上的子标签）、`findShapeProblems()`（`<compare>` 缺 `<left>`/`<right>`、`<steps>` 缺 `|`、`<case-flow>` 缺 `[标签]`、`<timeline>` 段数不足、`<badges>` 逐行写或逗号分隔、数据型组件标签内有正文、必填属性缺失、属性值用中文弯引号）。**数据型组件清单 `BODY_IGNORED_TAGS`（`chart` / `slider` / `engage`）是实测得到的**——它们的 `render(attrs, _body, …)` 签名里 body 是下划线参数，实现根本不读，标签内写什么都渲染不出来；模型极爱把 `<chart>` 当 Markdown 表格写成 `- 2020 | 6.4` 行，图直接是空的。**改组件实现让某个组件开始用 body 之后，要把它从这个清单里删掉。**`AiMaterialDialog.vue` 生成后用 `checkMaterialOutput()` 判一次，不合格就带 `buildMaterialRetryMessage(需求, 上一版, 驳回理由)` 重试，最多 `MAX_RETRY = 2` 次；仍不合格就把结果交给用户并给 warning，不无限循环。**能用确定性修复的不要靠重试**：`repairMaterialOutput()` 会在质检前把「`<chart>` 数据写成正文行」这类**可逆**错误解析出来挪进 `labels` / `values`（正文结构固定为 `- 标签 | 数值`，解析不出就原样返回交给重试），修过的项以 `repairNotes` 进 warning 告知用户——静默改内容比报错更糟。同一层还收了三类**位置错位**的确定性修复：`moveMisplacedTitle()`（`<title title="主标题"></title>` —— 标题文字写进了属性，`<title>` 的 render 读 body，属性被静默忽略、标题区空白）、`splitTitleSubtitle()`（`<title>主标题 | 副标题</title>` —— 副标题被当正文用 28px 大字渲染）、`fixBadgesSeparator()`（`<badges>a,b,c</badges>` 或 `<badges>` 里逐行写 —— `render` 只按 `|` 切，逗号与换行都会让三个标签变成一个）、`fixAttributeQuotes()`（`<steps type=“DA02”>` —— 属性值用了中文弯引号，解析器整个读不到该属性，`<steps>` 会静默退回 A01 样式，不报错也看不出来）、`fixFullwidthPipes()`（`<steps>` / `<timeline>` / `<badges>` 正文里的中文全角竖线 `｜` —— 中文输入法下 `|` 极易打成全角，两者视觉几乎一样，但所有按竖线切分的解析只认半角：`<timeline>` 一行都解析不出来时 `render()` 直接返回空字符串，**预览区整块空白、控制台也不报错**，用户只能看到「这个预览不出来」。这类错法提示词讲不清（模型看不出两个符号的差别），又是纯机械替换，所以直接修；只改 `PIPE_LIST_TAGS` 里那几个组件的正文与 `chips` / `bg` 属性，别的正文里出现全角竖线可能是用户有意写的，不碰。`findShapeProblems()` 里的竖线判定要先过 `normalizePipe()` 再数段数，否则半角行会被重复报成「缺分隔符」与「用了全角竖线」两条）。。**自动修复必须有明确的「不动手」边界**：`fixBadgesSeparator` 逐行写只在「每行 ≤ 12 字」时才并成一行，单行逗号只在「至少 3 个条目 + 每项 ≤ 8 字」时才拆——两个条目的句子（「这是一句话，别拆」）跟二元素标签列表长得一模一样，分不出来就不修，交给质检报警 + 重试；`moveMisplacedTitle` 在正文已有内容时不动（防丢正文）；`splitTitleSubtitle` 在已有 `subtitle` 属性或切不出两段时不动。实测这类错法提示词讲三遍 + 带理由重试两次，模型仍会犯（「图表 + 数据行」在训练语料里几乎都是表格形状）。**规范外的标签名要第一个报，并且必须给出正确标签名**：`findUnknownTags()` 扫出 `components` 注册表之外的大写/拼接标签（模型会造 `<title-card>`、`<chart-card>`、`<step-list>` 这种「组件名 + 用途」的拼接词），先按「合法标签名 + 连字符」猜、猜不到再查 `TAG_SYNONYMS` 词根表（取最长匹配词根，`image-card` 同时命中 image 和 card，要算图片不是标题卡）。**不能让它落到「一个组件都没用」那条提示**——模型据此不知道该改标签名，带理由重试两次还是原样，最后把废稿交给用户。`legalTags()` 必须把 `INNER_TAG_ATTRS` 的键（`left` / `right`）一起算合法，否则 `<compare>` 的合法写法会被自己驳回。**新增组件或改组件属性时，`INNER_TAG_ATTRS` / `PARSER_LEVEL_ATTRS` / `TAG_SYNONYMS` 要同步核对**，否则新属性会被误判为非法。结果保留走独立设置项 `aiMaterialSessionHours`（第 29 条同一套机制），需求草稿存 `aiMaterialPrompt` 不受保留时长约束；调用仍只走 `aiFormat.chatCompletion`（第 18 条）。**容器按需包，不是一律包**（`wrapInContainer()`，排在修复链末尾）。用户 2026-11-18 先说「生成的素材需要使用 r-markdown 的容器组件来生成」，随后修正为「注意不是所有素材都需要 container 组件包裹，html 明确不要用 container 组件包裹」。落成规则：① **单个成品组件不包**——`isSingleComponent()` 为真时原样输出，组件自己就是完整版式，外套容器等于加一圈内边距和底色，和直接用组件的样子不一样；② **顶层只要有 `<html>` 块就绝不包**——`hasTopLevelHtmlBlock()`，块内是按整宽写死的原生 HTML，套壳多一层 `section`，复制到公众号也多一层嵌套（混写的情况同样不包，宁可让用户自己补壳）；③ 其余情况（多个块拼一起、`row`/`column`/`text` 自由拼版、混着段落文字）才包一层。`isSingleComponent()` 会剥掉外层那层 `<container>` 再看内部，否则所有素材都会被判成「不是单个组件」。**包的时候 `display="block"` 不能省**：实测 `<container>` 默认 `display: flex` + `direction: row`，在 660px 预览里放 `<p-title>` + `<steps>`，两个子组件各被压到 108px / 137px 宽、挤在同一行；改 `direction="column"` 只解决方向，子元素仍按内容收缩；**只有 `display="block"` 能让每个子组件各占整宽**（660 / 660）。已经包过的只补 `display="block"`（模型自己写了 `display="flex"` 说明有意横向排版，保留），已写 `display` 的不动。`checkMaterialOutput()` 里「一个组件都没用」的判定要排除 `container`——否则把纯 Markdown 包一层容器后这条检查就永远不命中了（踩过）。原「快速灵感」chip 行已按同一次要求整体删除（`MATERIAL_IDEAS` / `useIdea()` / `promptRef` 全部移除），不要再加回来。
+
+**选型错必须单独质检，语法质检查不出来**（`checkMaterialIntent()`，实测结论）。用户说「做三个小节标题」，模型会写 `<steps type="DA02">` 或 `<title num="01">`——两者语法完全合法、`checkMaterialOutput()` 一路绿灯，但版式和用户要的完全不是一回事。所以 `AiMaterialDialog.vue` 的判定统一走 `checkMaterialOutput(s) ?? checkMaterialIntent(requirement, s)`，**只查语法会漏掉最高频的一类错误**。`INTENT_EXPECTATIONS` 只在需求里出现了那些说法时才约束（「小节标题 / 章节标题 / 段落标题 / 分节标题 / 编号标题 / 小标题 → `p-title`」等），且只管「点名了但没用」，不管「多用了别的」。**但这条规则有个前置豁免**：正文里只要出现 `HAND_BUILT_TAGS` 里的任一布局组件（见下面「素材不强制套成品组件」），就直接放行——用户完全可以自己用 `<row>`/`<column>` 搭双栏而不写 `<compare>`，那是满足需求，不是违规。**唯一的例外是标签组（`strict: true`）**：`<badges bg="#ff6b6b|#6c5ce7">` 天生支持渐变，用户说「一排彩色标签 / 关键词」时用 `<html>` 手画一排带 `border-radius` 的 `<span>` 画面看着一样，但以后改文案要改三处，所以这条连 `HAND_BUILT_TAGS` 也不放行；`unless` 里放 `/<(?:title|breaking)\b[^>]*\bchips\s*=/i`——卡片自己写 `chips` 是正解，不算选错。词表也要按用户原话收（`['标签','徽章','徽标','关键词','chips']`），用户从不说「标签组」，漏了这条等于规则不存在。
+
+**「说了颜色却丢了颜色」是第三类质检**（`checkColorIntent()`，`AiMaterialDialog.vue` 的判定链因此是 `checkMaterialOutput ?? checkMaterialIntent ?? checkColorIntent`）。实测（2026-11-18，用户反馈「badges 组件的 skill 示例属性不全，导致不能生成颜色或渐变背景的样式」）：模型终于被逼着改用 `<badges>增长|复利|长期主义</badges>` 之后，**属性一个都没写**——语法合法、选型也对，两道质检全绿，但渐变诉求整个丢了，渲染出来是默认灰底小标签。`checkColorIntent()` 只在「需求含 `COLOR_WORDS`（渐变/彩色/配色/颜色/底色/色底）」+「输出里有 `<badges>`」+「开标签上没有 `bg` / `color`」时驳回，驳回理由直接给出正解写法；输出里有 `<html>` 或 `<svg>` 时返回 `null`（手写版式的颜色写在 `style` 里，不归它管）。**根因在文档侧**：`SKILL.md` 的「组件写法手册」只展开常用属性，`<badges>` 那一节原本只写 `tone`，`color` / `bg` / `margin` 完全没提，模型据此以为只能预设配色。所以同时补了三处口径：① `<badges>` 小节重写成四属性表 + 渐变示例；② 手册开头加引用块「这里只展开常用的那几个属性，不等于只有这些，完整清单在 prompt 末尾附录」；③ `buildMaterialSystemPrompt()` 的附录标题改成「每个标签的完整属性清单以这里为准」并前置三行提示。**顺带把同类缺失一次性补齐**（脚本比对 `src/extension/*.ts` 的 `key:` 与 SKILL.md 各小节得出）：`lead` / `statement` / `steps` / `case-flow` / `timeline` / `compare` / `chart` / `slider` / `img` / `mermaid` / `table`（缺 19 个）/ `row` / `column` / `stack` / `positioned` / `text` / `reading-path` 都补上了漏掉的属性。**这条经验要推广**：SKILL.md 是模型唯一能看到的属性来源，任何「组件支持但手册没写」的属性都等于不存在。
+
+**重试轮要清掉上一版的 `repairNotes`**（`prepareMaterial(raw, fresh = true)`）。踩过：第 1 版模型写成了裸 `<html>`，`wrapBareHtml()` 记了一条「已自动补上 `<html>` 包裹」；重试后第 2 版变成了正确的 `<badges>`，但那条 note 还留着，面板对着最终这一版 `<badges>` 显示「已自动补上 `<html>` 包裹」——用户看到的提示和眼前的素材完全对不上。修复记录必须和它所属的那一版绑定。
+
+这一层还收了四类 `p-title` 相关修复（都是「预览看着有内容、其实版式全错」的隐蔽错法）：`fixTitleWithNum()`（`<title num="01">` / `<title index="03">` —— 序号属性是 `<p-title>` 独有的，`<title>` 一个数字类属性都没有，说明把小节标题写成了封面大标题卡，直接把标签名换成 `<p-title>` 并把序号属性统一成 `num`；**这条要先于「属性不存在」报**，否则模型会去删 `index`/`num`，删了照样不是分节标题；模型换着名字写序号，`NUMBER_ATTRS` 收 `num`/`index`/`number`/`no`/`order`/`seq`/`idx`）、`movePtitleNumIntoAttr()`（`<p-title>01 为什么</p-title>` —— 序号写进正文会和标题一起用大字渲染，搬进 `num` 属性）、`expandSelfClosingTags()`（`<p-title num="01" … />` —— 解析器找不到闭合标签会**整块丢掉**，预览空白且不报错；除 `<img>` 外所有组件都必须成对）、`findChineseTags()`（`<并列小节标题>` —— `findUnknownTags()` 的正则只认 ASCII 小写开头，中文标签一个都扫不到，会掉进「一个组件都没用」这种误导提示）。`findShapeProblems()` 还补了「组件开闭数量对不上」。**`findUnknownTags()` 猜建议标签时只能用 `components` 里的组件 tag 当候选，不能拿 `legalTags()`**——`section` 是合法的行内标签，放进去后 `section-title` 会被猜成 `section`，模型照这个建议改只会更离谱。
+
+还有一类 `<compare>` 的两栏标题错位：`moveCompareSideTitle()`（把 `以前的写法（缺点）` 写在 `<left>` 的第一行）。`Compare_DA01` 的 `renderSide(label, title, content)` 里 label 是 10px 加粗、title 是 14px 加粗深色、正文行是 14px 灰字，所以写在首行的「标题」既不居中也不加粗，和另一栏对不齐，纯粹是灰字正文；而这个组件两栏标题的唯一正确位置是 `<compare>` 自己的 `left-title` / `right-title` 属性。同一函数还兜住更严重的一种写法：`<left title="以前的写法">` —— `parseSides()` 用的是 `/<left>([\s\S]*?)<\/left>/`，带任何属性都**整块匹配不上、两栏内容全部消失**，所以它会把属性值搬上 `<compare>` 并重建不带属性的 `<left>`。判据是「首行不以 `-` / `*` / `![` / `<` 开头、去 `**` 后 ≤ 24 字、且下面还有列表行」——够不够长、有没有列表跟着，是区分「标题」和「一句普通正文」的唯一线索；`<compare>` 已经有对应属性时不动（否则会盖掉手写的值）。
+
+还有一类是**整段写法本身踩了解析器的坑**，跟属性对不对无关：块级组件写成「开标签 + 正文 + 闭标签」**同一行**时，正文会被丢掉，严重时连后面隔一个空行写的段落一起吞掉（实测 `<timeline>- 2021 | 立项 | 起步</timeline>` 整篇渲染成空字符串，`<steps title="流程">- 甲 | 一</steps>` 会吃掉后面的段落，`<cta title="标题">说明文字</cta>` 只剩标题）。原因是 `utils/markdownParser.ts` 里 `<cta>` 这一族只前窥 3 行找行首的闭合标签，找不到就退回 `parseCtaInline()`（`utils/components.ts`），那是 `render(attrs, '', t)`——body 直接给空串。所以 `splitInlineBlocks()` 排在 `repairMaterialOutput()` 链的**最前面**（早于所有属性修复），把 `NEED_OWN_LINE_TAGS`（`cta` / `breaking` / `steps` / `timeline` / `case-flow` / `table` / `row` / `compare` / `left` / `right` / `column` / `container` / `stack`）的四种挤行形态拆成三行：开标签后补换行、闭标签前补换行、闭标签后补换行（`</left><right>` 这种连写）、**闭标签前紧贴另一个子组件闭标签**（`…</text></column>`）。跳过空组件（`<cta …></cta>`）——它们本来就该一行。`findShapeProblems()` 里对同一批标签报了这两种形状，让重试也能修正。第四条是实测补的：`<column flex="1">` 里两个 `<text>` 写成一行、`</column>` 紧跟在第二个 `</text>` 后面时，`collectBlockBody()` 会走「开标签同行就闭合」分支、把 body 取成第一个 `</text>` 之前的空串，整个 column 渲染成 `""`——而原来的「闭标签前紧贴正文」规则用了 `[^\s>]` 作前导，前一个字符是 `>` 时直接漏掉，导致修完仍是空白。
+
+`<cta>` 光拆行还不够，它的属性和正文位置有独特约定：合法属性只有 `label` / `title` / `button` / `color` / `light` / `margin`，**没有 `subtitle` / `desc` / `text` / `content`**（模型按别的卡片组件习惯爱写 `subtitle`，会被静默忽略，卡片上只剩标题），而「关注后回复关键词…」这类补充说明该写在正文里、「立即关注领取」这类按钮文字必须写 `button` 属性。`fixCtaAttrs()` 两层：先把 `CTA_GHOST_ATTRS` 里那些属性的值搬进正文，再在没写 `button` 时把正文末行搬进 `button`。**搬按钮的判据必须严**——「≤ 14 字 + 不带句末标点 + 以号召动词开头（立即/马上/现在/点击/关注/领取/获取/下载/报名/加入/扫码/回复/查看/前往）」三条同时满足才动手，初版只判「短 + 无标点」就把「只要一段说明」的卡片拆成了「说明 + 按钮」两块。同理 `findShapeProblems()` 报「缺 button」也用同一套判据：`button` 不是必填属性，用户真想要纯文字卡片时不能报错。
+
+还有一类是**选错卡片但暴露得很明显**：`<engage>` / `<title>` 这些卡片写上了 `button` / `btn`。`<cta>` 是唯一带按钮区的组件，`<engage>`（纯文字互动卡）和 `<title>`（封面大标题卡）连按钮的位置都没有，属性写了就是静默忽略——渲染出来是一张「只有标题、没有按钮」的卡，用户要的「点一下关注」整个消失。`upgradeCardToCta()` 只在检测到 `btn` / `button` 时才把 `CARD_NO_BUTTON_TAGS`（`engage` / `title` / `breaking` / `statement` / `lead` / `badges` / `p-title`）里的标签整块换成 `<cta>`，`btn` 改名为 `button`，其余属性交给 `fixCtaAttrs()` 继续归位。**它必须排在 `moveMisplacedTitle()` 之前**——`<title title="主标题" btn="…">` 的标题本来在属性上，先搬进正文的话，换成 `<cta>` 之后 `title` 属性就没了。判据只用「有没有按钮属性」，不带按钮的 `<engage title subtitle>`、`<title badge subtitle>` 一律不动，那是合法写法。
+
+还有一类是**关键词写错了位置**：`<title>` / `<breaking>` 的 `chips` 属性被写成卡片后面另起一整块 `<badges>`（实测 `<title subtitle="…">把复杂的事讲简单</title>` + `<badges>说人话|拆结构|给例子</badges>`）。`<badges>` 自己能渲染，所以语法质检全绿，但它是**独立的一块**——排在卡片外面，看起来是卡片下方又飘出一行标签，和卡片里那排 `#关键词` 完全不是一回事。`mergeBadgesIntoCard()` 只在「卡片紧跟（中间只有空白）一个 `<badges>`」且「卡片自己没写 `chips`」时才并进去，`<badges>` 正文先过 `normalizePipe()` 再按行合并成 `|` 分隔；卡片已有 `chips` 时两块都留着（用户可能真的想两处都有）。顺序上它要排在 `moveMisplacedTitle()` 之前、`fixFullwidthPipes()` 之后——全角竖线得先换成半角，否则并进去以后就再也认不出是竖线了。`findShapeProblems()` 同步报这一条，让重试也能修正。**判断依据是「这块标签紧跟卡片」而不是「有 badges 就报错」**：`<badges>` 单独使用完全合法，是正文里罗列标签的正常写法。
+
+再一类是**属性名被换成了近义词**。实测真实生成拿到了
+
+```text
+<title main="把复杂的事讲简单" sub="讲清楚，才是真的懂。"></title>
+<badges items="说人话,拆结构,给例子"></badges>
+```
+
+`main` / `sub` / `items` 编辑器一个都不认识，三个属性全部静默失效——渲染出来是一张空白标题卡加一块空标签组，用户看到的是「什么都没有」。这不是内容写错，而是同一个东西换了个名字，能一一对应回来，所以同样走确定性修复：`fixAliasAttrs()` 把 `<title>` 上的 `sub`/`subheading`/`desc`/`description`/`lead`/`slogan` 改成 `subtitle`，`tags`/`tag`/`keywords`/`labels` 改成 `chips`（逗号分隔的要先按 `[,，、]` 切开再用 `|` 连接），`main`/`headline`/`heading`/`text`/`content` 在正文为空时搬进正文；`<badges items="a,b,c">` 则把属性值搬进正文并换成 `|` 分隔。正文已有内容时一律不搬（防丢正文）。它排在 `upgradeCardToCta()` 之后、`fixFullwidthPipes()` 之前——先换成正常属性名，后面按 body 认形状的修复才认得出来。SKILL.md 的「语法外形」第 2 条也补了这一条，并给了用户这版错写法的 ❌ 对照。
+
+**素材不强制套成品组件，允许自由拼版和纯 HTML**（用户口径：「可以用 container / row / column / text / stack / positioned / html 这些组件像写 HTML 代码一样来构建素材，不强制必须添加其他自定义组件，也可以纯 HTML，只要微信编辑器支持范围内都行」）。`checkMaterialOutput()` 原先只认「用了某个库存组件」，把 `container` 排除后连「用布局组件手工搭版式」都过不了，双栏并排这类版式会被判成「一个组件都没用」。现在分三条路放开，但每条都留了闸：
+
+- **布局组件自由拼装**：`HAND_BUILT_TAGS = ['row','column','text','stack','positioned','html']`，`checkMaterialIntent()` 开头只要命中其中之一就直接返 `null`。理由：选型质检的意义是「用户要双栏，你别给个 `<steps>`」，手工用 `<row>`/`<column>` 搭出双栏完全满足需求，再按「应该用 `<compare>`」驳回是错的。注意这里的放行**只针对手工版式**，`<title>` 卡顶不上步骤流的情况仍然会报（实测仍有驳回）。
+- **原生 HTML 必须包 `<html>`**：`<html>` 组的 `render()` 是 `return body`，块内是原样透出的，所以 `<h2>` `<ul>` `<table>` 这些原生标签在块内合法。裸写原生 HTML 会被解析器塞进 `<p>`（实测 `<div>` 被包成 `<p><div>…`，`<ul><li>` 结构直接被拆坏），所以 `wrapBareHtml()` 会在检测到行首是原生块级标签时自动补一层 `<html>` 并给 note。两个例外：正文里同时出现库存组件标签时**不补**（`<html>` 的 body 不参与 Markdown 解析，混写会把组件当死文本印出来）；`<table>` 与我们 table 组件撞名，只在里面出现 `<tr>`/`<thead>`/`<tbody>`/`<td>`/`<th>` 时才当原生表格，否则仍按我们的组件走（我们只认 `- 甲 | 乙` 数据行）。
+- **隔离机制是放开的前提**：不隔离的话三处检查会集体误伤纯 HTML——`findUnknownTags()` 把 `<h3>`/`<ul>`/`<li>`/`<tr>` 当自造组件驳回、`findIllegalAttrs()` 把原生 `<table style>` 当我们 table 组件的非法属性、`splitInlineBlocks()` 把原生 `<table>…</table>` 当块级组件硬拆三行。所以 `splitHtmlBlocks()` 先把每个 `<html>…</html>` 换成 `\u0000rmhtml{i}\u0000` 占位符，三个检查器（`findIllegalAttrs` / `findShapeProblems` / `findUnknownTags`）的 `withoutCode` 首行都改成从 `masked` 起算；`repairMaterialOutput()` 也因此拆成两层——外层 `splitHtmlBlocks()` → `repairMarkup()`（原修复链，链首多一个 `wrapBareHtml()`）→ `wrapInContainer(restoreHtmlBlocks(…))`。`aiFormatPrompt.ts` 的 `validateFormat()` 同样先剥掉 `<html>` 块（它在 `AiMaterialDialog.vue` 生成素材时也会跑，否则会把 `<h3>` 报成「出现规范外的标签」）。
+- **块内不是全放行**：`FORBIDDEN_HTML_TAGS = ['script','style','iframe','object','embed','form','input','video','audio','canvas']`，`findForbiddenHtmlTags()` 单独扫（`findUnknownTags` 已经被隔离跳过块内），`checkMaterialOutput()` 在 `findUnknownTags` 之后报「`<html>` 块里不能用这些标签：`<script>`（微信编辑器不支持，会被过滤或整段失效）」。不拆包的话这两类会漏过——粘进公众号轻则空白、重则整篇发不出去。
+- **prompt 契约第 5 条同步改口径**：从「**必须用组件表达**」改成「**必须有版式**……要么用现成卡片组件，要么用布局组件像写 HTML 一样自己搭，要么整段 `<html>` 原生 HTML，不强制套成品卡片组件」；`buildMaterialUserMessage()` / `buildMaterialRetryMessage()` 也各补一句（后者在「造了不存在的标签名」条目下强调「真要自己写原生 HTML，必须整段包在 `<html>` 里，包外的原生标签会被当成自造组件」）。SKILL.md 对应改了铁律第 1 条、铁律第 5 条例外、输出格式里 `<html>` 措辞，并新增「### 自由拼版：布局组件当 HTML 用」小节（含 `<container>` + `<row gap>` + 两个 `<column flex="1">` 的可运行示例）。
+
+**组件属性白名单要从注册表读，不要手抄**：`allowedAttrsByTag()` 直接由 `@/extension` 的组件定义生成，实测 `<text>` 的合法属性里有 `margin` / `padding` / `extra-style`（`Text_DA01` 的 `render` 会把它们拼进 style），`<column>` 则没有 `radius` / `border`。手抄清单会漏，模型写了白名单外的属性会被 `findIllegalAttrs()` 报出，但白名单内的写得再怪也用不着修。
+
+**AI 素材是对话流，不是一次性表单**（用户 2026-11-18：「有时生成素材可能需要对话好几轮，需要改成 AI 写作那种可以多轮对话的形式，结果在会话中展示，插入按钮也放到对应生成的素材下面」）。`utils/aiMaterialSession.ts` 与 `aiWriteSession.ts` 同构（单会话、滑动有效期、`toHistory` 裁剪），但有三处**素材特有的取舍**：
+- **素材源码就是一条 assistant 消息**（`kind: 'draft'` + `material`），不为「版本」另建数据结构。这样历次版本天然留在对话里，用户可以回看、可以插入旧版；`truncateBefore(session, id)` 让「重新生成某一版」把这条及之后整段丢掉，历史重新以用户消息结尾（**不能直接再 runTurn，否则历史以 assistant 结尾，模型会接着自己往下写**，这条与 AI 写作同一个坑）。
+- **`kind: 'question'` 是对话模式才有的东西**：`looksLikeQuestion()` 判定「这轮是追问而不是出稿」，追问渲染成左对齐气泡、**没有插入按钮**。判据刻意窄（有组件标签就一定是出稿、长度 > 400 也当出稿，只有短且是疑问句才算），否则一段正常素材被误判成追问就永远出不来稿。生成循环里 `judge()` 对追问直接放行，不对它跑语法/选型质检。
+- **历史里的 user 消息要分别包装**：第一句走 `buildMaterialUserMessage()`，之后每句走 `buildMaterialFollowUpMessage()`（「在上一条素材的基础上改，这是同一段素材的下一版，不是另做一段」+「输出**完整**源码，不要只写改动的部分」）。不点明这一点，模型会把「改一处」当成「再做一份」，用户前几轮的调整全白费。判据按**消息 id** 而不是下标定位第一句（历史会被裁剪，下标会漂）。
+- **重试文案不再重复需求原文**：`buildMaterialRetryMessage(badOutput, reason)` 只剩两个参数。早期单轮实现会在前面拼一遍 `buildMaterialUserMessage(requirement)`，改成会话流后需求本来就在历史里，再拼一次等于同一份需求在上下文里出现两遍。判据取「最后一条用户消息」——改稿轮里用户说的才是这一轮的要求。
+- **每版素材各自渲染、各自算字数**：`renderedHtml` 是 `Record<消息id, html>`，`draftStats(msg)` 优先数渲染后的可见汉字（`<p-title>` 这类正文全在属性里的组件，源码计数会得 0）。源码视图手改走 `onCodeEdit()` → `replaceMaterialMessage()` → 400ms 防抖后重渲染 + 落盘；**插入时按 id 回查最新内容**（`findDraft()`），确认弹窗期间改的源码不能丢。
+- **操作行放卡片底部**，与 AI 写作同一条理由：放顶部会与上一条回复贴在一起，用户会以为点的是上一版。
+
+**ESLint 在本机跑不起来是环境问题，不是代码问题**：`npx eslint <任意文件>` 一律报 `ConfigError: Key "rules": Key "constructor-super": structuredClone is not defined`——当前 Node 进程里没有全局 `structuredClone`（`node -e "console.log(typeof structuredClone)"` → `undefined`）。校验以 `npx prettier --check` + `npx vue-tsc -b --force` 为准，别把这条当成自己改出来的错。
+- **空态与输入框跟 AI 写作对齐**（用户 2026-11-18：「模型后面的提示放到没有内容的时候的提示里面，空内容提示放中间，不需要边框，输入框高度大一点，同 AI 写作」）。三件事一起改：① 页脚原来「模型」下拉后面那行「生成的是可直接用的组件片段，插入后编辑器立即渲染」挪进空态正文，页脚不再有说明文字（`v-if="modelOptions.length > 1 || latestDraft"` 决定整行显不显示，两个都没有时该行整个消失）；② 空态从「`mt-6` + `rounded-xl` + `border-dashed` + `bg-white` 的小卡片」改成 `flex min-h-full flex-col items-center justify-center` 的居中块，**去掉边框和卡片底色**，`Sparkles` 从 22px 深灰改成 26px 主题色，与 AI 写作的空态同一套写法；③ 输入框加 `INPUT_HEIGHT_SCALE = 2`，最小 38→76px、最大 148→296px，与 `AiWriteDialog.vue` 逐字一致。**别把空态塞进 `contentRef` 里面**——`contentRef` 是 `ResizeObserver` 观察「内容长高后贴底」的目标，空态在里面会让它以为已经有内容、把滚动条顶到底；现在空态是 `scrollRef` 下的兄弟节点，`v-if="!hasMessages && !generating"` 独立判断（`generating` 也要判，否则首轮生成中空态和流式块会同时出现）。
+
+**四个 AI 面板的头部与空态要长得一样**（用户 2026-11-18：「AI写作，空绘画的时候，右上角的新建绘画不显示，这个按钮加一个图标同AI素材；AI排版和AI配图，空内容提示的图标加主题色」，两处「绘画」是「会话」的输入法笔误）。落成三条：
+- **「新建会话」跟着 `hasMessages` 走，四个面板一致**：`AiWriteDialog.vue` 原来写的是 `v-if` 不判空（注释理由是「空会话时它仍有意义，万一恢复出的会话有内容想重来」），但实际渲染出来的效果是空态里挂着一个点不出任何东西的按钮，用户会以为「这里已经有一份稿子」。现在与 `AiMaterialDialog.vue` 对齐——**有内容才出现**。图标统一用 `<Plus :size="12" />`，所以按钮要带 `flex items-center gap-1`。
+- **空态图标用主题色、26px**：`AiFormatDialog.vue:1155` 与 `AiImageDialog.vue:1256` 原来都是 `<Sparkles :size="22" class="text-[#ccc]" />`（纯灰、22px），改成 `<Sparkles :size="26" class="text-[var(--accent)]" />`，与 `AiMaterialDialog.vue` 的空态一致。**用 `var(--accent)` 不要写死色值**，主题色是设置项。
+- 改这类「四个面板要一致」的东西时，**四个文件一起看**：`AiWriteDialog.vue` / `AiFormatDialog.vue` / `AiImageDialog.vue` / `AiMaterialDialog.vue`。它们各写各的模板，没有共用组件，改一个很容易漏掉另外三个（这次就是用户先发现 AI 写作不一致才提的）。
+
+**素材输入框的 `/` 快捷插入**（用户 2026-11-18：「我想在输入框处做一个快捷组件名的插入，比如我输入 / 的时候就显示 container、text 等，选中后添加到输入框，类似 DSH 的 / 功能，输入的提示也改一下」）。纯逻辑在 `utils/materialCommands.ts`，面板里只有三小段状态：
+
+- **`MATERIAL_COMMANDS` 是手写清单，不是从注册表生成**。`@/extension` 的 `components` 里同一 `tag` 有多个变体（`Title_DA01` / `Title_DA02` 都是 `title`），直接映射会出重复条目；而且注册表只有中文 `name`，没有一句「它是干什么的」。所以清单手写 25 项，每项 `{ tag, name, hint }`，顺序按「布局 → 成品卡片 → 媒体数据」排——用户打 `/` 多半是想自己拼版，布局在前更好找。**新增组件时要同步这份清单**，否则它不会出现在菜单里（这是个静默遗漏，不会报错）。
+- **清单里刻意不放 `<reading-path>` 和 `<left>` / `<right>`**（用户 2026-11-19 要求去掉）：`<reading-path>` 是自闭合组件、内容全靠抓文内 H2，用户没法在需求里描述它，插一个空壳进输入框只会让模型去凑标题；`<left>` / `<right>` 只在 `<compare>` 内部有意义，离开 compare 就是两个裸标签、什么也不渲染，插进需求会诱导模型单独做一栏。需要它们时用自然语言说，模型会放到该放的位置。
+- **`findSlashQuery()` 的判据要比「斜杠后面有字母」更细**：`/(?:^|\s|[^\x00-\x7F])\/([a-zA-Z-]*)$/` 对光标前的文本求匹配。允许 `/` 前面是**任意非 ASCII 字符**（中文用户不打空格，「用/container 包起来」很常见），但 `/` 后面只认 ASCII 字母和连字符——所以「换成蓝色 / 标题再短一点」「换成蓝色/标题」这种正常中文句子里的斜杠不会误触发菜单。这两条判据缺一条就会坏：只认 `^|\s` 会让中文紧贴的写法失效；不限制 `\W` 之后的字符会让所有闲聊里的 `/` 都弹窗。
+- **`filterMaterialCommands()` 不拿 `hint` 参与匹配**。曾经加过，结果打 `st` 会混进 `<positioned>`（它的说明里写着「叠在 stack 上」）。hint 是给已经看到条目的人做补充的，不是检索字段。排序是「标签前缀 → 标签包含 → 中文名」，同一档保持清单原顺序。
+- **替换时既不补空格、也不现取 `selectionStart`**。不补空格是因为 `用<container> 包起来` 会平白多一个空格；不现取光标是因为鼠标点条目时 textarea 会失焦、某些情况下 `selectionStart` 会漂（实测点下去之后再读会偏一位，导致少替换一个字符、正文里留下 `用<text>t 包一段说明` 这种残字）。正确做法是 `refreshSlashMenu()` 命中那一刻把 `slashStart`（`/` 的下标）与 `slashCaret`（光标终点）一起记下来，`chooseCommand()` 只用这两个值；选完 `nextTick` 里再 `focus()` + `setSelectionRange()`，否则焦点还在被点掉的按钮上。
+- 键盘与鼠标**共用一个入口** `chooseCommand()`：`ArrowUp` / `ArrowDown` 循环、`Enter` 与 `Tab` 确认、`Escape` 关闭；菜单开着时 `Enter` 必须 `preventDefault()` 并只做「选中」，否则会顺手把半截需求发出去。`isComposing || keyCode === 229` 的判断要放在**最前面**——中文输入法组词期间的回车是「上屏候选词」，不是确认。
+- 输入提示同步改了：空态加了一行「想指定组件就打个 `/`」；两个 `placeholder` 末尾都带「打 / 插入组件名」，且**去掉了原来用 ` / ` 做分隔符的写法**（「换成蓝色 / 标题再短一点」），否则用户会以为那个斜杠是快捷入口。空态里原来那句「一次不满意就接着说」的分隔符同步换成顿号。
+
+**AI 写作与 AI 素材的发送按钮贴在输入框右下角，只用图标**（用户 2026-11-18：「AI写作和AI素材，输入框的发送按钮，放到输入框右下角，类似 DSH 的发送，直接使用图标」）。两个面板的输入行结构一致：
+
+- **`<div class="relative min-w-0 flex-1">` 包住 textarea，按钮 `absolute right-1.5 bottom-1.5`**。原来是 `flex items-end gap-2` 里并排的两个元素，按钮占掉一整列宽度，长输入时很挤；现在按钮叠在输入框内部、只占 28×28。
+- **textarea 必须 `block` + `pr-11`**：`block` 是因为 textarea 默认 `inline-block`，父容器底部会留出行高间隙，导致 `bottom-1.5` 的按钮**看起来贴着输入框底边、上下不对称**（实测按钮底边间距 0px，右边 6px）；写成 `block` 后两侧都是 6px。`pr-11`（44px）是给图标的让位——没有它，长句会一直排到图标底下，读起来像被截断。
+- 发送用 `<ArrowUp :size="15" :stroke-width="2.5" />`（实心主题色圆角块），生成中用 `<Square :size="11" fill="currentColor" />`（白底描边块）。**都用 `title` 属性而不是可见文字**：`title="发送（Enter）"` / `title="停止生成"`，既满足「直接使用图标」，鼠标悬停又能说明白。
+- 禁用态用 `disabled:opacity-30`（原来是 `opacity-40`）——图标本来就小，透明度太高会看不出还在。
+- **两个面板要一起改**：`AiWriteDialog.vue` 与 `AiMaterialDialog.vue` 各写各的输入行，没有共用组件。改完记得 `Square` / `ArrowUp` 两个图标在**两个文件的 import 块里都要加上**（`lucide-vue-next`），漏一个就是运行时空组件、按钮变空白方块。
+
+---
+
+**格式化要让素材注释贴紧素材代码**（`utils/markdownFormatter.ts`）。`formatMarkdown()` 里新增两条注释行识别（`isMaterialStartLine()` / `isMaterialEndLine()`，来自 `materialBoundary.ts`），四件具体的事：
+
+- **`<!-- 素材开始 -->` 后面的空行全部丢掉**。判据看的是「输出缓冲末尾那一行是不是开始注释」（`lastIsMaterialStart()`），不是「上一行是开始注释」——连续多个空行会被逐个丢掉，一次收紧 3 个也只记一次循环。**不能只丢一个**，手写时常见连按两次回车。
+- **`<!-- 素材结束 -->` 前面攒下的空行全部撤掉**：进到这一行时先 `while (out 末尾是空行) out.pop()`，再 push 注释。这样「代码 → 空行 → 注释」变成「代码 → 注释」，无论中间有几个空行。
+- **结束后要留一个空行**：置 `pendingBlank = true`，由下一个非空行触发 `settlePendingBlank()` 补出来。这两条与原有的「块级组件闭合后补空行」共用同一个欠账机制，不另起一套。
+- **开始注释自己也要和上文隔开**：`out` 非空且末尾不是空行时走 `ensureBlankBefore()`，否则它会粘在上一段正文末尾。但 `ensureBlankBefore()` 里加了一条豁免——**末尾是开始注释就直接返回**，否则「开始注释 → 代码」之间又会被补出一个空行，跟第一条自相矛盾。
+
+**两个顺序上的坑**：
+
+1. **注释判定要放在 `settlePendingBlank()` 之前**。上一行若是刚闭合的块级组件，`pendingBlank` 会在 `settlePendingBlank()` 里补一个空行，结束注释紧接着又把它删掉——文本结果正确，但 `blankInserted` 与 `materialTightened` 各多记一次，第二次格式化的 `stats` 就不再是全 0（`idempotent` 的文本相等仍然成立，但「能否报『已经是规范格式』」靠的是 `changed`，这次侥幸没坏）。把注释分支提到 `settlePendingBlank()` 前面就干净了。
+2. **`justOpenedMaterial` 这类「一次性标志」不可靠**：初版用「刚输出开始注释 → 下一个空行丢掉并把标志置 false」，遇到连续两个空行时只丢第一个。改成用 `out` 缓冲的真实内容判断（`lastIsMaterialStart()`），天然支持任意个连续空行。
+
+**`FormatStats` 新增 `materialTightened`**（`describeFormatStats()` 拼成「收紧素材注释 N」），只在这两处增删空行时累加。**没有新增 `blankCollapsed` 的计数**：那些被撤销的空行不是「连续空行收敛」，混进同一个计数会让提示文案误导人。
+
+**验证口径**：`formatMarkdown()` 必须幂等——连跑两次，第二次 `changed: false`、`stats` 全 0。已测 7 个用例：多空行在开始后 / 多空行在结束前 / 单行组件素材 / `<html>` 素材 / 素材在文档最开头 / 素材在文档最结尾 / 没有注释的普通组件，全部 `idem: true`。
+
+---
+
+**AI 素材的说明收在素材卡头部的问号里，悬停展开**（用户 2026-11-18 五轮调整：先要「右上角提示后面加一个问号说明：生成的素材不一定在微信编辑器能够正确显示，需要自行预览调整」→ 改口「把这个提示加到会话里，左上角，去掉左上角素材后面的字数和分钟」→ 再加「可复用的素材可以点击清空编辑器再插入，然后保存到素材库」→ 最终「所有提示都加到这个位置，hover 的时候显示，不要加 title 说明」。）
+
+**位置**：每张素材卡头部「素材」二字的右侧、`ml-auto` 那组「预览 / 源码」按钮的左边。触发元素是 `HelpCircle` 13px 的 `<span data-material-hint>`，`cursor: help`。
+
+**唯一入口是问号，且是悬停触发**：两条说明都在浮层里，正文中不再有任何常驻提示行。
+
+- 第一条：「生成的素材不一定在微信编辑器里正确显示，插入后请自行预览、按需调整。」
+- 第二条：「可复用的素材可以点「清空编辑器再插入」，再点顶部的「保存素材」存进素材库。」
+- 两条都是**踩过坑才想起来看**的内容，常驻占地方、藏进页脚又看不见，折中成悬停才展开。
+
+**不要加 `title` 属性**：用户明确否掉了原生 `title`——原生提示延迟一秒、样式跟界面不搭、移动端点不出来，而且浮层里内容和 `title` 会重复显示两份。触发元素上**不能有 `title`**，只有自定义浮层。
+
+**浮层必须 Teleport 到 body，不能用 `absolute`**：素材卡外壳是 `overflow-hidden rounded-xl`（内部渲染的素材自带圆角底色，要裁掉溢出），`absolute` 浮层会被直接裁没。所以是 `<Teleport to="body">` + `position: fixed` + 悬停那一刻用 `getBoundingClientRect()` 算出的坐标（`hintPos`），宽度固定 246px，右侧越界往左收、下方空间不够就翻到问号上方。
+
+**悬停联动靠一个 160ms 的关闭定时器**（`scheduleHintClose()` / `cancelHintClose()`）：问号与浮层之间隔着 6px，直接 `mouseleave` 就关会让鼠标横穿缝隙时闪一下。问号与浮层各自 `mouseenter` 时取消定时器、各自 `mouseleave` 时启动定时器，所以移进浮层不会关，移出两处任何一处 160ms 后才关。`onBeforeUnmount` 里要 `clearTimeout`，否则组件卸载后定时器还会写 `hintOpenId`。
+
+**窗口级监听只留 scroll 与 resize**：浮层是 `fixed` 定位，滚动/resize 后坐标会飘，直接收掉；`scroll` 必须用 `capture: true` 挂在 window 上，否则滚动区内部的滚动冒不出来。**不需要再挂 `click` 监听**——悬停展开的浮层，鼠标移开就关了，点外部没有额外意义。
+
+**`Info` 图标与顶部提示条已整块删除**：原来 `v-else` 对话区顶部有一行常驻 `Info` + 灰字，点「所有提示都加到这个位置」后整条去掉，`lucide-vue-next` 的 `Info` import 也一并移除。头部倒计时胶囊旁边的 `HelpCircle` + `BaseTooltip` 那版更早就被否掉了，**不要再改回悬浮气泡、常驻提示条或原生 title**。
+
+**`draftStats()` 与 `import { countChars }` 已整块删除**，不要为了算字数把它们加回来。字数信息在编辑器右侧预览区的阅读统计里看。
+
+---
+
+### `<html>` 块里的样式必须写成行内 `style="…"`
+
+用户原话（2026-11-18）：「我的指令不好使了， 加一个要求，html必须使用行内样式」——「指令不好使了」是说光在 prompt 里叮嘱压不住模型，它照样写 `class="card"`。所以这条要代码侧硬拦。
+
+**为什么必须是行内样式**：微信编辑器会把 `class` 属性整个丢掉，也从不加载任何外部样式表。`<div class="card">` 粘进公众号就是一块**没有任何样式的裸 div**；`<style>` 标签会被过滤（而且本来就在 `FORBIDDEN_HTML_TAGS` 里）。只有元素上的 `style="padding:16px;border-radius:12px"` 能活下来。
+
+**三层一起上，缺一层都压不住**
+
+1. **`findClassStyledTags(md)`**（`src/utils/aiMaterialPrompt.ts`，紧跟 `findForbiddenHtmlTags` 之后）：`splitHtmlBlocks()` 取出所有 `<html>` 块，逐块用 `/<([a-z][\w-]*)\b([^>]*)>/gi` 扫开标签，属性串里命中 `\bclass\s*=` 就把 tag 收进去（去重）。**只扫 `<html>` 块内部**——块外的组件标签不在微信的透传路径上，不该报。
+2. **`checkMaterialOutput()` 里报成硬错误**（排在 `findForbiddenHtmlTags` 之后）：命中就返回「`<html>` 块里用了 `class`：`<div>`、`<h3>`——微信编辑器会丢掉 class，样式必须写成行内 `style="…"`」。这是**会触发重试**的那一类，不是软提示。
+3. **`collectWarnings()` 里再软提示一遍**（`src/views/editor/components/AiMaterialDialog.vue`，排在 `findShapeProblems` 之前）：重试 2 次后仍带着 `class` 的话，至少让用户看见哪儿有问题。同一处还补了 `findForbiddenHtmlTags` 的软警告（`<script>` / `<style>` / `<iframe>` / `<video>` 之类）。
+
+**只报不改**：`findClassStyledTags()` 没有对应的修复函数，`repairMaterialOutput()` 对带 `class` 的输入**原样返回、`notes: []`、幂等**。原因很直接——模型写的 class 名字（`card` / `card-title` / `list`）对应什么样式，代码侧猜不出来，硬猜只会把版式改坏。这条只能靠 prompt 说清 + 质检驳回让它重写。
+
+**注意别过度收紧**：检查只针对 `class`，**不要求每个标签都带 `style`**。`<html><div><h3>x</h3></div></html>` 这种纯文字排版是合法的（`check === null`）——否则模型为了凑样式会把简单结构写复杂。混合写法（既有 `class` 又有 `style`）**照样报**，因为 class 那部分样式必然会丢。
+
+**prompt 侧三处同步**：`buildMaterialSystemPrompt()` 输出契约第 6 条末尾追加「`<html>` 里的所有样式必须写成行内 `style="…"`：不许用 `class`、不许写 `<style>` 标签、不许引用任何外部样式表」；`buildMaterialRetryMessage()` 在「必须整段包在 `<html>` 里」那条之后追加「在 `<html>` 里用 `class` 挂样式 → 微信会丢掉，写 `class="card"` 等于没写样式」；`SKILL.md` 的「原生 HTML 兜底 `<html>`」小节新增「样式一律写成行内 `style="…"`，这是硬要求」整段，✅ 正例改成每个标签都带 `style`，新增 ❌ 反例二（用 class 挂样式），铁律第 6 条末尾也补了一句。
+
+**验证**（浏览器单测 + 真实生成）：带 `class` 的 `<html>` 块 → `check` 报 class、`findClassStyledTags` 返回 `['div','h3']`；全行内同结构 → `check === null`；`class`+`style` 混写 → 仍返回 `['div']`；完全无 `style` 的纯文字版 → `check === null`；块外的 `<title>` 组件 → `[]`；`repairMaterialOutput` 幂等不动它。真实生成「纯 HTML 温馨提示卡片」→ 输出全是行内 `style`，`hasClass: false`、`hasStyle: true`。
+
+
+---
+
+
+### `<html>` 块里只用 `<section>`，别碰微信用不了的 CSS
+
+用户原话（2026-11-18）：「不用使用div, 使用section」。前一条要求是「html必须使用行内样式」，这一条紧接着把标签名也收窄了。同时按用户「查询哪些 CSS 样式在微信编辑器里不支持，并把这些规则直接写进 AI 素材的提示词过滤掉」的要求，核了两份资料后把整批规则落成了代码。
+
+**核查来源（2026-11 核对，改动前先回看这两处）**
+
+- 微信官方《微信公众平台编辑器插件开发规范》：<https://developers.weixin.qq.com/doc/subscription/guide/product/plugin_spec.html>（1.3 行高、1.4 宽度、1.5 零高、1.6 `text-align:start|end`、1.8 `<pre>` 包正文、3 不建议设 `font-family`、4.5.2 不要用 `!important`）。
+- 归零数媒《WeChat Article Code 白名单 2026 Q4》：<https://zer0n.cn/whitelist>（实测「服务器保存时到底删什么」——CSS 属性里只删 `position` 与 `filter`，`--` 开头的自定义属性整条删，`url()` 只认四个公众号图床域名，`id` / `on*` 被删）。
+
+**为什么这条必须代码侧拦**：这些写法在编辑器预览里**完全正常**，粘进公众号才散版，而且不报任何错。光在 prompt 里叮嘱压不住——模型看不到自己写错了。
+
+**`src/utils/wechatHtmlRules.ts`（新建）**
+
+- `interface WechatHtmlIssue { text: string; blocking: boolean }`。`blocking: true` 是「微信会直接删掉或破坏版式」，质检驳回重写；`false` 是「能用但会变味」，只在面板提示一句——否则为 `font-family` 这种小事白烧两次重试。
+- `scanHtmlBlock(block)`：先用 `STYLE_ATTR_RE` 抓每个开标签的 `style`，用自己写的 `splitDeclarations()` 拆声明（手写扫描器跟踪 `(`/`)` 深度，跳过 `url(data:…)` 里的分号，别用 `split(';')`）；再扫标签名与属性；最后三条独立检查（`<pre>` 含着成段中文且没 `<code>`、`<td>` 写死 px 宽）。
+- `convertDivToSection(text, notes)`：`/<(\/?)div\b/gi` → `<$1section` 的**无损改名**，不等模型重写。note 去重。
+- `WECHAT_BANNED_SUMMARY` 是给提示词用的一句话清单，改规则时和 `scanDeclaration()` 里的同级条目一起改。
+
+**分档口径（改之前想清楚属于哪一档）**
+
+- **blocking**：`position`（连带 `top`/`left`/`right`/`bottom`/`inset`/`z-index`）、`filter`、CSS 变量 `--x`、`text-align: start|end`、`on*`、`url()` 里的外链与 `data:`、`url(#x)` 引用（渐变/裁剪，`id` 被删后指不到）、`calc()` 里带空白加减号或乘号、`<div>`、`<pre>` 包正文。这些会让版式真散掉。
+- **非 blocking**：`font-family`、`!important`、`opacity:0` 的 `<img>`、`<td>` 写死 px 宽、**没被 `url(#x)` 引用的 `id`**（包括 SVG 的 SMIL 触发锚点，见下文「交互 SVG」——拿它拦会把交互素材全废掉）、`button` / `details` / `marquee` / `math`（会被拆得只剩文字，给替代建议）。
+
+**四处接入**
+
+1. `aiMaterialPrompt.ts` 的 `findWechatHtmlIssues(md)`：`splitHtmlBlocks()` 逐块 `scanHtmlBlock()`，按 `text` 去重。**只扫 `<html>` 块内部**，块外的组件语法不受微信那套规则约束。
+2. `checkMaterialOutput()` 在 `class` 那条之后只取 `blocking` 的报成硬错误（触发重试），文案前缀「`<html>` 块里有微信不支持的写法：」。
+3. `repairMaterialOutput()` 里 `<div>` → `<section>` 放在 `restoreHtmlBlocks()` **之前**逐块处理：那块是原生 HTML，不能过按组件语法写的 `repairMarkup()`，改完再还原。
+4. `collectWarnings()`（`AiMaterialDialog.vue`）只把非 blocking 那批当软提示，文案尾部补「（编辑器里会照常显示，粘进公众号才失效）」——不这么说用户以为已经好了。
+
+**`id` 那一档后来改过**：最初是「见 `id` 就 blocking」，但交互 SVG 必须用 `id` 当 SMIL 触发锚点（`begin="reveal.click"`），实测把整类素材都拦掉了。现在只拦「被 `url(#x)` 引用」的 `id`，其余降级成软提示。判据与理由见下文「交互 SVG」一节。
+
+**prompt 侧同步**：`buildMaterialSystemPrompt()` 输出契约新增第 8 条（只用 `<section>` 不用 `<div>`）与第 9 条（`position` / `filter` / CSS 变量 / `!important` / `font-family` / `text-align:start|end` / `id` / `on*` 全列一遍，并写明「图片一律不写 `url()`，需要配图留空 `src`」）；`buildMaterialRetryMessage()` 追加 `<div>` 与这条 CSS 清单；`SKILL.md` 的「原生 HTML 兜底 `<html>`」小节新增「只用 `<section>`，不要用 `<div>`」段 + 一张「别写 → 会怎样 → 换成」的对照表 + ❌ 反例三（绝对定位 + CSS 变量 + 外链背景图），铁律新增第 10 条，正例与反例里的 `<div>` 全部换成 `<section>`，`<details>` 也从「什么时候用它」的示例里去掉了（它会被拆）。
+
+**验证**（浏览器单测）：`<div>` 版本 → `repairMaterialOutput` 改成 `<section>` + 一条 note，`check === null`，幂等；`position` + CSS 变量 + 外链 `url()` + `filter` + `id` + `onclick` 六项全被 `blocking` 命中，`check` 逐条拼出原因；`font-family` + `!important` + `opacity:0` 三项为非 blocking 且不进 `check`；全行内 `<section>` 版本 → `check === null`、`issues === []`、`notes === []`。
+
+---
+
+### 交互 SVG：像 `<html>` 一样整块遮起来（2026-11 新增）
+
+AI 素材的 `/` 菜单里有「交互 SVG」，模型会产出整块 `<svg>`（公众号里脚本被禁，点击揭晓、逐条浮现这类效果只能靠 SVG + SMIL）。**`<svg>` 不能被当成我们自己的组件**，也不能被当成普通 Markdown，所以它需要和 `<html>` 同一套遮罩待遇。
+
+**为什么必须遮**（不遮的话三处检查会集体误伤，症状和 `<html>` 当初一模一样）：
+
+1. `findUnknownTags()` 把 `<svg>` / `<rect>` / `<circle>` 当自造组件驳回，报「用了不存在的标签」。
+2. `findIllegalAttrs()` 拿组件属性表去查 `viewBox` / `fill` / `stroke-dasharray` / `fill-opacity`，全是「非法属性」。
+3. `splitInlineBlocks()` 把单行紧凑的 SVG 当块级组件硬拆成三行，图形全乱。
+
+**落地的四件事**
+
+1. **`splitVerbatimBlocks()` / `restoreVerbatimBlocks()`**（`src/utils/aiMaterialPrompt.ts`，紧跟 `restoreHtmlBlocks()` 之后）：**先遮 `<html>` 再遮 `<svg>`**（顺序不能反，`<html>` 里可能嵌 `<svg>`，先遮 svg 会把 html 块切碎），占位符分别是 `\u0000rmhtml{i}\u0000` 与 `\u0000rmsvg{i}\u0000`。`repairMaterialOutput()` 改成 `splitVerbatimBlocks()` → `repairMarkup()` → `<html>` 块 `convertDivToSection()` → `restoreVerbatimBlocks()` → `wrapInContainer()`。
+2. **三个「组件视角」检查器的入口换成 `masked`**：`findIllegalAttrs()` / `findShapeProblems()` / `findUnknownTags()`。反过来，**按微信规则判断的那几处（`findForbiddenHtmlTags` / `findClassStyledTags` / `findWechatHtmlIssues`）故意只用 `splitHtmlBlocks()`、不遮 SVG**——纯 SVG 素材本质是「原生 HTML 透传」，微信规则该照查。
+3. **`wrapInContainer()` 放行整块 SVG**：新增 `isWholeSvg(body)`，**判断前先剥掉 `<!--…-->` 注释**再匹配 `/^<svg\b[\s\S]*<\/svg>$/i`。不剥注释的话，带 `<!-- 素材开始 -->` 的 SVG 会匹配不上、被误判成「多块拼接」又套一层 `<container display="block">`（踩过）。输出契约第 7 条也相应改成三档：单组件不包 / `<html>` 块与整块 `<svg>` 不包 / 只有多块拼接才包。
+4. **`HAND_BUILT_TAGS` 加 `'svg'`**（`= ['row','column','text','stack','positioned','html','svg']`），让 `checkMaterialIntent()` 对「做一个交互 svg」这类需求直接放行，不走成品组件那套意图检查。「一个组件都没用」的判定改成 `used.some(t => blockTags.has(t) || t === 'svg')`，否则纯 SVG 素材会被报「通篇是普通 Markdown」。
+
+**`<details>` 要硬拦**：模型一开始想用 `<details>` + `<summary>` 做点击揭晓（跑了 3 轮真实生成，前两轮都是这个写法）。它在编辑器里看着能折叠，粘进公众号会被拆开、内容全部平铺，交互完全消失。`checkMaterialOutput()` 里现在是 blocking 硬错误，文案直接给替代方案（`<svg>` + SMIL 的 `<animate>` / `<set>`，`begin="click"` 或 `begin="触发区id.click"`）。
+
+**`wechatHtmlRules.ts` 里 `id` 的分级（这条最容易搞错）**：交互 SVG 恰恰**必须**用 `id` 当 SMIL 触发锚点（`<g id="reveal">` + `begin="reveal.click"`），而微信会删 `id`。原来的规则「见 `id` 就 blocking」会把所有交互素材废掉。现在的口径：
+
+- **被 `url(#x)` 引用的 `id`**（渐变填充、`clip-path`、`mask`）→ blocking。`id` 被删后引用指不到，效果整块失效，这条单独查 `/url\(\s*#([\w:.-]+)\s*\)/i`。
+- **其余 `id`**（包括 SMIL 触发锚点、模型随手给 `<g>` 起的名字）→ 只留一句**非 blocking** 软提示。`id` 是交互本体，删了触发就没了；但微信到底删不删、删了是否只影响样式，实测口径不完全一致，所以不拿它拦生成。
+
+**`SKILL.md` 新增「### 交互 SVG `<svg>`」整节**（在「阅读路线 `<reading-path>`」之前）：可跑的点击揭晓示例、尺寸与安全边（`width="100%"` + `viewBox`、宽度固定 400、内容 x=18..382、字号 ≥14 / 主文案 16 / 图注 12.5、只用 `x`/`y`、禁 `<foreignObject>`/`<style>`/`<image>`、不要外套 `<container>`）、SMIL 三条铁律（动画只能改属性拥有者直接父元素上的属性；裸 `click` 只认宿主自身，跨元素必须 `父级id.click`，延迟写 `父级id.click+0.3s`；后画的压在上面会抢点击）、其它必守（隐藏用 `visibility` 不用 `opacity:0`；`<animate attributeName="height">` 无效，真要增高得动画 `viewBox`；id 一律带 `wci01`/`wci02` 前缀；**`<text>` 上不要写 `id`**；配色板）；需求映射表加两行（「点一下就动」→ `<svg>`）；铁律第 5、9 条同步（`<html>` 与 `<svg>` 块内部都不受白名单约束、都不套容器）。
+
+**验证**：合法交互 SVG → `findUnknownTags` / `findIllegalAttrs` / `findShapeProblems` 全空、`checkMaterialOutput === null`、`repairMaterialOutput` 幂等；带边界注释的 SVG 原样返回不包容器；组件 + SVG 混排才包 `<container display="block">`；`<html>` 里嵌 SVG 不额外报错；单行紧凑 SVG 不被拆行；`url(#g1)` 渐变仍被 blocking；真机（预览区 660px）点击 `#reveal` 后 `#hint` 的 opacity 1→0、`#ans` 0→1，插入编辑器后带 `<!-- 素材开始 -->` 且 `<animate begin="reveal.click">` 完整保留。
+
+---
+
+### `<html>` 块里不许出现组件（`<img>` / `<svg>` 除外）
+
+**用户原话（2026-11-18）**：「注意一下，html组件内部不要出现自定义组件， 除了img 和 svg 标签，因为html里面的内容直接按html解析」。
+
+**为什么**：`<html>` 组件的 `render()` 就是 `return body`，块内不会再走一遍组件解析。实测 `parseMarkdownAsync('<html><section …><title subtitle="x">把复杂的事讲简单</title></section></html>')` 输出里 `<title subtitle="x">把复杂的事讲简单</title>` **原样留在 HTML 里**（`<steps>` 同理，108 字符原样吐出）。也就是说读者看到的是 `<steps title="三步">` 这行源码，而不是渲染好的卡片。`<img>` 与 `<svg>` 在块内正常透传，所以例外只有这两个。
+
+**实现**（`src/utils/aiMaterialPrompt.ts`，紧挨 `findForbiddenHtmlTags` / `findClassStyledTags` 那组）：
+
+- `findComponentsInHtml(md)`：`splitHtmlBlocks()` 取出每个 `<html>` 块 → 先 `replace(SVG_BLOCK_RE, '')` 整块剥掉 SVG → 再用 `/<([a-z][\w-]*)\b(?=[\s/>])/gi` 扫开标签 → 命中 `components` 名单且不在两个白名单里就记下（去重）。
+- 两个白名单：`HTML_INLINE_OK = new Set(['img'])`（原生标签，块内合法）；`HTML_NATIVE_OVERLAP = new Set(['html', 'table'])`（`html` 是块壳自身，`table` 既是组件又是标准 HTML，块里写 `<tr><td>` 是正常用法）。
+- `checkMaterialOutput()` 里是 **blocking**（触发重试），排在「禁用标签」之后、「`class`」之前：文案「`<html>` 块里混进了 R-Markdown 组件：…——`<html>` 里的内容按原生 HTML 直接输出，组件不会渲染，读者看到的是源码本身。块内只能用原生 HTML 标签、`<img>` 和 `<svg>`；要放组件请把它们移到 `<html>` 外面」。
+- `collectWarnings()`（`AiMaterialDialog.vue`）也加一份软提示：重试两轮仍没改对时，用户至少知道问题在哪。
+
+**三个容易踩的点**
+
+1. **`html` 必须进白名单**。`splitHtmlBlocks()` 取出的块首尾就是 `<html>` / `</html>`，不排除就会每块都报「混进了 `<html>`」，所有纯 HTML 素材全被拦。
+2. **`<svg>` 里要剥掉再扫**。SVG 的 `<text>` 与我们 `<text>` 组件同名，不剥就会把每个带文字的 SVG 误报成「块里混进组件」。
+3. **`table` 也要排除**。`<table>` 既是我们的组件又是标准 HTML，块内写原生表格完全合法。
+
+**prompt / SKILL / 文档同步**：`buildMaterialSystemPrompt()` 输出契约第 6 条追加「`<html>` 块内部按原生 HTML 直接输出，组件不会被解析——块里只能出现原生 HTML 标签、`<img>` 与 `<svg>`…要放组件就放到 `<html>` 外面」；`buildMaterialRetryMessage()` 追加对应条目；`SKILL.md` 的「原生 HTML 兜底 `<html>`」小节新增「块里只能出现原生 HTML 标签、`<img>` 和 `<svg>`，不许放 R-Markdown 组件」段（含「组件写在 `<html>` 外面」的正例）+ ❌ 反例四（把 `<steps>` 塞进块里），铁律第 5 条补「反过来的边界同样不能越」。
+
+**验证**（浏览器单测 + 真实生成）：`<steps>` / `<title>` 塞进块内 → `check` 报出对应标签、`findComponentsInHtml` 返回 `['steps']` / `['title']`；`<img>`、原生 `<table>`、块内 `<svg>`（含 `<text>`）、全 `<section>` 纯 HTML → 全部 `check === null`、`[]`；块外的 `<steps>` 不受影响；`repairMaterialOutput` 对块内带组件的输入**原样返回、`notes: []`**（只报不改，往哪搬得靠模型判断）。真实生成「温馨提示卡片 + 卡里放三步流程」→ 模型正确地全部写成原生 `<section>` / `<h2>` / `<p>` / `<span>`，`warn: no-warn`、无组件混入。
+
+---
+
+### mermaid 预览：统一走 `renderMermaidInHtml()`，别再各写一遍判断
+
+`parseMarkdownAsync()` 只把 `<mermaid>` 渲染成一个**空占位块**（`.mermaid-block` > `.mermaid-svg-container`），真正的图是 `useMermaid().renderAll()` 用 JS 画成 `<img>`（base64 PNG）塞进去的——因为 mermaid 要量真实尺寸，必须挂到 document 上才能画。
+
+四个地方都要「先渲染成 HTML 再显示」：AI 素材面板的素材卡、素材库卡片（`MaterialCard.vue`）、素材库页面（`MaterialLibraryPage.vue`）、组件选择器（`ComponentPickerDialog.vue`）。它们原先各自复制了一段「判断 + 临时容器 + renderAll + 取回 innerHTML」，而**判断条件写的是 `html.includes('class="mermaid"')`——那是更早版本的类名**。`Mermaid_DA01.render()` 现在产出的是 `class="mermaid-block"`，条件永远不成立，`renderAll()` 从没被调用过，于是这几处预览里 mermaid 一直是空白。编辑器右侧的 `Preview.vue` 是无条件调 `renderAll()` 的，所以「插入编辑器后就能预览」——这个对比正是用户报的现象。
+
+现在的口径：
+
+- 判断和挂载逻辑收进 `src/composables/useMermaid.ts` 的两个导出：`hasMermaidBlock(html)` 和 `renderMermaidInHtml(html)`。调用点只需 `html = await renderMermaidInHtml(html)`，无需 `if`、无需自己建临时容器。
+- **类名只写在这一个文件里**。组件改名时不会又漂掉一批调用点；要改判断逻辑也只改一处。
+- `renderMermaidInHtml()` 内部用 `position:absolute; visibility:hidden` 挂到 body，`finally` 里 `removeChild`（即使渲染抛错也不留垃圾节点）。
+- 没有 mermaid 块时直接原样返回，不挂 DOM。`Preview.vue` 走的是另一条路（增量渲染 + 已渲染块缓存，避免闪烁），保持原样别动它。
+
+### 组件里写 `var(--x)` 必须带兜底色，否则复制到公众号就掉色（2026-11 新增）
+
+用户原话（2026-11-19）：「检查一下chart组件的不坐标轴在微信编辑器中现在渲染不出来了」。
+
+**根因不是 chart 的坐标轴画错了，而是颜色写了裸 CSS 变量**。`src/extension/Chart_DA01.ts` 的 `<svg>` 里有 19 处 `var(--border-color)` / `var(--text-primary)` / `var(--text-secondary)` / `var(--bg-primary)`，这些变量只在编辑器自己的样式表（`src/styles/style.css` 的 `:root` 与 `[data-theme='dark']`）里定义。复制到公众号时那段样式表不会跟着走，于是：
+
+- `stroke="var(--border-color)"` → 计算值 **`none`** → **轴线、网格线整条消失**（用户看到的就是这个，图还在但没有坐标轴）；
+- `fill="var(--text-primary)"` / `fill="var(--text-secondary)"` → 退回浏览器默认的 `rgb(0,0,0)`，深色主题下的灰字全变纯黑；
+- `background:var(--bg-primary)` → 变透明。
+
+**修法是给每个 `var()` 补第二参数**：`stroke="var(--border-color, #e5e7eb)"`。带兜底的 `var()` 在微信里能正常回落（实测 `var(--border-color, #e5e7eb)` → `rgb(229, 231, 235)`，不带兜底的同一个变量 → `none`），而编辑器里有变量定义时仍然取变量值，深色模式不受影响。**不要改成硬编码色值**：那样编辑器深色模式下 SVG 里会出现一堆黑字。
+
+**已改的四处（2026-11-19）**
+
+| 文件 | 处数 | 兜底值 |
+| --- | --- | --- |
+| `src/extension/Chart_DA01.ts` | 19 | `--border-color → #e5e7eb`、`--text-primary → #111827`、`--text-secondary → #6b7280`、`--bg-primary → #ffffff` |
+| `src/extension/ReadingPath_DA01.ts` | 7 | 同上（`--text-primary → #111827` 等） |
+| `src/extension/PTitle_DA01.ts` | 1 | `--text-primary → #111827` |
+| `src/utils/markdownParser.ts` + `src/utils/inlineFormat.ts` | 8 + 2 | `--text-primary → #0d0d0d`、`--text-secondary → #615d59`、`--hl-code-bg → rgba(0,0,0,0.04)`、`--hl-str → #dd5b00` |
+
+兜底值取自被 `498e729 style: Timeline/CaseFlow 颜色微调`（2026-06-27）换掉之前那一版硬编码色，保证公众号里跟旧版观感一致。`markdownParser.ts` 与 `inlineFormat.ts` 里那几处是**正文默认色**（段落、h1–h6、脚注区、行内公式与行内代码降级），同样会随复制一起进公众号，一并补了。
+
+**验证口径**：`parseMarkdownAsync()` 出 HTML → 塞进**没有样式表的 iframe**（模拟公众号）→ 量 `getComputedStyle`。bar / line / pie / scatter 四类图表 `svg line` 的 `stroke` 全是 `rgb(229, 231, 235)`、`stroke === 'none'` 的线条数为 0；`svg text` 的 `fill` 是 `rgb(17,24,39)` / `rgb(107,114,128)`；同一段 HTML 放进编辑器（有样式表）时仍取到 `rgba(0,0,0,0.1)` / `rgba(0,0,0,0.95)`，说明变量优先级没被破坏。整个编辑器演示稿渲染后 `.preview-scroll` 里 `var(--…)` 无兜底的出现次数为 **0**。
+
+**以后新增组件时**：凡是会进公众号的 HTML（`src/extension/*.ts` 的 `render()`、`markdownParser.ts` 的模板块、`inlineFormat.ts` 的行内片段），`var(--…)` **一律写第二个兜底参数**。只有确实不需要跨环境（纯编辑器 UI 的 `.vue` / `.css`）才允许写裸变量。
+
+**但光补兜底还不够 —— 微信深色模式下正文仍会变黑（2026-11-23 补记）**
+
+用户原话：「看一普通段落改过什么东西吗？现在深色模式在微信里面预览文字变成黑色，看不见了，之前的文章是好的」。
+
+补兜底只解决了「`var()` 取不到值」这一半。剩下的一半是：**只要颜色还是 `var()`，微信深色模式的反色算法就处理不了它**。正文的兜底值 `#0d0d0d` 几乎是纯黑，深色背景上就是黑底黑字。而且标题、正文、参考资料原本是四档不同的颜色（`rgb(17,24,39)` / `rgb(31,41,55)` / `rgb(55,65,81)` / `rgb(51,65,85)`），被 `882f9a1` 压成了同一个 `var(--text-primary)`，单靠兜底参数也还原不回层次。
+
+所以**导出那一刻把 `var()` 落成字面量**，逻辑在 `src/utils/exportColors.ts` 的 `resolveExportColors(html)`：
+
+- `--text-primary` 按所在标签查 `TEXT_PRIMARY_BY_TAG` 还原成 `882f9a1` 之前那套分级色值（`h1`/`h2` → `rgb(17,24,39)`、`h3` → `rgb(31,41,55)`、`h4`–`h6` → `rgb(55,65,81)`、其余 → `rgb(51,65,85)`）；
+- 组件自己的兜底参数优先于通用还原表（那是上一轮逐处挑的原始硬编码色，比全局表准），但 `#0d0d0d` 与 `rgba(0,0,0,0.04)` 视为坏值跳过；
+- 没登记、也没兜底的变量原样留着，让问题在导出结果里暴露，不悄悄变黑。
+
+**四个出口都要过一遍**（漏一个就等于没修）：
+
+| 出口 | 位置 |
+| --- | --- |
+| 复制到公众号（富文本） | `Preview.vue` 的 `copyRichText()`，`el.innerHTML` 外面那层 `<section>` 里 |
+| 复制 HTML 源码 | `Preview.vue` 的 `copyHTML()` |
+| 导出 HTML / 导出 PDF | `useExport.ts` 的 `handleExportHTML()` / `handleExportPDF()`，都从 `getHTML()` 取 |
+| 微信草稿推送 | `PublishToWechatDialog.vue` 的 `finalHtml` |
+
+**`getHTML()` 保持返回原始 HTML**（带 `var()`），由调用方决定要不要解析——`Preview.vue` 里的预览渲染还要靠变量跟着主题切换（实测 `data-theme="dark"` 下正文从 `rgba(0,0,0,0.95)` 变 `rgba(255,255,255,0.92)`，`resolveExportColors` 是纯字符串替换、不碰 DOM，不会干扰这条路径）。**不要**在 `markdownParser.ts` 里把颜色改回硬编码：那样编辑器深色预览会变成一堆黑字，这是当初选 `var()` 的原因。
+
+**验证口径**：`.preview-scroll` 的 `innerHTML` 里 `var(--` 有 46 处 → 过 `resolveExportColors()` 后 **0 处**，`#0d0d0d` 残留 **0 处**，正文段变成 `color:rgb(51,65,85)` 共 29 处、标题 `color:rgb(17,24,39)` 2 处；函数幂等（再跑一遍结果不变）；整篇塞进无样式表 iframe 量 `getComputedStyle`，`rgb(0,0,0)` 与 `none` 的节点数为 **0**。
+
+**图表里的 SVG 文字：标题跟「单位」用同一个色标（2026-11-23 追加）**
+
+正文修好之后，用户报「chart 组件的标题，深色模式还是黑色，看不见」，并补了一句关键线索：「单位的深色模式可以正常，是不是可能把标题的颜色改成单位的颜色」。
+
+线索是对的。`Chart_DA01.ts` 里标题用 `fill="var(--text-primary, #111827)"`，而图例名/单位/柱值/轴标签用 `fill="var(--text-secondary, #6b7280)"`。导出过 `resolveExportColors()` 之后，两条分别落成 `#111827`（近黑）和 `#6b7280`（中灰）——**近黑在深色背景上就是看不见，中灰至少还能读出来**，所以用户看到的是「单位正常、标题消失」。
+
+结论：**标题改用 `--text-secondary`，和图例名/单位/柱值/轴标签同一个色标**，层次靠 `fill-opacity` 区分——标题 `font-weight="700"` 且不降透明度，其余文字一律 `fill-opacity="0.72"`。
+
+注意 SVG 的 `fill` 是**自己的属性，不继承 CSS 的 `color`**，所以「让 `<text>` 继承外壳颜色」这条思路（`fill="currentColor"`）在这套导出链里走不通：`currentColor` 会跟着外壳的 `color` 走，而外壳的颜色在微信深色模式下的翻转行为不可控；用固定的中灰色标反而稳——它在浅色背景上是次要文字灰，在深色背景上仍然可读。
+
+**以后图表里加文字：`fill` 用 `--text-secondary`（兜底 `#6b7280`），想弱化就压 `fill-opacity`，不要用 `--text-primary`（近黑，深色背景上看不见），也不要写死具体色值。**
+
+---
+
+### 素材内部不留空行：生成侧清一遍，格式化侧也清一遍（2026-11 新增）
+
+需求原话（用户）：
+
+> 注意一下，生成的素材内部，标签之间不要留空行；格式化的时候，需要把素材内部的空行去掉， 因为编辑器里面素材代码有空行没法全部折叠
+
+**为什么空行会毁掉折叠**：素材插进文章后是一整段 HTML，`<!-- 素材开始 -->` 命中的是 `@lezer/markdown` `HTMLBlockStyle` 第 2 条（`/^\s*<!--/`，CommentEnd 是 `-->`），标签则命中第 5、6 条——它们都是**独立的 HTMLBlock 节点**。中间只要夹一个空行，一段素材就被切成好几个块节点，而 `@codemirror/lang-markdown` 的 `foldNodeProp` 是**按单个 Block 节点给折叠范围**的，于是折叠箭头只覆盖第一块，后面几块折不动。用户说的「没法全部折叠」就是这个。
+
+**两处都要做，因为两条路径互不覆盖**：
+- 生成侧：模型可能自己吐空行（尤其是把 `<container>` 和子标签分开写的时候）。`repairMaterialOutput()` 末尾统一过一遍；
+- 格式化侧：用户手写、从别处粘进来、或者旧文章里本来就有的空行，只能靠「格式化文档」清。
+
+**生成侧 `tightenTagGaps()`（`src/utils/aiMaterialPrompt.ts`）**
+
+```ts
+return { text: tightenTagGaps(wrapInContainer(restored, notes)), notes }
+```
+
+- **必须排在 `wrapInContainer()` 之后**：包容器这一步会新加 `<container>` 开闭标签，先清的话它和第一个子标签之间那条空行根本还不存在。
+- 判据：一个空行被删的条件是「上一个非空行（**去掉缩进后**）以 `<` 开头」**且**「下一个非空行（去掉缩进后）也以 `<` 开头」。**必须 `trim()` 再判断**——手写 SVG 和原生 HTML 里的标签几乎都带缩进（`  <rect … />`），只看首字符会让整类素材的空行一条都删不掉（这个坑是用户报「svg 中的标签空行，格式化没有去掉」时踩到的）。
+- **不能一律删素材里的空行**：`<container>` 里两段正文之间、正文与标签之间的空行是 Markdown 的段落边界，删了会把两段并成一段，或者让紧跟正文的 `<title>` 被上一段的段落收集吃掉（这个坑在修「容器包裹」那轮踩过）。所以判据窄到「纯标签之间的缝」。
+- `<html>` / `<svg>` 块内部的标签缝也一并清掉，原生 HTML 与 SVG 的空白不参与渲染，删了没有副作用。
+
+**格式化侧 `tightenMaterialInternals()`（`src/utils/markdownFormatter.ts`）**
+
+- 放在 `formatMarkdown()` 的**逐行循环之前**，先整篇过一遍：只在 `isMaterialStartLine` 与 `isMaterialEndLine` 之间生效，不在素材内的一律不碰（普通文章里两个组件之间该留的空行照样留）。
+- 删掉的条数累加进 `stats.materialTightened`，用户看到的还是那句「收紧素材注释 N」。
+- **不能塞进循环里的 `blockDepth > 0` 分支**：那个分支管的是组件内部的空行，而素材内部既有组件也有正文，混在一起分不清「这是段落边界还是标签缝」。单独一趟扫描、只看前后行是不是标签，判据更准，也不会影响素材外的组件排版。
+- 幂等：清完再跑一次没有变化（`formatMarkdown` 的第二次结果与第一次逐字节相同）。
+- 缩进不影响渲染：删的是「纯标签之间的缝」，两侧只有标签、没有正文，去掉空行不会改变 HTML / SVG 的排版；而缩进本身的空白保留不动。
+
+**口径同步的三处**：输出契约新增第 11 条（`buildMaterialSystemPrompt()`）、`SKILL.md` 铁律新增第 12 条、`buildMaterialRetryMessage()` 新增一条驳回说明。
+
+**验证**：生成侧 `<container display="block">` + 空行 + `<title>` + 空行 + `<steps>` → 输出六行、标签之间零空行；`<mermaid>` 里的空行（正文内部）保留不动。格式化侧素材内 3 个标签缝空行被清、`stats.materialTightened === 3`；`<container>` 里两段正文之间的空行保留；`<html>` 素材里 `<h2>` 与 `<p>` 之间的空行被清、再跑一次逐字节相同；素材外的 `<steps>` 与 `</steps>` 之后的空行不受影响；只有「素材开始」没有「素材结束」的半截素材按未闭合处理，不乱删。
+
+---
+
+### 用户点名了组件就照办，没点名就手搭（2026-11 新增）
+
+需求原话（用户）：
+
+> 如果用户指定了使用哪个组件，明确优先告诉AI使用指定组件，并明确组件的属性语法， 不要乱用
+>
+> 如果没有告知，优先使用html 或 容器组件（container、text等）
+
+两条方向相反的规则，所以先要能**判断出用户到底有没有点名**，再决定走哪条。判断不准的代价是双向的：把「做成三步流程」误判成点名 `<steps>`，会锁死版式；漏判「用 badges 组件」，模型就会去手写 `<html>` 画一排圆角 `<span>`（实测每次都是）。
+
+**`findNamedComponents(requirement)`（`src/utils/aiMaterialPrompt.ts`）** 认四种写法，只认 `@/extension` 注册表里的 tag（外加 `svg`，它是解析器整段透传的原生标签，不在注册表）：
+
+| 写法 | 例子 |
+|---|---|
+| 标签原文 | `<steps>`、`</steps>`、`<steps/>` |
+| `/` 快捷插入 | `/steps`（`/` 前不能是字母数字，免得把 `and/or` 切出个 `or`） |
+| 动词 + 标签名 | 「用 steps 组件」「换成 badges」「用 mermaid 画」——**必须带动词或「组件」二字** |
+| 裸 `svg` | 「做一个点击揭晓的 svg」「做成 svg 动画」——它没有中文名，用户从不说「svg 组件」，所以只对它单独放宽 |
+
+**否定语境不算点名**：`negated(index)` 往匹配位置前面看 4 个字符，命中 `不 / 别 / 勿 / 禁` 就跳过。真实说法「用 badges 组件，不要用 html」后半句也含 `用 html`，不拦就会把 `<html>` 也当成点名，和用户意思正好相反。窗口只开 4 字符是刻意的——放大到整句会把「不需要花哨，用 steps」误伤成否定。
+
+**点名时要给的不是「用 `<steps>`」这句话，是能照抄的写法**：`componentDeepReference(tag)` 从组件定义里现取（不是硬编码清单）该 tag 全部变体的中文名、`allowedAttrsByTag()[tag]`、每个属性的 `options` / `default` / `description`，再附上组件自己的 `example` 逐字示例。属性表只说「有 `bg` 这个键」，模型照样会写成 `background="…"`；给一行完整标签，属性名、引号、body 分隔形状全都对上了，才算「明确属性语法」。`svg` 单独返回手写矢量图的三条要点。
+
+**投放位置是 user message，不是 system prompt**：`renderNamedComponents(requirement)` 的结果由 `buildMaterialUserMessage()` / `buildMaterialFollowUpMessage()` 拼成 `<点名组件与写法>` 段。原因是它属于**这一轮**的约束——上一轮点名 `<steps>`，这一轮改口要 `<compare>`，只有按轮次投递才跟得上。system prompt 里放的是两条通则（契约第 5 条「没点名时默认优先自己搭」、第 10 条「点名了就必须用点名的那一个」）。
+
+**点名还等于把范围压到最小**：`checkNamedOnly(requirement, text)` 拦「点名了 `<mermaid>`，却额外配了一段 `<steps>` 把同样的流程又用文字讲一遍，外面还套一层 `<container>`」。实测就是用户 2026-11-19 报的那一版——他要的是「A 到 B、B 到 C 的流程图」，交回来一张图 + 一段同义文字 + 一层容器。用户的原话是「要限定非常小才可以」。
+
+判据是「输出里出现了**点名标签之外**的组件 tag」（`container` 也算，单个组件不该套容器）。豁免靠 `ADDITIVE_HINTS = ['再','加','配','附带','同时','顺便','以及','还有','接着','跟着']`——需求里出现这些词说明用户明确想多要一块，从宽放行（误放一次只是多给内容，误拦一次是把「我要两块」驳回成一块）。
+
+**质检**：`checkNamedComponents(requirement, text)` 排在 `AiMaterialDialog.vue` 的 `judge` 链最前面（`checkMaterialOutput` 之后、`checkMaterialIntent` 之前）。它**不看 `HAND_BUILT_TAGS` 放行**——判据来自用户白纸黑字，命中就是硬错；而 `checkMaterialIntent` 那套词表猜出来的期望，才需要给手写版式留口子。
+
+**默认口径的表述改了三个地方**（都要一起改，少一处模型就会两头看）：
+
+- 输出契约第 5 条：没点名时「能对上映射表里的专有组件才用，对不上的版式优先用 `<container>` `<row>` `<column>` `<text>` 拼，或者整段交给 `<html>`——不要为了用上组件把内容硬塞进不相干的卡片」。
+- 输出契约第 10 条（新增）：点名了就必须用点名的那一个，不许换性质相近的组件、不许绕成 `<html>`。
+- `SKILL.md`「第一步：先判断用哪个组件」开头改成「先看用户有没有点名」+ `>` 引用块写「默认口径是够用就手搭」；铁律第 1 条结尾、新增第 11 条同步。
+- `buildMaterialRetryMessage()` 加一条「无视了用户点名的组件」。
+
+### Beta 角标：只有一个组件，四处共用
+
+「AI 素材」后面那个 `Beta` 角标是 `src/components/BetaBadge.vue`，在四个地方各挂一次：`AiBoard.vue` 的标签页（`TABS` 里 `beta: true`）、`EditorSidebar.vue` 的 AI 子菜单、`mobile/MobileActionsMenu.vue` 的移动端更多菜单、`SettingsBoard.vue` 的「AI 素材」设置卡（走 `SettingsCard` 的 `#action` 插槽）。
+
+要点：
+
+- **不要在各处自己写 `<span>`**。同一个名字分散在四处，各写一遍迟早会写歪（字号、圆角、深浅各不相同），改文案时也会漏。要加新入口就 import 这个组件。
+- **配色全部用 `color-mix(in srgb, currentColor 14%, transparent)` 跟着所在元素的文字色走**。所以灰色菜单项上是浅灰底、主题色选中的标签页上是浅白底、深色模式下自动变淡白底——都不需要为某个位置单独调样式。
+- 已实测的四处渲染：侧栏子菜单 `32×14`、AI 面板选中标签页（白字 + 14% 白底）、设置页卡片右上角、移动端菜单单行。
+- **移动端菜单的宽度是配套的**：`MobileActionsMenu.vue` 的容器是 `w-36`（144px），19 个 `.mobile-action-option` 都带 `whitespace-nowrap`。原来是 `w-32`，加上角标后「AI 素材」被挤成「AI 素」「材」两行——**再往菜单里加字或加角标时要一并放宽 / 保住 nowrap**。
+- 写 HTML 注释解释这段时，**注释必须在 `<div` 的上一行，不能夹在 `<div` 与属性之间**：Vue 编译器会报 `SyntaxError: Opening tag "div" not terminated`，prettier 也跟着失败。
+
+### AI 排版遇到素材注释：整段遮起来，原封不动吐回去
+
+**要求**：文章里带 `<!-- 素材开始 -->` / `<!-- 素材结束 -->` 的素材块，排版之后必须和排版前**逐字节一致**。
+
+**光在 prompt 里叮嘱压不住**。素材是别的 AI 按编辑器语法拼出来的成品（自由拼版的 `container`/`row`/`column`，或者整段原生 HTML），排版模型只要动它一下——补个空行、换个组件、把 `<text>` 里的字拆成段落——渲染出来就不是原来那版了，而且这种破坏肉眼几乎看不出来（不像丢字那样一眼能发现）。所以做两件事：
+
+1. **代码侧整段遮罩**（`src/utils/aiFormatPrompt.ts`）：
+   - `maskMaterialBlocks(md)` → `{ text, tokens }`，把 `^[ \t]*<!-- 素材开始 -->[\s\S]*?<!-- 素材结束 -->[ \t]*$` 整段换成 `{{RMMAT_n}}`，原文存进 `tokens`。
+   - `unmaskMaterialBlocks(text, tokens)` → `{ text, restored, missing, dropped }`，还原并清掉模型臆造 / 越界的占位符，返回 `missing`（模型整段丢掉的素材序号）。
+   - **遮罩顺序**：`maskMaterialBlocks()` 必须在 `maskImageTokens()` **之前**跑。先遮素材，素材内部的本地图片就一起被藏住；反过来会把素材里的 `<img src="data:…">` 单独抽成 `{{RMIMG_n}}`，还原时素材内部结构就变了。还原顺序相反（先素材后图片）。
+2. **prompt 里加一条保真铁律**（`buildSystemPrompt()` 第 7 条）：`{{RMMAT_n}}` 代表一段成品素材，必须原样照抄、单独占一行、留在原位置；不要展开、不要改写、不要拆分、不要重排、不要套额外组件。
+
+**一个连带坑：模型爱给占位符包一层 `<p>`**。素材里是块级组件（`<container>` / `<steps>` / `<html>`），塞进段落里会渲染错乱。所以 `unmaskMaterialBlocks()` 还原后有一步——把「只包着素材、没别的内容」的 `<p>` / `<div>` / `<section>` 壳拆掉（`/<(p|div|section)(?:\s[^>]*)?>\s*(<!-- 素材开始 -->[\s\S]*?<!-- 素材结束 -->)\s*<\/\1>/g` → `$2`）。段落里除了占位符还有别的文字的，一律不动（那是模型正常的行文）。
+
+**验收口径**（改这块之后照这个跑一遍）：
+- 往返一致性：`unmaskMaterialBlocks(maskMaterialBlocks(doc).text, tokens).text === doc`。
+- 素材块里含 base64 图片 → 只产生 1 个 `{{RMMAT_1}}`，不产生 `{{RMIMG_n}}`。
+- 只有开始注释没有结束注释 → 不遮（否则会吞掉半篇文章）。
+- 模型丢占位符 → `missing: [n]`，面板提示「有 N 段素材未能保留…需要手动贴回」；模型多写占位符 → `dropped` 计数。
+- **真实端到端**：编辑器里放一篇「正文 + 素材块 + 正文」，AI 排版 → 素材块 438 字节逐字节一致，前后正文确实被重排（`sameBytes: true` 且 `proseChanged: true`）。

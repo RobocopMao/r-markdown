@@ -2,6 +2,7 @@
 import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { getSetting, setSetting } from '@/config/settings'
+import BetaBadge from '@/components/BetaBadge.vue'
 import {
   Puzzle,
   Paperclip,
@@ -21,6 +22,7 @@ import {
   Folder,
   ShieldAlert,
   ChartColumn,
+  Layers,
 } from 'lucide-vue-next'
 
 const router = useRouter()
@@ -63,7 +65,7 @@ const emit = defineEmits<{
   (e: 'openBannedWords'): void
   (e: 'materialAction', action: 'my' | 'library'): void
   (e: 'toggleTreePanel'): void
-  (e: 'aiAction', action: 'write' | 'format' | 'image'): void
+  (e: 'aiAction', action: 'write' | 'format' | 'image' | 'material'): void
   (e: 'toggleStats'): void
 }>()
 
@@ -145,7 +147,7 @@ function cancelAiHide() {
   }
 }
 
-function selectAiAction(action: 'write' | 'format' | 'image') {
+function selectAiAction(action: 'write' | 'format' | 'image' | 'material') {
   showAi.value = false
   emit('aiAction', action)
 }
@@ -347,6 +349,14 @@ function toggleCollapse() {
               >
                 <ImagePlus :size="14" class="shrink-0" />
                 AI 配图
+              </button>
+              <button
+                class="examples-item flex items-center gap-2 w-full px-3 py-2 rounded-lg text-[13px] border-none bg-transparent cursor-pointer text-black/80 transition-colors duration-150 hover:bg-black/5"
+                @click="selectAiAction('material')"
+              >
+                <Layers :size="14" class="shrink-0" />
+                AI 素材
+                <BetaBadge />
               </button>
             </div>
           </div>

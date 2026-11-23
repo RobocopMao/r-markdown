@@ -11,6 +11,7 @@ import { resolveDiskImages } from '@/services/localImageDisk'
 import { getErrorMessage } from '@/utils/helpers'
 import { useTheme } from '@/composables/useTheme'
 import { useMermaid } from '@/composables/useMermaid'
+import { resolveExportColors } from '@/utils/exportColors'
 
 const { colors } = useTheme()
 
@@ -301,7 +302,9 @@ async function handleSave() {
     mermaidContainer.innerHTML = renderedHtml
     document.body.appendChild(mermaidContainer)
     await useMermaid().renderAll(mermaidContainer)
-    const finalHtml = mermaidContainer.innerHTML
+    // 推给公众号前把 var(--x) 落成字面量：公众号没有编辑器的样式表，
+    // 留着变量在微信深色模式下会掉到近黑兜底值，正文变成黑底黑字。
+    const finalHtml = resolveExportColors(mermaidContainer.innerHTML)
     document.body.removeChild(mermaidContainer)
 
     const appid = getSetting<string>('wechatAppId')

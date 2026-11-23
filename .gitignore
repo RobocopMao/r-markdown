@@ -34,3 +34,6 @@ output/
 
 # 局域网调试自签证书（scripts/dev-lan.mjs 生成，随网络变化重签）
 .dev-cert/
+
+# 交互素材生成工作区（gen.py 产物，不入库）
+interactive-materials/
