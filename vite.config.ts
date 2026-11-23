@@ -38,6 +38,12 @@ function baiduPlugin(): Plugin {
 export default defineConfig({
   base: isWebDeploy ? '/r-markdown/' : isTauri ? './' : '/',
   plugins: [vue(), tailwindcss(), baiduPlugin()],
+  build: {
+    // rolldown(oxc) 压缩时会把 "\n" 这类单字符字符串写成含真实换行的模板字面量，
+    // vite:build-import-analysis 里的 es-module-lexer 解析这类 chunk 会抛 Parse error，
+    // 生产构建整个失败。关掉 compress、只保留标识符混淆，构建即可通过。
+    rolldownOptions: { output: { minify: { compress: false } } },
+  },
   server: {
     proxy: {
       '/api/leta': {
