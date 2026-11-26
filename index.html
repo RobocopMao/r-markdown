@@ -32,42 +32,193 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Google Fonts 非阻塞加载。
+      fonts.googleapis.com 在国内经常连不通，而 <link rel="stylesheet"> 是渲染阻塞的：
+      一旦请求挂住，首屏会一直白着等超时（实测能拖到十几秒）。这里用 media="print"
+      先让它以低优先级并行下载，加载完成后再切成 all 生效；拿不到就退回系统字体
+      （Inter/Manrope 的兜底就是 -apple-system / PingFang SC，中文显示不受影响）。
+    -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
+      media="print"
+      onload="this.media = 'all'"
     />
+    <noscript>
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap"
+      />
+    </noscript>
+    <!--
+      启动页的主题预读：在样式生效前把用户存的主题色和深浅模式挂到 <html> 上。
+      不这么做的话，深色模式用户会先看到一帧亮的启动页再翻黑。
+      用 var(--loading-accent) 让启动页的 R+M 字标跟着主题色走。
+    -->
+    <script>
+      ;(function () {
+        try {
+          var root = document.documentElement
+          var raw = localStorage.getItem('r-markdown-theme')
+          if (raw) {
+            var theme = JSON.parse(raw)
+            if (theme && theme.accent) root.style.setProperty('--loading-accent', theme.accent)
+          }
+          var mode = localStorage.getItem('r-markdown-darkMode') || 'system'
+          var dark =
+            mode === 'dark' ||
+            (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+          if (dark) root.setAttribute('data-theme', 'dark')
+        } catch (e) {
+          /* 读不到就用默认色，不影响启动 */
+        }
+      })()
+    </script>
+    <style>
+      #app-loading {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f5f5f7;
+        transition: opacity 0.32s ease;
+      }
+      [data-theme='dark'] #app-loading {
+        background: #181818;
+      }
+      /* 收场：由 main.ts 打上 is-done 淡出，动画结束再移除节点 */
+      #app-loading.is-done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      /* 字标画完就定住，不做整体呼吸 —— 动态交给右下角那三个点，
+         这样"画完 → 开始等"的先后关系才看得清。 */
+      .app-loading-mark {
+        display: block;
+        overflow: visible;
+      }
+      .app-loading-mark path {
+        fill: none;
+        stroke: var(--loading-accent, #27ae60);
+        stroke-width: 3.6;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 1;
+        stroke-dashoffset: 1;
+        animation: app-draw 0.7s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+      }
+      /* 按书写顺序依次长出：R 竖 → R 碗 → R 腿 → M */
+      .app-loading-mark path:nth-child(2) {
+        animation-delay: 0.13s;
+      }
+      .app-loading-mark path:nth-child(3) {
+        animation-delay: 0.26s;
+      }
+      .app-loading-mark path:nth-child(4) {
+        animation-delay: 0.39s;
+      }
+      /*
+        M 右下角那三个点：不参与描边生长，等字标画完再依次弹出，
+        之后转成透明度呼吸 —— 字标是静的，点负责表示「还在等」。
+        三个点等 RM 描边画完才开始。
+        最后一笔（M）是 delay 0.39s + 0.7s = 1.09s 结束，所以点从 1.15s 起，
+        留 60ms 让"画完"这个动作有收住的余地，不会和点点亮黏在一起。
+        每个点先弹出来（app-dot-in），再转成透明度呼吸（app-dot-pulse）。
+      */
+      .app-loading-mark .app-loading-dot {
+        fill: var(--loading-accent, #27ae60);
+        stroke: none;
+        opacity: 0;
+        /* 让 scale 以圆点自身中心为基准，而不是 SVG 的 0 0 */
+        transform-box: fill-box;
+        transform-origin: center;
+        animation:
+          app-dot-in 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) var(--dot-delay) both,
+          app-dot-pulse 1.6s ease-in-out calc(var(--dot-delay) + 0.34s) infinite;
+      }
+      .app-loading-mark .app-loading-dot:nth-of-type(1) {
+        --dot-delay: 1.15s;
+      }
+      .app-loading-mark .app-loading-dot:nth-of-type(2) {
+        --dot-delay: 1.31s;
+      }
+      .app-loading-mark .app-loading-dot:nth-of-type(3) {
+        --dot-delay: 1.47s;
+      }
+      @keyframes app-dot-in {
+        from {
+          opacity: 0;
+          transform: scale(0.3);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+      @keyframes app-dot-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        45% {
+          opacity: 0.3;
+        }
+      }
+      @keyframes app-draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        #app-loading {
+          transition: none;
+        }
+        .app-loading-mark path {
+          animation: none;
+          stroke-dashoffset: 0;
+        }
+        .app-loading-mark .app-loading-dot {
+          animation: none;
+          opacity: 1;
+          transform: none;
+        }
+      }
+    </style>
   </head>
   <body>
-    <div id="app-loading" style="display: none" data-loading>
-      <div style="text-align: center">
-        <div
-          style="
-            width: 28px;
-            height: 28px;
-            border: 2.5px solid #e5e7eb;
-            border-top-color: var(--loading-accent, #27ae60);
-            border-radius: 50%;
-            animation: app-spin 0.7s linear infinite;
-            margin: 0 auto 12px;
-          "
-        ></div>
-        加载中...
+    <!--
+      启动页：全屏 R + M 描边字标。
+      两个字各自成形、中间留一段空隙，靠同一套笔画粗细和圆头端点统一气质。
+      放在 index.html 里而不是 Vue 组件里，是因为它要在任何 JS / CSS 包到达之前
+      就能画出来（否则就是白屏干等）；等 Vue 挂载、首页真正画出来之后由 main.ts 收掉。
+    -->
+    <div
+      id="app-loading"
+      data-loading
+      role="status"
+      aria-live="polite"
+      aria-label="正在加载 R-Markdown"
+    >
+      <div class="app-loading-inner">
+        <svg
+          class="app-loading-mark"
+          viewBox="15.8 21.8 53.8 24.4"
+          width="180"
+          height="82"
+          aria-hidden="true"
+        >
+          <path pathLength="1" d="M18 24V44" />
+          <path pathLength="1" d="M18 24H26.5A5 5 0 0 1 26.5 34H18" />
+          <path pathLength="1" d="M24 34L31.5 44" />
+          <path pathLength="1" d="M38 44V24L45.5 34L53 24V44" />
+          <circle class="app-loading-dot" cx="58" cy="44.2" r="1.6" />
+          <circle class="app-loading-dot" cx="63" cy="44.2" r="1.6" />
+          <circle class="app-loading-dot" cx="68" cy="44.2" r="1.6" />
+        </svg>
       </div>
-      <style>
-        @keyframes app-spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-        [data-theme='dark'] #app-loading {
-          background: rgba(0, 0, 0, 0.88);
-          color: #6b7280;
-        }
-        [data-theme='dark'] #app-loading div div {
-          border-color: #374151;
-          border-top-color: var(--loading-accent, #27ae60);
-        }
-      </style>
     </div>
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>

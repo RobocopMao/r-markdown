@@ -7,11 +7,20 @@ import { useMermaid } from '@/composables/useMermaid'
 import SiteHeader from '@/components/SiteHeader.vue'
 import SiteFooter from '@/components/SiteFooter.vue'
 import Toast from '@/components/Toast.vue'
+import GridSkeleton from '@/components/GridSkeleton.vue'
 import { components } from '@/extension'
 
 const { colors } = useTheme()
 const { renderAll } = useMermaid()
 const visible = ref(false)
+/**
+ * 初始化装载态。
+ *
+ * 本页要把 29 个组件的示例全部 parseMarkdownAsync 渲染完才有第一张卡片可显示，
+ * 期间 MasonryWall 的 items 是空数组，页面就是一片白的。这里用 loading 顶住，
+ * 让用户知道是在加载，而不是以为页面坏了。
+ */
+const loading = ref(true)
 
 // 分类定义
 const categories = [
@@ -98,20 +107,25 @@ onMounted(async () => {
   })
   if (wallWrapperRef.value) wallResizeObserver.observe(wallWrapperRef.value)
   const colorsVal = colors.value
-  const examples = await Promise.all(
-    components
-      .filter((comp) => comp.id !== 'ReadingPath_DA01')
-      .map(async (comp) => ({
-        id: comp.id,
-        name: comp.name,
-        description: comp.description || '',
-        example: comp.example || '',
-        rendered: await renderMermaidIfNeeded(comp, colorsVal),
-        idSuffix: comp.id.split('_').slice(1).join('_'),
-        attrs: (comp as any).attrs || [],
-      })),
-  )
-  componentExamples.value = examples
+  try {
+    const examples = await Promise.all(
+      components
+        .filter((comp) => comp.id !== 'ReadingPath_DA01')
+        .map(async (comp) => ({
+          id: comp.id,
+          name: comp.name,
+          description: comp.description || '',
+          example: comp.example || '',
+          rendered: await renderMermaidIfNeeded(comp, colorsVal),
+          idSuffix: comp.id.split('_').slice(1).join('_'),
+          attrs: (comp as any).attrs || [],
+        })),
+    )
+    componentExamples.value = examples
+  } finally {
+    // 渲染中无论成功还是某一项抛错，都要收掉 loading，别让页面永远转圈
+    loading.value = false
+  }
 })
 
 // 主题色变化时重新渲染预览
@@ -220,8 +234,18 @@ function onWindowResize() {
           </button>
         </div>
 
+        <!-- 装载中：骨架屏（与素材库共用 GridSkeleton，列宽与真实瀑布流一致） -->
+        <GridSkeleton
+          v-if="loading"
+          :cols="cols"
+          :gap="COLS_GAP"
+          :blocks="6"
+          hint="正在准备组件预览…"
+        />
+
         <!-- Components Waterfall -->
         <MasonryWall
+          v-else
           :items="filteredComponents"
           :column-width="columnWidth"
           :gap="COLS_GAP"

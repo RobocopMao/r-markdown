@@ -1,7 +1,8 @@
 <script setup vapor lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { parseMarkdownAsync } from '@/utils/markdownParser'
+// 解析器会连带打进 highlight.js 与全部扩展组件（gzip 约 85KB），首屏只有演示卡
+// 那一小段文本要用 —— 改成用到时再异步加载，别让它挡住首屏。
 import { useTheme } from '@/composables/useTheme'
 import { useDarkMode } from '@/composables/useDarkMode'
 import DarkModeToggle from '@/components/DarkModeToggle.vue'
@@ -118,10 +119,19 @@ function typeNextChar() {
   }
 }
 
+type ParserModule = typeof import('@/utils/markdownParser')
+let parserPromise: Promise<ParserModule> | null = null
+
+function loadParser(): Promise<ParserModule> {
+  if (!parserPromise) parserPromise = import('@/utils/markdownParser')
+  return parserPromise
+}
+
 async function updatePreview() {
-  if (previewRef.value) {
-    previewRef.value.innerHTML = await parseMarkdownAsync(typedMd.value, demoColors.value)
-  }
+  if (!previewRef.value) return
+  const { parseMarkdownAsync } = await loadParser()
+  if (!previewRef.value) return
+  previewRef.value.innerHTML = await parseMarkdownAsync(typedMd.value, demoColors.value)
 }
 
 // 监听 typedMd 变化，实时更新右侧预览
@@ -134,7 +144,8 @@ onMounted(() => {
     visible.value = true
   })
   initCloudCanvas()
-  preloadEditor()
+  // 编辑器 chunk 有 700KB+：等首屏空闲再预取，别和首屏资源抢带宽
+  whenIdle(preloadEditor, 3000)
 
   const observer = new IntersectionObserver(
     (entries) => {
@@ -205,6 +216,17 @@ onBeforeUnmount(() => {
 })
 
 // ── 预加载编辑器页面 ──
+/** 首次空闲时执行（Safari 没有 requestIdleCallback，退回 setTimeout） */
+function whenIdle(fn: () => void, timeout = 2000) {
+  const ric = (
+    window as unknown as {
+      requestIdleCallback?: (cb: () => void, o?: { timeout: number }) => number
+    }
+  ).requestIdleCallback
+  if (ric) ric.call(window, fn, { timeout })
+  else setTimeout(fn, 200)
+}
+
 let editorPreloaded = false
 function preloadEditor() {
   if (editorPreloaded) return
