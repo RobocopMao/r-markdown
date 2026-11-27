@@ -118,10 +118,26 @@ function fenceOpenAt(line: string, allowIndent: boolean): { char: string; len: n
  * 而 `^``` ` 也匹配到 `^`````，于是从外层开标签起只吃到内层那行就闭合，把内层
  * 三行原文漏进结果；残留的反引号数目失衡后，后面的行内代码正则还能跨行把它吞掉。
  */
+
+/**
+ * 统一换行符：CRLF / CR → LF。
+ *
+ * Windows 上保存或用 Windows 编辑器粘贴的 Markdown 是 CRLF；本文件所有块解析都按
+ * `split('\n')` 切行，行尾的 `\r` 会残留在每一行字面量里。行尾 `\r` 会让以 `$`
+ * 结尾的行内正则（如列表项 `/^([ \t]*)[-*+]\s+(.*)$/`）匹配失败，而外层派发用的
+ * `/^[-*+]\s/` 却能匹配上，于是 parseListBlock 一行不吃就返回原下标，主循环原地打转、
+ * html 无限累加，最终抛 RangeError: Invalid string length（页面永久卡在「加载中...」）。
+ * 所以在所有解析入口先归一换行。
+ */
+export function normalizeNewlines(md: string): string {
+  // 不用正则 replace 全量扫：绝大多数内容没有 \r，includes 提前返回能省一次分配
+  return md.includes('\r') ? md.replace(/\r\n?/g, '\n') : md
+}
+
 export function stripFencedCodeBlocks(md: string): string {
   const out: string[] = []
   let open: { char: string; len: number } | null = null
-  for (const line of md.split('\n')) {
+  for (const line of normalizeNewlines(md).split('\n')) {
     if (open) {
       if (isFenceClose(line, open.char, open.len)) open = null
       continue
@@ -274,7 +290,7 @@ export function deindentComponentTags(md: string): string {
   const out: string[] = []
   let fenceOpen: { char: string; len: number } | null = null
   let inHtmlBlock = false
-  for (const line of md.split('\n')) {
+  for (const line of normalizeNewlines(md).split('\n')) {
     // 围栏按长度配对，否则示范四反引号围栏时内层 ``` 会被当成闭合
     if (fenceOpen) {
       if (isFenceClose(line, fenceOpen.char, fenceOpen.len)) fenceOpen = null
@@ -318,6 +334,7 @@ export async function parseMarkdownAsync(
   t: ThemeColors,
   paragraphStyle?: ParagraphStyle,
 ): Promise<string> {
+  md = normalizeNewlines(md)
   const formulas = collectFormulas(md)
   const formulaMap = formulas.length > 0 ? await preRenderFormulas(formulas) : undefined
   return parseMarkdown(md, t, formulaMap, paragraphStyle)
@@ -351,9 +368,7 @@ export function parseMarkdown(
     ordered: boolean,
     isTopLevel: boolean,
   ): { html: string; next: number } {
-    const itemRe = ordered
-      ? /^([ \t]*)(\d+)\.\s+(.*)$/
-      : /^([ \t]*)[-*+]\s+(.*)$/
+    const itemRe = ordered ? /^([ \t]*)(\d+)\.\s+(.*)$/ : /^([ \t]*)[-*+]\s+(.*)$/
     let html = ''
     let num = 0
     while (i < lines.length) {
@@ -423,9 +438,14 @@ export function parseMarkdown(
     return `__FN_${num - 1}__|${label}|`
   })
 
-  const lines = deindentComponentTags(processedMd).split('\n')
+  // 入口归一换行（CRLF/CR → LF），否则行尾 \r 会让以 $ 结尾的行内正则失配触发死循环
+  const lines = deindentComponentTags(normalizeNewlines(processedMd)).split('\n')
   let html = ''
   let i = 0
+  // 死循环兜底：若某一轮主循环结束时下标没有推进（子解析器判定不归属却仍被外层派发），
+  // 强制前进一行。否则 html 会无限累加直到抛 RangeError: Invalid string length，
+  // 调用方 await 抛错、loading 永远停在 true —— 就是「帮助文档一直显示加载中」那个坑。
+  let lastIndex = -1
 
   // 收集 p-title level1（用于 <reading-path> 标签）
   // 同样要支持开标签跨行：属性写到下一行、`>` 单独成行时也算一条
@@ -701,6 +721,9 @@ export function parseMarkdown(
   }
 
   while (i < lines.length) {
+    if (i === lastIndex) i++
+    if (i >= lines.length) break
+    lastIndex = i
     const line = lines[i]
 
     if (line.trim() === '') {
@@ -1306,7 +1329,7 @@ export function parseMarkdown(
       const listStartLine = i
       const parsed = parseListBlock(i, 0, false, true)
       html += withSourceLine(listStartLine, parsed.html)
-      i = parsed.next
+      i = parsed.next > listStartLine ? parsed.next : listStartLine + 1
       continue
     }
 
@@ -1315,7 +1338,7 @@ export function parseMarkdown(
       const listStartLine = i
       const parsed = parseListBlock(i, 0, true, true)
       html += withSourceLine(listStartLine, parsed.html)
-      i = parsed.next
+      i = parsed.next > listStartLine ? parsed.next : listStartLine + 1
       continue
     }
 

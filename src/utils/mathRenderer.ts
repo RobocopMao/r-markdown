@@ -24,20 +24,49 @@ function loadMathJax(): Promise<void> {
       resolve()
       return
     }
+
+    // 超时兜底：tex-svg.js 有 3MB，弱网/自定义协议下可能出现 onload 已触发但 startup.adaptor
+    // 永不就绪（脚本被截断、解析失败）的情况。原先的 setInterval 会永远轮询下去，Promise
+    // 永久 pending → 调用方 await 卡死 → 页面停留「加载中...」。超时后 reject，让 renderMath
+    // 的 catch 返回空串：公式缺失但正文照常渲染。
+    const LOAD_TIMEOUT = 10000
+    let settled = false
+    let poll: ReturnType<typeof setInterval> | null = null
+    const timer = setTimeout(() => fail('MathJax 加载超时'), LOAD_TIMEOUT)
+
+    function cleanup() {
+      clearTimeout(timer)
+      if (poll) {
+        clearInterval(poll)
+        poll = null
+      }
+    }
+    function ok() {
+      if (settled) return
+      settled = true
+      cleanup()
+      resolve()
+    }
+    function fail(msg: string) {
+      if (settled) return
+      settled = true
+      cleanup()
+      mathJaxReady = null // 允许下次重试
+      reject(new Error(msg))
+    }
+
     const script = document.createElement('script')
     script.src = import.meta.env.BASE_URL + 'mathjax/tex-svg.js'
     script.onload = () => {
-      const check = setInterval(() => {
-        if ((window as any).MathJax?.startup?.adaptor) {
-          clearInterval(check)
-          resolve()
-        }
+      if ((window as any).MathJax?.startup?.adaptor) {
+        ok()
+        return
+      }
+      poll = setInterval(() => {
+        if ((window as any).MathJax?.startup?.adaptor) ok()
       }, 50)
     }
-    script.onerror = () => {
-      mathJaxReady = null
-      reject(new Error('MathJax CDN load failed'))
-    }
+    script.onerror = () => fail('MathJax 脚本加载失败')
     document.head.appendChild(script)
   })
 
